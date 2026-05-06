@@ -82,31 +82,6 @@ body::after {
 
 .topbar-logo::after { content: '_'; animation: blink 1s step-end infinite; }
 
-.theme-toggle {
-  display: flex; align-items: center; gap: 10px;
-  cursor: pointer; user-select: none;
-}
-
-.toggle-lbl {
-  font-size: 0.6rem; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase;
-}
-
-.toggle-track {
-  width: 44px; height: 20px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 0;
-  position: relative;
-}
-
-.toggle-thumb {
-  position: absolute; left: 3px; top: 3px;
-  width: 12px; height: 12px;
-  background: var(--green);
-  box-shadow: var(--glow);
-  transition: transform 0.2s;
-}
-
 /* ===== MAIN ===== */
 .main { padding-top: 48px; position: relative; z-index: 1; }
 
@@ -418,9 +393,6 @@ body::after {
 
 </style>
 </head>
-
-</style>
-</head>
 <body>
 
 <!-- TOP BAR -->
@@ -448,8 +420,7 @@ body::after {
       </div>
 
       <div class="welcome-btns">
-        <button class="btn btn-primary" onclick="loadTemplate()">▶ &nbsp; Use Template Voice</button>
-        <button class="btn" onclick="showPackPanel()">📦 &nbsp; Load Saved Pack</button>
+        <button class="btn btn-primary" onclick="showPackPanel()">📦 &nbsp; Load Saved Pack</button>
         <button class="btn btn-danger" onclick="startNewRecording()">⏺ &nbsp; Record My Voice</button>
       </div>
 
@@ -742,13 +713,6 @@ async function dbListKeys() {
 }
 
 /* ============================================================
-   THEME
-   ============================================================ */
-function toggleTheme() { /* theme toggle removed */ }
-
-function updateAvatarSrc() {}
-
-/* ============================================================
    SCREENS
    ============================================================ */
 function showScreen(id) {
@@ -790,7 +754,6 @@ function stopMouth() {
 }
 
 function setMouth(open) {
-  // Only animate synth screen avatar
   const el = document.getElementById('synth-avatar');
   if (!el) return;
   el.querySelectorAll('.mouth-closed').forEach(i => i.style.opacity = open ? '0' : '1');
@@ -798,32 +761,8 @@ function setMouth(open) {
 }
 
 /* ============================================================
-   WELCOME — TEMPLATE & PACK PANEL
+   WELCOME — PACK PANEL
    ============================================================ */
-async function loadTemplate() {
-  const pack = { name:'Template', sounds:{} };
-  let loaded = 0;
-  notify('Loading template…');
-
-  await Promise.all(SOUNDS.map(async s => {
-    try {
-      const r = await fetch(`./other/voice/${s.id}.mp3`);
-      if (r.ok) { pack.sounds[s.id] = await r.blob(); loaded++; }
-    } catch {}
-  }));
-
-  if (loaded === 0) {
-    notify('⚠ No template files found in ./other/voice/');
-    return;
-  }
-
-  st.pack = pack;
-  setSynthPackInfo('Template', loaded);
-  showScreen('synth');
-  updatePhonemeStrip();
-  notify(`✓ Loaded ${loaded} sounds`);
-}
-
 async function showPackPanel() {
   const panel = document.getElementById('pack-panel');
   const list  = document.getElementById('pack-list');
@@ -928,7 +867,6 @@ function updateRecDisplay() {
   document.querySelectorAll('.sound-chip').forEach(c => c.classList.remove('current'));
   document.getElementById('chip-' + s.id)?.classList.add('current');
 
-  // Scroll chip into view
   document.getElementById('chip-' + s.id)?.scrollIntoView({ block:'nearest', behavior:'smooth' });
 }
 
@@ -985,7 +923,6 @@ function stopRecording() {
   btn.textContent = '⏺  Start Recording';
   btn.classList.remove('recording');
 
-  // Clear waveform canvas
   const cv = document.getElementById('waveform');
   cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
 }
@@ -1009,8 +946,7 @@ function drawWaveform(stream) {
     st.rafId = requestAnimationFrame(draw);
     st.analyser.getByteTimeDomainData(data);
     ctx.clearRect(0, 0, cv.width, cv.height);
-    const accent = '#00ff41';
-    ctx.strokeStyle = accent;
+    ctx.strokeStyle = '#00ff41';
     ctx.lineWidth = 2 * devicePixelRatio;
     ctx.beginPath();
     const sw = cv.width / data.length;
@@ -1096,7 +1032,6 @@ function updateMiiLabels() {
 
 function syncRandomPitch() {
   const on = document.getElementById('ck-randpitch').checked;
-  // If random pitch enabled, bump jitter a bit as a hint
   if (on && parseFloat(document.getElementById('sl-jitter').value) === 0) {
     document.getElementById('sl-jitter').value = 0.15;
     updateMiiLabels();
@@ -1137,7 +1072,6 @@ function synthKey(e) {
   if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); speakText(); }
 }
 
-// Shared AudioContext for all playback
 let _ac = null;
 function getAC() {
   if (!_ac || _ac.state === 'closed') {
@@ -1147,13 +1081,11 @@ function getAC() {
   return _ac;
 }
 
-// Decode a Blob into an AudioBuffer
 async function blobToBuffer(blob) {
   const ab = await blob.arrayBuffer();
   return getAC().decodeAudioData(ab);
 }
 
-// Schedule an AudioBuffer to start at `when` on the AC timeline, stopped after cutoff fraction
 function scheduleBuffer(buf, when, rate) {
   const ac = getAC();
   const src = ac.createBufferSource();
@@ -1164,7 +1096,6 @@ function scheduleBuffer(buf, when, rate) {
   return src;
 }
 
-// Syllable grouping: cluster consonants with the following vowel
 function groupIntoSyllables(phonemes) {
   const VOWELS = new Set(['a','e','i','o','u','ee','oo','ea','ou','ai','ay','oi','oy','au','aw','ew','ie','ue']);
   const groups = [];
@@ -1197,7 +1128,6 @@ async function speakText() {
   st.isSpeaking = true;
   startMouth();
 
-  // Pre-decode all needed blobs
   const bufCache = {};
   for (const p of phs) {
     if (p.type === 'sound' && st.pack.sounds[p.id] && !bufCache[p.id]) {
@@ -1209,7 +1139,6 @@ async function speakText() {
     ? groupIntoSyllables(phs)
     : phs.map(p => p.type === 'space' ? { type:'space' } : { type:'syllable', sounds:[p] });
 
-  // Build phoneme offset map for highlighting
   const phOffsets = [];
   let running = 0;
   for (const u of units) {
@@ -1217,13 +1146,12 @@ async function speakText() {
     running += (u.type === 'syllable') ? u.sounds.length : 1;
   }
 
-  // --- Schedule everything on the AudioContext clock ---
   const ac = getAC();
   const gapSec = params.gap / 1000;
   const spaceSec = (160 / 1000);
 
-  let cursor = ac.currentTime + 0.05; // small lead time
-  const highlights = []; // { atSec, unitIdx }
+  let cursor = ac.currentTime + 0.05;
+  const highlights = [];
 
   for (let ui = 0; ui < units.length; ui++) {
     const unit = units[ui];
@@ -1234,14 +1162,12 @@ async function speakText() {
       continue;
     }
 
-    // Per-syllable rate
     let rate = params.pitch * params.speed;
     if (params.jitter > 0) rate *= (1 + (Math.random() * 2 - 1) * params.jitter);
     if (params.randPitch)  rate *= (0.75 + Math.random() * 0.5);
     if (params.randSpeed)  rate *= (0.88 + Math.random() * 0.24);
     rate = Math.max(0.2, Math.min(4.0, rate));
 
-    // Schedule sounds in the syllable
     for (let si = 0; si < unit.sounds.length; si++) {
       const p = unit.sounds[si];
       const buf = bufCache[p.id];
@@ -1252,24 +1178,16 @@ async function speakText() {
       scheduleBuffer(buf, cursor + offset, rate);
     }
 
-    // Find duration of the main (last/vowel) sound at this rate
     const mainBuf = unit.sounds.map(p => bufCache[p.id]).filter(Boolean).pop();
     const soundDur = mainBuf ? (mainBuf.duration / rate) : 0.06;
 
-    // Step: gap setting is the BASE interval when overlap=0.
-    // As overlap increases toward 1, the next syllable starts sooner,
-    // up to firing right after the sound starts (overlap=~1 = nearly instant).
-    const overlap = params.cutoff; // 0 = no overlap, 0.98 = max overlap
+    const overlap = params.cutoff;
     let step = Math.max(gapSec / params.speed, soundDur * (1 - overlap));
     if (params.randSpeed) step *= (0.85 + Math.random() * 0.3);
     step = Math.max(0.02, step);
     cursor += step;
   }
 
-  const totalDuration = (cursor - ac.currentTime) * 1000 + 200;
-
-  // Drive highlights + mouth via requestAnimationFrame against the AC clock
-  const startAC = ac.currentTime + 0.05;
   let hIdx = 0;
   let done = false;
 
@@ -1292,7 +1210,6 @@ async function speakText() {
     if (hIdx < highlights.length) {
       requestAnimationFrame(tick);
     } else {
-      // All highlights fired — wait for last audio to finish
       const remaining = (cursor - now) * 1000 + 150;
       setTimeout(finish, Math.max(remaining, 50));
     }
@@ -1325,7 +1242,7 @@ async function savePack() {
   if (cnt === 0) { notify('No sounds to save'); return; }
 
   let name = st.pack.name;
-  if (!name || name === 'Template') {
+  if (!name) {
     name = prompt('Name this voice pack:', 'My Voice') || 'My Voice';
     st.pack.name = name;
   }
