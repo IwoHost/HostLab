@@ -391,7 +391,8 @@
 
 <script>
     const params  = new URLSearchParams(window.location.search);
-    const dest    = params.get('url') || params.get('dest');
+    const raw = params.get('url') || params.get('dest');
+    const dest = raw ? atob(raw) : null;
     const cArea   = document.getElementById('challenge-area');
     const sArea   = document.getElementById('success-area');
     const eArea   = document.getElementById('error-area');
