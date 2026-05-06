@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Szymon A. — Kronika Nierobienia</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #ff2244;
+    --dim: #ff2244aa;
+    --bg: #07070f;
+    --surface: #0f0f1a;
+    --text: #e8e0ff;
+    --muted: #5a5575;
+    --accent: #c0a0ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ======== CURTAIN ======== */
+  #curtain {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; pointer-events: all;
+  }
+  .curtain-panel {
+    flex: 1; background: #07070f;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    transition: transform 1.6s cubic-bezier(0.77, 0, 0.175, 1);
+  }
+  .curtain-panel:first-child {
+    border-right: 2px solid var(--red);
+    justify-content: flex-end; padding-right: 40px;
+  }
+  .curtain-panel:last-child {
+    border-left: 2px solid var(--red);
+    justify-content: flex-start; padding-left: 40px;
+  }
+  .curtain-word {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(60px, 12vw, 140px);
+    color: var(--red);
+    letter-spacing: 8px;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  #curtain.open .curtain-panel:first-child { transform: translateX(-100%); }
+  #curtain.open .curtain-panel:last-child  { transform: translateX(100%); }
+  #curtain.gone { display: none; }
+
+  /* ======== PARTICLES ======== */
+  #particle-canvas {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ======== MAIN ======== */
+  #main {
+    position: relative; z-index: 10;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px 20px;
+    opacity: 0;
+    transition: opacity 0.8s ease 1.8s;
+  }
+  #main.visible { opacity: 1; }
+
+  /* ======== HEADER ======== */
+  .header-tag {
+    font-size: 11px; letter-spacing: 4px; color: var(--muted);
+    text-transform: uppercase; margin-bottom: 16px;
+    border: 1px solid #1a1a2e; padding: 6px 14px; border-radius: 2px;
+  }
+
+  .main-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 10vw, 120px);
+    line-height: 0.95;
+    text-align: center;
+    letter-spacing: 6px;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .main-title .name { color: var(--red); display: block; }
+  .main-title .sub  { color: var(--accent); font-size: 0.55em; letter-spacing: 12px; display: block; }
+
+  /* ======== RESET COUNTER ======== */
+  .reset-strip {
+    margin: 28px 0;
+    display: flex; align-items: center; gap: 16px;
+    border: 1px solid #1f1f30;
+    background: #0d0d1a;
+    padding: 14px 28px; border-radius: 4px;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .reset-label { font-size: 11px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; }
+  .reset-dots { display: flex; gap: 8px; }
+  .reset-dot {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--red);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+    box-shadow: 0 0 12px #ff224466;
+  }
+  .reset-why { font-size: 12px; color: var(--muted); font-style: italic; }
+
+  /* ======== TYPEWRITER ======== */
+  #typewriter-section {
+    max-width: 640px; width: 100%;
+    text-align: center; margin: 20px 0;
+    min-height: 72px;
+  }
+  #tw-text {
+    font-size: clamp(15px, 2.5vw, 20px);
+    color: var(--accent);
+    line-height: 1.6;
+  }
+  .tw-cursor {
+    display: inline-block; width: 2px; height: 1.1em;
+    background: var(--red); vertical-align: middle;
+    animation: blink 0.75s step-end infinite;
+    margin-left: 2px;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ======== DIVIDER ======== */
+  .divider {
+    width: 100%; max-width: 600px;
+    height: 1px; background: linear-gradient(90deg, transparent, var(--red), transparent);
+    margin: 32px 0;
+  }
+
+  /* ======== FLIP COUNTDOWN ======== */
+  #countdown {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  #countdown.visible { opacity: 1; transform: translateY(0); }
+
+  .countdown-label {
+    text-align: center; font-size: 11px; color: var(--muted);
+    letter-spacing: 4px; text-transform: uppercase; margin-bottom: 24px;
+  }
+  .countdown-label span { color: var(--red); }
+
+  .flip-grid {
+    display: flex; gap: clamp(8px,2vw,20px);
+    justify-content: center; flex-wrap: wrap;
+  }
+  .flip-card {
+    background: var(--surface);
+    border: 1px solid #1f1f30;
+    border-radius: 6px;
+    padding: clamp(12px,2vw,20px) clamp(14px,2vw,28px);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .flip-card::before {
+    content: '';
+    position: absolute; top: 50%; left: 0; right: 0;
+    height: 1px; background: #1a1a28;
+  }
+  .flip-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(44px,8vw,80px);
+    color: #fff; display: block;
+    line-height: 1; letter-spacing: 2px;
+    text-shadow: 0 0 40px var(--dim);
+  }
+  .flip-lbl {
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 3px; text-transform: uppercase;
+    margin-top: 6px; display: block;
+  }
+
+  /* ======== FOOTER ======== */
+  .page-footer {
+    margin-top: 48px; text-align: center;
+    font-size: 11px; color: var(--muted); letter-spacing: 2px;
+  }
+  .page-footer em { color: #3a3450; font-style: normal; }
+
+  /* ======== SCAN LINE ======== */
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 5;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.04) 4px);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- CURTAIN -->
+<div id="curtain">
+  <div class="curtain-panel"><div class="curtain-word">SZYMON</div></div>
+  <div class="curtain-panel"><div class="curtain-word">A.</div></div>
+</div>
+
+<!-- PARTICLES -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- MAIN -->
+<div id="main">
+
+  <div class="header-tag">KRONIKA NIEROBIENIA MIASTA · od 06.02.2026</div>
+
+  <h1 class="main-title">
+    <span class="name">Szymon A.</span>
+    nie zrobił miasta
+  </h1>
+
+  <div class="reset-strip">
+    <span class="reset-label">Liczba resetów projektu</span>
+    <div class="reset-dots">
+      <div class="reset-dot">1</div>
+      <div class="reset-dot">2</div>
+      <div class="reset-dot">3</div>
+      <div class="reset-dot">4</div>
+      <div class="reset-dot">5</div>
+      <div class="reset-dot">6</div>
+    </div>
+    <span class="reset-why">— dlaczego? nikt tego nie wie.</span>
+  </div>
+
+  <div id="typewriter-section">
+    <span id="tw-text"></span><span class="tw-cursor"></span>
+  </div>
+
+  <div class="divider"></div>
+
+  <div id="countdown">
+    <div class="countdown-label">Miasto nie istnieje już od · <span>06 FEB 2026</span></div>
+    <div class="flip-grid">
+      <div class="flip-card">
+        <span class="flip-num" id="fd">000</span>
+        <span class="flip-lbl">dni</span>
+      </div>
+      <div class="flip-card">
+        <span class="flip-num" id="fh">00</span>
+        <span class="flip-lbl">godzin</span>
+      </div>
+      <div class="flip-card">
+        <span class="flip-num" id="fm">00</span>
+        <span class="flip-lbl">minut</span>
+      </div>
+      <div class="flip-card">
+        <span class="flip-num" id="fs">00</span>
+        <span class="flip-lbl">sekund</span>
+      </div>
+    </div>
+  </div>
+
+  <footer class="page-footer">
+    Szymon robi grafikę. Szymon resetuje projekt. Szymon robi wszystko.<br>
+    <em>Wszystko oprócz miasta.</em>
+  </footer>
+
+</div>
+
+<script>
+// ======== CURTAIN ========
+const curtain = document.getElementById('curtain');
+const mainEl  = document.getElementById('main');
+
+setTimeout(() => {
+  curtain.classList.add('open');
+  mainEl.classList.add('visible');
+}, 600);
+
+curtain.addEventListener('transitionend', () => {
+  if (curtain.classList.contains('open')) {
+    setTimeout(() => { curtain.classList.add('gone'); }, 200);
+  }
+}, { once: true });
+
+// ======== PARTICLES ========
+const canvas = document.getElementById('particle-canvas');
+const ctx    = canvas.getContext('2d');
+let W, H, parts;
+
+function initParticles() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  parts = Array.from({ length: 80 }, () => ({
+    x:  Math.random() * W,
+    y:  Math.random() * H,
+    r:  Math.random() * 1.8 + 0.3,
+    vx: (Math.random() - 0.5) * 0.5,
+    vy: (Math.random() - 0.5) * 0.5,
+    a:  Math.random() * 0.6 + 0.1,
+  }));
+}
+
+function drawParticles() {
+  ctx.clearRect(0, 0, W, H);
+  parts.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+    if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(192,160,255,${p.a})`;
+    ctx.fill();
+  });
+  for (let i = 0; i < parts.length; i++) {
+    for (let j = i + 1; j < parts.length; j++) {
+      const dx = parts[i].x - parts[j].x;
+      const dy = parts[i].y - parts[j].y;
+      const d  = Math.sqrt(dx*dx + dy*dy);
+      if (d < 100) {
+        ctx.beginPath();
+        ctx.moveTo(parts[i].x, parts[i].y);
+        ctx.lineTo(parts[j].x, parts[j].y);
+        ctx.strokeStyle = `rgba(192,160,255,${0.12 * (1 - d/100)})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(drawParticles);
+}
+
+initParticles();
+drawParticles();
+window.addEventListener('resize', initParticles);
+
+// ======== TYPEWRITER ========
+const phrases = [
+  "Szymon A. robi wszystko oprócz miasta.",
+  "Zaczął od nowa już 6 razy. Dlaczego? Nikt tego nie wie.",
+  "Grafiki? Zrobione. Miasto? Nie istnieje.",
+  "Reset #1, reset #2... reset #6. Miasto nadal nie istnieje.",
+  "Może reset #7 będzie tym wyjątkowym? Nie.",
+  "Minęło już tyle dni, godzin, minut, sekund...",
+  "...a miasto wciąż czeka.",
+];
+
+let pi = 0, ci = 0, deleting = false, countdownShown = false;
+const twEl = document.getElementById('tw-text');
+const countdown = document.getElementById('countdown');
+
+function typeLoop() {
+  const phrase = phrases[pi];
+  if (!deleting) {
+    twEl.textContent = phrase.slice(0, ++ci);
+    if (ci >= phrase.length) {
+      deleting = true;
+      // Show countdown after last phrase
+      if (pi === phrases.length - 1 && !countdownShown) {
+        countdownShown = true;
+        setTimeout(() => countdown.classList.add('visible'), 800);
+      }
+      setTimeout(typeLoop, pi === phrases.length - 1 ? 3000 : 1600);
+      return;
+    }
+  } else {
+    twEl.textContent = phrase.slice(0, --ci);
+    if (ci <= 0) {
+      deleting = false;
+      pi = (pi + 1) % phrases.length;
+    }
+  }
+  setTimeout(typeLoop, deleting ? 30 : 60);
+}
+
+setTimeout(typeLoop, 2200);
+
+// ======== COUNTDOWN ========
+const START = new Date('2026-02-06T00:00:00');
+
+function pad(n, len) { return String(n).padStart(len || 2, '0'); }
+
+function updateCountdown() {
+  const diff = Math.max(0, Date.now() - START.getTime());
+  const totalSec = Math.floor(diff / 1000);
+  const days  = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const mins  = Math.floor((totalSec % 3600) / 60);
+  const secs  = totalSec % 60;
+  document.getElementById('fd').textContent = pad(days, 3);
+  document.getElementById('fh').textContent = pad(hours);
+  document.getElementById('fm').textContent = pad(mins);
+  document.getElementById('fs').textContent = pad(secs);
+}
+updateCountdown();
+setInterval(updateCountdown, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VindiGators Wrapped</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Oxanium:wght@200;400;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Share Tech Mono',monospace;}
+
+#inputScreen{
+  position:fixed;inset:0;background:#080c10;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:28px;z-index:10;transition:opacity .8s,transform .8s;
+}
+#inputScreen.hide{opacity:0;transform:scale(1.04);pointer-events:none;}
+.input-logo{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:10px;color:#c8a96e;text-align:center;line-height:1;}
+.input-logo small{display:block;font-size:13px;letter-spacing:6px;color:#3a5568;margin-top:4px;}
+textarea{
+  width:min(540px,90vw);height:220px;background:#0a0e14;border:1px solid #1e2d3d;
+  color:#c8dde8;font-family:'Share Tech Mono',monospace;font-size:13px;
+  padding:14px;resize:none;outline:none;line-height:1.9;letter-spacing:.5px;
+  transition:border-color .2s;
+}
+textarea:focus{border-color:#c8a96e;}
+.input-hint{font-size:10px;color:#3a5568;letter-spacing:2px;text-align:center;}
+.input-hint span{color:#c8a96e;}
+
+:root{--hue:43;--spark:1.8s;}
+button.galaxy{
+  --cut:.1em;--active:0;
+  background:
+    radial-gradient(120% 120% at 126% 126%,hsl(var(--hue) calc(var(--active)*97%) 98% / calc(var(--active)*.9)) 40%,transparent 50%) calc(100px - (var(--active)*100px)) 0/100% 100% no-repeat,
+    radial-gradient(120% 120% at 120% 120%,hsl(var(--hue) calc(var(--active)*97%) 70% / var(--active)) 30%,transparent 70%) calc(100px - (var(--active)*100px)) 0/100% 100% no-repeat,
+    hsl(var(--hue) calc(var(--active)*100%) calc(12% - (var(--active)*8%)));
+  padding:16px 48px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:5px;
+  border:0;cursor:pointer;border-radius:.3em;position:relative;overflow:hidden;
+  color:hsl(0 0% calc(60% + (var(--active)*26%)));
+  box-shadow:0 0 calc(var(--active)*5em) calc(var(--active)*2em) hsl(var(--hue) 97% 61%/.4),
+    0 .05em 0 0 hsl(var(--hue) calc(var(--active)*97%) calc((var(--active)*50%)+30%)) inset,
+    0 -.05em 0 0 hsl(var(--hue) calc(var(--active)*97%) calc(var(--active)*10%)) inset;
+  transition:box-shadow .25s,scale .25s,background .25s;
+  scale:calc(1 + (var(--active)*.06));transform-style:preserve-3d;
+}
+button.galaxy:hover,button.galaxy:focus-visible{--active:1;}
+button.galaxy:active{scale:1;}
+.gbtn-spark{position:absolute;inset:0;border-radius:.3em;overflow:hidden;mask:linear-gradient(white,transparent 50%);animation:gflip calc(var(--spark)*2) infinite steps(2,end);}
+@keyframes gflip{to{rotate:360deg;}}
+.gbtn-spark::before{content:'';position:absolute;width:200%;aspect-ratio:1;top:0;left:50%;translate:-50% -15%;transform:rotate(-90deg);opacity:calc(var(--active)+.4);background:conic-gradient(from 0deg,transparent 0 340deg,white 360deg);transition:opacity .25s;animation:grotate var(--spark) linear infinite both;}
+.gbtn-spark::after{content:'';position:absolute;inset:var(--cut);border-radius:.3em;}
+.gbtn-bd{position:absolute;inset:var(--cut);background:hsl(var(--hue) calc(var(--active)*100%) calc(12% - (var(--active)*8%)));border-radius:.3em;transition:background .25s;}
+@keyframes grotate{to{transform:rotate(90deg);}}
+.gbtn-star{height:calc(var(--size)*1px);aspect-ratio:1;background:hsl(43 80% 80%);border-radius:50%;position:absolute;opacity:var(--alpha);top:50%;left:50%;
+  transform:translate(-50%,-50%) rotate(10deg) rotate(0deg) translateY(calc(var(--distance)*1px));
+  animation:gorbit calc(var(--duration)*1s) calc(var(--delay)*-1s) infinite linear;}
+@keyframes gorbit{to{transform:translate(-50%,-50%) rotate(10deg) rotate(360deg) translateY(calc(var(--distance)*1px));}}
+
+#stage{position:fixed;inset:0;display:none;}
+#stage.active{display:block;}
+
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;overflow:hidden;}
+.slide.current{opacity:1;pointer-events:all;}
+
+#dots{position:fixed;top:22px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:999;max-width:90vw;flex-wrap:wrap;justify-content:center;}
+.dot{width:20px;height:3px;border-radius:2px;background:rgba(255,255,255,.2);transition:background .4s,width .4s;}
+.dot.done{background:rgba(255,255,255,.7);}
+.dot.active{background:#fff;width:36px;}
+
+#navHint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,.2);letter-spacing:3px;z-index:999;pointer-events:none;white-space:nowrap;}
+#tapLeft,#tapRight{position:fixed;top:0;bottom:0;width:40%;z-index:998;cursor:pointer;}
+#tapLeft{left:0;}
+#tapRight{right:0;}
+
+#pCanvas{position:fixed;inset:0;pointer-events:none;z-index:997;}
+
+/* Slide 0 — Intro */
+.s0-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,#1a0e2e 0%,#050508 70%);}
+.s0-ring{position:absolute;border-radius:50%;border:1px solid rgba(200,169,110,.15);left:50%;top:50%;animation:pring 3s ease-in-out infinite;}
+@keyframes pring{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6;}50%{transform:translate(-50%,-50%) scale(1.06);opacity:.25;}}
+.s0-year{position:absolute;font-family:'Bebas Neue',sans-serif;font-size:clamp(80px,15vw,160px);color:rgba(200,169,110,.1);bottom:-20px;left:50%;transform:translateX(-50%);letter-spacing:4px;white-space:nowrap;pointer-events:none;}
+
+/* Shared text components */
+.big-label{font-size:clamp(11px,1.5vw,14px);letter-spacing:6px;color:rgba(255,255,255,.35);margin-bottom:24px;text-align:center;}
+.big-number{font-family:'Bebas Neue',sans-serif;font-size:clamp(120px,22vw,260px);line-height:.85;text-align:center;transform:scale(0.6);opacity:0;transition:transform 1.2s cubic-bezier(.16,1,.3,1),opacity .6s;}
+.big-number.in{transform:scale(1);opacity:1;}
+.big-sub{font-size:clamp(13px,2vw,18px);letter-spacing:4px;color:rgba(255,255,255,.4);margin-top:28px;text-align:center;}
+
+.reveal-text{overflow:hidden;}
+.reveal-text span{display:block;transform:translateY(110%);transition:transform .9s cubic-bezier(.16,1,.3,1);}
+.reveal-text.in span{transform:translateY(0);}
+
+/* MVP slide */
+.mvp-crown{font-size:80px;margin-bottom:8px;animation:fcrown 3s ease-in-out infinite;display:block;}
+@keyframes fcrown{0%,100%{transform:translateY(0) rotate(-5deg);}50%{transform:translateY(-16px) rotate(5deg);}}
+.mvp-label{font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.4);margin-bottom:20px;}
+.mvp-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(70px,14vw,160px);letter-spacing:4px;line-height:.9;text-align:center;transform:scale(0.5) translateY(30px);opacity:0;transition:transform 1.4s cubic-bezier(.16,1,.3,1),opacity .7s;}
+.mvp-name.in{transform:scale(1) translateY(0);opacity:1;}
+.mvp-stat{font-size:clamp(13px,2vw,16px);letter-spacing:3px;color:rgba(255,255,255,.5);margin-top:24px;text-align:center;}
+
+/* Contributor slides */
+.contrib-rank{font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);}
+.contrib-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(50px,10vw,120px);letter-spacing:4px;line-height:.9;text-align:center;}
+.contrib-count{font-family:'Bebas Neue',sans-serif;font-size:clamp(90px,18vw,200px);line-height:.85;text-align:center;}
+.contrib-word{font-size:clamp(16px,3vw,28px);letter-spacing:3px;color:rgba(255,255,255,.4);align-self:flex-end;padding-bottom:16px;}
+.contrib-bar-track{height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;width:min(460px,85vw);}
+.contrib-bar-fill{height:100%;width:0%;border-radius:4px;}
+.contrib-pct{font-size:11px;letter-spacing:3px;color:rgba(255,255,255,.3);text-align:right;margin-top:8px;width:min(460px,85vw);}
+.contrib-fun{font-size:clamp(13px,2vw,16px);letter-spacing:2px;max-width:560px;line-height:2;text-align:center;padding:14px 20px;border-radius:4px;}
+.contrib-fun.hype{color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);}
+.contrib-fun.roast{color:rgba(255,100,100,.6);border:1px solid rgba(255,80,80,.15);background:rgba(255,50,50,.04);}
+
+/* Timeline slide */
+.timeline-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,#080e18 0%,#020305 80%);}
+.timeline-header{position:relative;text-align:center;z-index:2;padding-top:20px;}
+.timeline-track{position:absolute;inset:0;overflow:hidden;}
+.timeline-reel{position:absolute;left:0;right:0;top:0;display:flex;flex-direction:column;gap:0;}
+.timeline-entry{display:flex;align-items:center;gap:0;height:44px;padding:0 32px;border-bottom:1px solid rgba(255,255,255,.03);flex-shrink:0;}
+.timeline-entry.flash{animation:tflash .25s ease-out;}
+@keyframes tflash{0%{background:rgba(255,255,255,.12);}100%{background:transparent;}}
+.timeline-ver{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.18);width:180px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.timeline-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin:0 16px;}
+.timeline-who{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;flex:1;}
+.timeline-scan{position:absolute;left:0;right:0;height:90px;pointer-events:none;z-index:3;}
+.timeline-scan-line{position:absolute;left:0;right:0;height:2px;background:rgba(255,255,255,.25);top:50%;box-shadow:0 0 20px 4px rgba(255,255,255,.15);}
+.timeline-scan-above{position:absolute;left:0;right:0;top:0;height:calc(50% - 1px);background:linear-gradient(to bottom,rgba(2,3,5,1),rgba(2,3,5,.0));}
+.timeline-scan-below{position:absolute;left:0;right:0;bottom:0;height:calc(50% - 1px);background:linear-gradient(to top,rgba(2,3,5,1),rgba(2,3,5,.0));}
+.timeline-count-badge{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);font-family:'Bebas Neue',sans-serif;font-size:clamp(60px,12vw,120px);color:rgba(255,255,255,.06);letter-spacing:4px;pointer-events:none;z-index:1;white-space:nowrap;}
+
+/* Podium */
+.sf-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 80%,#1a1208 0%,#050508 70%);}
+.podium-wrap{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-top:28px;}
+.pod-col{display:flex;flex-direction:column;align-items:center;gap:10px;width:clamp(100px,18vw,160px);}
+.pod-name{font-size:clamp(10px,1.5vw,13px);letter-spacing:2px;text-align:center;opacity:0;transition:opacity .6s;}
+.pod-count{font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,4vw,42px);opacity:0;transition:opacity .6s;}
+.pod-block{width:100%;border-radius:4px 4px 0 0;border-top:2px solid;display:flex;align-items:flex-end;justify-content:center;padding-bottom:14px;font-family:'Bebas Neue',sans-serif;font-size:clamp(22px,4vw,40px);height:0;transition:height 1.1s cubic-bezier(.34,1.4,.64,1);}
+.r1{background:linear-gradient(180deg,rgba(255,215,0,.25) 0%,rgba(255,215,0,.03) 100%);border-color:#ffd700;color:#ffd700;}
+.r2{background:linear-gradient(180deg,rgba(192,192,192,.18) 0%,rgba(192,192,192,.03) 100%);border-color:#aaa;color:#aaa;}
+.r3{background:linear-gradient(180deg,rgba(205,127,50,.18) 0%,rgba(205,127,50,.03) 100%);border-color:#cd7f32;color:#cd7f32;}
+
+/* Streak slide */
+.streak-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,#0e1a08 0%,#020304 80%);}
+.streak-chain{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:min(600px,88vw);margin-top:20px;}
+.streak-pip{width:18px;height:18px;border-radius:3px;opacity:0;transition:opacity .15s,transform .15s;transform:scale(.4);}
+.streak-pip.lit{opacity:1;transform:scale(1);}
+.streak-pip.streak-hi{box-shadow:0 0 8px 2px currentColor;}
+
+/* Rivalry slide */
+.rivalry-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,#100a1a 0%,#020304 80%);}
+.rivalry-vs-txt{font-family:'Bebas Neue',sans-serif;font-size:clamp(60px,12vw,140px);letter-spacing:6px;color:rgba(255,255,255,.08);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:0;}
+.rivalry-side{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;}
+.rivalry-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,7vw,80px);letter-spacing:4px;line-height:.9;text-align:center;}
+.rivalry-num{font-family:'Bebas Neue',sans-serif;font-size:clamp(70px,14vw,160px);line-height:.85;text-align:center;}
+.rivalry-bar-wrap{width:min(500px,88vw);height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;display:flex;}
+.rivalry-bar-a{height:100%;transition:width 1.4s cubic-bezier(.34,1.2,.64,1);}
+.rivalry-bar-b{height:100%;flex:1;}
+.rivalry-label{font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.25);margin-top:6px;text-align:center;}
+
+/* Shame slide */
+.shame-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,#1a0505 0%,#020202 80%);}
+.shame-target{
+  position:relative;font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(60px,13vw,150px);letter-spacing:6px;
+  color:#ff4444;cursor:crosshair;user-select:none;
+  text-shadow:0 0 40px rgba(255,50,50,.3);
+  transition:transform .05s;display:inline-block;
+}
+.shame-target.hit{animation:shamehit .12s ease-out;}
+@keyframes shamehit{0%{transform:scale(1.15) rotate(-3deg);}50%{transform:scale(.92) rotate(2deg);}100%{transform:scale(1) rotate(0);}}
+.splat{position:absolute;pointer-events:none;font-size:28px;animation:splatfall .7s ease-out forwards;transform-origin:center;}
+@keyframes splatfall{0%{opacity:1;transform:scale(0) rotate(0deg);}40%{opacity:1;transform:scale(1.3) rotate(20deg);}100%{opacity:0;transform:scale(1) rotate(30deg) translateY(30px);}}
+.shame-counter{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,8vw,90px);color:#ff4444;line-height:1;}
+.shame-meter-track{width:min(300px,70vw);height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-top:8px;}
+.shame-meter-fill{height:100%;width:0%;background:linear-gradient(90deg,#ff4444,#ff8844);border-radius:4px;transition:width .15s;}
+.shame-unlock{font-size:clamp(11px,1.6vw,14px);letter-spacing:3px;color:rgba(255,100,100,.5);margin-top:14px;text-align:center;min-height:1.6em;}
+.shame-hint{font-size:10px;letter-spacing:4px;color:rgba(255,255,255,.18);margin-top:6px;animation:blinkhint 2s ease-in-out infinite;}
+@keyframes blinkhint{0%,100%{opacity:.4;}50%{opacity:1;}}
+
+/* Growth slide */
+.growth-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 80%,#05100a 0%,#020304 80%);}
+.growth-chart{position:relative;width:min(680px,90vw);height:clamp(140px,28vh,220px);margin-top:16px;}
+.growth-axis{position:absolute;bottom:0;left:0;right:0;height:1px;background:rgba(255,255,255,.1);}
+.growth-bar-wrap{position:absolute;bottom:1px;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.growth-bar{width:100%;border-radius:2px 2px 0 0;transition:height 1s cubic-bezier(.34,1.2,.64,1);height:0;}
+.growth-label{font-size:8px;color:rgba(255,255,255,.25);letter-spacing:.5px;writing-mode:vertical-rl;transform:rotate(180deg);margin-top:4px;white-space:nowrap;}
+.growth-biggest{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,5vw,60px);color:#7fc86e;line-height:1;}
+
+/* Heatmap slide */
+.heat-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,#100808 0%,#020202 80%);}
+.heat-grid{display:grid;gap:4px;margin-top:12px;}
+.heat-cell{border-radius:3px;transition:opacity .3s,transform .3s;opacity:0;transform:scale(.4);}
+.heat-cell.lit{opacity:1;transform:scale(1);}
+.heat-month-label{font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.3);text-align:center;}
+.heat-peak{font-family:'Bebas Neue',sans-serif;font-size:clamp(50px,10vw,110px);color:#e87070;line-height:1;}
+
+/* Journey slide */
+.journey-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,#080818 0%,#020304 80%);}
+.journey-line{position:absolute;top:50%;left:10%;right:10%;height:2px;background:rgba(255,255,255,.08);transform:translateY(-50%);}
+.journey-fill{position:absolute;top:0;left:0;height:100%;width:0%;background:linear-gradient(90deg,#c8a96e,#6ec8c8);transition:width 2s cubic-bezier(.16,1,.3,1);border-radius:1px;}
+.journey-dot{position:absolute;top:50%;width:10px;height:10px;border-radius:50%;transform:translate(-50%,-50%);border:2px solid;transition:opacity .4s;}
+.journey-node{position:absolute;top:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;}
+.journey-node-above{bottom:calc(50% + 14px);top:auto;transform:translateX(-50%);}
+.journey-stat-big{font-family:'Bebas Neue',sans-serif;font-size:clamp(60px,11vw,130px);line-height:.9;}
+
+/* Shake animation for podium */
+@keyframes podShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+.shake{animation:podShake .4s ease-out;}
+
+/* Origin slide */
+.origin-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,#0e0818 0%,#020304 80%);}
+
+/* Drought slide */
+.drought-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,#070d18 0%,#020202 80%);}
+.drought-crack{position:absolute;left:50%;top:50%;width:1px;background:rgba(140,168,200,.15);transform-origin:top center;animation:dcrack 2s ease-out forwards;}
+@keyframes dcrack{0%{height:0;opacity:0;}100%{height:120px;opacity:1;}}
+
+/* Biggest Single Day slide */
+.bigday-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,#18140a 0%,#050402 80%);}
+
+/* Milestone slide */
+.milestone-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,#0e1218 0%,#020304 80%);}
+
+/* Pace Setter slide */
+.pace-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,#081808 0%,#020402 80%);}
+
+/* Size Champion slide */
+.champion-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,#0a1808 0%,#020304 80%);}
+
+/* Comeback slide */
+.comeback-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,#180810 0%,#020202 80%);}
+
+/* Team Chemistry slide */
+.chem-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,#0a0a18 0%,#020304 80%);}
+.chem-strip{display:flex;flex-wrap:nowrap;gap:1px;margin-top:16px;overflow:hidden;max-width:min(680px,90vw);border-radius:3px;height:32px;align-items:stretch;}
+.chem-pip{flex-shrink:0;border-radius:1px;transition:opacity .08s;}
+
+/* In Numbers slide */
+.innumbers-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#10100a 0%,#020302 80%);}
+
+/* Share Card slide */
+.share-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,#0d0d18 0%,#020305 80%);}
+@keyframes shareGlow{0%,100%{box-shadow:0 0 40px rgba(200,169,110,.08);}50%{box-shadow:0 0 80px rgba(200,169,110,.18);}}
+
+/* Slide transitions — direction aware */
+.slide-enter-fwd{animation:sEnterFwd .6s cubic-bezier(.16,1,.3,1) forwards;}
+.slide-exit-fwd{animation:sExitFwd .45s cubic-bezier(.4,0,1,1) forwards;}
+.slide-enter-bwd{animation:sEnterBwd .6s cubic-bezier(.16,1,.3,1) forwards;}
+.slide-exit-bwd{animation:sExitBwd .45s cubic-bezier(.4,0,1,1) forwards;}
+@keyframes sEnterFwd{from{opacity:0;transform:translateY(50px);}to{opacity:1;transform:translateY(0);}}
+@keyframes sExitFwd{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-50px);}}
+@keyframes sEnterBwd{from{opacity:0;transform:translateY(-50px);}to{opacity:1;transform:translateY(0);}}
+@keyframes sExitBwd{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(50px);}}
+
+/* Restart button */
+#restartBtn{position:fixed;bottom:28px;right:28px;z-index:999;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;padding:10px 16px;cursor:pointer;display:none;transition:all .2s;}
+#restartBtn:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);}
+#stage.active ~ #restartBtn, #stage.active + * #restartBtn{display:block;}
+</style>
+</head>
+<body>
+
+<div id="inputScreen">
+  <div class="input-logo">VINDIGATORS<small>// WRAPPED</small></div>
+  <textarea id="vInput" placeholder="VindiGators_0.01.zip - Host - 2024-01-31 - 300KB&#10;VindiGators_0.02.zip - Host - 2024-02-01 - 1.42MB&#10;VindiGators_1.0.zip - Jsome - 2024-03-22 - 104.5MB&#10;..."></textarea>
+  <div class="input-hint">Format: <span>Version.zip - Name - YYYY-MM-DD - SizeMB</span> &nbsp;·&nbsp; date &amp; size optional</div>
+  <button class="galaxy" onclick="startWrapped()">
+    <span class="gbtn-spark"></span><span class="gbtn-bd"></span>
+    <span class="gbtn-star" style="--size:2;--alpha:.7;--distance:22;--duration:2.5;--delay:0;"></span>
+    <span class="gbtn-star" style="--size:1.5;--alpha:.5;--distance:30;--duration:3;--delay:.9;"></span>
+    <span class="gbtn-star" style="--size:1;--alpha:.8;--distance:18;--duration:2.2;--delay:1.4;"></span>
+    <span style="position:relative;z-index:1;">GENERATE WRAPPED</span>
+  </button>
+</div>
+
+<div id="stage">
+  <div id="dots"></div>
+  <div id="navHint">TAP RIGHT TO CONTINUE &nbsp;·&nbsp; LEFT TO GO BACK &nbsp;·&nbsp; ← → KEYS</div>
+  <div id="tapLeft" onclick="prevSlide()"></div>
+  <div id="tapRight" onclick="nextSlide()"></div>
+  <div id="slidesContainer"></div>
+</div>
+
+<button id="restartBtn" onclick="restartWrapped()">↺ NEW WRAPPED</button>
+<canvas id="pCanvas"></canvas>
+
+<script>
+const COLORS=[
+  {bg:'#c8a96e',gFrom:'#1a1208',bar:'linear-gradient(90deg,#c8a96e,#e8c98e)'},
+  {bg:'#6ec8c8',gFrom:'#081a1a',bar:'linear-gradient(90deg,#6ec8c8,#8ee8e8)'},
+  {bg:'#c86ec8',gFrom:'#1a081a',bar:'linear-gradient(90deg,#c86ec8,#e88ee8)'},
+  {bg:'#7fc86e',gFrom:'#0a1a08',bar:'linear-gradient(90deg,#7fc86e,#9fe88e)'},
+  {bg:'#e87070',gFrom:'#1a0808',bar:'linear-gradient(90deg,#e87070,#ff9090)'},
+  {bg:'#70a8e8',gFrom:'#081018',bar:'linear-gradient(90deg,#70a8e8,#90c8ff)'},
+  {bg:'#e8b870',gFrom:'#181008',bar:'linear-gradient(90deg,#e8b870,#ffd890)'},
+];
+
+// Particles
+const pc=document.getElementById('pCanvas'),px=pc.getContext('2d');
+let parts=[];
+function rsz(){pc.width=innerWidth;pc.height=innerHeight;}
+rsz();addEventListener('resize',rsz);
+
+function burst(cx,cy,color,n=60,spread=1){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,s=(3+Math.random()*11)*spread;
+    parts.push({x:cx,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s-3*spread,alpha:1,size:2+Math.random()*6,color,decay:.007+Math.random()*.012,grav:.2,shape:Math.random()>.5?'circle':'rect',rot:Math.random()*Math.PI*2,rotV:(Math.random()-.5)*.3});
+  }
+}
+
+function rain(color,n=30){
+  for(let i=0;i<n;i++){
+    setTimeout(()=>{
+      const x=Math.random()*innerWidth;
+      parts.push({x,y:-10,vx:(Math.random()-.5)*2,vy:3+Math.random()*5,alpha:1,size:3+Math.random()*5,color,decay:.004,grav:.15,shape:'rect',rot:Math.random()*Math.PI*2,rotV:(Math.random()-.5)*.2});
+    },Math.random()*1500);
+  }
+}
+
+(function animP(){
+  px.clearRect(0,0,pc.width,pc.height);
+  parts=parts.filter(p=>p.alpha>.01);
+  for(const p of parts){
+    p.x+=p.vx;p.y+=p.vy;p.vy+=p.grav;p.vx*=.97;p.vy*=.97;p.alpha-=p.decay;
+    if(p.rot!==undefined)p.rot+=p.rotV||0;
+    px.save();px.globalAlpha=p.alpha;px.fillStyle=p.color;
+    if(p.shape==='rect'){
+      px.translate(p.x,p.y);px.rotate(p.rot||0);
+      px.fillRect(-p.size/2,-p.size/3,p.size,p.size*.6);
+    } else {
+      px.beginPath();px.arc(p.x,p.y,p.size,0,Math.PI*2);px.fill();
+    }
+    px.restore();
+  }
+  requestAnimationFrame(animP);
+})();
+
+// Audio
+let ac=null;
+function ga(){if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();return ac;}
+function tone(freq,type,vol,dur,delay){
+  try{const ctx=ga(),o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=freq;o.type=type||'sine';const t=ctx.currentTime+(delay||0);g.gain.setValueAtTime(vol||.08,t);g.gain.exponentialRampToValueAtTime(.001,t+(dur||.12));o.start(t);o.stop(t+(dur||.12));}catch(e){}
+}
+function chord(freqs,type,vol,dur,delay=0){freqs.forEach((f,i)=>tone(f,type,vol,dur,delay+i*.01));}
+function playReveal(){[523,659,784,1047].forEach((f,i)=>tone(f,'triangle',.1,.3,i*.1));}
+function playBigReveal(){[392,523,659,784,1047,1319].forEach((f,i)=>tone(f,'triangle',.12,.4,i*.08));}
+function playWhoosh(){tone(80,'sawtooth',.04,.4);tone(160,'sine',.05,.3,.05);}
+function playTick(v,max){tone(200+Math.floor(v/max*400),'square',.03,.03);}
+function playPodium(){[392,494,587,698,880,1047].forEach((f,i)=>tone(f,'triangle',.13,.4,i*.11));}
+function playDrum(){tone(60,'sine',.3,.12);tone(80,'sine',.2,.08,.04);}
+function playRoast(){[400,350,300,250].forEach((f,i)=>tone(f,'sawtooth',.06,.2,i*.08));}
+function playTimeline(){tone(800,'sine',.04,.05);}
+function playHype(){chord([523,659,784],'triangle',.1,.5);setTimeout(()=>chord([659,784,1047],'triangle',.1,.4),200);}
+
+// Parse
+function parseSizeMB(s){
+  if(!s)return null;
+  s=s.trim();
+  if(/kb/i.test(s))return parseFloat(s)/1024;
+  if(/mb/i.test(s))return parseFloat(s);
+  return parseFloat(s)||null;
+}
+function parse(txt){
+  const entries=[],counts={};
+  for(let line of txt.trim().split('\n')){
+    line=line.trim().replace(/^\uFEFF/,'').replace(/\u200B/g,'');
+    if(!line)continue;
+    const parts=line.split(/\s+-\s+/);
+    if(parts.length<2)continue;
+    let ver=parts[0].replace(/\.zip\s*$/i,'').trim();
+    const who=parts[1].trim();
+    const dateStr=parts[2]?parts[2].trim():null;
+    const sizeStr=parts[3]?parts[3].trim():null;
+    const vnum=ver.match(/(\d+\.\d[\w.]*(?:_\w+)?)\s*$/);
+    const display=vnum?'v'+vnum[1]:ver.replace(/^VindiGators[_\s]*/i,'')||ver;
+    let date=null;
+    if(dateStr){const d=new Date(dateStr);if(!isNaN(d))date=d;}
+    const sizeMB=parseSizeMB(sizeStr);
+    entries.push({version:display,who,date,sizeMB});
+    counts[who]=(counts[who]||0)+1;
+  }
+  entries.reverse(); // normalize to oldest-first regardless of paste order
+  return{entries,counts,sorted:Object.entries(counts).sort((a,b)=>b[1]-a[1])};
+}
+
+// Helpers
+function countUp(id,from,to,dur,onDone){
+  const el=document.getElementById(id);if(!el)return;
+  const start=performance.now();
+  const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  (function frame(now){
+    const p=Math.min((now-start)/dur,1),val=Math.round(from+(to-from)*ease(p));
+    el.textContent=val;
+    if(p<.4||Math.random()<.08)playTick(val,to);
+    p<1?requestAnimationFrame(frame):(el.textContent=to,onDone&&onDone());
+  })(start);
+}
+function animBar(id,to,dur){
+  const el=document.getElementById(id);if(!el)return;
+  const start=performance.now();
+  const ease=t=>1-Math.pow(1-t,3);
+  (function frame(now){const p=Math.min((now-start)/dur,1);el.style.width=(to*ease(p))+'%';p<1&&requestAnimationFrame(frame);})(start);
+}
+function animPct(id,to,dur){
+  const el=document.getElementById(id);if(!el)return;
+  const start=performance.now();
+  (function frame(now){const p=Math.min((now-start)/dur,1);el.textContent=Math.round(to*p)+'%';p<1&&requestAnimationFrame(frame);})(start);
+}
+function shakeEl(el){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');}
+
+// Fun fact generator
+function getFunFact(name, count, rank, sorted, total){
+  const isLast = rank === sorted.length - 1;
+  const isFirst = rank === 0;
+  const above = rank > 0 ? sorted[rank-1] : null;
+  const below = rank < sorted.length-1 ? sorted[rank+1] : null;
+  const pct = Math.round(count/total*100);
+
+  if(isLast && sorted.length > 1){
+    // Roast the last place
+    const diff = above[1] - count;
+    const roasts = [
+      `${diff} versions behind ${above[0]}. Close... ish. 💀`,
+      `Last place. Carried by the team. ${above[0]} did ${diff} more than you. 🪦`,
+      `${above[0]} sneezed out ${above[1]} versions. You managed ${count}. 😬`,
+      `${diff} behind ${above[0]}. But hey, ${count} is better than zero... barely. 🤏`,
+      `${count} versions. Your teammates are not impressed. ${above[0]} alone did ${above[1]}. 💅`,
+    ];
+    return {text: roasts[Math.floor(Math.random()*roasts.length)], type:'roast'};
+  }
+
+  if(isFirst){
+    const multiplier = below ? (count/below[1]).toFixed(1) : null;
+    const hypes = [
+      `${multiplier}× more saves than the next person. You are THE reason this game exists.`,
+      `${pct}% of the game is yours. That's not a contribution. That's a takeover. 👑`,
+      `Without you, there's no Wrapped. Without you, there's no game. Legend.`,
+      `${count} versions. The rest of the team is still catching up. And they always will be.`,
+    ];
+    return {text: hypes[Math.floor(Math.random()*hypes.length)], type:'hype'};
+  }
+
+  if(rank === 1 && above){
+    const gap = above[1] - count;
+    const mid = [
+      `Only ${gap} behind ${above[0]}. The chase is real. 🔥`,
+      `${count} versions and still breathing down ${above[0]}'s neck.`,
+      `Silver medalist. ${gap} saves from the top. Not done yet.`,
+    ];
+    return {text: mid[Math.floor(Math.random()*mid.length)], type:'hype'};
+  }
+
+  // Middle ranks — general hype
+  const hypes = [
+    `${count} versions. This game is better because of you. Facts.`,
+    `${pct}% of all saves. Your fingerprints are all over this game.`,
+    `Consistent. Reliable. ${count} times you showed up when it mattered.`,
+    `${count} versions deep and you're not stopping. The team knows it.`,
+  ];
+  return {text: hypes[Math.floor(Math.random()*hypes.length)], type:'hype'};
+}
+
+// Slides
+let slides=[],currentIdx=0,isAnim=false,navDir=1;
+
+function buildSlides(data){
+  const{entries,counts,sorted}=data;
+  const total=entries.length;
+  const datedEntries=entries.filter(e=>e.date!=null);
+  const defs=[];
+
+  // 0 — Intro
+  defs.push({render(el){
+    el.innerHTML=`<div class="s0-bg"></div>
+      <div class="s0-ring" style="width:700px;height:700px;"></div>
+      <div class="s0-ring" style="width:480px;height:480px;animation-delay:.8s;"></div>
+      <div class="s0-ring" style="width:260px;height:260px;animation-delay:1.6s;"></div>
+      <div class="s0-ring" style="width:120px;height:120px;animation-delay:2.2s;"></div>
+      <div class="s0-year">VINDIGATORS</div>
+      <div style="position:relative;text-align:center;">
+        <div class="reveal-text" id="s0a"><span style="font-family:'Bebas Neue';font-size:clamp(50px,9vw,100px);letter-spacing:8px;color:#fff;">VINDIGATORS</span></div>
+        <div class="reveal-text" id="s0b"><span style="font-family:'Bebas Neue';font-size:clamp(60px,11vw,130px);letter-spacing:12px;color:#c8a96e;">WRAPPED</span></div>
+        <div class="reveal-text" id="s0c" style="margin-top:16px;"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">YOUR GAME IN VERSIONS</span></div>
+      </div>`;
+    setTimeout(()=>document.getElementById('s0a').classList.add('in'),200);
+    setTimeout(()=>{document.getElementById('s0b').classList.add('in');playReveal();},550);
+    setTimeout(()=>document.getElementById('s0c').classList.add('in'),1100);
+    setTimeout(()=>{burst(innerWidth/2,innerHeight*.4,'#c8a96e',50);burst(innerWidth*.2,innerHeight*.6,'#6ec8c8',30);burst(innerWidth*.8,innerHeight*.6,'#c86ec8',30);},600);
+  }});
+
+  // 1 — Total
+  defs.push({render(el){
+    el.style.background='radial-gradient(ellipse at 30% 50%,#0d1f12 0%,#050a08 80%)';
+    el.innerHTML=`<div style="position:relative;text-align:center;">
+      <div class="reveal-text" id="s1a"><span class="big-label">TOGETHER YOU SHIPPED</span></div>
+      <div class="big-number" id="s1n" style="color:#7fc86e;">0</div>
+      <div class="reveal-text" id="s1b"><span class="big-sub">VERSIONS EVER SHIPPED</span></div>
+      <div class="reveal-text" id="s1c" style="margin-top:12px;"><span style="font-size:11px;letter-spacing:4px;color:rgba(255,255,255,.2);">ACROSS ${sorted.length} CONTRIBUTOR${sorted.length!==1?'S':''}</span></div>
+    </div>`;
+    setTimeout(()=>document.getElementById('s1a').classList.add('in'),100);
+    setTimeout(()=>document.getElementById('s1b').classList.add('in'),500);
+    setTimeout(()=>{
+      const numEl=document.getElementById('s1n');
+      numEl.classList.add('in');
+      playDrum();
+      setTimeout(()=>countUp('s1n',0,total,3200,()=>{
+        burst(innerWidth/2,innerHeight*.4,'#7fc86e',100,1.2);
+        burst(innerWidth*.3,innerHeight*.5,'#6ec8c8',60);
+        burst(innerWidth*.7,innerHeight*.5,'#7fc86e',60);
+        playBigReveal();
+        rain('#7fc86e',20);rain('#c8a96e',15);
+        setTimeout(()=>document.getElementById('s1c').classList.add('in'),400);
+      }),200);
+    },700);
+  }});
+
+  // 1.5 — The Origin — first save ever
+  {
+    const originEntry = entries[0];
+    if(originEntry){
+      const originIdx = sorted.findIndex(([n])=>n===originEntry.who);
+      const originCol = COLORS[originIdx<0?0:originIdx%COLORS.length];
+      const originDateLabel = originEntry.date ? originEntry.date.toLocaleDateString('default',{month:'long',day:'numeric',year:'numeric'}) : null;
+      defs.push({render(el){
+        el.innerHTML=`<div class="origin-bg"></div>
+          <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 20px;">
+            <div class="reveal-text" id="orh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">WHERE IT ALL BEGAN</span></div>
+            ${originDateLabel?`<div id="ordate" style="font-size:clamp(12px,2vw,16px);letter-spacing:4px;color:rgba(255,255,255,.2);opacity:0;transition:opacity .6s;margin-top:6px;">${originDateLabel.toUpperCase()}</div>`:''}
+            <div id="orver" style="font-family:'Bebas Neue';font-size:clamp(28px,5vw,64px);letter-spacing:6px;color:rgba(255,255,255,.12);opacity:0;transition:opacity .6s;margin-top:2px;">${originEntry.version}</div>
+            <div id="ornm" class="mvp-name" style="color:${originCol.bg};">${originEntry.who.toUpperCase()}</div>
+            <div class="reveal-text" id="orsub" style="margin-top:18px;"><span style="font-size:clamp(12px,1.8vw,15px);letter-spacing:2px;color:rgba(255,255,255,.35);">The first person to hit save. The rest is history. 🕯️</span></div>
+          </div>`;
+        setTimeout(()=>document.getElementById('orh').classList.add('in'),200);
+        if(originDateLabel) setTimeout(()=>{document.getElementById('ordate').style.opacity='1';tone(200,'sine',.06,.6);},600);
+        setTimeout(()=>document.getElementById('orver').style.opacity='1',1000);
+        setTimeout(()=>{
+          document.getElementById('ornm').classList.add('in');
+          playBigReveal();
+          burst(innerWidth/2,innerHeight*.38,originCol.bg,80,1.0);
+          burst(innerWidth*.25,innerHeight*.5,originCol.bg,40);
+          burst(innerWidth*.75,innerHeight*.5,originCol.bg,40);
+          rain(originCol.bg,20);
+        },1600);
+        setTimeout(()=>document.getElementById('orsub').classList.add('in'),2800);
+      }});
+    }
+  }
+
+  // 2 — Timeline (right after total)
+  defs.push({render(el){
+    el.innerHTML=`
+      <div class="timeline-bg"></div>
+      <div class="timeline-track" id="tlTrack">
+        <div class="timeline-reel" id="tlReel"></div>
+      </div>
+      <div class="timeline-scan">
+        <div class="timeline-scan-above"></div>
+        <div class="timeline-scan-line"></div>
+        <div class="timeline-scan-below"></div>
+      </div>
+      <div class="timeline-count-badge" id="tlBadge">0</div>
+      <div style="position:absolute;top:0;left:0;right:0;text-align:center;padding-top:28px;z-index:4;">
+        <div class="reveal-text" id="tlH"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">EVERY VERSION. EVERYONE.</span></div>
+      </div>`;
+
+    // Build person color map
+    const colorMap={};
+    sorted.forEach(([name],i)=>colorMap[name]=COLORS[i%COLORS.length].bg);
+
+    const reel=document.getElementById('tlReel');
+    // Render all entries as rows
+    entries.forEach(({version,who})=>{
+      const color=colorMap[who]||'#fff';
+      const row=document.createElement('div');
+      row.className='timeline-entry';
+      row.innerHTML=`<span class="timeline-ver">${version}</span><span class="timeline-dot" style="background:${color};box-shadow:0 0 6px ${color};"></span><span class="timeline-who" style="color:${color};">${who.toUpperCase()}</span>`;
+      reel.appendChild(row);
+    });
+
+    setTimeout(()=>document.getElementById('tlH').classList.add('in'),200);
+
+    // Animate scroll — fast reel through all entries
+    let scrollPos=0;
+    const rowH=44;
+    const totalH=entries.length*rowH;
+    const trackEl=document.getElementById('tlTrack');
+    const trackH=trackEl.offsetHeight||innerHeight;
+    const scanMid=trackH/2;
+    // Position reel so first entry starts at scan line
+    reel.style.transform=`translateY(${scanMid}px)`;
+
+    let frame=0;
+    const badge=document.getElementById('tlBadge');
+    let highlighted=0;
+    let stopped=false;
+
+    // Speed: fast at start, slows near end
+    function getSpeed(progress){
+      if(progress<0.1) return 2+progress*80;       // ramp up
+      if(progress>0.85) return Math.max(1, 8-(progress-0.85)*60); // slow down
+      return 10;
+    }
+
+    function scrollTimeline(){
+      if(stopped)return;
+      frame++;
+      const progress=scrollPos/totalH;
+      const spd=getSpeed(progress);
+      scrollPos=Math.min(scrollPos+spd,totalH);
+      reel.style.transform=`translateY(${scanMid-scrollPos}px)`;
+
+      // Which row is at the scan line?
+      const rowIdx=Math.floor(scrollPos/rowH);
+      if(rowIdx!==highlighted && rowIdx<entries.length){
+        highlighted=rowIdx;
+        const rows=reel.querySelectorAll('.timeline-entry');
+        rows[rowIdx]&&rows[rowIdx].classList.add('flash');
+        badge.textContent=rowIdx+1;
+        if(frame%4===0) playTimeline();
+      }
+
+      if(scrollPos<totalH){
+        requestAnimationFrame(scrollTimeline);
+      } else {
+        stopped=true;
+        badge.textContent=total;
+        // Final burst at center
+        setTimeout(()=>{
+          burst(innerWidth/2,innerHeight/2,'#c8a96e',80,1.1);
+          sorted.slice(0,3).forEach(([,],i)=>burst(innerWidth*.25+i*innerWidth*.25,innerHeight*.6,COLORS[i].bg,40));
+          playBigReveal();
+        },200);
+      }
+    }
+
+    setTimeout(scrollTimeline, 600);
+  }});
+
+  // 3 — MVP
+  const mvp=sorted[0],mvpCol=COLORS[0];
+  defs.push({render(el){
+    el.style.background=`radial-gradient(ellipse at 50% 55%,${mvpCol.gFrom} 0%,#020304 85%)`;
+    el.innerHTML=`<div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;">
+      <div class="reveal-text" id="s3lb"><span class="mvp-label">⚡ THE GAME'S MVP ⚡</span></div>
+      <div id="s3cr" style="opacity:0;transition:opacity .5s;margin:8px 0;"><span class="mvp-crown">👑</span></div>
+      <div id="s3nm" class="mvp-name" style="color:${mvpCol.bg};">${mvp[0].toUpperCase()}</div>
+      <div class="reveal-text" id="s3st"><span class="mvp-stat">${mvp[1]} VERSIONS &nbsp;·&nbsp; ${Math.round(mvp[1]/total*100)}% OF ALL SAVES</span></div>
+    </div>`;
+    setTimeout(()=>document.getElementById('s3lb').classList.add('in'),200);
+    // Long dramatic pause before crown + name
+    setTimeout(()=>{document.getElementById('s3cr').style.opacity='1';tone(200,'sine',.08,.8);},1000);
+    setTimeout(()=>{
+      document.getElementById('s3nm').classList.add('in');
+      playBigReveal();
+      burst(innerWidth/2,innerHeight*.3,mvpCol.bg,120,1.3);
+      burst(innerWidth*.2,innerHeight*.5,mvpCol.bg,60);
+      burst(innerWidth*.8,innerHeight*.5,mvpCol.bg,60);
+      rain(mvpCol.bg,40);
+    },1800);
+    setTimeout(()=>document.getElementById('s3st').classList.add('in'),3000);
+  }});
+
+  // Per-contributor slides
+  sorted.forEach(([name,count],i)=>{
+    const col=COLORS[i%COLORS.length];
+    const pct=Math.round(count/total*100);
+    const rankLabel=['#1','#2','#3','#4','#5'][i]||`#${i+1}`;
+    const fact=getFunFact(name,count,i,sorted,total);
+    const isLast=i===sorted.length-1;
+
+    defs.push({render(el){
+      el.style.background=`radial-gradient(ellipse at 40% 55%,${col.gFrom} 0%,#020304 85%)`;
+      el.innerHTML=`<div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div class="reveal-text" id="ca${i}"><span class="contrib-rank">${rankLabel} CONTRIBUTOR</span></div>
+        <div class="reveal-text" id="cb${i}"><span class="contrib-name" style="color:${col.bg};">${name.toUpperCase()}</span></div>
+        <div style="display:flex;align-items:baseline;gap:12px;justify-content:center;margin:16px 0 6px;">
+          <div class="contrib-count" id="cn${i}" style="color:#fff;">0</div>
+          <div class="contrib-word">VERSIONS</div>
+        </div>
+        <div class="contrib-bar-track"><div class="contrib-bar-fill" id="cbar${i}" style="background:${col.bar};"></div></div>
+        <div class="contrib-pct" id="cpct${i}">0%</div>
+        <div class="reveal-text" id="cfun${i}" style="margin-top:36px;">
+          <span class="contrib-fun ${fact.type}">${fact.text}</span>
+        </div>
+      </div>`;
+
+      setTimeout(()=>document.getElementById('ca'+i).classList.add('in'),100);
+      setTimeout(()=>{
+        document.getElementById('cb'+i).classList.add('in');
+        if(i===0)burst(innerWidth/2,innerHeight*.28,col.bg,60);
+      },400);
+
+      // Dramatic pause before number appears
+      setTimeout(()=>{
+        tone(200+i*30,'sine',.06,.6);
+        setTimeout(()=>countUp('cn'+i,0,count,2800,()=>{
+          animBar('cbar'+i,pct,1600);
+          animPct('cpct'+i,pct,1600);
+          if(isLast){playRoast();burst(innerWidth/2,innerHeight*.55,'#ff6060',80);}
+          else{playHype();burst(innerWidth/2,innerHeight*.55,col.bg,90,1.1);}
+        }),200);
+      },900);
+
+      setTimeout(()=>{
+        document.getElementById('cfun'+i).classList.add('in');
+        if(!isLast) burst(innerWidth/2,innerHeight*.8,col.bg,30);
+      },3400);
+    }});
+  });
+
+  // Team Chemistry — DNA strip of save order + handoff rate
+  {
+    const colorMapChem={};
+    sorted.forEach(([name],i)=>colorMapChem[name]=COLORS[i%COLORS.length].bg);
+    let switches=0;
+    for(let i=1;i<entries.length;i++){if(entries[i].who!==entries[i-1].who)switches++;}
+    const colabPct=entries.length>1?Math.round(switches/(entries.length-1)*100):0;
+    defs.push({render(el){
+      el.innerHTML=`<div class="chem-bg"></div>
+        <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 20px;width:100%;">
+          <div class="reveal-text" id="cmh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">TEAM CHEMISTRY</span></div>
+          <div class="reveal-text" id="cmh2" style="margin-top:4px;"><span style="font-family:'Bebas Neue';font-size:clamp(50px,10vw,110px);letter-spacing:4px;color:#c8a96e;">${colabPct}%</span></div>
+          <div class="reveal-text" id="cmh3"><span style="font-size:clamp(11px,1.8vw,14px);letter-spacing:4px;color:rgba(255,255,255,.3);">HANDOFF RATE</span></div>
+          <div class="chem-strip" id="cmStrip"></div>
+          <div id="cmLegend" style="display:flex;gap:clamp(8px,2vw,16px);flex-wrap:wrap;justify-content:center;margin-top:10px;opacity:0;transition:opacity .6s;"></div>
+          <div class="reveal-text" id="cmfact" style="margin-top:14px;">
+            <span style="font-size:clamp(11px,1.6vw,14px);letter-spacing:2px;color:rgba(255,255,255,.35);">${switches} baton passes. ${colabPct>55?'This team breathes together. 🫀':colabPct>30?'Solid back-and-forth energy. 🤝':'Lone wolf energy dominant. 🐺'}</span>
+          </div>
+        </div>`;
+      setTimeout(()=>document.getElementById('cmh').classList.add('in'),100);
+      setTimeout(()=>document.getElementById('cmh2').classList.add('in'),400);
+      setTimeout(()=>document.getElementById('cmh3').classList.add('in'),700);
+      setTimeout(()=>{
+        const strip=document.getElementById('cmStrip');
+        const availW=Math.min(680,window.innerWidth*.9);
+        const pipW=Math.max(2,Math.min(14,Math.floor(availW/entries.length)-1));
+        entries.forEach((e,i)=>{
+          const pip=document.createElement('div');
+          pip.className='chem-pip';
+          pip.style.cssText=`background:${colorMapChem[e.who]||'#fff'};width:${pipW}px;height:32px;opacity:0;`;
+          strip.appendChild(pip);
+          setTimeout(()=>{pip.style.opacity='1';if(i%Math.ceil(entries.length/20)===0)tone(400+i*2,'sine',.02,.04);},i*(1000/entries.length));
+        });
+        setTimeout(()=>{
+          const legend=document.getElementById('cmLegend');
+          sorted.forEach(([name],i)=>{
+            const col=COLORS[i%COLORS.length];
+            const item=document.createElement('div');
+            item.style.cssText=`display:flex;align-items:center;gap:5px;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);`;
+            item.innerHTML=`<div style="width:10px;height:10px;border-radius:2px;background:${col.bg};flex-shrink:0;"></div>${name.toUpperCase()}`;
+            legend.appendChild(item);
+          });
+          legend.style.opacity='1';
+          playReveal();
+          burst(innerWidth/2,innerHeight*.4,'#c8a96e',50);
+        },1200);
+      },900);
+      setTimeout(()=>document.getElementById('cmfact').classList.add('in'),2600);
+    }});
+  }
+
+  // Streak slide — longest consecutive run by one person
+  (()=>{
+    // compute streaks
+    let best={name:'',len:0,start:0};
+    let cur={name:'',len:0,start:0};
+    entries.forEach(({who},i)=>{
+      if(who===cur.name){cur.len++;}
+      else{cur={name:who,len:1,start:i};}
+      if(cur.len>best.len) best={...cur};
+    });
+    if(best.len>=2){
+      const col=COLORS[sorted.findIndex(([n])=>n===best.name)%COLORS.length];
+      defs.push({render(el){
+        el.innerHTML=`<div class="streak-bg"></div>
+          <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 20px;">
+            <div class="reveal-text" id="sth"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">LONGEST STREAK</span></div>
+            <div class="reveal-text" id="stn"><span style="font-family:'Bebas Neue';font-size:clamp(40px,8vw,90px);letter-spacing:4px;color:${col.bg};">${best.name.toUpperCase()}</span></div>
+            <div style="display:flex;align-items:baseline;gap:10px;justify-content:center;margin:10px 0 4px;">
+              <div class="contrib-count" id="stnum" style="color:#fff;">0</div>
+              <div class="contrib-word">IN A ROW</div>
+            </div>
+            <div class="streak-chain" id="stchain"></div>
+            <div class="reveal-text" id="stfact" style="margin-top:24px;">
+              <span style="font-size:clamp(12px,1.8vw,15px);letter-spacing:2px;color:rgba(255,255,255,.4);">${best.len} consecutive saves. That's not a streak. That's a siege. 🔥</span>
+            </div>
+          </div>`;
+        // build pip grid
+        const chain=document.getElementById('stchain');
+        entries.forEach(({who},i)=>{
+          const inStreak=(i>=best.start && i<best.start+best.len);
+          const c2=COLORS[sorted.findIndex(([n])=>n===who)%COLORS.length];
+          const pip=document.createElement('div');
+          pip.className='streak-pip'+(inStreak?' streak-hi':'');
+          pip.style.cssText=`background:${c2.bg};color:${c2.bg};`;
+          chain.appendChild(pip);
+        });
+        setTimeout(()=>document.getElementById('sth').classList.add('in'),100);
+        setTimeout(()=>document.getElementById('stn').classList.add('in'),400);
+        setTimeout(()=>{
+          document.getElementById('stnum').classList.add('in');
+          const pips=chain.querySelectorAll('.streak-pip');
+          pips.forEach((p,i)=>setTimeout(()=>{p.classList.add('lit');if(i%3===0)tone(300+i*8,'sine',.03,.08);},i*18));
+          setTimeout(()=>countUp('stnum',0,best.len,1800,()=>{
+            burst(innerWidth/2,innerHeight*.45,col.bg,80,1.1);
+            playBigReveal();
+          }),300);
+        },800);
+        setTimeout(()=>document.getElementById('stfact').classList.add('in'),3000);
+      }});
+    }
+  })();
+
+  // The Comeback — who had the longest personal silence then returned
+  if(datedEntries.length>=4 && sorted.length>=2){
+    const cbData=sorted.map(([name])=>{
+      const saves=datedEntries.filter(e=>e.who===name).sort((a,b)=>a.date-b.date);
+      if(saves.length<2)return{name,gap:0,from:null,to:null};
+      let maxGap=0,fromD=null,toD=null;
+      for(let i=1;i<saves.length;i++){const g=(saves[i].date-saves[i-1].date)/(1000*60*60*24);if(g>maxGap){maxGap=g;fromD=saves[i-1].date;toD=saves[i].date;}}
+      return{name,gap:Math.round(maxGap),from:fromD,to:toD};
+    }).filter(c=>c.gap>0).sort((a,b)=>b.gap-a.gap);
+    if(cbData.length>0 && cbData[0].gap>=14){
+      const cb=cbData[0];
+      const cbIdx=sorted.findIndex(([n])=>n===cb.name);
+      const cbCol=COLORS[cbIdx<0?0:cbIdx%COLORS.length];
+      const fromLbl=cb.from.toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'});
+      const toLbl=cb.to.toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'});
+      defs.push({render(el){
+        el.innerHTML=`<div class="comeback-bg"></div>
+          <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 20px;">
+            <div class="reveal-text" id="cbh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">THE COMEBACK</span></div>
+            <div class="reveal-text" id="cbsub"><span style="font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.18);">LONGEST PERSONAL SILENCE BEFORE RETURNING</span></div>
+            <div id="cbnm" class="mvp-name" style="color:${cbCol.bg};">${cb.name.toUpperCase()}</div>
+            <div style="display:flex;align-items:baseline;gap:10px;justify-content:center;margin:10px 0 6px;">
+              <div style="font-family:'Bebas Neue';font-size:clamp(80px,15vw,180px);line-height:.85;color:#fff;" id="cbdays">0</div>
+              <div style="font-size:clamp(13px,2vw,18px);letter-spacing:3px;color:rgba(255,255,255,.4);">DAYS AWAY</div>
+            </div>
+            <div id="cbdates" style="font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.2);opacity:0;transition:opacity .6s;">${fromLbl.toUpperCase()} → ${toLbl.toUpperCase()}</div>
+            <div class="reveal-text" id="cbfact" style="margin-top:20px;">
+              <span style="font-size:clamp(12px,1.8vw,15px);letter-spacing:2px;color:rgba(255,255,255,.4);">${cb.gap} days of silence. Then they came back like nothing happened. 👻</span>
+            </div>
+          </div>`;
+        setTimeout(()=>document.getElementById('cbh').classList.add('in'),100);
+        setTimeout(()=>document.getElementById('cbsub').classList.add('in'),400);
+        setTimeout(()=>{document.getElementById('cbnm').classList.add('in');tone(200,'sine',.06,.6);},900);
+        setTimeout(()=>{
+          document.getElementById('cbdates').style.opacity='1';
+          countUp('cbdays',0,cb.gap,2200,()=>{
+            playBigReveal();
+            burst(innerWidth/2,innerHeight*.5,cbCol.bg,80,1.1);
+            rain(cbCol.bg,15);
+          });
+        },1400);
+        setTimeout(()=>document.getElementById('cbfact').classList.add('in'),3400);
+      }});
+    }
+  }
+
+  // Rivalry slide — top 2 contributors head to head (only if ≥2 people)
+  if(sorted.length>=2){
+    const[nameA,cntA]=sorted[0],[nameB,cntB]=sorted[1];
+    const colA=COLORS[0],colB=COLORS[1];
+    const pctA=Math.round(cntA/(cntA+cntB)*100);
+    defs.push({render(el){
+      el.innerHTML=`<div class="rivalry-bg"></div>
+        <div class="rivalry-vs-txt">VS</div>
+        <div style="position:relative;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 16px;">
+          <div class="reveal-text" id="rvh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">THE RIVALRY</span></div>
+          <div style="display:flex;align-items:center;justify-content:center;width:100%;gap:8px;margin-top:16px;">
+            <div class="rivalry-side">
+              <div class="rivalry-name" id="rvna" style="color:${colA.bg};opacity:0;transition:opacity .6s;">${nameA.toUpperCase()}</div>
+              <div class="rivalry-num" id="rvca" style="color:${colA.bg};opacity:0;transition:opacity .6s;">0</div>
+            </div>
+            <div style="font-family:'Bebas Neue';font-size:clamp(28px,5vw,60px);color:rgba(255,255,255,.15);flex-shrink:0;">VS</div>
+            <div class="rivalry-side">
+              <div class="rivalry-name" id="rvnb" style="color:${colB.bg};opacity:0;transition:opacity .6s;">${nameB.toUpperCase()}</div>
+              <div class="rivalry-num" id="rvcb" style="color:${colB.bg};opacity:0;transition:opacity .6s;">0</div>
+            </div>
+          </div>
+          <div class="rivalry-bar-wrap" style="margin-top:20px;">
+            <div class="rivalry-bar-a" id="rvbar" style="width:0%;background:${colA.bar};"></div>
+            <div class="rivalry-bar-b" style="background:${colB.bar};opacity:.6;"></div>
+          </div>
+          <div class="rivalry-label" id="rvlabel" style="opacity:0;transition:opacity .6s;">${pctA}% — ${100-pctA}% &nbsp;·&nbsp; ${nameA.toUpperCase()} vs ${nameB.toUpperCase()}</div>
+          <div class="reveal-text" id="rvverdict" style="margin-top:28px;">
+            <span style="font-size:clamp(12px,1.8vw,15px);letter-spacing:2px;color:rgba(255,255,255,.4);">${cntA-cntB} version gap. ${nameA.toUpperCase()} pulls ahead. ${nameB.toUpperCase()} is always watching. 👀</span>
+          </div>
+        </div>`;
+      setTimeout(()=>document.getElementById('rvh').classList.add('in'),100);
+      setTimeout(()=>{
+        document.getElementById('rvna').style.opacity='1';
+        document.getElementById('rvnb').style.opacity='1';
+        tone(440,'triangle',.08,.4);
+      },500);
+      setTimeout(()=>{
+        document.getElementById('rvca').style.opacity='1';
+        document.getElementById('rvcb').style.opacity='1';
+        countUp('rvca',0,cntA,2200);
+        setTimeout(()=>countUp('rvcb',0,cntB,2200,()=>{
+          burst(innerWidth*.28,innerHeight*.45,colA.bg,60);
+          burst(innerWidth*.72,innerHeight*.45,colB.bg,60);
+          playHype();
+        }),150);
+      },1000);
+      setTimeout(()=>{
+        document.getElementById('rvbar').style.width=pctA+'%';
+        document.getElementById('rvlabel').style.opacity='1';
+      },2400);
+      setTimeout(()=>document.getElementById('rvverdict').classList.add('in'),3400);
+    }});
+  }
+
+  // Game Growth slide — file size over time
+  const sizedEntries=entries.filter(e=>e.sizeMB!=null);
+  if(sizedEntries.length>=4){
+    defs.push({render(el){
+      // group by version label, keep last size per version group (max 24 bars)
+      const step=Math.max(1,Math.floor(sizedEntries.length/24));
+      const sampled=sizedEntries.filter((_,i)=>i%step===0||i===sizedEntries.length-1);
+      const maxSz=Math.max(...sampled.map(e=>e.sizeMB));
+      const minSz=Math.min(...sampled.map(e=>e.sizeMB));
+      const totalGrowth=(maxSz-sampled[0].sizeMB).toFixed(1);
+      const bigJump=sizedEntries.reduce((best,e,i)=>{
+        if(i===0)return best;
+        const diff=e.sizeMB-sizedEntries[i-1].sizeMB;
+        return diff>best.diff?{diff,ver:e.version,from:sizedEntries[i-1].sizeMB,to:e.sizeMB}:best;
+      },{diff:-Infinity,ver:'',from:0,to:0});
+
+      const barW=Math.floor(Math.min(680,window.innerWidth*.9)/sampled.length)-2;
+      el.innerHTML=`<div class="growth-bg"></div>
+        <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 16px;width:100%;">
+          <div class="reveal-text" id="grh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">GAME SIZE OVER TIME</span></div>
+          <div style="display:flex;align-items:baseline;gap:12px;justify-content:center;margin:6px 0;">
+            <div class="growth-biggest" id="grnum">0</div>
+            <div style="font-size:clamp(11px,1.8vw,14px);letter-spacing:3px;color:rgba(255,255,255,.3);">MB AT PEAK</div>
+          </div>
+          <div class="growth-chart" id="grChart">
+            <div class="growth-axis"></div>
+          </div>
+          <div class="reveal-text" id="grfact" style="margin-top:8px;">
+            <span style="font-size:clamp(11px,1.6vw,13px);letter-spacing:2px;color:rgba(255,255,255,.3);">
+              Grew <span style="color:#7fc86e;">+${totalGrowth} MB</span> total &nbsp;·&nbsp; Biggest jump at <span style="color:#c8a96e;">${bigJump.ver}</span> (+${(bigJump.diff).toFixed(1)} MB)
+            </span>
+          </div>
+        </div>`;
+
+      setTimeout(()=>document.getElementById('grh').classList.add('in'),100);
+      setTimeout(()=>{
+        const chart=document.getElementById('grChart');
+        const chartH=chart.offsetHeight-2;
+        sampled.forEach((e,i)=>{
+          const pct=(e.sizeMB-minSz*0.7)/(maxSz-minSz*0.7);
+          const h=Math.max(4,Math.round(pct*chartH));
+          const col=COLORS[sorted.findIndex(([n])=>n===e.who)%COLORS.length];
+          const wrap=document.createElement('div');
+          wrap.className='growth-bar-wrap';
+          wrap.style.cssText=`left:${i*(barW+2)}px;width:${barW}px;`;
+          const bar=document.createElement('div');
+          bar.className='growth-bar';
+          bar.style.cssText=`background:${col.bg};opacity:.8;height:0px;`;
+          wrap.appendChild(bar);
+          chart.appendChild(wrap);
+          setTimeout(()=>{
+            bar.style.height=h+'px';
+            if(i===sampled.length-1){
+              tone(400+Math.round(pct*200),'sine',.05,.2);
+              burst(chart.getBoundingClientRect().left+i*(barW+2),chart.getBoundingClientRect().top+chartH-h,col.bg,20,.5);
+            }
+          },i*40+300);
+        });
+        setTimeout(()=>{
+          countUp('grnum',0,Math.round(maxSz),2000,()=>playBigReveal());
+        },400);
+      },600);
+      setTimeout(()=>document.getElementById('grfact').classList.add('in'),3000);
+    }});
+  }
+
+  // Size Champion — person who made the single biggest file size jump
+  if(sizedEntries.length>=2){
+    const bigJumpCh=sizedEntries.reduce((best,e,i)=>{
+      if(i===0)return best;
+      const diff=e.sizeMB-sizedEntries[i-1].sizeMB;
+      return diff>best.diff?{diff,ver:e.version,who:e.who,from:sizedEntries[i-1].sizeMB,to:e.sizeMB}:best;
+    },{diff:-Infinity,ver:'',who:'',from:0,to:0});
+    if(bigJumpCh.diff>0){
+      const chIdx=sorted.findIndex(([n])=>n===bigJumpCh.who);
+      const chCol=COLORS[chIdx<0?0:chIdx%COLORS.length];
+      defs.push({render(el){
+        el.innerHTML=`<div class="champion-bg"></div>
+          <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 20px;">
+            <div class="reveal-text" id="schh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">SIZE CHAMPION</span></div>
+            <div class="reveal-text" id="schsub"><span style="font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.2);">BIGGEST SINGLE FILE JUMP</span></div>
+            <div id="schnm" class="mvp-name" style="color:${chCol.bg};">${bigJumpCh.who.toUpperCase()}</div>
+            <div style="display:flex;align-items:baseline;gap:10px;justify-content:center;margin:10px 0 6px;">
+              <div style="font-family:'Bebas Neue';font-size:clamp(70px,13vw,160px);line-height:.85;color:${chCol.bg};" id="schnum">0</div>
+              <div style="font-size:clamp(13px,2vw,18px);letter-spacing:3px;color:rgba(255,255,255,.35);">MB IN ONE JUMP</div>
+            </div>
+            <div id="schver" style="font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.2);opacity:0;transition:opacity .6s;">AT ${bigJumpCh.ver} &nbsp;·&nbsp; ${bigJumpCh.from.toFixed(1)} MB → ${bigJumpCh.to.toFixed(1)} MB</div>
+            <div class="reveal-text" id="schfact" style="margin-top:20px;">
+              <span style="font-size:clamp(12px,1.8vw,15px);letter-spacing:2px;color:rgba(255,255,255,.4);">+${bigJumpCh.diff.toFixed(1)} MB in a single save. What did they PUT in there? 📦</span>
+            </div>
+          </div>`;
+        setTimeout(()=>document.getElementById('schh').classList.add('in'),100);
+        setTimeout(()=>document.getElementById('schsub').classList.add('in'),400);
+        setTimeout(()=>{document.getElementById('schnm').classList.add('in');tone(300,'sine',.07,.5);},900);
+        setTimeout(()=>{
+          document.getElementById('schver').style.opacity='1';
+          countUp('schnum',0,Math.round(bigJumpCh.diff),2200,()=>{
+            playBigReveal();
+            burst(innerWidth/2,innerHeight*.5,chCol.bg,100,1.2);
+            rain(chCol.bg,20);
+          });
+        },1600);
+        setTimeout(()=>document.getElementById('schfact').classList.add('in'),3500);
+      }});
+    }
+  }
+
+  // Most Active Period — versions per month heatmap
+  if(datedEntries.length>=4){
+    // build month buckets
+    const monthMap={};
+    datedEntries.forEach(e=>{
+      const key=`${e.date.getFullYear()}-${String(e.date.getMonth()+1).padStart(2,'0')}`;
+      monthMap[key]=(monthMap[key]||0)+1;
+    });
+    const monthKeys=Object.keys(monthMap).sort();
+    const monthCounts=monthKeys.map(k=>monthMap[k]);
+    const peakIdx=monthCounts.indexOf(Math.max(...monthCounts));
+    const peakKey=monthKeys[peakIdx];
+    const peakCount=monthCounts[peakIdx];
+    const peakLabel=new Date(peakKey+'-15').toLocaleString('default',{month:'long',year:'numeric'});
+
+    // busiest single day
+    const dayMap={};
+    datedEntries.forEach(e=>{
+      const k=e.date.toISOString().slice(0,10);
+      dayMap[k]=(dayMap[k]||0)+1;
+    });
+    const busiestDay=Object.entries(dayMap).sort((a,b)=>b[1]-a[1])[0];
+    const busiestLabel=new Date(busiestDay[0]).toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'});
+
+    defs.push({render(el){
+      const maxC=Math.max(...monthCounts);
+      el.innerHTML=`<div class="heat-bg"></div>
+        <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 16px;">
+          <div class="reveal-text" id="hth"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">MOST ACTIVE PERIOD</span></div>
+          <div style="display:flex;align-items:baseline;gap:10px;justify-content:center;margin:6px 0;">
+            <div class="heat-peak" id="htnum">0</div>
+            <div style="font-size:clamp(12px,2vw,16px);letter-spacing:3px;color:rgba(255,255,255,.3);">VERSIONS IN ONE MONTH</div>
+          </div>
+          <div class="reveal-text" id="htpeak"><span style="font-family:'Bebas Neue';font-size:clamp(28px,5vw,60px);letter-spacing:4px;color:#e87070;">${peakLabel.toUpperCase()}</span></div>
+          <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;justify-content:center;margin-top:16px;" id="htgrid"></div>
+          <div class="reveal-text" id="htfact" style="margin-top:16px;">
+            <span style="font-size:clamp(11px,1.6vw,13px);letter-spacing:2px;color:rgba(255,255,255,.3);">
+              Busiest single day: <span style="color:#c8a96e;">${busiestLabel}</span> · <span style="color:#e87070;">${busiestDay[1]} version${busiestDay[1]>1?'s':''}</span> shipped
+            </span>
+          </div>
+        </div>`;
+
+      setTimeout(()=>document.getElementById('hth').classList.add('in'),100);
+      setTimeout(()=>{
+        document.getElementById('htpeak').classList.add('in');
+        const grid=document.getElementById('htgrid');
+        monthKeys.forEach((k,i)=>{
+          const c=monthMap[k];
+          const pct=c/maxC;
+          const h=Math.max(10,Math.round(pct*100));
+          const col=`rgba(232,112,112,${0.15+pct*.85})`;
+          const label=new Date(k+'-15').toLocaleString('default',{month:'short'});
+          const wrap=document.createElement('div');
+          wrap.style.cssText=`display:flex;flex-direction:column;align-items:center;gap:3px;`;
+          const bar=document.createElement('div');
+          bar.style.cssText=`width:clamp(18px,3.5vw,36px);border-radius:3px 3px 0 0;background:${col};height:0;transition:height .8s cubic-bezier(.34,1.2,.64,1);`;
+          const lbl=document.createElement('div');
+          lbl.className='heat-month-label';lbl.textContent=label;
+          wrap.appendChild(bar);wrap.appendChild(lbl);
+          grid.appendChild(wrap);
+          setTimeout(()=>{
+            bar.style.height=h+'px';
+            if(i===peakIdx){
+              bar.style.boxShadow='0 0 12px 2px rgba(232,112,112,.6)';
+              burst(bar.getBoundingClientRect().left+bar.getBoundingClientRect().width/2,
+                    bar.getBoundingClientRect().top,'#e87070',25,.6);
+            }
+          },i*80+200);
+        });
+        setTimeout(()=>countUp('htnum',0,peakCount,1800,()=>playBigReveal()),200);
+      },600);
+      setTimeout(()=>document.getElementById('htfact').classList.add('in'),3200);
+    }});
+  }
+
+  // Biggest Single Day — most saves crammed into one calendar day
+  if(datedEntries.length>=4){
+    const dayMapBD={},dayWhoBD={};
+    datedEntries.forEach(e=>{
+      const k=e.date.toISOString().slice(0,10);
+      dayMapBD[k]=(dayMapBD[k]||0)+1;
+      if(!dayWhoBD[k])dayWhoBD[k]={};
+      dayWhoBD[k][e.who]=(dayWhoBD[k][e.who]||0)+1;
+    });
+    const [busiestKey,busiestCnt]=Object.entries(dayMapBD).sort((a,b)=>b[1]-a[1])[0];
+    if(busiestCnt>=2){
+      const bdDate=new Date(busiestKey+'T12:00:00');
+      const bdLabel=bdDate.toLocaleDateString('default',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+      const bdContribs=Object.entries(dayWhoBD[busiestKey]).sort((a,b)=>b[1]-a[1]);
+      defs.push({render(el){
+        el.innerHTML=`<div class="bigday-bg"></div>
+          <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 20px;">
+            <div class="reveal-text" id="bdh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">MOST INSANE DAY</span></div>
+            <div id="bddate" style="font-family:'Bebas Neue';font-size:clamp(18px,3.5vw,44px);letter-spacing:3px;color:#e8c870;margin-top:8px;opacity:0;transition:opacity .6s;">${bdLabel.toUpperCase()}</div>
+            <div style="display:flex;align-items:baseline;gap:10px;justify-content:center;margin:8px 0 6px;">
+              <div style="font-family:'Bebas Neue';font-size:clamp(100px,18vw,200px);line-height:.85;color:#fff;" id="bdnum">0</div>
+              <div style="font-size:clamp(13px,2vw,18px);letter-spacing:3px;color:rgba(255,255,255,.35);">SAVES IN ONE DAY</div>
+            </div>
+            <div id="bdwho" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px;opacity:0;transition:opacity .6s;"></div>
+            <div class="reveal-text" id="bdfact" style="margin-top:18px;">
+              <span style="font-size:clamp(12px,1.8vw,15px);letter-spacing:2px;color:rgba(255,255,255,.4);">That was a crunch session. Someone was NOT sleeping. 🌙</span>
+            </div>
+          </div>`;
+        setTimeout(()=>document.getElementById('bdh').classList.add('in'),100);
+        setTimeout(()=>{document.getElementById('bddate').style.opacity='1';tone(200,'triangle',.06,.4);},500);
+        setTimeout(()=>{
+          countUp('bdnum',0,busiestCnt,1800,()=>{
+            playBigReveal();
+            burst(innerWidth/2,innerHeight*.4,'#e8c870',100,1.2);
+            burst(innerWidth*.2,innerHeight*.55,'#c8a96e',40);
+            burst(innerWidth*.8,innerHeight*.55,'#e8b870',40);
+          });
+        },900);
+        setTimeout(()=>{
+          const whoEl=document.getElementById('bdwho');
+          bdContribs.forEach(([name,cnt])=>{
+            const col=COLORS[sorted.findIndex(([n])=>n===name)%COLORS.length];
+            const item=document.createElement('div');
+            item.style.cssText=`display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.5);`;
+            item.innerHTML=`<div style="width:8px;height:8px;border-radius:50%;background:${col.bg};flex-shrink:0;"></div>${name.toUpperCase()} · ${cnt}`;
+            whoEl.appendChild(item);
+          });
+          whoEl.style.opacity='1';
+        },2400);
+        setTimeout(()=>document.getElementById('bdfact').classList.add('in'),3200);
+      }});
+    }
+  }
+
+  // Journey slide — timeline from first to last version
+  if(datedEntries.length>=2){
+    const first=datedEntries[0]; // oldest (list is oldest-first after reverse)
+    const last=datedEntries[datedEntries.length-1];
+    const msPerDay=1000*60*60*24;
+    const totalDays=Math.round((last.date-first.date)/msPerDay);
+    const avgPerDay=(datedEntries.length/totalDays).toFixed(2);
+    const firstLabel=first.date.toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'});
+    const lastLabel=last.date.toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'});
+
+    // versions per era
+    const eras={'0.x':0,'1.x':0,'2.x+':0};
+    entries.forEach(e=>{
+      if(e.version.startsWith('v0.'))eras['0.x']++;
+      else if(e.version.startsWith('v1.'))eras['1.x']++;
+      else eras['2.x+']++;
+    });
+
+    defs.push({render(el){
+      el.innerHTML=`<div class="journey-bg"></div>
+        <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 16px;width:100%;">
+          <div class="reveal-text" id="jrh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">THE FULL JOURNEY</span></div>
+          <div style="display:flex;align-items:baseline;gap:12px;justify-content:center;margin:4px 0;">
+            <div class="journey-stat-big" id="jrdays" style="color:#c8a96e;">0</div>
+            <div style="font-size:clamp(13px,2vw,18px);letter-spacing:3px;color:rgba(255,255,255,.3);">DAYS OF DEVELOPMENT</div>
+          </div>
+          <div style="font-size:clamp(11px,1.6vw,13px);letter-spacing:2px;color:rgba(255,255,255,.25);margin-bottom:12px;" id="jrdates" style="opacity:0;">${firstLabel.toUpperCase()} → ${lastLabel.toUpperCase()}</div>
+
+          <!-- Timeline bar -->
+          <div style="position:relative;width:min(600px,88vw);height:60px;margin:8px 0;">
+            <div style="position:absolute;top:50%;left:0;right:0;height:2px;background:rgba(255,255,255,.08);transform:translateY(-50%);">
+              <div id="jrfill" style="height:100%;width:0%;background:linear-gradient(90deg,#c8a96e,#6ec8c8);transition:width 2s cubic-bezier(.16,1,.3,1);border-radius:1px;"></div>
+            </div>
+            <!-- start dot -->
+            <div style="position:absolute;top:50%;left:0;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:#c8a96e;box-shadow:0 0 10px #c8a96e;opacity:0;transition:opacity .4s;" id="jrd0"></div>
+            <!-- end dot -->
+            <div style="position:absolute;top:50%;right:0;transform:translate(50%,-50%);width:12px;height:12px;border-radius:50%;background:#6ec8c8;box-shadow:0 0 10px #6ec8c8;opacity:0;transition:opacity .4s;" id="jrd1"></div>
+            <!-- labels -->
+            <div style="position:absolute;top:calc(50% + 16px);left:0;transform:translateX(-50%);font-size:9px;letter-spacing:1px;color:#c8a96e;white-space:nowrap;opacity:0;transition:opacity .4s;" id="jrl0">${firstLabel.toUpperCase()}</div>
+            <div style="position:absolute;top:calc(50% + 16px);right:0;transform:translateX(50%);font-size:9px;letter-spacing:1px;color:#6ec8c8;white-space:nowrap;opacity:0;transition:opacity .4s;" id="jrl1">${lastLabel.toUpperCase()}</div>
+          </div>
+
+          <!-- Era breakdown -->
+          <div style="display:flex;gap:clamp(16px,4vw,40px);margin-top:20px;" id="jreras" style="opacity:0;">
+            ${Object.entries(eras).filter(([,v])=>v>0).map(([era,cnt],i)=>`
+              <div style="text-align:center;opacity:0;transform:translateY(20px);transition:opacity .5s,transform .5s;transition-delay:${i*.15}s;" class="jrera">
+                <div style="font-family:'Bebas Neue';font-size:clamp(36px,7vw,80px);color:${COLORS[i%COLORS.length].bg};line-height:.9;">${cnt}</div>
+                <div style="font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.3);margin-top:4px;">${era} ERA</div>
+              </div>`).join('')}
+          </div>
+          <div class="reveal-text" id="jrfact" style="margin-top:16px;">
+            <span style="font-size:clamp(11px,1.6vw,13px);letter-spacing:2px;color:rgba(255,255,255,.3);">
+              ~${avgPerDay} versions/day &nbsp;·&nbsp; ${entries.length} total saves across ${totalDays} days
+            </span>
+          </div>
+        </div>`;
+
+      setTimeout(()=>document.getElementById('jrh').classList.add('in'),100);
+      setTimeout(()=>{
+        document.getElementById('jrdates').style.opacity='1';
+        document.getElementById('jrd0').style.opacity='1';
+        document.getElementById('jrl0').style.opacity='1';
+        tone(300,'sine',.08,.3);
+      },500);
+      setTimeout(()=>{
+        document.getElementById('jrfill').style.width='100%';
+        tone(300,'sine',.05,.2);
+        setTimeout(()=>{
+          document.getElementById('jrd1').style.opacity='1';
+          document.getElementById('jrl1').style.opacity='1';
+          burst(window.innerWidth*.88,window.innerHeight*.48,'#6ec8c8',30,.6);
+          tone(500,'sine',.1,.3);
+        },2000);
+      },800);
+      setTimeout(()=>{
+        countUp('jrdays',0,totalDays,2400,()=>{
+          playBigReveal();
+          burst(window.innerWidth/2,window.innerHeight*.3,'#c8a96e',60,1);
+        });
+      },1000);
+      setTimeout(()=>{
+        document.querySelectorAll('.jrera').forEach(e=>{e.style.opacity='1';e.style.transform='translateY(0)';});
+      },2800);
+      setTimeout(()=>document.getElementById('jrfact').classList.add('in'),3400);
+    }});
+  }
+
+  // Pace Setter — rolling average gap between saves, SVG line chart
+  if(datedEntries.length>=6){
+    const sortedPace=[...datedEntries].sort((a,b)=>a.date-b.date);
+    const gaps=[];
+    for(let i=1;i<sortedPace.length;i++) gaps.push((sortedPace[i].date-sortedPace[i-1].date)/(1000*60*60*24));
+    const winSize=Math.max(3,Math.floor(gaps.length/8));
+    const rolling=[];
+    for(let i=0;i<=gaps.length-winSize;i++){const w=gaps.slice(i,i+winSize);rolling.push(w.reduce((a,b)=>a+b,0)/winSize);}
+    if(rolling.length>=3){
+      const overallAvg=(gaps.reduce((a,b)=>a+b,0)/gaps.length).toFixed(1);
+      const fastestP=Math.min(...rolling).toFixed(1);
+      const slowestP=Math.max(...rolling).toFixed(1);
+      const maxRoll=Math.max(...rolling);
+      const minRollIdx=rolling.indexOf(Math.min(...rolling));
+      const maxRollIdx=rolling.indexOf(Math.max(...rolling));
+      defs.push({render(el){
+        const chartW=Math.min(640,window.innerWidth*.86);
+        const chartH=110;
+        el.innerHTML=`<div class="pace-bg"></div>
+          <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 20px;width:100%;">
+            <div class="reveal-text" id="psh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">DEVELOPMENT PACE</span></div>
+            <div style="display:flex;gap:clamp(16px,4vw,50px);justify-content:center;margin:12px 0;">
+              <div style="text-align:center;">
+                <div style="font-family:'Bebas Neue';font-size:clamp(32px,6vw,68px);color:#7fc86e;" id="psavg">0</div>
+                <div style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.25);">AVG DAYS / VERSION</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-family:'Bebas Neue';font-size:clamp(32px,6vw,68px);color:#6ec8c8;">${fastestP}</div>
+                <div style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.25);">FASTEST PERIOD</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-family:'Bebas Neue';font-size:clamp(32px,6vw,68px);color:#c8a96e;">${slowestP}</div>
+                <div style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.25);">SLOWEST PERIOD</div>
+              </div>
+            </div>
+            <div style="position:relative;width:${chartW}px;height:${chartH}px;">
+              <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:rgba(255,255,255,.1);"></div>
+              <svg id="psSvg" width="${chartW}" height="${chartH}" style="overflow:visible;display:block;"></svg>
+            </div>
+            <div class="reveal-text" id="psfact" style="margin-top:10px;">
+              <span style="font-size:clamp(11px,1.6vw,13px);letter-spacing:2px;color:rgba(255,255,255,.3);">On average, a new version every <span style="color:#7fc86e;">${overallAvg} days</span>. ${parseFloat(overallAvg)<3?'Almost daily. Relentless. ⚡':parseFloat(overallAvg)<7?'Consistent weekly grind. 💪':'Slow and deliberate. 🐢'}</span>
+            </div>
+          </div>`;
+        setTimeout(()=>document.getElementById('psh').classList.add('in'),100);
+        setTimeout(()=>countUp('psavg',0,Math.round(parseFloat(overallAvg)),1400),500);
+        setTimeout(()=>{
+          const svg=document.getElementById('psSvg');
+          const stepX=chartW/(rolling.length-1);
+          const pts=rolling.map((v,i)=>{
+            const x=i*stepX;
+            const y=chartH-Math.max(4,(v/maxRoll)*(chartH-8));
+            return[x,y];
+          });
+          const pStr=pts.map(p=>p.join(',')).join(' L');
+          const area=document.createElementNS('http://www.w3.org/2000/svg','path');
+          area.setAttribute('d',`M${pStr} L${(rolling.length-1)*stepX},${chartH} L0,${chartH} Z`);
+          area.setAttribute('fill','rgba(126,200,110,.07)');
+          svg.appendChild(area);
+          const line=document.createElementNS('http://www.w3.org/2000/svg','path');
+          line.setAttribute('d',`M${pStr}`);
+          line.setAttribute('fill','none');
+          line.setAttribute('stroke','rgba(126,200,110,.65)');
+          line.setAttribute('stroke-width','2');
+          line.setAttribute('stroke-linecap','round');
+          line.setAttribute('stroke-linejoin','round');
+          svg.appendChild(line);
+          try{const len=line.getTotalLength();line.style.strokeDasharray=len;line.style.strokeDashoffset=len;line.style.transition='stroke-dashoffset 2s ease-out';setTimeout(()=>{line.style.strokeDashoffset='0';playReveal();},100);}catch(e){line.style.strokeDasharray='none';}
+          [[minRollIdx,'#7fc86e'],[maxRollIdx,'#e87070']].forEach(([idx,col])=>{
+            const[x,y]=pts[idx];
+            const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+            c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',5);c.setAttribute('fill',col);
+            c.style.opacity='0';c.style.transition='opacity .4s';
+            svg.appendChild(c);
+            setTimeout(()=>{c.style.opacity='1';},2300);
+          });
+        },1000);
+        setTimeout(()=>document.getElementById('psfact').classList.add('in'),3000);
+      }});
+    }
+  }
+
+  // The Drought — longest gap between any two consecutive saves
+  if(datedEntries.length>=2){
+    const sortedDrought=[...datedEntries].sort((a,b)=>a.date-b.date);
+    let droughtBest={gap:0,from:null,to:null,fromVer:'',toVer:''};
+    for(let i=1;i<sortedDrought.length;i++){
+      const g=(sortedDrought[i].date-sortedDrought[i-1].date)/(1000*60*60*24);
+      if(g>droughtBest.gap) droughtBest={gap:Math.round(g),from:sortedDrought[i-1].date,to:sortedDrought[i].date,fromVer:sortedDrought[i-1].version,toVer:sortedDrought[i].version};
+    }
+    if(droughtBest.gap>=7){
+      const drFrom=droughtBest.from.toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'});
+      const drTo=droughtBest.to.toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'});
+      defs.push({render(el){
+        el.innerHTML=`<div class="drought-bg"></div>
+          <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 20px;">
+            <div class="reveal-text" id="drh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">THE DROUGHT</span></div>
+            <div class="reveal-text" id="drsub"><span style="font-size:clamp(11px,1.8vw,14px);letter-spacing:3px;color:rgba(255,255,255,.2);">LONGEST SILENCE IN PROJECT HISTORY</span></div>
+            <div style="display:flex;align-items:baseline;gap:10px;justify-content:center;margin:14px 0 6px;">
+              <div style="font-family:'Bebas Neue';font-size:clamp(100px,18vw,200px);line-height:.85;color:#8ca8c8;" id="drnum">0</div>
+              <div style="font-size:clamp(13px,2vw,18px);letter-spacing:3px;color:rgba(255,255,255,.35);">DAYS OF SILENCE</div>
+            </div>
+            <div id="drdates" style="font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.2);opacity:0;transition:opacity .6s;">${drFrom.toUpperCase()} → ${drTo.toUpperCase()}</div>
+            <div id="drverts" style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.12);margin-top:4px;opacity:0;transition:opacity .6s;">${droughtBest.fromVer} &nbsp;· · · · ·&nbsp; ${droughtBest.toVer}</div>
+            <div class="reveal-text" id="drfact" style="margin-top:20px;">
+              <span style="font-size:clamp(12px,1.8vw,15px);letter-spacing:2px;color:rgba(255,255,255,.4);">${droughtBest.gap} days. The game held its breath. Then it came back. 🌧️</span>
+            </div>
+          </div>`;
+        setTimeout(()=>document.getElementById('drh').classList.add('in'),100);
+        setTimeout(()=>document.getElementById('drsub').classList.add('in'),400);
+        setTimeout(()=>{
+          countUp('drnum',0,droughtBest.gap,2400,()=>{
+            burst(innerWidth/2,innerHeight*.4,'#8ca8c8',60,.8);
+            playBigReveal();
+          });
+        },800);
+        setTimeout(()=>{
+          document.getElementById('drdates').style.opacity='1';
+          document.getElementById('drverts').style.opacity='1';
+          tone(150,'sine',.05,.8);
+        },1600);
+        setTimeout(()=>document.getElementById('drfact').classList.add('in'),3200);
+      }});
+    }
+  }
+
+  // Milestone Moments — major version milestones (vX.0, v1.0, etc.)
+  {
+    const majorRx=/^v?(\d+)\.0(\.0)?$/i;
+    const halfRx=/^v?(\d+)\.5(\.0)?$/i;
+    const milestones=entries.filter(e=>majorRx.test(e.version)||halfRx.test(e.version));
+    if(milestones.length>=1){
+      defs.push({render(el){
+        el.innerHTML=`<div class="milestone-bg"></div>
+          <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 20px;width:100%;">
+            <div class="reveal-text" id="mlh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">MILESTONE MOMENTS</span></div>
+            <div class="reveal-text" id="mlh2" style="margin-bottom:12px;"><span style="font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.15);">THE VERSIONS THAT MATTERED MOST</span></div>
+            <div id="mlList" style="display:flex;flex-direction:column;gap:10px;width:min(540px,88vw);max-height:60vh;overflow:hidden;"></div>
+          </div>`;
+        setTimeout(()=>document.getElementById('mlh').classList.add('in'),100);
+        setTimeout(()=>document.getElementById('mlh2').classList.add('in'),400);
+        setTimeout(()=>{
+          const list=document.getElementById('mlList');
+          milestones.forEach((e,i)=>{
+            const col=COLORS[sorted.findIndex(([n])=>n===e.who)%COLORS.length];
+            const dateStr=e.date?e.date.toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'}):'';
+            const row=document.createElement('div');
+            row.style.cssText=`display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid rgba(255,255,255,.06);border-radius:4px;background:rgba(255,255,255,.02);opacity:0;transform:translateX(-20px);transition:opacity .5s,transform .5s;`;
+            row.innerHTML=`<div style="font-family:'Bebas Neue';font-size:clamp(22px,4vw,42px);color:${col.bg};flex-shrink:0;min-width:80px;text-align:right;">${e.version}</div>
+              <div style="width:1px;height:36px;background:rgba(255,255,255,.1);flex-shrink:0;"></div>
+              <div style="text-align:left;">
+                <div style="font-family:'Bebas Neue';font-size:clamp(16px,2.5vw,26px);letter-spacing:3px;color:${col.bg};">${e.who.toUpperCase()}</div>
+                ${dateStr?`<div style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.2);margin-top:2px;">${dateStr.toUpperCase()}</div>`:''}
+              </div>`;
+            list.appendChild(row);
+            setTimeout(()=>{
+              row.style.opacity='1';row.style.transform='translateX(0)';
+              burst(innerWidth/2,innerHeight*(.42+i*.06),col.bg,20,.5);
+              tone(300+i*70,'triangle',.07,.3);
+            },i*300+200);
+          });
+          setTimeout(()=>{playBigReveal();burst(innerWidth/2,innerHeight*.3,'#c8a96e',60);},milestones.length*300+300);
+        },700);
+      }});
+    }
+  }
+
+  // In Numbers — multi-year summary card
+  {
+    const sortedDatedIN=datedEntries.length>=2?[...datedEntries].sort((a,b)=>a.date-b.date):[];
+    const totalDaysIN=sortedDatedIN.length>=2?Math.round((sortedDatedIN[sortedDatedIN.length-1].date-sortedDatedIN[0].date)/(1000*60*60*24)):null;
+    const yearsIN=totalDaysIN?(totalDaysIN/365).toFixed(1):null;
+    const peakMBIN=sizedEntries.length?Math.max(...sizedEntries.map(e=>e.sizeMB)).toFixed(1):null;
+    const firstYearIN=sortedDatedIN.length?sortedDatedIN[0].date.getFullYear():null;
+    const lastYearIN=sortedDatedIN.length?sortedDatedIN[sortedDatedIN.length-1].date.getFullYear():null;
+    const stats=[
+      {label:'VERSIONS SHIPPED',value:total,color:'#7fc86e'},
+      {label:'CONTRIBUTORS',value:sorted.length,color:'#6ec8c8'},
+      {label:totalDaysIN?'DAYS OF DEV':'MVP SAVES',value:totalDaysIN||sorted[0][1],color:'#c8a96e'},
+      {label:yearsIN?'YEARS ACTIVE':'AVG PER PERSON',value:yearsIN||Math.round(total/sorted.length),color:'#c86ec8'},
+      {label:peakMBIN?'PEAK SIZE (MB)':'TOP STREAK',value:peakMBIN||(()=>{let b=0,c=0,prev='';entries.forEach(e=>{if(e.who===prev)c++;else{if(c>b)b=c;c=1;prev=e.who;}});return Math.max(b,c);})(),color:'#e87070'},
+      {label:'AVG / CONTRIBUTOR',value:Math.round(total/sorted.length),color:'#70a8e8'},
+    ];
+    defs.push({render(el){
+      el.innerHTML=`<div class="innumbers-bg"></div>
+        <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 20px;width:100%;">
+          <div class="reveal-text" id="inh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">VINDIGATORS</span></div>
+          <div class="reveal-text" id="inh2"><span style="font-family:'Bebas Neue';font-size:clamp(36px,7vw,80px);letter-spacing:6px;color:#c8a96e;">IN NUMBERS</span></div>
+          ${firstYearIN&&lastYearIN?`<div class="reveal-text" id="inhyear" style="margin-top:-4px;"><span style="font-size:10px;letter-spacing:5px;color:rgba(255,255,255,.15);">${firstYearIN===lastYearIN?firstYearIN:firstYearIN+' – '+lastYearIN}</span></div>`:''}
+          <div id="inGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(580px,90vw);margin-top:10px;"></div>
+        </div>`;
+      setTimeout(()=>document.getElementById('inh').classList.add('in'),100);
+      setTimeout(()=>document.getElementById('inh2').classList.add('in'),400);
+      if(firstYearIN)setTimeout(()=>document.getElementById('inhyear').classList.add('in'),700);
+      setTimeout(()=>{
+        const grid=document.getElementById('inGrid');
+        stats.forEach((s,i)=>{
+          const card=document.createElement('div');
+          card.style.cssText=`padding:14px 8px;border:1px solid rgba(255,255,255,.07);border-radius:4px;background:rgba(255,255,255,.03);opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s;transition-delay:${i*.1}s;text-align:center;`;
+          card.innerHTML=`<div style="font-family:'Bebas Neue';font-size:clamp(26px,4.5vw,52px);color:${s.color};line-height:1;">${s.value}</div>
+            <div style="font-size:8px;letter-spacing:1.5px;color:rgba(255,255,255,.25);margin-top:4px;">${s.label}</div>`;
+          grid.appendChild(card);
+          setTimeout(()=>{card.style.opacity='1';card.style.transform='translateY(0)';tone(300+i*40,'sine',.04,.2);},i*140+200);
+        });
+        setTimeout(()=>{
+          playBigReveal();
+          burst(innerWidth/2,innerHeight*.28,'#c8a96e',60);
+          burst(innerWidth*.15,innerHeight*.6,'#7fc86e',30);
+          burst(innerWidth*.85,innerHeight*.6,'#6ec8c8',30);
+          rain('#c8a96e',15);
+        },stats.length*140+400);
+      },900);
+    }});
+  }
+
+  // Shame slide — interactive tomato throwing at last place
+  if(sorted.length>=2){
+    const loser=sorted[sorted.length-1];
+    const loserName=loser[0], loserCount=loser[1];
+    const winner=sorted[0];
+    const gap=winner[1]-loserCount;
+    const roastLines=[
+      `${gap} versions behind. Incredible.`,
+      `The team carried you. You know it.`,
+      `${loserCount} saves. Was the IDE broken? 💀`,
+      `Last place. Historically. Statistically. Spiritually.`,
+      `${Math.round(loserCount/winner[1]*100)}% of what ${winner[0].toUpperCase()} did. Think about that.`,
+      `CERTIFIED BENCH WARMER 🪑`,
+      `ACHIEVEMENT UNLOCKED: Dead Weight 🏆`,
+    ];
+    defs.push({render(el){
+      let hits=0;
+      const maxHits=20;
+      let unlocked=false;
+      el.innerHTML=`<div class="shame-bg"></div>
+        <div style="position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 20px;">
+          <div class="reveal-text" id="slh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,80,80,.4);">LAST PLACE CEREMONY</span></div>
+          <div class="reveal-text" id="slsub" style="margin-bottom:8px;"><span style="font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.18);">TAP TO THROW TOMATOES 🍅</span></div>
+          <div style="position:relative;display:inline-block;" id="targetWrap">
+            <div class="shame-target" id="shameTarget">${loserName.toUpperCase()}</div>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px;justify-content:center;margin-top:16px;">
+            <div class="shame-counter" id="shameCnt">0</div>
+            <div style="font-size:clamp(13px,2vw,18px);letter-spacing:3px;color:rgba(255,100,100,.4);">TOMATOES THROWN</div>
+          </div>
+          <div class="shame-meter-track"><div class="shame-meter-fill" id="shameMeter"></div></div>
+          <div class="shame-unlock" id="shameUnlock"></div>
+          <div class="shame-hint" id="shameHint">CLICK / TAP THE NAME</div>
+        </div>`;
+
+      function playThud(){
+        try{
+          const ctx=ga(),o=ctx.createOscillator(),g=ctx.createGain(),dist=ctx.createWaveShaper();
+          const curve=new Float32Array(256);for(let i=0;i<256;i++)curve[i]=i<128?-1:1;
+          dist.curve=curve;
+          o.connect(dist);dist.connect(g);g.connect(ctx.destination);
+          o.type='sawtooth';o.frequency.value=80+Math.random()*60;
+          const t=ctx.currentTime;
+          g.gain.setValueAtTime(.18,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);
+          o.start(t);o.stop(t+.18);
+        }catch(e){}
+      }
+
+      function spawnSplat(x,y,wrap){
+        const s=document.createElement('div');
+        s.className='splat';s.style.cssText=`left:${x}px;top:${y}px;position:absolute;`;
+        const emojis=['🍅','💀','😂','🗑️','🪦'];
+        s.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+        wrap.appendChild(s);
+        setTimeout(()=>s.remove(),800);
+      }
+
+      const unlockMsgs=[
+        {at:5,  msg:'🍅 NICE ARM'},
+        {at:10, msg:'💀 THEY FEEL IT'},
+        {at:15, msg:'🔥 KEEP GOING'},
+        {at:20, msg:'🏆 FULLY COOKED. ROAST COMPLETE.'},
+      ];
+
+      function onThrow(ex,ey){
+        if(hits>=maxHits && unlocked) return;
+        hits=Math.min(hits+1,maxHits);
+        document.getElementById('shameCnt').textContent=hits;
+        document.getElementById('shameMeter').style.width=(hits/maxHits*100)+'%';
+
+        const target=document.getElementById('shameTarget');
+        target.classList.remove('hit');void target.offsetWidth;target.classList.add('hit');
+        playThud();
+        burst(ex,ey,'#ff4444',18,.7);
+        burst(ex,ey,'#ff8800',8,.5);
+
+        const wrap=document.getElementById('targetWrap');
+        const wr=wrap.getBoundingClientRect();
+        spawnSplat(ex-wr.left+(-20+Math.random()*40),ey-wr.top+(-20+Math.random()*40),wrap);
+
+        const msg=unlockMsgs.find(u=>u.at===hits);
+        if(msg){
+          const u=document.getElementById('shameUnlock');
+          u.textContent=msg.msg;
+          u.style.color='rgba(255,150,50,.9)';
+          burst(innerWidth/2,innerHeight*.5,'#ff4444',40);
+          tone(300+hits*10,'sawtooth',.08,.3);
+        }
+        if(hits>=maxHits && !unlocked){
+          unlocked=true;
+          document.getElementById('shameHint').textContent='FULLY DESERVED. TAP → TO CONTINUE';
+          // shower of shame
+          rain('#ff4444',20);rain('#ff8800',15);
+          [350,300,250,200,180].forEach((f,i)=>tone(f,'sawtooth',.07,.25,i*.09));
+        }
+        // shame-shake the bg
+        tone(60+Math.random()*40,'sine',.15,.05);
+      }
+
+      const tgt=document.getElementById('shameTarget');
+      tgt.addEventListener('click',e=>{e.stopPropagation();onThrow(e.clientX,e.clientY);});
+      tgt.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();const t=e.touches[0];onThrow(t.clientX,t.clientY);},{passive:false});
+
+      // random roast ticker
+      const unlockEl=document.getElementById('shameUnlock');
+      let roastIdx=0;
+      const roastInterval=setInterval(()=>{
+        if(hits===0){unlockEl.textContent=roastLines[roastIdx%roastLines.length];roastIdx++;unlockEl.style.color='rgba(255,80,80,.45)';}
+      },2200);
+      // cleanup on slide exit (store on el)
+      el._cleanup=()=>clearInterval(roastInterval);
+
+      setTimeout(()=>document.getElementById('slh').classList.add('in'),200);
+      setTimeout(()=>document.getElementById('slsub').classList.add('in'),700);
+      setTimeout(()=>{
+        // dramatic entrance: shake the name in
+        tone(80,'sine',.2,.4);
+        burst(innerWidth/2,innerHeight*.38,'#ff4444',60,.9);
+      },900);
+    }});
+  }
+
+  // Final — Podium
+  defs.push({render(el){
+    el.innerHTML=`<div class="sf-bg"></div>
+      <div style="position:relative;text-align:center;width:100%;">
+        <div class="reveal-text" id="sfh"><span style="font-size:11px;letter-spacing:6px;color:rgba(255,255,255,.3);">THE FINAL STANDINGS</span></div>
+        <div class="reveal-text" id="sfh2"><span style="font-family:'Bebas Neue';font-size:clamp(40px,7vw,80px);letter-spacing:6px;color:#c8a96e;">HALL OF FAME</span></div>
+        <div class="podium-wrap" id="sfPod"></div>
+        <div class="reveal-text" id="sfRestart" style="margin-top:32px;">
+          <span style="font-size:10px;letter-spacing:4px;color:rgba(255,255,255,.2);">TAP LEFT TO REPLAY &nbsp;·&nbsp; BOTTOM-RIGHT TO RESTART</span>
+        </div>
+      </div>`;
+    setTimeout(()=>document.getElementById('sfh').classList.add('in'),100);
+    setTimeout(()=>{document.getElementById('sfh2').classList.add('in');tone(300,'triangle',.08,.6);},500);
+    setTimeout(()=>{
+      const wrap=document.getElementById('sfPod');
+      const top=sorted.slice(0,3);
+      // display order: left=2nd, center=1st, right=3rd
+      const order=top.length>=2?[1,0,2]:[0];
+      // medal style/height/label keyed by rank (0=1st,1=2nd,2=3rd)
+      const rc={0:'r1',1:'r2',2:'r3'};
+      const ht={0:290,1:200,2:145};
+      const lb={0:'1ST',1:'2ND',2:'3RD'};
+      order.forEach((di,xi)=>{
+        if(di>=top.length)return;
+        const[name,count]=top[di],col=COLORS[di%COLORS.length];
+        const div=document.createElement('div');div.className='pod-col';
+        div.innerHTML=`<div class="pod-count" id="pc${di}" style="color:${col.bg};">${count}</div>
+          <div class="pod-name" id="pn${di}" style="color:${col.bg};">${name.toUpperCase()}</div>
+          <div class="pod-block ${rc[di]}" id="pb${di}">${lb[di]}</div>`;
+        wrap.appendChild(div);
+        setTimeout(()=>{
+          document.getElementById('pb'+di).style.height=ht[di]+'px';  // ht is now an object keyed by rank
+          document.getElementById('pc'+di).style.opacity='1';
+          document.getElementById('pn'+di).style.opacity='1';
+          const r=document.getElementById('pb'+di).getBoundingClientRect();
+          burst(r.left+r.width/2,r.top+20,COLORS[di%COLORS.length].bg,50);
+          tone(350+di*80,'triangle',.14,.5);
+          setTimeout(()=>shakeEl(document.getElementById('pb'+di)),200);
+        },xi*420+200);
+      });
+      setTimeout(()=>{
+        playPodium();
+        burst(innerWidth/2,innerHeight*.25,'#ffd700',120,1.2);
+        burst(innerWidth*.15,innerHeight*.5,'#c8a96e',60);
+        burst(innerWidth*.85,innerHeight*.5,'#c8a96e',60);
+        rain('#ffd700',35);rain('#c8a96e',25);
+      },1100);
+      setTimeout(()=>document.getElementById('sfRestart').classList.add('in'),2000);
+      document.getElementById('restartBtn').style.display='block';
+    },800);
+  }});
+
+  // Share Card — screenshot-ready closer
+  defs.push({render(el){
+    const top3=sorted.slice(0,3);
+    const sortedDatedSC=datedEntries.length>=2?[...datedEntries].sort((a,b)=>a.date-b.date):[];
+    const totalDaysSC=sortedDatedSC.length>=2?Math.round((sortedDatedSC[sortedDatedSC.length-1].date-sortedDatedSC[0].date)/(1000*60*60*24)):null;
+    const fy=sortedDatedSC.length?sortedDatedSC[0].date.getFullYear():null;
+    const ly=sortedDatedSC.length?sortedDatedSC[sortedDatedSC.length-1].date.getFullYear():null;
+    const yearRange=fy&&ly?(fy===ly?`${fy}`:`${fy} – ${ly}`):'';
+    el.style.background='radial-gradient(ellipse at 50% 50%,#0d0d18 0%,#020305 80%)';
+    el.innerHTML=`
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(200,169,110,.05) 0%,transparent 60%);pointer-events:none;"></div>
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:0;padding:24px 22px;width:min(480px,88vw);border:1px solid rgba(200,169,110,.15);border-radius:8px;background:rgba(0,0,0,.5);animation:shareGlow 3s ease-in-out infinite;" id="shareCard">
+        <div style="font-size:9px;letter-spacing:6px;color:rgba(200,169,110,.35);margin-bottom:2px;opacity:0;transition:opacity .5s;" id="scTop">VINDIGATORS</div>
+        <div style="font-family:'Bebas Neue';font-size:clamp(32px,8vw,76px);letter-spacing:8px;color:#c8a96e;line-height:1;opacity:0;transition:opacity .5s;" id="scTitle">WRAPPED</div>
+        ${yearRange?`<div style="font-size:9px;letter-spacing:5px;color:rgba(255,255,255,.18);margin-bottom:10px;opacity:0;transition:opacity .5s;" id="scYear">${yearRange}</div>`:'<div style="margin-bottom:10px;"></div>'}
+        <div style="width:100%;height:1px;background:rgba(255,255,255,.07);margin:4px 0 14px;"></div>
+        <div style="font-family:'Bebas Neue';font-size:clamp(60px,12vw,120px);line-height:.85;color:#fff;opacity:0;transition:opacity .5s;" id="scTotal">0</div>
+        <div style="font-size:10px;letter-spacing:5px;color:rgba(255,255,255,.22);margin-bottom:18px;opacity:0;transition:opacity .5s;" id="scTotalLbl">VERSIONS SHIPPED</div>
+        <div style="display:flex;gap:8px;justify-content:center;width:100%;flex-wrap:wrap;" id="scPod"></div>
+        <div style="width:100%;height:1px;background:rgba(255,255,255,.07);margin:14px 0 10px;"></div>
+        <div style="font-size:8px;letter-spacing:3px;color:rgba(255,255,255,.1);opacity:0;transition:opacity .5s;" id="scFooter">${sorted.length} CONTRIBUTORS${totalDaysSC?' · '+totalDaysSC+' DAYS':''} · VINDIGATORS.WRAPPED</div>
+      </div>`;
+
+    const fadeIn=(id,delay)=>setTimeout(()=>{const e=document.getElementById(id);if(e)e.style.opacity='1';},delay);
+    fadeIn('scTop',200);
+    fadeIn('scTitle',400);
+    if(yearRange)fadeIn('scYear',600);
+    setTimeout(()=>{
+      const el2=document.getElementById('scTotal');
+      if(el2){el2.style.opacity='1';}
+      countUp('scTotal',0,total,2000,()=>{
+        playBigReveal();
+        burst(innerWidth/2,innerHeight*.35,'#c8a96e',80,1.1);
+      });
+    },700);
+    fadeIn('scTotalLbl',900);
+    setTimeout(()=>{
+      const pod=document.getElementById('scPod');
+      const medals=['🥇','🥈','🥉'];
+      top3.forEach(([name,count],i)=>{
+        const col=COLORS[i%COLORS.length];
+        const item=document.createElement('div');
+        item.style.cssText=`text-align:center;padding:8px 12px;border:1px solid ${col.bg}22;border-radius:4px;background:${col.bg}0a;opacity:0;transition:opacity .4s;`;
+        item.innerHTML=`<div style="font-size:18px;">${medals[i]||'·'}</div>
+          <div style="font-family:'Bebas Neue';font-size:clamp(13px,2.5vw,22px);color:${col.bg};letter-spacing:2px;">${name.toUpperCase()}</div>
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.28);">${count} SAVES</div>`;
+        pod.appendChild(item);
+        setTimeout(()=>{item.style.opacity='1';tone(350+i*80,'triangle',.08,.3);},i*260+200);
+      });
+      setTimeout(()=>{rain('#ffd700',20);rain('#c8a96e',15);},950);
+    },2400);
+    fadeIn('scFooter',3000);
+    setTimeout(()=>document.getElementById('restartBtn').style.display='block',3200);
+  }});
+
+  return defs;
+}
+
+function renderSlide(idx, dir){
+  const container=document.getElementById('slidesContainer');
+  const old=container.querySelector('.current');
+  const enterClass=dir>=0?'slide-enter-fwd':'slide-enter-bwd';
+  const exitClass=dir>=0?'slide-exit-fwd':'slide-exit-bwd';
+  if(old){
+    if(old._cleanup)old._cleanup();
+    old.classList.remove('current');
+    old.classList.add(exitClass);
+    setTimeout(()=>old.remove(),500);
+  }
+  const el=document.createElement('div');
+  el.className='slide current '+enterClass;
+  container.appendChild(el);
+  slides[idx].render(el);
+  playWhoosh();
+  document.querySelectorAll('.dot').forEach((d,i)=>{d.className='dot'+(i<idx?' done':i===idx?' active':'');});
+}
+
+function nextSlide(){if(isAnim||currentIdx>=slides.length-1)return;isAnim=true;navDir=1;currentIdx++;renderSlide(currentIdx,1);setTimeout(()=>isAnim=false,650);}
+function prevSlide(){if(isAnim||currentIdx<=0)return;isAnim=true;navDir=-1;currentIdx--;renderSlide(currentIdx,-1);setTimeout(()=>isAnim=false,650);}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' ')nextSlide();if(e.key==='ArrowLeft')prevSlide();});
+
+function startWrapped(){
+  const txt=document.getElementById('vInput').value;
+  if(!txt.trim()){alert('Paste your version log first!');return;}
+  const data=parse(txt);
+  if(!data.entries.length){alert('No valid entries — check format (Name - Contributor)');return;}
+  slides=buildSlides(data);currentIdx=0;
+  const dotsEl=document.getElementById('dots');
+  dotsEl.innerHTML=slides.map((_,i)=>`<div class="dot${i===0?' active':''}"></div>`).join('');
+  document.getElementById('inputScreen').classList.add('hide');
+  document.getElementById('restartBtn').style.display='none';
+  setTimeout(()=>{document.getElementById('stage').classList.add('active');renderSlide(0,1);},800);
+}
+
+function restartWrapped(){
+  document.getElementById('stage').classList.remove('active');
+  document.getElementById('inputScreen').classList.remove('hide');
+  document.getElementById('restartBtn').style.display='none';
+  document.getElementById('slidesContainer').innerHTML='';
+  slides=[];currentIdx=0;parts=[];
+}
+</script>
+</body>
+</html>

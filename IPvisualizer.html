@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IP Range Explorer – Learn Subnetting</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #f5f2eb;
+  --surface: #ffffff;
+  --panel: #faf8f4;
+  --border: #e2dcd0;
+  --border-strong: #c8bfaf;
+
+  --net-bg:   #fff0f0;
+  --net-color: #d63031;
+  --net-border:#ffb3b3;
+
+  --gate-bg:  #fff8e6;
+  --gate-color:#b8860b;
+  --gate-border:#ffd97d;
+
+  --host-bg:  #edfff5;
+  --host-color:#00875a;
+  --host-border:#a3e6c4;
+
+  --bcast-bg: #f5f0ff;
+  --bcast-color:#6c3fc5;
+  --bcast-border:#c4a8f5;
+
+  --accent: #2563eb;
+  --accent-light: #eff6ff;
+  --text: #1a1612;
+  --text-mid: #5a5248;
+  --text-soft: #9a9088;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page {
+  position: relative; z-index: 1;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+/* ── Header ── */
+.site-header { margin-bottom: 40px; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 4px 12px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+.badge svg { width: 12px; height: 12px; }
+h1 {
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+.subtitle {
+  font-size: 16px;
+  color: var(--text-mid);
+  max-width: 540px;
+  line-height: 1.6;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title svg { width: 15px; height: 15px; opacity: 0.7; }
+
+/* ── Input ── */
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 520px) { .input-row { grid-template-columns: 1fr; } }
+
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-mid);
+  margin-bottom: 6px;
+}
+.field input {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 500;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  background: var(--surface);
+}
+.field input.error  { border-color: var(--net-color); }
+.field input.ok     { border-color: var(--host-color); }
+.field .hint {
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-top: 5px;
+}
+.field .err-msg {
+  font-size: 12px;
+  color: var(--net-color);
+  margin-top: 5px;
+  min-height: 18px;
+}
+
+/* Quick presets */
+.presets {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.presets-label {
+  font-size: 12px;
+  color: var(--text-soft);
+  font-weight: 500;
+}
+.preset-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.preset-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* ── Results ── */
+#results { display: none; }
+#results.show { display: block; animation: slideUp 0.35s cubic-bezier(0.16,1,0.3,1); }
+@keyframes slideUp {
+  from { opacity:0; transform: translateY(16px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ── Address Cards ── */
+.addr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.addr-card {
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  border: 1.5px solid;
+  cursor: default;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.addr-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+.addr-card.net   { background: var(--net-bg);  border-color: var(--net-border); }
+.addr-card.gate  { background: var(--gate-bg); border-color: var(--gate-border); }
+.addr-card.host  { background: var(--host-bg); border-color: var(--host-border); }
+.addr-card.bcast { background: var(--bcast-bg);border-color: var(--bcast-border);}
+
+.addr-role {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.addr-card.net   .addr-role { color: var(--net-color); }
+.addr-card.gate  .addr-role { color: var(--gate-color); }
+.addr-card.host  .addr-role { color: var(--host-color); }
+.addr-card.bcast .addr-role { color: var(--bcast-color); }
+
+.addr-ip {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+  word-break: break-all;
+}
+.addr-desc {
+  font-size: 12px;
+  color: var(--text-mid);
+  line-height: 1.5;
+}
+
+/* Host count spotlight */
+.host-spotlight {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 4px 24px rgba(37,99,235,0.25);
+}
+.host-spotlight-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.host-spotlight-num {
+  font-size: 42px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.host-spotlight-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 4px;
+}
+.host-spotlight-right { text-align: right; }
+.cidr-badge {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+}
+.mask-text {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: rgba(255,255,255,0.55);
+}
+
+/* ── Visual Range Bar ── */
+.range-bar-wrap { margin-bottom: 8px; }
+.range-bar {
+  height: 52px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.rb-seg {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: width 0.5s cubic-bezier(0.16,1,0.3,1);
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+.rb-seg span { position: relative; z-index: 1; }
+.rb-net   { background: #ffc5c5; color: var(--net-color); min-width: 52px; }
+.rb-gate  { background: #ffe8a0; color: var(--gate-color); min-width: 52px; }
+.rb-hosts { background: #c3f5dc; color: var(--host-color); flex: 1; }
+.rb-bcast { background: #ddd0f9; color: var(--bcast-color); min-width: 52px; }
+.rb-hosts::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0, transparent 8px, rgba(0,135,90,0.07) 8px, rgba(0,135,90,0.07) 9px);
+}
+.range-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.range-lbl {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-soft);
+  text-align: center;
+}
+
+/* ── Binary view ── */
+.bin-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.bin-row:last-child { border-bottom: none; }
+.bin-lbl {
+  width: 110px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.bin-val {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 2px;
+  line-height: 1.6;
+}
+.b-net  { color: #d63031; }
+.b-host { color: #00875a; }
+.b-dot  { color: var(--text-soft); }
+.bin-help {
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.bin-help span { color: #d63031; font-family: var(--mono); font-weight: 600; }
+.bin-help span.gh { color: #00875a; }
+
+/* ── Explainer Cards (from v2) ── */
+.explainer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.exp-card {
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  border: 1.5px solid;
+}
+.exp-card.net   { background: var(--net-bg);  border-color: var(--net-border); }
+.exp-card.gate  { background: var(--gate-bg); border-color: var(--gate-border); }
+.exp-card.host  { background: var(--host-bg); border-color: var(--host-border); }
+.exp-card.bcast { background: var(--bcast-bg);border-color: var(--bcast-border);}
+.exp-icon { font-size: 24px; margin-bottom: 8px; }
+.exp-title { font-size: 13px; font-weight: 700; margin-bottom: 5px; }
+.exp-card.net   .exp-title { color: var(--net-color); }
+.exp-card.gate  .exp-title { color: var(--gate-color); }
+.exp-card.host  .exp-title { color: var(--host-color); }
+.exp-card.bcast .exp-title { color: var(--bcast-color); }
+.exp-text { font-size: 12px; color: var(--text-mid); line-height: 1.55; }
+
+/* ── IP Class Sliders ── */
+.class-sliders-intro {
+  font-size: 13px;
+  color: var(--text-mid);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.ip-class-section {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 16px;
+  transition: box-shadow 0.2s;
+}
+.ip-class-section:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.ip-class-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ip-class-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.class-badge {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.class-range-text {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-mid);
+  font-weight: 500;
+}
+
+.ip-class-body {
+  border-top: 1px solid var(--border);
+  padding: 18px 18px 20px;
+  background: var(--panel);
+}
+
+.class-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.class-slider-row input[type=range] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+.class-slider-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.class-slider-row input[type=range]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.class-ip-display {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 16px 24px;
+  align-items: start;
+}
+@media (max-width: 540px) {
+  .class-ip-display { grid-template-columns: 1fr; }
+}
+
+.class-ip-block {}
+.class-ip-sublabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 4px;
+}
+.class-ip-val {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+.class-bin-val {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  line-height: 1.3;
+  word-break: break-all;
+}
+.class-desc-block {
+  font-size: 12px;
+  color: var(--text-mid);
+  line-height: 1.55;
+  padding-top: 2px;
+  border-left: 1px solid var(--border);
+  padding-left: 20px;
+}
+@media (max-width: 540px) {
+  .class-desc-block { border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 12px; }
+}
+.class-desc-title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+/* Color themes per class */
+.cls-a .ip-class-header { background: #fff5f5; }
+.cls-a .class-badge { background: #fee2e2; color: #b91c1c; }
+.cls-a input[type=range] { background: linear-gradient(to right, #ef4444, #fca5a5); }
+.cls-a input[type=range]::-webkit-slider-thumb { background: #dc2626; }
+.cls-a input[type=range]::-moz-range-thumb { background: #dc2626; }
+.cls-a .class-ip-val { color: #b91c1c; }
+.cls-a .class-bin-val .bit-cls { color: #b91c1c; font-weight: 700; }
+
+.cls-b .ip-class-header { background: #f0fdf4; }
+.cls-b .class-badge { background: #dcfce7; color: #15803d; }
+.cls-b input[type=range] { background: linear-gradient(to right, #22c55e, #86efac); }
+.cls-b input[type=range]::-webkit-slider-thumb { background: #16a34a; }
+.cls-b input[type=range]::-moz-range-thumb { background: #16a34a; }
+.cls-b .class-ip-val { color: #15803d; }
+.cls-b .class-bin-val .bit-cls { color: #15803d; font-weight: 700; }
+
+.cls-c .ip-class-header { background: #eff6ff; }
+.cls-c .class-badge { background: #dbeafe; color: #1d4ed8; }
+.cls-c input[type=range] { background: linear-gradient(to right, #3b82f6, #93c5fd); }
+.cls-c input[type=range]::-webkit-slider-thumb { background: #2563eb; }
+.cls-c input[type=range]::-moz-range-thumb { background: #2563eb; }
+.cls-c .class-ip-val { color: #1d4ed8; }
+.cls-c .class-bin-val .bit-cls { color: #1d4ed8; font-weight: 700; }
+
+.bit-host { color: var(--text-soft); opacity: 0.5; }
+
+footer {
+  text-align: center;
+  margin-top: 48px;
+  font-size: 13px;
+  color: var(--text-soft);
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="site-header">
+    <div class="badge">
+      <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 4v4l3 3"/></svg>
+      Beginner-Friendly
+    </div>
+    <h1>IP Range Explorer</h1>
+    <p class="subtitle">Enter any IP address and subnet mask to see exactly how your network is split up.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M5 7h6M5 10h4"/></svg>
+      Network Setup
+    </div>
+
+    <div class="input-row">
+      <div class="field">
+        <label>IP Address</label>
+        <input type="text" id="ipInput" placeholder="192.168.1.0">
+        <div class="err-msg" id="ipErr"></div>
+      </div>
+      <div class="field">
+        <label>Subnet / CIDR</label>
+        <input type="text" id="maskInput" placeholder="/24 or 255.255.255.0">
+        <div class="err-msg" id="maskErr"></div>
+      </div>
+    </div>
+
+    <div class="presets">
+      <button class="preset-btn" onclick="loadPreset('192.168.1.0','/24')">Home /24</button>
+      <button class="preset-btn" onclick="loadPreset('10.0.0.0','/8')">Corp /8</button>
+      <button class="preset-btn" onclick="loadPreset('172.16.0.0','/16')">Campus /16</button>
+    </div>
+  </div>
+
+  <div id="results">
+    <div class="host-spotlight">
+      <div>
+        <div class="host-spotlight-label">Total Usable Hosts</div>
+        <div class="host-spotlight-num" id="spotHosts">—</div>
+        <div class="host-spotlight-sub" id="spotRange">—</div>
+      </div>
+      <div class="host-spotlight-right">
+        <div class="cidr-badge" id="spotCidr">—</div>
+        <div class="mask-text" id="spotMask">—</div>
+      </div>
+    </div>
+
+    <div class="addr-grid" id="addrCards"></div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8h12M2 5l3 3-3 3M14 5l-3 3 3 3"/></svg>
+        Visual Range Map
+      </div>
+      <div class="range-bar-wrap">
+        <div class="range-bar" id="rangeBar">
+          <div class="rb-seg rb-net"  id="rbNet"><span>NET</span></div>
+          <div class="rb-seg rb-gate" id="rbGate"><span>GW</span></div>
+          <div class="rb-seg rb-hosts" id="rbHosts"><span id="rbHostsLabel">HOSTS</span></div>
+          <div class="rb-seg rb-bcast" id="rbBcast"><span>BCAST</span></div>
+        </div>
+        <div class="range-labels">
+          <span class="range-lbl" id="labelNet">—</span>
+          <span class="range-lbl" id="labelGate">—</span>
+          <span class="range-lbl" style="flex:1; text-align:center">← usable hosts →</span>
+          <span class="range-lbl" id="labelBcast">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Binary Breakdown</div>
+      <div id="binRows"></div>
+      <div class="bin-help">
+        <span>Red bits</span> = Network portion&nbsp;&nbsp;
+        <span class="gh">Green bits</span> = Host portion
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4h12M2 8h12M2 12h12"/><circle cx="5" cy="4" r="1.5" fill="currentColor"/><circle cx="9" cy="8" r="1.5" fill="currentColor"/><circle cx="6" cy="12" r="1.5" fill="currentColor"/></svg>
+      Private IP Range Explorer
+    </div>
+    <p class="class-sliders-intro">Private IP addresses are reserved for internal networks and are not routable on the public internet. Use the sliders to explore the specific ranges designated for local use.</p>
+
+    <div class="ip-class-section cls-a">
+      <div class="ip-class-header">
+        <div class="ip-class-label">
+          <span class="class-badge">Class A Private</span>
+          <span class="class-range-text">10.0.0.0 — 10.255.255.255</span>
+        </div>
+        <span style="font-size:12px;color:var(--text-soft);">Full Private Range · 16.7M hosts</span>
+      </div>
+      <div class="ip-class-body">
+        <div class="class-slider-row">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 2</span>
+          <input type="range" id="sliderA2" min="0" max="255" value="0">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+        </div>
+        <div class="class-slider-row">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 3</span>
+          <input type="range" id="sliderA3" min="0" max="255" value="0">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+        </div>
+        <div class="class-slider-row">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 4</span>
+          <input type="range" id="sliderA4" min="0" max="255" value="0">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+        </div>
+        <div class="class-ip-display">
+          <div class="class-ip-block">
+            <div class="class-ip-sublabel">Decimal</div>
+            <div class="class-ip-val" id="decA">10.0.0.0</div>
+          </div>
+          <div class="class-ip-block">
+            <div class="class-ip-sublabel">Binary (Variable Octets)</div>
+            <div class="class-bin-val" id="binA">00000000.00000000.00000000</div>
+          </div>
+          <div class="class-desc-block">
+            <div class="class-desc-title">The "10-dot" Network</div>
+            In Class A, the first octet is fixed at <strong>10</strong>. Use the three sliders above to change the 2nd, 3rd, and 4th octets independently to explore any address in the massive Class A private space.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ip-class-section cls-b">
+      <div class="ip-class-header">
+        <div class="ip-class-label">
+          <span class="class-badge">Class B Private</span>
+          <span class="class-range-text">172.16.0.0 — 172.31.255.255</span>
+        </div>
+        <span style="font-size:12px;color:var(--text-soft);">16 blocks · 65,534 hosts each</span>
+      </div>
+      <div class="ip-class-body">
+        <div class="class-slider-row">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 2</span>
+          <input type="range" id="sliderB2" min="16" max="31" value="16">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">31</span>
+        </div>
+        <div class="class-slider-row">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 3</span>
+          <input type="range" id="sliderB3" min="0" max="255" value="0">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+        </div>
+        <div class="class-slider-row">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 4</span>
+          <input type="range" id="sliderB4" min="0" max="255" value="0">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+        </div>
+        <div class="class-ip-display">
+          <div class="class-ip-block">
+            <div class="class-ip-sublabel">Decimal</div>
+            <div class="class-ip-val" id="decB">172.16.0.0</div>
+          </div>
+          <div class="class-ip-block">
+            <div class="class-ip-sublabel">Binary (Var Octets)</div>
+            <div class="class-bin-val" id="binB">00010000.00000000.00000000</div>
+          </div>
+          <div class="class-desc-block">
+            <div class="class-desc-title">Campus Range</div>
+            Fixed prefix <strong>172</strong>. Octet 2 is restricted to 16–31. Octets 3 and 4 provide full addressing within those blocks. This range is common in large corporate or educational Wi-Fi systems.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ip-class-section cls-c">
+      <div class="ip-class-header">
+        <div class="ip-class-label">
+          <span class="class-badge">Class C Private</span>
+          <span class="class-range-text">192.168.0.0 — 192.168.255.255</span>
+        </div>
+        <span style="font-size:12px;color:var(--text-soft);">256 blocks · 254 hosts each</span>
+      </div>
+      <div class="ip-class-body">
+        <div class="class-slider-row">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 3</span>
+          <input type="range" id="sliderC3" min="0" max="255" value="1">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+        </div>
+        <div class="class-slider-row">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 4</span>
+          <input type="range" id="sliderC4" min="0" max="255" value="0">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+        </div>
+        <div class="class-ip-display">
+          <div class="class-ip-block">
+            <div class="class-ip-sublabel">Decimal</div>
+            <div class="class-ip-val" id="decC">192.168.1.0</div>
+          </div>
+          <div class="class-ip-block">
+            <div class="class-ip-sublabel">Binary (Var Octets)</div>
+            <div class="class-bin-val" id="binC">00000001.00000000</div>
+          </div>
+          <div class="class-desc-block">
+            <div class="class-desc-title">Home Range</div>
+            Fixed prefix <strong>192.168</strong>. Adjust octets 3 and 4 to explore the standard residential networking space. Most home routers default to 192.168.0.x or 192.168.1.x.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="7"/><path d="M8 7v4M8 5v.5"/></svg>
+      How Does This All Work?
+    </div>
+    <div class="explainer-grid">
+      <div class="exp-card net">
+        <div class="exp-icon">🏠</div>
+        <div class="exp-title">Network Address</div>
+        <div class="exp-text">Think of this as the <strong>name of your street</strong>. It identifies the network itself, but no device actually gets this address. It's the starting boundary.</div>
+      </div>
+      <div class="exp-card gate">
+        <div class="exp-icon">🚪</div>
+        <div class="exp-title">Default Gateway</div>
+        <div class="exp-text">This is the <strong>front door to the internet</strong>. Usually the first usable IP. Your router gets this address — all traffic going outside the LAN passes through here.</div>
+      </div>
+      <div class="exp-card host">
+        <div class="exp-icon">💻</div>
+        <div class="exp-title">Usable Hosts</div>
+        <div class="exp-text">These are the addresses you <strong>assign to your devices</strong> — computers, phones, printers, cameras. Anything that needs a network identity gets one of these.</div>
+      </div>
+      <div class="exp-card bcast">
+        <div class="exp-icon">📢</div>
+        <div class="exp-title">Broadcast Address</div>
+        <div class="exp-text">A <strong>message to everyone</strong> on the network at once. When data is sent here, all devices receive it. It's the last address in the range and can't be assigned to a device.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function ipToInt(ip) {
+  const p = ip.split('.').map(Number);
+  return ((p[0]<<24)|(p[1]<<16)|(p[2]<<8)|p[3]) >>> 0;
+}
+function intToIp(n) {
+  return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.');
+}
+function isValidIp(ip) {
+  const p = ip.split('.');
+  return p.length===4 && p.every(x=>/^\d{1,3}$/.test(x)&&+x<=255);
+}
+function parseMask(raw) {
+  raw = raw.trim();
+  if (raw.startsWith('/')) raw = raw.slice(1);
+  if (/^\d+$/.test(raw)) {
+    const c=+raw; return (c>=0&&c<=32)?c:null;
+  }
+  if (isValidIp(raw)) {
+    const n=ipToInt(raw), inv=(~n)>>>0;
+    if ((inv&(inv+1))!==0) return null;
+    let c=0,t=n>>>0;
+    while(t&0x80000000){c++;t=(t<<1)>>>0;}
+    return c;
+  }
+  return null;
+}
+
+// ── Private Range Explorer Logic ─────────────────────────────────────────────
+function renderClassA() {
+  const v2 = $('sliderA2').value, v3 = $('sliderA3').value, v4 = $('sliderA4').value;
+  $('decA').textContent = `10.${v2}.${v3}.${v4}`;
+  $('binA').innerHTML = [v2, v3, v4].map(v => parseInt(v).toString(2).padStart(8, '0')).join('.');
+}
+
+function renderClassB() {
+  const v2 = $('sliderB2').value, v3 = $('sliderB3').value, v4 = $('sliderB4').value;
+  $('decB').textContent = `172.${v2}.${v3}.${v4}`;
+  $('binB').innerHTML = [v2, v3, v4].map(v => parseInt(v).toString(2).padStart(8, '0')).join('.');
+}
+
+function renderClassC() {
+  const v3 = $('sliderC3').value, v4 = $('sliderC4').value;
+  $('decC').textContent = `192.168.${v3}.${v4}`;
+  $('binC').innerHTML = [v3, v4].map(v => parseInt(v).toString(2).padStart(8, '0')).join('.');
+}
+
+// ── Main Calculation ──────────────────────────────────────────────────────────
+function calculate() {
+  const ipRaw = $('ipInput').value.trim();
+  const mRaw  = $('maskInput').value.trim();
+  $('ipErr').textContent = '';
+  $('maskErr').textContent = '';
+
+  if (!ipRaw && !mRaw) { $('results').classList.remove('show'); return; }
+
+  let ok = true;
+  if (!isValidIp(ipRaw)) { ok = false; if (ipRaw) $('ipErr').textContent = 'Invalid IP'; }
+  const cidr = parseMask(mRaw);
+  if (cidr === null) { ok = false; if (mRaw) $('maskErr').textContent = 'Invalid Mask'; }
+
+  if (!ok) { $('results').classList.remove('show'); return; }
+
+  const ipInt  = ipToInt(ipRaw);
+  const mask   = cidr===0 ? 0 : (0xFFFFFFFF << (32-cidr)) >>> 0;
+  const netInt = (ipInt & mask) >>> 0;
+  const bcast  = (netInt | (~mask>>>0)) >>> 0;
+  const total  = 2**(32-cidr);
+  const usable = Math.max(0, total-2);
+  const gateInt= cidr>=31 ? null : netInt+1;
+  const firstInt = cidr>=31 ? netInt : netInt+2;
+  const lastInt  = cidr>=31 ? bcast  : bcast-1;
+
+  render({ netInt, bcast, gateInt, firstInt, lastInt, usable, cidr, mask, ipInt });
+}
+
+function render(c) {
+  const { netInt, bcast, gateInt, firstInt, lastInt, usable, cidr, mask, ipInt } = c;
+
+  $('spotHosts').textContent = usable.toLocaleString();
+  $('spotCidr').textContent  = `/${cidr}`;
+  $('spotMask').textContent  = intToIp(mask);
+  $('spotRange').textContent = firstInt <= lastInt ? `${intToIp(firstInt)} → ${intToIp(lastInt)}` : 'No usable hosts';
+
+  const cards = [
+    { cls:'net',  label:'🏠 Network', ip: intToIp(netInt),  desc: 'The starting boundary.' },
+    { cls:'gate', label:'🚪 Gateway', ip: gateInt ? intToIp(gateInt) : 'N/A', desc: 'Router LAN address.' },
+    { cls:'host', label:'💻 Hosts',   ip: firstInt <= lastInt ? `${intToIp(firstInt)} – ${intToIp(lastInt)}` : 'N/A', desc: `${usable} usable addresses.` },
+    { cls:'bcast',label:'📢 Broadcast',ip: intToIp(bcast),  desc: 'Message to all devices.' },
+  ];
+  $('addrCards').innerHTML = cards.map(c=>`
+    <div class="addr-card ${c.cls}">
+      <div class="addr-role">${c.label}</div>
+      <div class="addr-ip">${c.ip}</div>
+      <div class="addr-desc">${c.desc}</div>
+    </div>
+  `).join('');
+
+  $('labelNet').textContent  = intToIp(netInt);
+  $('labelGate').textContent = gateInt ? intToIp(gateInt) : '';
+  $('labelBcast').textContent = intToIp(bcast);
+  $('rbHostsLabel').textContent = usable > 0 ? `${usable.toLocaleString()} hosts` : 'no hosts';
+
+  const items = [
+    {label:'Input IP',   n:ipInt},
+    {label:'Mask',       n:mask},
+    {label:'Network',    n:netInt},
+    {label:'Broadcast',  n:bcast},
+  ];
+  $('binRows').innerHTML = items.map(it=>{
+    const raw = (it.n >>> 0).toString(2).padStart(32,'0');
+    const octets = [];
+    for (let i=0;i<4;i++) {
+      const seg = raw.slice(i*8,(i+1)*8);
+      const nLen = Math.max(0, Math.min(8, cidr - i*8));
+      let h = '';
+      if (nLen > 0) h += `<span class="b-net">${seg.slice(0,nLen)}</span>`;
+      if (nLen < 8) h += `<span class="b-host">${seg.slice(nLen)}</span>`;
+      octets.push(h);
+    }
+    return `<div class="bin-row">
+      <div class="bin-lbl">${it.label}</div>
+      <div class="bin-val">${octets.join('<span class="b-dot">.</span>')}</div>
+    </div>`;
+  }).join('');
+
+  $('results').classList.add('show');
+}
+
+function loadPreset(ip, mask) {
+  $('ipInput').value = ip;
+  $('maskInput').value = mask;
+  calculate();
+}
+
+// Event Listeners for main calculator
+$('ipInput').addEventListener('input', calculate);
+$('maskInput').addEventListener('input', calculate);
+
+// Event Listeners for Private Explorer
+['sliderA2', 'sliderA3', 'sliderA4'].forEach(id => $(id).addEventListener('input', renderClassA));
+['sliderB2', 'sliderB3', 'sliderB4'].forEach(id => $(id).addEventListener('input', renderClassB));
+['sliderC3', 'sliderC4'].forEach(id => $(id).addEventListener('input', renderClassC));
+
+// Initialization
+document.addEventListener('DOMContentLoaded', () => {
+  renderClassA(); 
+  renderClassB(); 
+  renderClassC();
+  loadPreset('192.168.1.0','/24');
+});
+</script>
+</body>
+</html>

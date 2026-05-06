@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text Animator</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Share+Tech+Mono&family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Oswald:wght@300&family=IM+Fell+English:ital@1&family=Courier+Prime&family=Bebas+Neue&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --border: #2a2a2a;
+    --accent: #c8a96e;
+    --text: #d4d0c8;
+    --muted: #555;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  header {
+    grid-column: 1 / -1;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 4px; color: var(--accent); }
+  header span { font-size: 11px; color: var(--muted); letter-spacing: 2px; }
+  .sidebar {
+    padding: 24px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+  .section-label { font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; }
+  textarea {
+    width: 100%; height: 180px;
+    background: #0a0a0a; border: 1px solid var(--border);
+    color: var(--text); font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; padding: 12px; resize: vertical; line-height: 1.7; outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  .row { display: flex; gap: 10px; align-items: center; }
+  select {
+    background: #0a0a0a; border: 1px solid var(--border);
+    color: var(--text); font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; padding: 8px 10px; outline: none; cursor: pointer; width: 100%;
+  }
+  select:focus { border-color: var(--accent); }
+  input[type="color"] { width: 44px; height: 36px; border: 1px solid var(--border); background: none; cursor: pointer; padding: 2px; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+  .range-row { display: flex; flex-direction: column; gap: 6px; }
+  .range-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  .anim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .anim-btn {
+    background: #0a0a0a; border: 1px solid var(--border); color: var(--muted);
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; padding: 10px 6px;
+    cursor: pointer; text-align: center; letter-spacing: 1px; transition: all 0.15s;
+  }
+  .anim-btn:hover { border-color: var(--accent); color: var(--text); }
+  .anim-btn.active { border-color: var(--accent); color: var(--accent); background: #1a1508; }
+  .format-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .format-btn {
+    background: #0a0a0a; border: 1px solid var(--border); color: var(--muted);
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; padding: 12px 6px;
+    cursor: pointer; text-align: center; letter-spacing: 1px; transition: all 0.15s;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .format-btn:hover { border-color: var(--accent); color: var(--text); }
+  .format-btn.active { border-color: var(--accent); color: var(--accent); background: #1a1508; }
+  .format-icon { display: flex; align-items: center; justify-content: center; }
+  .format-icon .rect { border: 2px solid currentColor; border-radius: 2px; }
+  .format-icon .rect.landscape { width: 28px; height: 18px; }
+  .format-icon .rect.portrait  { width: 16px; height: 26px; }
+  .btn {
+    width: 100%; padding: 13px;
+    font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 3px;
+    cursor: pointer; border: none; transition: all 0.15s;
+  }
+  .btn-preview { background: var(--border); color: var(--text); }
+  .btn-preview:hover { background: #333; }
+  .btn-export { background: var(--accent); color: #0d0d0d; }
+  .btn-export:hover { background: #d4b87a; }
+  .btn-export:disabled { background: var(--muted); cursor: not-allowed; }
+  .main { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; gap: 20px; overflow: hidden; }
+
+  /* canvas wrap + overlay */
+  .canvas-wrap {
+    position: relative;
+    border: 1px solid var(--border);
+    background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 0 0 / 20px 20px;
+    flex-shrink: 0;
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* SVG overlay sits on top of canvas, same size */
+  #regionOverlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    overflow: visible;
+    pointer-events: none; /* children re-enable */
+  }
+  #regionOverlay.hidden { display: none; }
+
+  /* dim zone outside region */
+  .dim-rect { fill: rgba(0,0,0,0.45); pointer-events: none; }
+
+  /* dashed border of text region */
+  .region-border {
+    fill: none;
+    stroke: #c8a96e;
+    stroke-width: 1.5;
+    stroke-dasharray: 6 4;
+    pointer-events: none;
+    opacity: 0.85;
+  }
+
+  /* handle lines */
+  .handle-line {
+    stroke: #c8a96e;
+    stroke-width: 2;
+    stroke-linecap: round;
+    pointer-events: none;
+  }
+
+  /* invisible fat hit area for dragging */
+  .handle-hit {
+    fill: transparent;
+    stroke: transparent;
+    stroke-width: 20;
+    cursor: ns-resize;
+    pointer-events: all;
+  }
+  .handle-hit.lr { cursor: ew-resize; }
+
+  /* pill label */
+  .handle-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    fill: #c8a96e;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+    letter-spacing: 1px;
+  }
+  .handle-label-bg {
+    fill: #0d0d0d;
+    rx: 3; ry: 3;
+    pointer-events: none;
+  }
+
+  /* corner squares */
+  .corner-sq {
+    fill: #0d0d0d;
+    stroke: #c8a96e;
+    stroke-width: 1.5;
+    pointer-events: none;
+  }
+
+  .status-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  #status { color: var(--accent); }
+  .progress-bar { height: 3px; background: var(--border); width: 100%; overflow: hidden; display: none; border-radius: 2px; }
+  .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.08s linear; box-shadow: 0 0 8px var(--accent); }
+  .bg-options { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .bg-chip { width: 28px; height: 28px; border: 1px solid var(--border); cursor: pointer; transition: border-color 0.15s; flex-shrink: 0; }
+  .bg-chip:hover, .bg-chip.active { border-color: var(--accent); outline: 1px solid var(--accent); }
+  .bg-chip.transparent { background: repeating-conic-gradient(#333 0% 25%, #1a1a1a 0% 50%) 0 0 / 10px 10px; }
+  .bg-chip.black { background: #000; }
+  .bg-chip.white { background: #fff; }
+  .bg-chip.dark-red { background: #1a0505; }
+
+  .reset-region-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--muted); background: none; border: 1px solid var(--border);
+    padding: 5px 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .reset-region-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .region-info {
+    font-size: 10px; color: var(--muted); letter-spacing: 1px;
+    margin-top: 6px; display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .region-info span { color: var(--text); }
+
+  /* toggle row for outline */
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .toggle-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; flex: 1; }
+  .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0; background: var(--border);
+    cursor: pointer; transition: background 0.2s; border-radius: 10px;
+  }
+  .toggle-slider:before {
+    content: ''; position: absolute; width: 14px; height: 14px;
+    left: 3px; top: 3px; background: var(--muted);
+    border-radius: 50%; transition: all 0.2s;
+  }
+  .toggle input:checked + .toggle-slider { background: #1a1508; }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(16px); background: var(--accent); }
+
+  .outline-controls { display: flex; flex-direction: column; gap: 10px; }
+  .outline-controls.hidden { display: none; }
+
+  /* export bg section */
+  .export-bg-options { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .exp-bg-chip {
+    width: 28px; height: 28px; border: 1px solid var(--border);
+    cursor: pointer; transition: border-color 0.15s; flex-shrink: 0; border-radius: 2px;
+  }
+  .exp-bg-chip:hover, .exp-bg-chip.active { border-color: var(--accent); outline: 1px solid var(--accent); }
+  .exp-bg-chip.transparent { background: repeating-conic-gradient(#333 0% 25%, #1a1a1a 0% 50%) 0 0 / 10px 10px; }
+  .exp-bg-chip.black { background: #000; }
+  .exp-bg-chip.white { background: #fff; }
+  .exp-bg-chip.grad-dark { background: linear-gradient(135deg,#0d0d0d,#2a1a05); }
+  .exp-bg-chip.grad-blue { background: linear-gradient(135deg,#050d1a,#0a1a2e); }
+  .gradient-options { display: none; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .gradient-options.visible { display: flex; }
+  .gradient-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grad-btn {
+    background: #0a0a0a; border: 1px solid var(--border); color: var(--muted);
+    font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 8px 4px;
+    cursor: pointer; text-align: center; letter-spacing: 1px; transition: all 0.15s;
+    border-radius: 2px;
+  }
+  .grad-btn:hover { border-color: var(--accent); color: var(--text); }
+  .grad-btn.active { border-color: var(--accent); color: var(--accent); background: #1a1508; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TEXT ANIMATOR</h1>
+  <span>// scroll + export webm alpha</span>
+</header>
+
+<aside class="sidebar">
+  <div>
+    <div class="section-label">Tekst</div>
+    <textarea id="inputText">Niektóre rzeczy nie znikają.
+
+Zostają w ziemi. W wodzie. W powietrzu.
+Długo po tym, jak my o nich zapomnimy.
+
+Elektroodpady to nie złom.
+To wszystko, co przestało działać –
+ale nie przestało istnieć.
+
+Ołów. Rtęć. Kadm.
+Niewidoczne. Cierpliwe.
+Wystarczy jedno pęknięcie.
+I zaczynają wracać.</textarea>
+  </div>
+
+  <div>
+    <div class="section-label">Format</div>
+    <div class="format-grid">
+      <button class="format-btn active" data-fmt="landscape">
+        <div class="format-icon"><div class="rect landscape"></div></div>
+        <span>16:9</span>
+      </button>
+      <button class="format-btn" data-fmt="portrait">
+        <div class="format-icon"><div class="rect portrait"></div></div>
+        <span>9:16 · Shorts</span>
+      </button>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Obszar tekstu</div>
+    <div style="font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:8px;">
+      Przeciągnij uchwyty na podglądzie aby ustawić granice tekstu.
+    </div>
+    <div class="region-info">
+      G: <span id="ri-top">10%</span> &nbsp;
+      D: <span id="ri-bot">90%</span> &nbsp;
+      L: <span id="ri-left">8%</span> &nbsp;
+      P: <span id="ri-right">92%</span>
+    </div>
+    <div style="margin-top:8px;">
+      <button class="reset-region-btn" onclick="resetRegion()">↺ RESETUJ</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Czcionka</div>
+    <select id="fontSelect">
+      <option value="'Special Elite', cursive">Special Elite</option>
+      <option value="'Share Tech Mono', monospace">Share Tech Mono</option>
+      <option value="'Cormorant Garamond', serif">Cormorant Garamond</option>
+      <option value="'Oswald', sans-serif">Oswald</option>
+      <option value="'IM Fell English', serif">IM Fell English</option>
+      <option value="'Courier Prime', monospace">Courier Prime</option>
+      <option value="'Bebas Neue', cursive">Bebas Neue</option>
+      <option value="'Playfair Display', serif">Playfair Display</option>
+    </select>
+  </div>
+
+  <div>
+    <div class="section-label">Kolor tekstu</div>
+    <div class="row">
+      <input type="color" id="textColor" value="#d4d0c8">
+      <select id="colorPreset">
+        <option value="#d4d0c8">Kremowy (metro)</option>
+        <option value="#ffffff">Biały</option>
+        <option value="#000000">Czarny</option>
+        <option value="#c8a96e">Złoty</option>
+        <option value="#8baacc">Niebieski</option>
+        <option value="#cc8b8b">Czerwony</option>
+      </select>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Obrys tekstu</div>
+    <div class="toggle-row">
+      <span class="toggle-label">Włącz obrys</span>
+      <label class="toggle">
+        <input type="checkbox" id="outlineEnabled">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="outline-controls hidden" id="outlineControls">
+      <div class="row">
+        <input type="color" id="outlineColor" value="#000000">
+        <select id="outlineColorPreset">
+          <option value="#000000">Czarny</option>
+          <option value="#ffffff">Biały</option>
+          <option value="#c8a96e">Złoty</option>
+          <option value="#1a0505">Ciemna czerwień</option>
+          <option value="#0d1a2e">Ciemny niebieski</option>
+        </select>
+      </div>
+      <div class="range-row">
+        <div class="range-label"><span>Grubość obrysu</span><span id="outlineWidthVal">2px</span></div>
+        <input type="range" id="outlineWidth" min="1" max="12" value="2">
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Tło podglądu</div>
+    <div class="bg-options">
+      <div class="bg-chip transparent active" data-bg="transparent" title="Przezroczyste"></div>
+      <div class="bg-chip black" data-bg="black" title="Czarne"></div>
+      <div class="bg-chip white" data-bg="white" title="Białe"></div>
+      <div class="bg-chip dark-red" data-bg="#1a0505" title="Ciemna czerwień"></div>
+      <input type="color" id="bgColorCustom" value="#1a1a2e" title="Własny kolor" style="width:28px;height:28px;border:1px solid var(--border);cursor:pointer;padding:2px;flex-shrink:0;">
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Tło eksportu</div>
+    <div class="export-bg-options">
+      <div class="exp-bg-chip transparent active" data-expbg="transparent" title="Przezroczyste (alpha)"></div>
+      <div class="exp-bg-chip black" data-expbg="black" title="Czarne"></div>
+      <div class="exp-bg-chip white" data-expbg="white" title="Białe"></div>
+      <div class="exp-bg-chip grad-dark" data-expbg="gradient-dark" title="Gradient ciemny"></div>
+      <div class="exp-bg-chip grad-blue" data-expbg="gradient-blue" title="Gradient niebieski"></div>
+      <input type="color" id="expBgColorCustom" value="#0d0d0d" title="Własny kolor" style="width:28px;height:28px;border:1px solid var(--border);cursor:pointer;padding:2px;flex-shrink:0;">
+    </div>
+    <div id="gradientOptions" class="gradient-options">
+      <div class="range-label" style="font-size:10px;">Kierunek gradientu</div>
+      <div class="gradient-grid">
+        <button class="grad-btn active" data-grad-dir="to bottom">↓ Dół</button>
+        <button class="grad-btn" data-grad-dir="to right">→ Prawo</button>
+        <button class="grad-btn" data-grad-dir="135deg">↘ Ukos</button>
+        <button class="grad-btn" data-grad-dir="to top">↑ Góra</button>
+      </div>
+      <div class="range-row">
+        <div class="range-label"><span>Kolor 1</span></div>
+        <input type="color" id="gradColor1" value="#0d0d0d" style="width:100%;height:28px;border:1px solid var(--border);cursor:pointer;padding:2px;">
+      </div>
+      <div class="range-row">
+        <div class="range-label"><span>Kolor 2</span></div>
+        <input type="color" id="gradColor2" value="#2a1a05" style="width:100%;height:28px;border:1px solid var(--border);cursor:pointer;padding:2px;">
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px;" id="expBgNote">Eksport przezroczysty (WebM VP9 alpha)</div>
+  </div>
+
+  <div>
+    <div class="section-label">Animacja</div>
+    <div class="anim-grid">
+      <button class="anim-btn active" data-anim="typewriter">TYPEWRITER</button>
+      <button class="anim-btn" data-anim="fade">FADE IN</button>
+      <button class="anim-btn" data-anim="fadeup">FADE UP</button>
+      <button class="anim-btn" data-anim="glitch">GLITCH</button>
+      <button class="anim-btn" data-anim="reveal">LINE REVEAL</button>
+      <button class="anim-btn" data-anim="flicker">FLICKER</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Ustawienia</div>
+    <div class="range-row">
+      <div class="range-label"><span>Czcionka</span><span id="fontSizeVal">28px</span></div>
+      <input type="range" id="fontSize" min="14" max="72" value="28">
+    </div>
+    <div class="range-row" style="margin-top:12px;">
+      <div class="range-label"><span>Prędkość</span><span id="speedVal">normalnie</span></div>
+      <input type="range" id="speed" min="1" max="5" value="3">
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Rozdzielczość eksportu</div>
+    <select id="exportRes"></select>
+  </div>
+
+  <button class="btn btn-preview" onclick="startPreview()">▶ PODGLĄD</button>
+  <button class="btn btn-export" id="exportBtn" onclick="startExport()">⬇ EKSPORTUJ WEBM</button>
+</aside>
+
+<main class="main">
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="canvas" width="800" height="450"></canvas>
+
+    <!-- SVG overlay for region handles -->
+    <svg id="regionOverlay" xmlns="http://www.w3.org/2000/svg">
+      <!-- dim outside -->
+      <rect id="dimTop"    class="dim-rect"/>
+      <rect id="dimBot"    class="dim-rect"/>
+      <rect id="dimLeft"   class="dim-rect"/>
+      <rect id="dimRight"  class="dim-rect"/>
+
+      <!-- dashed border -->
+      <rect id="regionBorder" class="region-border"/>
+
+      <!-- corner squares -->
+      <rect class="corner-sq" id="cTL" width="7" height="7"/>
+      <rect class="corner-sq" id="cTR" width="7" height="7"/>
+      <rect class="corner-sq" id="cBL" width="7" height="7"/>
+      <rect class="corner-sq" id="cBR" width="7" height="7"/>
+
+      <!-- TOP handle -->
+      <line id="hTopLine"  class="handle-line"/>
+      <line id="hTopHit"   class="handle-hit"  data-handle="top"/>
+
+      <!-- BOTTOM handle -->
+      <line id="hBotLine"  class="handle-line"/>
+      <line id="hBotHit"   class="handle-hit"  data-handle="bot"/>
+
+      <!-- LEFT handle -->
+      <line id="hLeftLine"  class="handle-line"/>
+      <line id="hLeftHit"   class="handle-hit lr" data-handle="left"/>
+
+      <!-- RIGHT handle -->
+      <line id="hRightLine"  class="handle-line"/>
+      <line id="hRightHit"   class="handle-hit lr" data-handle="right"/>
+
+      <!-- labels -->
+      <rect id="lblTopBg"   class="handle-label-bg" width="34" height="16"/>
+      <text id="lblTop"     class="handle-label">GÓRA</text>
+      <rect id="lblBotBg"   class="handle-label-bg" width="34" height="16"/>
+      <text id="lblBot"     class="handle-label">DÓŁ</text>
+      <rect id="lblLeftBg"  class="handle-label-bg" width="34" height="16"/>
+      <text id="lblLeft"    class="handle-label">LEWO</text>
+      <rect id="lblRightBg" class="handle-label-bg" width="34" height="16"/>
+      <text id="lblRight"   class="handle-label">PRAWO</text>
+    </svg>
+  </div>
+
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  <div class="status-bar">
+    <span id="status">Gotowy. Kliknij ▶ Podgląd.</span>
+    <span id="resLabel">800 × 450 · WebM VP9 · Alpha</span>
+  </div>
+</main>
+
+<script>
+const canvas  = document.getElementById('canvas');
+const ctx     = canvas.getContext('2d');
+const overlay = document.getElementById('regionOverlay');
+let animFrame    = null;
+let selectedAnim = 'typewriter';
+let previewBg    = 'transparent';
+let selectedFmt  = 'landscape';
+let exportBg     = 'transparent';   // 'transparent' | 'black' | 'white' | hex | 'gradient-dark' | 'gradient-blue' | 'custom-gradient'
+let gradDir      = 'to bottom';
+let gradColor1   = '#0d0d0d';
+let gradColor2   = '#2a1a05';
+
+// ─── Text region (0–1 fractions of canvas) ────────────
+// These are the authoritative values; overlay reads from them.
+const region = { top: 0.10, bot: 0.90, left: 0.08, right: 0.92 };
+const MIN_GAP = 0.12; // minimum fraction between opposite handles
+
+function resetRegion() {
+  region.top = 0.10; region.bot = 0.90;
+  region.left = 0.08; region.right = 0.92;
+  renderOverlay();
+  updateRegionInfo();
+}
+
+function updateRegionInfo() {
+  document.getElementById('ri-top').textContent   = Math.round(region.top   * 100) + '%';
+  document.getElementById('ri-bot').textContent   = Math.round(region.bot   * 100) + '%';
+  document.getElementById('ri-left').textContent  = Math.round(region.left  * 100) + '%';
+  document.getElementById('ri-right').textContent = Math.round(region.right * 100) + '%';
+}
+
+// ─── Overlay rendering ────────────────────────────────
+function renderOverlay() {
+  const W = overlay.clientWidth  || 800;
+  const H = overlay.clientHeight || 450;
+  if (W === 0 || H === 0) return;
+
+  const t = region.top   * H;
+  const b = region.bot   * H;
+  const l = region.left  * W;
+  const r = region.right * W;
+  const cx = (l + r) / 2;
+  const cy = (t + b) / 2;
+
+  // dim rects
+  setRect('dimTop',   0, 0, W, t);
+  setRect('dimBot',   0, b, W, H - b);
+  setRect('dimLeft',  0, t, l, b - t);
+  setRect('dimRight', r, t, W - r, b - t);
+
+  // border
+  setRect('regionBorder', l, t, r - l, b - t);
+
+  // corner squares (centered on corners)
+  setRectXY('cTL', l - 3.5, t - 3.5);
+  setRectXY('cTR', r - 3.5, t - 3.5);
+  setRectXY('cBL', l - 3.5, b - 3.5);
+  setRectXY('cBR', r - 3.5, b - 3.5);
+
+  // top handle
+  setLine('hTopLine',  l + 4, t,  r - 4, t);
+  setLine('hTopHit',   l,     t,  r,     t);
+  posLabel('lblTop',   'lblTopBg',  cx,        t - 13, 'GÓRA');
+
+  // bottom handle
+  setLine('hBotLine',  l + 4, b,  r - 4, b);
+  setLine('hBotHit',   l,     b,  r,     b);
+  posLabel('lblBot',   'lblBotBg',  cx,        b + 13, 'DÓŁ');
+
+  // left handle
+  setLine('hLeftLine', l, t + 4, l, b - 4);
+  setLine('hLeftHit',  l, t,     l, b);
+  posLabel('lblLeft',  'lblLeftBg',  l - 22,    cy,     'LEWO');
+
+  // right handle
+  setLine('hRightLine', r, t + 4, r, b - 4);
+  setLine('hRightHit',  r, t,     r, b);
+  posLabel('lblRight', 'lblRightBg', r + 22,    cy,     'PRAWO');
+}
+
+function setRect(id, x, y, w, h) {
+  const el = document.getElementById(id);
+  el.setAttribute('x', x); el.setAttribute('y', y);
+  el.setAttribute('width', Math.max(0, w)); el.setAttribute('height', Math.max(0, h));
+}
+function setRectXY(id, x, y) {
+  const el = document.getElementById(id);
+  el.setAttribute('x', x); el.setAttribute('y', y);
+}
+function setLine(id, x1, y1, x2, y2) {
+  const el = document.getElementById(id);
+  el.setAttribute('x1', x1); el.setAttribute('y1', y1);
+  el.setAttribute('x2', x2); el.setAttribute('y2', y2);
+}
+function posLabel(txtId, bgId, cx, cy, text) {
+  const txt = document.getElementById(txtId);
+  const bg  = document.getElementById(bgId);
+  const w = bgId.includes('Left') || bgId.includes('Right') ? 40 : 34;
+  txt.setAttribute('x', cx); txt.setAttribute('y', cy);
+  txt.textContent = text;
+  bg.setAttribute('x', cx - w / 2); bg.setAttribute('y', cy - 8);
+  bg.setAttribute('width', w);
+}
+
+// ─── Drag logic ───────────────────────────────────────
+let dragging = null; // { handle, startFrac, startPos }
+
+overlay.addEventListener('mousedown', onDragStart);
+overlay.addEventListener('touchstart', onDragStart, { passive: false });
+window.addEventListener('mousemove', onDragMove);
+window.addEventListener('touchmove', onDragMove, { passive: false });
+window.addEventListener('mouseup', onDragEnd);
+window.addEventListener('touchend', onDragEnd);
+
+function getHandleEl(e) {
+  // find the hit element in the path
+  const path = e.composedPath ? e.composedPath() : [e.target];
+  for (const el of path) {
+    if (el.dataset && el.dataset.handle) return el;
+  }
+  return null;
+}
+
+function clientToFrac(e) {
+  const rect = overlay.getBoundingClientRect();
+  const touch = e.touches ? e.touches[0] : e;
+  const x = (touch.clientX - rect.left) / rect.width;
+  const y = (touch.clientY - rect.top)  / rect.height;
+  return { x, y };
+}
+
+function onDragStart(e) {
+  const el = getHandleEl(e);
+  if (!el) return;
+  e.preventDefault();
+  dragging = { handle: el.dataset.handle };
+  overlay.style.cursor = el.classList.contains('lr') ? 'ew-resize' : 'ns-resize';
+}
+
+function onDragMove(e) {
+  if (!dragging) return;
+  e.preventDefault();
+  const f = clientToFrac(e);
+  const h = dragging.handle;
+  if (h === 'top') {
+    region.top = Math.max(0, Math.min(f.y, region.bot - MIN_GAP));
+  } else if (h === 'bot') {
+    region.bot = Math.min(1, Math.max(f.y, region.top + MIN_GAP));
+  } else if (h === 'left') {
+    region.left = Math.max(0, Math.min(f.x, region.right - MIN_GAP));
+  } else if (h === 'right') {
+    region.right = Math.min(1, Math.max(f.x, region.left + MIN_GAP));
+  }
+  renderOverlay();
+  updateRegionInfo();
+}
+
+function onDragEnd() {
+  dragging = null;
+  overlay.style.cursor = '';
+}
+
+// ─── Format definitions ────────────────────────────────
+const FORMATS = {
+  landscape: {
+    previewW: 800, previewH: 450,
+    resolutions: [
+      { label: '1280 × 720  (HD)',       value: '1280x720'  },
+      { label: '1920 × 1080  (Full HD)', value: '1920x1080', selected: true },
+      { label: '2560 × 1440  (2K)',      value: '2560x1440' },
+      { label: '3840 × 2160  (4K)',      value: '3840x2160' },
+    ]
+  },
+  portrait: {
+    previewW: 450, previewH: 800,
+    resolutions: [
+      { label: '720 × 1280  (HD)',       value: '720x1280'  },
+      { label: '1080 × 1920  (Full HD)', value: '1080x1920', selected: true },
+      { label: '1440 × 2560  (2K)',      value: '1440x2560' },
+      { label: '2160 × 3840  (4K)',      value: '2160x3840' },
+    ]
+  }
+};
+
+function applyFormat(fmt) {
+  selectedFmt = fmt;
+  const def = FORMATS[fmt];
+  canvas.width  = def.previewW;
+  canvas.height = def.previewH;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  fitCanvas();
+  const sel = document.getElementById('exportRes');
+  sel.innerHTML = '';
+  def.resolutions.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.value; opt.textContent = r.label;
+    if (r.selected) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  document.getElementById('resLabel').textContent =
+    `${def.previewW} × ${def.previewH} · WebM VP9 · Alpha`;
+  // re-render overlay after layout settles
+  requestAnimationFrame(() => { renderOverlay(); });
+}
+
+function fitCanvas() {
+  const main = document.querySelector('.main');
+  const wrap = document.getElementById('canvasWrap');
+  const availW = main.clientWidth  - 64;
+  const availH = main.clientHeight - 120;
+  const scaleW = availW / canvas.width;
+  const scaleH = availH / canvas.height;
+  const scale  = Math.min(scaleW, scaleH, 1);
+  wrap.style.width  = (canvas.width  * scale) + 'px';
+  wrap.style.height = (canvas.height * scale) + 'px';
+  requestAnimationFrame(renderOverlay);
+}
+
+window.addEventListener('resize', fitCanvas);
+
+// ─── UI bindings ───────────────────────────────────────
+document.querySelectorAll('.anim-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedAnim = btn.dataset.anim;
+  });
+});
+document.querySelectorAll('.format-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFormat(btn.dataset.fmt);
+  });
+});
+document.getElementById('colorPreset').addEventListener('change', e =>
+  document.getElementById('textColor').value = e.target.value);
+document.getElementById('textColor').addEventListener('change', e =>
+  document.getElementById('colorPreset').value = e.target.value);
+document.getElementById('fontSize').addEventListener('input', e =>
+  document.getElementById('fontSizeVal').textContent = e.target.value + 'px');
+document.getElementById('speed').addEventListener('input', e => {
+  const labels = ['','bardzo wolno','wolno','normalnie','szybko','bardzo szybko'];
+  document.getElementById('speedVal').textContent = labels[e.target.value];
+});
+document.querySelectorAll('.bg-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.bg-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    previewBg = chip.dataset.bg;
+    updateCanvasBg();
+  });
+});
+document.getElementById('bgColorCustom').addEventListener('change', e => {
+  document.querySelectorAll('.bg-chip').forEach(c => c.classList.remove('active'));
+  previewBg = e.target.value;
+  updateCanvasBg();
+});
+function updateCanvasBg() {
+  document.getElementById('canvasWrap').style.background = previewBg === 'transparent'
+    ? 'repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 0 0 / 20px 20px'
+    : previewBg;
+}
+
+// ─── Outline bindings ──────────────────────────────────
+document.getElementById('outlineEnabled').addEventListener('change', e => {
+  document.getElementById('outlineControls').classList.toggle('hidden', !e.target.checked);
+});
+document.getElementById('outlineWidth').addEventListener('input', e =>
+  document.getElementById('outlineWidthVal').textContent = e.target.value + 'px');
+document.getElementById('outlineColorPreset').addEventListener('change', e =>
+  document.getElementById('outlineColor').value = e.target.value);
+document.getElementById('outlineColor').addEventListener('change', e =>
+  document.getElementById('outlineColorPreset').value = e.target.value);
+
+// ─── Export bg bindings ────────────────────────────────
+const GRAD_PRESETS = {
+  'gradient-dark': { c1: '#0d0d0d', c2: '#2a1a05' },
+  'gradient-blue': { c1: '#050d1a', c2: '#0a1a2e' },
+};
+
+function updateExpBgNote() {
+  const note = document.getElementById('expBgNote');
+  if (exportBg === 'transparent') {
+    note.textContent = 'Eksport przezroczysty (WebM VP9 alpha)';
+  } else if (exportBg.startsWith('gradient')) {
+    note.textContent = 'Eksport z gradientowym tłem';
+  } else {
+    note.textContent = 'Eksport z jednolitym tłem (kolor)';
+  }
+}
+
+document.querySelectorAll('.exp-bg-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.exp-bg-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    exportBg = chip.dataset.expbg;
+    const gradOpts = document.getElementById('gradientOptions');
+    if (exportBg.startsWith('gradient')) {
+      gradOpts.classList.add('visible');
+      const preset = GRAD_PRESETS[exportBg];
+      if (preset) {
+        gradColor1 = preset.c1; gradColor2 = preset.c2;
+        document.getElementById('gradColor1').value = gradColor1;
+        document.getElementById('gradColor2').value = gradColor2;
+      }
+    } else {
+      gradOpts.classList.remove('visible');
+    }
+    updateExpBgNote();
+  });
+});
+document.getElementById('expBgColorCustom').addEventListener('change', e => {
+  document.querySelectorAll('.exp-bg-chip').forEach(c => c.classList.remove('active'));
+  exportBg = e.target.value;
+  document.getElementById('gradientOptions').classList.remove('visible');
+  updateExpBgNote();
+});
+document.querySelectorAll('[data-grad-dir]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-grad-dir]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    gradDir = btn.dataset.gradDir;
+  });
+});
+document.getElementById('gradColor1').addEventListener('input', e => { gradColor1 = e.target.value; exportBg = 'custom-gradient'; });
+document.getElementById('gradColor2').addEventListener('input', e => { gradColor2 = e.target.value; exportBg = 'custom-gradient'; });
+
+// ─── Helpers ───────────────────────────────────────────
+function wrapLineByPixels(line, maxWidth, ctx2d, font, fontSize) {
+  if (line.trim() === '') return [''];
+  ctx2d.font = `${fontSize}px ${font}`;
+  const words = line.split(' ');
+  const result = [];
+  let current = '';
+  for (const word of words) {
+    const test = current ? current + ' ' + word : word;
+    if (ctx2d.measureText(test).width > maxWidth && current !== '') {
+      result.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) result.push(current);
+  return result;
+}
+
+// Returns lines wrapped to fit within the region width for the given canvas size
+function getLines(canvasW, canvasH, fontSize, font) {
+  const mc = document.createElement('canvas');
+  const mctx = mc.getContext('2d');
+  const regionW = (region.right - region.left) * canvasW;
+  return document.getElementById('inputText').value
+    .split('\n')
+    .flatMap(line => wrapLineByPixels(line, regionW, mctx, font, fontSize));
+}
+
+function getFont()     { return document.getElementById('fontSelect').value; }
+function getColor()    { return document.getElementById('textColor').value; }
+function getFontSize() { return parseInt(document.getElementById('fontSize').value); }
+function getOutline()  {
+  const enabled = document.getElementById('outlineEnabled').checked;
+  if (!enabled) return null;
+  return {
+    color: document.getElementById('outlineColor').value,
+    width: parseInt(document.getElementById('outlineWidth').value),
+  };
+}
+
+const SPEEDS = [null,
+  { fpc:14, alpha:0.007, px:5,  pauseF:90 },
+  { fpc:8,  alpha:0.013, px:10, pauseF:70 },
+  { fpc:4,  alpha:0.022, px:18, pauseF:55 },
+  { fpc:2,  alpha:0.038, px:28, pauseF:40 },
+  { fpc:1,  alpha:0.060, px:44, pauseF:28 },
+];
+function spd() { return SPEEDS[parseInt(document.getElementById('speed').value)]; }
+
+// ─── ENGINE ────────────────────────────────────────────
+function buildEngine(tCanvas, tCtx, rawLines, onDone, onProgress, scale, exportBgMode) {
+  scale = scale || 1;
+  const W  = tCanvas.width;
+  const H  = tCanvas.height;
+  const sz = getFontSize() * scale;
+  const lh = sz * 1.75;
+  const col = getColor();
+  const fnt = getFont();
+  const s   = spd();
+  const anim = selectedAnim;
+  const outline = getOutline();
+
+  // Resolve export background
+  function resolveExportBg() {
+    if (!exportBgMode || exportBgMode === 'transparent') return null;
+    if (exportBgMode === 'black') return '#000000';
+    if (exportBgMode === 'white') return '#ffffff';
+    if (exportBgMode === 'gradient-dark' || exportBgMode === 'custom-gradient' || exportBgMode === 'gradient-blue') {
+      const g = tCtx.createLinearGradient(
+        ...(gradDir === 'to bottom' ? [0,0,0,H] :
+            gradDir === 'to right'  ? [0,0,W,0] :
+            gradDir === 'to top'    ? [0,H,0,0] :
+            /* 135deg */               [0,0,W,H])
+      );
+      g.addColorStop(0, gradColor1);
+      g.addColorStop(1, gradColor2);
+      return g;
+    }
+    return exportBgMode; // hex color
+  }
+  const resolvedExportBg = resolveExportBg();
+
+  // Region in canvas pixels
+  const rTop   = region.top   * H;
+  const rBot   = region.bot   * H;
+  const rLeft  = region.left  * W;
+  const rRight = region.right * W;
+  const rCX    = (rLeft + rRight) / 2;  // horizontal center of region
+
+  // Text starts at rTop, scrolls down, clamped to rBot
+  const absY = rawLines.map((_, i) => rTop + lh * 0.5 + i * lh);
+
+  let scrollCur = 0;
+  let scrollTgt = 0;
+
+  function ensureVisible(i) {
+    const y = absY[i] - scrollTgt;
+    if (y > rBot - lh * 0.5) scrollTgt += y - (rBot - lh * 0.5);
+  }
+  function updateScroll() {
+    scrollCur += (scrollTgt - scrollCur) * 0.09;
+  }
+  function ry(i) { return absY[i] - scrollCur; }
+
+  const alpha   = new Array(rawLines.length).fill(0);
+  const chars   = new Array(rawLines.length).fill(0);
+  const offY    = new Array(rawLines.length).fill(20);
+  const revealW = new Array(rawLines.length).fill(0);
+
+  let lineIdx = 0, frameCnt = 0, pauseCnt = 0, finished = false;
+  const glitchPool = '█▓▒░╬╪╫╨╧╦╥╤╣║╠═╔╗╚╝│┤┌┐└┘├┼';
+
+  function skipEmpty() {
+    while (lineIdx < rawLines.length && rawLines[lineIdx].trim() === '') {
+      alpha[lineIdx] = 1; offY[lineIdx] = 0;
+      ensureVisible(lineIdx); lineIdx++;
+    }
+  }
+  function next() {
+    lineIdx++; frameCnt = 0; skipEmpty();
+    if (lineIdx < rawLines.length) ensureVisible(lineIdx);
+    if (lineIdx >= rawLines.length) finished = true;
+  }
+
+  ensureVisible(0); skipEmpty();
+  if (lineIdx < rawLines.length) ensureVisible(lineIdx);
+
+  function clear() {
+    tCtx.clearRect(0, 0, W, H);
+    if (resolvedExportBg) {
+      tCtx.save();
+      tCtx.fillStyle = resolvedExportBg;
+      tCtx.fillRect(0, 0, W, H);
+      tCtx.restore();
+    }
+  }
+
+  // Clip to region before drawing anything
+  function withRegionClip(fn) {
+    tCtx.save();
+    tCtx.beginPath();
+    tCtx.rect(rLeft, rTop, rRight - rLeft, rBot - rTop);
+    tCtx.clip();
+    fn();
+    tCtx.restore();
+  }
+
+  function drawLine(text, y, a, dy) {
+    if (a <= 0) return;
+    tCtx.save();
+    tCtx.globalAlpha = Math.min(1, a);
+    tCtx.font = `${sz}px ${fnt}`;
+    tCtx.textAlign = 'center';
+    tCtx.textBaseline = 'middle';
+    // Draw outline first (behind fill)
+    if (outline) {
+      tCtx.strokeStyle = outline.color;
+      tCtx.lineWidth = outline.width * 2 * scale;
+      tCtx.lineJoin = 'round';
+      tCtx.strokeText(text, rCX, y + (dy || 0));
+    }
+    tCtx.fillStyle = col;
+    tCtx.fillText(text, rCX, y + (dy || 0));
+    tCtx.restore();
+  }
+
+  function tick() {
+    if (finished) {
+      pauseCnt++;
+      updateScroll(); clear();
+      if (onProgress) onProgress(1);
+      withRegionClip(() => {
+        rawLines.forEach((line, i) => {
+          const y = ry(i);
+          if (y < rTop - lh * 2 || y > rBot + lh) return;
+          drawLine(line, y, alpha[i], 0);
+        });
+      });
+      if (pauseCnt > s.pauseF) { onDone(); return; }
+      animFrame = requestAnimationFrame(tick);
+      return;
+    }
+
+    const i    = lineIdx;
+    const line = rawLines[i] || '';
+
+    if (anim === 'typewriter') {
+      alpha[i] = 1; frameCnt++;
+      if (frameCnt >= s.fpc) { frameCnt = 0; chars[i]++; }
+      if (chars[i] >= line.length) { chars[i] = line.length; next(); }
+    } else if (anim === 'fade') {
+      alpha[i] = Math.min(alpha[i] + s.alpha, 1);
+      if (alpha[i] >= 1) next();
+    } else if (anim === 'fadeup') {
+      alpha[i] = Math.min(alpha[i] + s.alpha, 1);
+      offY[i]  = 22 * (1 - alpha[i]);
+      if (alpha[i] >= 1) next();
+    } else if (anim === 'glitch') {
+      alpha[i] = 1;
+      chars[i] += Math.max(1, Math.round(s.px / 4));
+      if (chars[i] >= line.length * 3) { chars[i] = line.length * 3; next(); }
+    } else if (anim === 'reveal') {
+      alpha[i]   = 1;
+      revealW[i] += s.px * scale;
+      if (revealW[i] >= rRight - rLeft) { revealW[i] = rRight - rLeft; next(); }
+    } else if (anim === 'flicker') {
+      frameCnt++;
+      const maxF = Math.round(1 / s.alpha);
+      const p = frameCnt / maxF;
+      alpha[i] = p > 0.72 ? (p > Math.random() ? 1 : 0.25) : (Math.random() < p ? 1 : 0);
+      if (frameCnt >= maxF) { alpha[i] = 1; next(); }
+    }
+
+    updateScroll(); clear();
+
+    withRegionClip(() => {
+      rawLines.forEach((line, idx) => {
+        const y = ry(idx);
+        if (y < rTop - lh * 2 || y > rBot + lh) return;
+
+        if (idx === i && !finished) {
+          if (anim === 'typewriter') {
+            drawLine(line.slice(0, chars[idx]), y, 1, 0);
+          } else if (anim === 'glitch') {
+            const rc = chars[idx];
+            let g = '';
+            for (let c = 0; c < line.length; c++) {
+              if (c < Math.floor(rc / 3)) g += line[c];
+              else if (c * 3 < rc)        g += glitchPool[Math.floor(Math.random() * glitchPool.length)];
+              else                         g += '\u00A0';
+            }
+            drawLine(g, y, 1, 0);
+          } else if (anim === 'reveal') {
+            tCtx.save();
+            tCtx.beginPath();
+            tCtx.rect(rLeft, y - sz * 1.1, revealW[idx], sz * 2.2);
+            tCtx.clip();
+            drawLine(line, y, 1, 0);
+            tCtx.restore();
+          } else if (anim === 'fadeup') {
+            drawLine(line, y, alpha[idx], offY[idx]);
+          } else {
+            drawLine(line, y, alpha[idx], 0);
+          }
+        } else {
+          const dy = anim === 'fadeup' ? offY[idx] : 0;
+          drawLine(line, y, alpha[idx], dy);
+        }
+      });
+    });
+
+    animFrame = requestAnimationFrame(tick);
+    if (onProgress && !finished) onProgress(lineIdx / Math.max(rawLines.length, 1));
+  }
+
+  return { start() { animFrame = requestAnimationFrame(tick); } };
+}
+
+// ─── Public actions ────────────────────────────────────
+function stopAnim() {
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+}
+
+function showOverlay(visible) {
+  overlay.classList.toggle('hidden', !visible);
+}
+
+function startPreview() {
+  stopAnim();
+  showOverlay(false);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('status').textContent = 'Odtwarzanie...';
+  const lines = getLines(canvas.width, canvas.height, getFontSize(), getFont());
+  buildEngine(canvas, ctx, lines, () => {
+    document.getElementById('status').textContent = 'Podgląd zakończony. ▶ aby powtórzyć.';
+    showOverlay(true);
+  }, null, 1, null).start();
+}
+
+async function startExport() {
+  stopAnim();
+  showOverlay(false);
+  const btn = document.getElementById('exportBtn');
+  btn.disabled = true;
+  document.getElementById('status').textContent = 'Nagrywanie...';
+  document.getElementById('progressBar').style.display = 'block';
+
+  const [expW, expH] = document.getElementById('exportRes').value.split('x').map(Number);
+  const exportScale  = expW / canvas.width;
+
+  const ec  = document.createElement('canvas');
+  ec.width  = expW; ec.height = expH;
+  const ectx = ec.getContext('2d');
+
+  const lines = getLines(expW, expH, getFontSize() * exportScale, getFont());
+
+  const hasBackground = exportBg !== 'transparent';
+  const bitrate = expW >= 3840 ? 40_000_000 : expW >= 2560 ? 20_000_000 : expW >= 1920 ? 12_000_000 : 6_000_000;
+  // Use VP9 (supports alpha) for transparent; prefer mp4/VP9 without alpha for solid bg
+  const mime = hasBackground
+    ? (MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm')
+    : (MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm');
+  const rec  = new MediaRecorder(ec.captureStream(60), { mimeType: mime, videoBitsPerSecond: bitrate });
+  const chunks = [];
+  rec.ondataavailable = e => chunks.push(e.data);
+  rec.onstop = () => {
+    const url = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' }));
+    Object.assign(document.createElement('a'), { href: url, download: 'text-animation.webm' }).click();
+    btn.disabled = false;
+    document.getElementById('status').textContent = 'Eksport gotowy!';
+    document.getElementById('progressBar').style.display = 'none';
+    document.getElementById('progressFill').style.width = '0%';
+    showOverlay(true);
+  };
+  rec.start();
+
+  const fill = document.getElementById('progressFill');
+  const statusEl = document.getElementById('status');
+
+  buildEngine(ec, ectx, lines, () => setTimeout(() => rec.stop(), 900), (p) => {
+    const pct = Math.round(p * 100);
+    fill.style.width = pct + '%';
+    statusEl.textContent = `Nagrywanie… ${pct}%`;
+  }, exportScale, exportBg).start();
+}
+
+// ─── Init ──────────────────────────────────────────────
+applyFormat('landscape');
+updateRegionInfo();
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+</script>
+</body>
+</html>

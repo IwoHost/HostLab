@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HostLab</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0c0c0c;
+  --surface: #141414;
+  --text-primary: #f0f0ee;
+  --text-secondary: #888884;
+  --text-muted: #3a3a38;
+  --border: #222220;
+  --accent: #f0f0ee;
+  --tag-bg: #1a1a18;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Syne Mono', monospace;
+  --switch-track: #2a2a28;
+  --switch-thumb: #555550;
+}
+
+html.light {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --text-primary: #0f0f0f;
+  --text-secondary: #6b6b6b;
+  --text-muted: #b0b0b0;
+  --border: #e8e6e0;
+  --accent: #0f0f0f;
+  --tag-bg: #efefeb;
+  --switch-track: #d0ceca;
+  --switch-thumb: #888884;
+}
+
+html, body, header, footer, .card, .card-thumb, .card-body, .card-footer, .hero, .grid-header, .count-badge {
+  transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 48px 64px 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+}
+
+.logo {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.logo span { color: var(--text-muted); }
+
+.header-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+/* ── HERO ── */
+.hero {
+  padding: 80px 64px 64px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hero-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.hero h1 {
+  font-size: clamp(56px, 8vw, 96px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  color: var(--text-primary);
+}
+
+.hero h1 em {
+  font-style: normal;
+  color: var(--text-muted);
+}
+
+.hero-sub {
+  margin-top: 28px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+/* ── GRID ── */
+.grid-header {
+  padding: 32px 64px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.grid-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.count-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--tag-bg);
+  padding: 4px 10px;
+  border-radius: 100px;
+}
+
+.grid {
+  padding: 0 64px 80px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 2px;
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: fadeUp 0.5s ease both;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+  z-index: 1;
+  position: relative;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card:nth-child(1) { animation-delay: 0.05s; }
+.card:nth-child(2) { animation-delay: 0.10s; }
+.card:nth-child(3) { animation-delay: 0.15s; }
+.card:nth-child(4) { animation-delay: 0.20s; }
+.card:nth-child(5) { animation-delay: 0.25s; }
+.card:nth-child(6) { animation-delay: 0.30s; }
+
+.card-thumb {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: var(--tag-bg);
+  overflow: hidden;
+  position: relative;
+}
+
+.card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.card:hover .card-thumb img {
+  transform: scale(1.03);
+}
+
+.card-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--tag-bg) 0px,
+    var(--tag-bg) 8px,
+    var(--border) 8px,
+    var(--border) 9px
+  );
+}
+
+.card-body {
+  padding: 20px 24px 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-index {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.card-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  flex: 1;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.card-filename {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.card-arrow {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.card:hover .card-arrow {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.card-arrow svg {
+  transition: stroke 0.2s;
+}
+
+.card:hover .card-arrow svg path {
+  stroke: #fff;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-left {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.footer-right {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ── LOADING STATE ── */
+.card-desc.loading {
+  background: var(--tag-bg);
+  border-radius: 4px;
+  height: 14px;
+  color: transparent;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ── THEME SWITCH ── */
+.theme-switch { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+.switch-label { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); letter-spacing:0.12em; text-transform:uppercase; transition:color 0.35s ease; }
+.switch-track { width:36px; height:20px; background:var(--switch-track); border-radius:100px; border:1px solid var(--border); position:relative; flex-shrink:0; transition:background 0.35s ease, border-color 0.35s ease; }
+.switch-thumb { position:absolute; top:3px; left:3px; width:12px; height:12px; border-radius:50%; background:var(--switch-thumb); transition:transform 0.3s ease, background 0.35s ease; }
+html.light .switch-thumb { transform:translateX(16px); background:#0f0f0f; }
+.card-arrow svg path { stroke:#f0f0ee; }
+html.light .card-arrow svg path { stroke:#0f0f0f; }
+.card:hover .card-arrow { background:var(--accent); border-color:var(--accent); }
+.card:hover .card-arrow svg path { stroke:#0c0c0c; }
+html.light .card:hover .card-arrow svg path { stroke:#ffffff; }
+.card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.5); }
+html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  header, .hero, .grid-header, .grid, footer {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 48px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo">HOST<span>·</span>LAB</a>
+  <div style="display:flex;align-items:center;gap:24px;">
+    <div class="header-meta" id="site-count">— PROJECTS</div>
+    <div class="theme-switch" id="theme-switch" title="Toggle light mode">
+      <span class="switch-label" id="switch-label">LIGHT</span>
+      <div class="switch-track"><div class="switch-thumb"></div></div>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-label">Personal project hub</div>
+  <h1>Host<em>Lab</em></h1>
+  <p class="hero-sub">A collection of tools and experiments. Click any card to open the project.</p>
+</section>
+
+<div class="grid-header">
+  <span class="grid-label">All projects</span>
+  <span class="count-badge" id="count-badge">0</span>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<footer>
+  <div class="footer-left">HOSTLAB · LOCAL</div>
+  <div class="footer-right" id="footer-date"></div>
+</footer>
+
+<script>
+/* ════════════════════════════════════════════
+   EDIT THIS ARRAY TO ADD / REMOVE PROJECTS
+   ════════════════════════════════════════════
+   Each entry:
+     file  — filename inside /websites/
+     title — display name on the card
+   The hub auto-loads:
+     image → other/p_{file}.png
+     desc  → other/d_{file}.txt
+   ════════════════════════════════════════════ */
+const PROJECTS = [
+  {
+    file:  'dither-lab.html',
+    title: 'Dither Lab',
+    desc:  'A specialized image processing tool used for applying various dithering algorithms to images. Users can upload photos, adjust parameters like exposure and quantization, and choose from multiple color palettes to create retro-style, pixelated artwork.'
+  },
+  {
+    file:  'checklist.html',
+    title: 'Checklist',
+    desc:  'A task management and checklist application designed with a high-contrast "Share Tech Mono" aesthetic. It features a countdown timer for items, customizable "default hours" for cooldown periods, and includes a confetti animation that triggers when tasks are completed.'
+  },
+  {
+    file:  'vindigators-wrapped-v5.html',
+    title: 'Vindigators Wrapped',
+    desc:  'A data visualization site that creates a "Wrapped" style presentation (similar to Spotify Wrapped) for project contribution logs. Users paste a version log into the interface, and the site generates an animated slideshow highlighting "MVP" contributors, total commit counts, and a scrolling timeline of project entries.'
+  },
+  {
+    file:  'text-animator-v4.html',
+    title: 'Text Animator',
+    desc:  'A web-based utility for creating animated text videos. It provides a sidebar for entering text and customizing its appearance—including font style, color, and background—and supports exporting the final animation as a video file (WebM/MP4).'
+  },
+  {
+    file:  'IPvisualizer.html',
+    title: 'IP Visualizer',
+    desc:  'An educational tool designed to help users learn and visualize networking concepts like subnetting. It allows users to input an IP address and subnet mask to calculate network details, including the network address, gateway, broadcast address, and binary representations of octets.'
+  },
+  {
+    file:  'SuperStrona.html',
+    title: 'Kronika Nierobienia',
+    desc:  'A dramatic personal countdown page tracking how long Szymon A. has failed to build a city — complete with a cinematic curtain intro, floating particles, a typewriter roast, and a live timer counting every day, hour, minute, and second of inaction.'
+  },
+  /* ────────────────────────────────────────────
+     ADD NEW PROJECTS BELOW THIS LINE:
+     {
+       file:  'your-file.html',
+       title: 'Your Title',
+       desc:  'Your description here.'
+     },
+  ──────────────────────────────────────────── */
+];
+/* ════════════════════════════════════════════ */
+
+const grid = document.getElementById('grid');
+const countBadge = document.getElementById('count-badge');
+const siteCount  = document.getElementById('site-count');
+
+document.getElementById('footer-date').textContent =
+  new Date().toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' }).toUpperCase();
+
+countBadge.textContent = PROJECTS.length;
+siteCount.textContent  = PROJECTS.length + ' PROJECT' + (PROJECTS.length !== 1 ? 'S' : '');
+
+const themeSwitch = document.getElementById('theme-switch');
+const switchLabel = document.getElementById('switch-label');
+themeSwitch.addEventListener('click', () => {
+  const isLight = document.documentElement.classList.toggle('light');
+  switchLabel.textContent = isLight ? 'DARK' : 'LIGHT';
+  localStorage.setItem('hostlab-theme', isLight ? 'light' : 'dark');
+});
+if(localStorage.getItem('hostlab-theme') === 'light') {
+  document.documentElement.classList.add('light');
+  switchLabel.textContent = 'DARK';
+}
+
+function imgSrc(file) {
+  return `other/p_${file.replace('.html','')}.png`;
+}
+
+function buildCard(project, index) {
+  const { file, title, desc } = project;
+  const num = String(index + 1).padStart(2, '0');
+
+  const card = document.createElement('a');
+  card.className = 'card';
+  card.href = `websites/${file}`;
+
+  const thumb = document.createElement('div');
+  thumb.className = 'card-thumb';
+
+  const img = document.createElement('img');
+  img.alt = title;
+  img.src = imgSrc(file);
+  img.onerror = () => {
+    thumb.innerHTML = `<div class="card-thumb-placeholder">NO PREVIEW</div>`;
+  };
+  thumb.appendChild(img);
+
+  const body = document.createElement('div');
+  body.className = 'card-body';
+
+  const descText = desc
+    ? `<p class="card-desc">${desc}</p>`
+    : `<p class="card-desc" style="color:var(--text-muted);font-style:italic;font-size:12px;">No description found. Add one at other/d_${file.replace('.html','')}.txt</p>`;
+
+  body.innerHTML = `
+    <div class="card-index">${num}</div>
+    <div class="card-title">${title}</div>
+    ${descText}
+    <div class="card-footer">
+      <span class="card-filename">${file}</span>
+      <span class="card-arrow">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="#0f0f0f" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </div>
+  `;
+
+  card.appendChild(thumb);
+  card.appendChild(body);
+  return card;
+}
+
+function init() {
+  PROJECTS.forEach((project, i) => {
+    const card = buildCard(project, i);
+    grid.appendChild(card);
+  });
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DITHER · LAB</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#000;--panel:#0a0a0a;--border:#1a1a2e;--border2:#2a2a4e;
+  --text:#c8c8e8;--text2:#6666aa;--text3:#333366;
+  --accent:#4444ff;--accent2:#8888ff;--accent3:#ccccff;
+  --neon1:#ff00ff;--neon2:#00ffff;--neon3:#ffff00;--neon4:#ff4400;
+  --neon5:#00ff44;--neon6:#ff0088;
+  --mono:Share Tech Mono,monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;min-height:100vh;overflow-x:hidden;}
+#app{display:grid;grid-template-rows:36px 1fr 44px;grid-template-columns:160px 1fr 180px;height:100vh;border:1px solid var(--border2);}
+
+/* HEADER */
+#header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);padding:0 16px;background:var(--panel);}
+#logo{font-family:VT323,monospace;font-size:22px;letter-spacing:6px;color:var(--accent3);}
+#logo span{color:var(--text2);}
+#hinfo{display:flex;gap:20px;color:var(--text3);font-size:10px;letter-spacing:2px;}
+#hinfo b{color:var(--text2);}
+
+/* LEFT PANEL */
+#left{border-right:1px solid var(--border2);overflow-y:auto;overflow-x:hidden;background:var(--panel);}
+.section{border-bottom:1px solid var(--border);padding:10px;}
+.label{font-size:9px;letter-spacing:3px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;}
+#preview-box{width:100%;aspect-ratio:1;background:#111;border:1px solid var(--border2);position:relative;overflow:hidden;cursor:pointer;}
+#preview-box canvas{width:100%;height:100%;image-rendering:pixelated;}
+#preview-label{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:var(--text3);padding:2px;background:rgba(0,0,0,.7);}
+#upload-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text3);font-size:9px;letter-spacing:1px;pointer-events:none;}
+#file-input{display:none;}
+
+.slider-row{margin-bottom:8px;}
+.slider-row input[type=range]{width:100%;accent-color:var(--accent);height:2px;cursor:pointer;}
+.slider-row .val{color:var(--accent2);float:right;font-size:10px;}
+
+/* PALETTES */
+#palettes{display:flex;flex-direction:column;gap:3px;}
+.pal-btn{display:flex;align-items:center;gap:5px;padding:3px 5px;cursor:pointer;border:1px solid transparent;font-size:9px;letter-spacing:1px;color:var(--text2);}
+.pal-btn:hover{border-color:var(--border2);}
+.pal-btn.active{border-color:var(--accent);color:var(--accent3);}
+.pal-swatches{display:flex;gap:2px;}
+.swatch{width:8px;height:8px;border:none;}
+
+/* CENTER */
+#center{position:relative;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;}
+#main-canvas{image-rendering:pixelated;max-width:100%;max-height:100%;display:block;}
+#drop-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:8px;pointer-events:none;}
+#drop-overlay .big{font-family:VT323,monospace;font-size:48px;color:var(--border2);}
+#drop-overlay .small{font-size:10px;letter-spacing:3px;}
+#center-drop{position:absolute;inset:0;cursor:pointer;}
+
+/* RIGHT PANEL */
+#right{border-left:1px solid var(--border2);overflow-y:auto;background:var(--panel);}
+.stat-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:10px;}
+.stat-row .sk{color:var(--text3);}
+.stat-row .sv{color:var(--accent2);}
+
+/* BOTTOM BAR — algorithms */
+#bottom{grid-column:1/-1;border-top:1px solid var(--border2);display:flex;align-items:center;gap:4px;padding:0 8px;overflow-x:auto;background:var(--panel);}
+.algo-btn{font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:3px 8px;border:1px solid var(--border2);color:var(--text2);background:none;cursor:pointer;white-space:nowrap;text-transform:uppercase;}
+.algo-btn:hover{border-color:var(--accent);color:var(--accent2);}
+.algo-btn.active{border-color:var(--accent);background:rgba(68,68,255,.15);color:var(--accent3);}
+
+/* EXPORT */
+#export-btn{font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:4px 12px;border:1px solid var(--accent);color:var(--accent2);background:none;cursor:pointer;text-transform:uppercase;margin-left:auto;}
+#export-btn:hover{background:rgba(68,68,255,.2);}
+#export-progress{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+#export-progress.show{display:flex;}
+#exp-title{font-family:VT323,monospace;font-size:32px;letter-spacing:6px;color:var(--accent3);}
+#exp-stage{font-size:10px;letter-spacing:3px;color:var(--text2);min-height:14px;}
+#exp-bar-wrap{width:360px;height:3px;background:var(--border2);border:1px solid var(--border2);}
+#exp-bar{height:100%;width:0%;background:var(--accent2);transition:width .15s linear;}
+#exp-pct{font-size:10px;color:var(--text3);}
+#exp-cancel{font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:4px 12px;border:1px solid var(--border2);color:var(--text3);background:none;cursor:pointer;margin-top:8px;}
+
+/* CONFETTI */
+#confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:200;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- HEADER -->
+  <div id="header">
+    <div id="logo">DITHER<span> · </span>LAB</div>
+    <div id="hinfo">
+      <span><b>12</b> ALGORITHMS</span>
+      <span><b>9</b> PALETTES</span>
+      <span><b>LIVE</b> RENDER</span>
+    </div>
+  </div>
+
+  <!-- LEFT -->
+  <div id="left">
+    <div class="section">
+      <div class="label">Preview</div>
+      <div id="preview-box" onclick="document.getElementById('file-input').click()">
+        <canvas id="preview-canvas"></canvas>
+        <div id="upload-hint">CLICK TO<br>UPLOAD</div>
+        <div id="preview-label">SOURCE</div>
+      </div>
+      <input type="file" id="file-input" accept="image/*">
+    </div>
+
+    <div class="section">
+      <div class="label">Exposure <span class="val" id="exp-val">128</span></div>
+      <div class="slider-row"><input type="range" id="sl-exposure" min="0" max="255" value="128"></div>
+      <div class="label" style="margin-top:8px">Pixel Size <span class="val" id="px-val">4</span></div>
+      <div class="slider-row"><input type="range" id="sl-pixel" min="1" max="16" value="4"></div>
+      <div class="label" style="margin-top:8px">Threshold <span class="val" id="thr-val">128</span></div>
+      <div class="slider-row"><input type="range" id="sl-threshold" min="0" max="255" value="128"></div>
+    </div>
+
+    <div class="section">
+      <div class="label">Palette</div>
+      <div id="palettes"></div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div id="center">
+    <canvas id="main-canvas"></canvas>
+    <div id="drop-overlay" id="drop-overlay">
+      <div class="big">[ ]</div>
+      <div class="small">DROP IMAGE OR CLICK BELOW</div>
+    </div>
+    <div id="center-drop" onclick="document.getElementById('file-input').click()"></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div id="right">
+    <div class="section">
+      <div class="label">Stats</div>
+      <div id="stats-panel">
+        <div class="stat-row"><span class="sk">ALGORITHM</span><span class="sv" id="st-algo">—</span></div>
+        <div class="stat-row"><span class="sk">PALETTE</span><span class="sv" id="st-pal">—</span></div>
+        <div class="stat-row"><span class="sk">SRC W</span><span class="sv" id="st-sw">—</span></div>
+        <div class="stat-row"><span class="sk">SRC H</span><span class="sv" id="st-sh">—</span></div>
+        <div class="stat-row"><span class="sk">GRID W</span><span class="sv" id="st-gw">—</span></div>
+        <div class="stat-row"><span class="sk">GRID H</span><span class="sv" id="st-gh">—</span></div>
+        <div class="stat-row"><span class="sk">COLORS</span><span class="sv" id="st-col">—</span></div>
+        <div class="stat-row"><span class="sk">PIXEL SZ</span><span class="sv" id="st-px">—</span></div>
+        <div class="stat-row"><span class="sk">RENDER MS</span><span class="sv" id="st-ms">—</span></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="label">Color Dist</div>
+      <canvas id="hist-canvas" width="160" height="60" style="width:100%;border:1px solid var(--border);"></canvas>
+    </div>
+    <div class="section">
+      <div class="label">Matrix</div>
+      <canvas id="matrix-canvas" width="160" height="80" style="width:100%;image-rendering:pixelated;border:1px solid var(--border);"></canvas>
+    </div>
+  </div>
+
+  <!-- BOTTOM ALGORITHMS -->
+  <div id="bottom">
+    <button class="algo-btn" data-algo="floyd">Floyd-Steinberg</button>
+    <button class="algo-btn" data-algo="serpentine">Serpentine F-S</button>
+    <button class="algo-btn" data-algo="atkinson">Atkinson</button>
+    <button class="algo-btn" data-algo="stucki">Stucki</button>
+    <button class="algo-btn" data-algo="sierra">Sierra</button>
+    <button class="algo-btn" data-algo="bayer2">Bayer 2x2</button>
+    <button class="algo-btn active" data-algo="bayer4">Bayer 4x4</button>
+    <button class="algo-btn" data-algo="bayer8">Bayer 8x8</button>
+    <button class="algo-btn" data-algo="random">Random</button>
+    <button class="algo-btn" data-algo="void">Void-Scatter</button>
+    <button class="algo-btn" data-algo="halftone">Halftone</button>
+    <button class="algo-btn" data-algo="linescreen">Line Screen</button>
+    <button id="export-btn" onclick="startExport()">EXPORT PNG</button>
+  </div>
+</div>
+
+<!-- EXPORT OVERLAY -->
+<div id="export-progress">
+  <div id="exp-title">EXPORTING</div>
+  <div id="exp-stage"></div>
+  <div id="exp-bar-wrap"><div id="exp-bar"></div></div>
+  <div id="exp-pct">0%</div>
+  <button id="exp-cancel" onclick="cancelExport()">CANCEL</button>
+</div>
+
+<!-- CONFETTI -->
+<canvas id="confetti-canvas"></canvas>
+
+<script>
+const PALETTES = [
+  {id:'mono', name:'MONO', colors:['#000000','#ffffff']},
+  {id:'4gray', name:'4-GRAY', colors:['#000000','#555555','#aaaaaa','#ffffff']},
+  {id:'8gray', name:'8-GRAY', colors:['#000000','#242424','#484848','#6c6c6c','#909090','#b4b4b4','#d8d8d8','#ffffff']},
+  {id:'gameboy', name:'GAMEBOY', colors:['#0f380f','#306230','#8bac0f','#9bbc0f']},
+  {id:'cga', name:'CGA', colors:['#000000','#0000aa','#00aa00','#00aaaa','#aa0000','#aa00aa','#aa5500','#aaaaaa']},
+  {id:'neon', name:'NEON', colors:['#000000','#ff00ff','#00ffff','#ffff00','#ff4400','#00ff44','#ff0088','#4444ff','#ffffff']},
+  {id:'pico8', name:'PICO-8', colors:['#000000','#1d2b53','#7e2553','#008751','#ab5236','#5f574f','#c2c3c7','#fff1e8','#ff004d','#ffa300','#ffec27','#00e436','#29adff','#83769c','#ff77a8','#ffccaa']},
+  {id:'c64', name:'C64', colors:['#000000','#ffffff','#883932','#67b6bd','#8b3f96','#55a049','#40318d','#bfce72','#8b5429','#574200','#b86962','#505050','#787878','#94e089','#7869c4','#9f9f9f']},
+  {id:'c4', name:'C4', colors:['#ff0000','#0000ff','#ffff00','#000000']},
+];
+
+const ALGO_NAMES = {floyd:'FLOYD-STEINBERG',serpentine:'SERPENTINE',atkinson:'ATKINSON',stucki:'STUCKI',sierra:'SIERRA',bayer2:'BAYER 2x2',bayer4:'BAYER 4x4',bayer8:'BAYER 8x8',random:'RANDOM',void:'VOID-SCATTER',halftone:'HALFTONE',linescreen:'LINE SCREEN'};
+
+let state = {
+  img: null, algo: 'bayer4', palette: 'neon',
+  exposure: 128, pixelSize: 4, threshold: 128,
+  rendering: false
+};
+
+// ---- PALETTE UI ----
+const palContainer = document.getElementById('palettes');
+PALETTES.forEach(p => {
+  const btn = document.createElement('div');
+  btn.className = 'pal-btn' + (p.id === state.palette ? ' active' : '');
+  btn.dataset.id = p.id;
+  const swatches = p.colors.slice(0,8).map(c=>`<div class="swatch" style="background:${c}"></div>`).join('');
+  btn.innerHTML = `<div class="pal-swatches">${swatches}</div><span>${p.name}</span>`;
+  btn.onclick = () => { state.palette = p.id; updatePalUI(); render(); };
+  palContainer.appendChild(btn);
+});
+function updatePalUI(){
+  document.querySelectorAll('.pal-btn').forEach(b=>b.classList.toggle('active', b.dataset.id===state.palette));
+  document.getElementById('st-pal').textContent = state.palette.toUpperCase();
+}
+
+// ---- ALGO BUTTONS ----
+document.querySelectorAll('.algo-btn').forEach(btn => {
+  btn.onclick = () => {
+    const prev = state.algo;
+    state.algo = btn.dataset.algo;
+    document.querySelectorAll('.algo-btn').forEach(b=>b.classList.toggle('active',b.dataset.algo===state.algo));
+    document.getElementById('st-algo').textContent = ALGO_NAMES[state.algo]||state.algo.toUpperCase();
+    if(prev !== state.algo) spawnConfetti();
+    render();
+  };
+});
+
+// ---- SLIDERS ----
+document.getElementById('sl-exposure').oninput = e => { state.exposure = +e.target.value; document.getElementById('exp-val').textContent = state.exposure; render(); };
+document.getElementById('sl-pixel').oninput = e => { state.pixelSize = +e.target.value; document.getElementById('px-val').textContent = state.pixelSize; render(); };
+document.getElementById('sl-threshold').oninput = e => { state.threshold = +e.target.value; document.getElementById('thr-val').textContent = state.threshold; render(); };
+
+// ---- FILE UPLOAD ----
+document.getElementById('file-input').onchange = e => {
+  const f = e.target.files[0]; if(!f) return;
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = () => { state.img = img; drawPreview(); render(); document.getElementById('drop-overlay').style.display='none'; };
+  img.src = url;
+};
+['dragover','drop'].forEach(ev => document.getElementById('center').addEventListener(ev, e => {
+  e.preventDefault();
+  if(ev==='drop' && e.dataTransfer.files[0]){
+    const f = e.dataTransfer.files[0];
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => { state.img = img; drawPreview(); render(); document.getElementById('drop-overlay').style.display='none'; };
+    img.src = url;
+  }
+}));
+
+function drawPreview(){
+  const c = document.getElementById('preview-canvas');
+  const box = document.getElementById('preview-box');
+  c.width = box.offsetWidth; c.height = box.offsetHeight;
+  const ctx = c.getContext('2d');
+  const scale = Math.min(c.width/state.img.width, c.height/state.img.height);
+  const w = state.img.width*scale, h = state.img.height*scale;
+  const x = (c.width-w)/2, y = (c.height-h)/2;
+  ctx.drawImage(state.img, x, y, w, h);
+  document.getElementById('upload-hint').style.display='none';
+}
+
+// ---- PALETTE HELPERS ----
+function getPalette(id){ return (PALETTES.find(p=>p.id===id)||PALETTES[0]).colors; }
+
+function rgbFromHex(h){
+  const v = parseInt(h.replace('#',''),16);
+  return [(v>>16)&255,(v>>8)&255,v&255];
+}
+
+function nearestColor(r,g,b,palette){
+  let best=null, bestD=Infinity;
+  for(const hex of palette){
+    const [pr,pg,pb]=rgbFromHex(hex);
+    const d=(r-pr)**2+(g-pg)**2+(b-pb)**2;
+    if(d<bestD){bestD=d;best=hex;}
+  }
+  return best;
+}
+
+function nearestColorRGB(r,g,b,palette){
+  let best=null, bestD=Infinity;
+  for(const hex of palette){
+    const [pr,pg,pb]=rgbFromHex(hex);
+    const d=(r-pr)**2+(g-pg)**2+(b-pb)**2;
+    if(d<bestD){bestD=d;best=[pr,pg,pb];}
+  }
+  return best;
+}
+
+// ---- BAYER MATRICES ----
+const BAYER2=[[0,2],[3,1]];
+const BAYER4=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+const BAYER8=(()=>{
+  const m=[];
+  for(let i=0;i<8;i++){m.push([]);for(let j=0;j<8;j++)m[i].push(0);}
+  const b4=[...BAYER4.map(r=>[...r])];
+  for(let i=0;i<8;i++)for(let j=0;j<8;j++){
+    const bi=i%4,bj=j%4;
+    const q=(i<4?0:2)+(j<4?0:1);
+    m[i][j]=b4[bi][bj]*4+[0,2,3,1][q];
+  }
+  return m;
+})();
+
+function applyExposure(r,g,b,exp){
+  const f=(exp-128)/128;
+  const adj = f>0 ? 255 : 0;
+  return [
+    Math.max(0,Math.min(255, r + (adj-r)*Math.abs(f))),
+    Math.max(0,Math.min(255, g + (adj-g)*Math.abs(f))),
+    Math.max(0,Math.min(255, b + (adj-b)*Math.abs(f))),
+  ];
+}
+
+// ---- MAIN RENDER ----
+function render(){
+  if(!state.img) return;
+  const t0=performance.now();
+  const ps = state.pixelSize;
+  const palette = getPalette(state.palette);
+
+  const container = document.getElementById('center');
+  const cw = container.offsetWidth, ch = container.offsetHeight;
+
+  const scale = Math.min(cw/state.img.width, ch/state.img.height);
+  const dispW = Math.floor(state.img.width*scale);
+  const dispH = Math.floor(state.img.height*scale);
+  const gridW = Math.ceil(dispW/ps);
+  const gridH = Math.ceil(dispH/ps);
+
+  // Sample image at grid resolution
+  const sampleCanvas = document.createElement('canvas');
+  sampleCanvas.width = gridW; sampleCanvas.height = gridH;
+  const sctx = sampleCanvas.getContext('2d');
+  sctx.drawImage(state.img, 0, 0, gridW, gridH);
+  const src = sctx.getImageData(0,0,gridW,gridH);
+  const data = new Float32Array(src.data.length);
+  for(let i=0;i<src.data.length;i+=4){
+    const [r,g,b] = applyExposure(src.data[i],src.data[i+1],src.data[i+2],state.exposure);
+    data[i]=r; data[i+1]=g; data[i+2]=b; data[i+3]=255;
+  }
+
+  const out = applyDither(data, gridW, gridH, palette, state.algo, state.threshold);
+
+  const mc = document.getElementById('main-canvas');
+  mc.width = dispW; mc.height = dispH;
+  const mctx = mc.getContext('2d');
+
+  for(let y=0;y<gridH;y++){
+    for(let x=0;x<gridW;x++){
+      const idx=(y*gridW+x)*4;
+      mctx.fillStyle=`rgb(${out[idx]},${out[idx+1]},${out[idx+2]})`;
+      mctx.fillRect(x*ps, y*ps, ps, ps);
+    }
+  }
+
+  const ms = Math.round(performance.now()-t0);
+  document.getElementById('st-sw').textContent=state.img.width;
+  document.getElementById('st-sh').textContent=state.img.height;
+  document.getElementById('st-gw').textContent=gridW;
+  document.getElementById('st-gh').textContent=gridH;
+  document.getElementById('st-col').textContent=palette.length;
+  document.getElementById('st-px').textContent=ps+'px';
+  document.getElementById('st-ms').textContent=ms;
+  document.getElementById('st-algo').textContent=ALGO_NAMES[state.algo];
+  document.getElementById('st-pal').textContent=state.palette.toUpperCase();
+
+  drawMatrix();
+  drawHistogram(out, gridW, gridH, palette);
+}
+
+function applyDither(data, w, h, palette, algo, threshold){
+  const out = new Uint8ClampedArray(data.length);
+  const err = new Float32Array(data.length);
+  for(let i=0;i<data.length;i++) err[i]=data[i];
+
+  if(algo==='floyd'||algo==='serpentine'){
+    for(let y=0;y<h;y++){
+      const rtl = algo==='serpentine' && y%2===1;
+      const xs = rtl ? Array.from({length:w},(_,i)=>w-1-i) : Array.from({length:w},(_,i)=>i);
+      for(const x of xs){
+        const idx=(y*w+x)*4;
+        const [nr,ng,nb]=nearestColorRGB(clamp(err[idx]),clamp(err[idx+1]),clamp(err[idx+2]),palette);
+        out[idx]=nr;out[idx+1]=ng;out[idx+2]=nb;out[idx+3]=255;
+        const er=err[idx]-nr, eg=err[idx+1]-ng, eb=err[idx+2]-nb;
+        const spread=rtl?[[-1,0,7/16],[1,1,3/16],[-1,1,5/16],[0,1,1/16]]:[[1,0,7/16],[-1,1,3/16],[0,1,5/16],[1,1,1/16]];
+        for(const[dx,dy,w_]of spread){const nx=x+dx,ny=y+dy;if(nx>=0&&nx<w&&ny<h){const ni=(ny*w+nx)*4;err[ni]+=er*w_;err[ni+1]+=eg*w_;err[ni+2]+=eb*w_;}}
+      }
+    }
+  } else if(algo==='atkinson'){
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const idx=(y*w+x)*4;
+      const [nr,ng,nb]=nearestColorRGB(clamp(err[idx]),clamp(err[idx+1]),clamp(err[idx+2]),palette);
+      out[idx]=nr;out[idx+1]=ng;out[idx+2]=nb;out[idx+3]=255;
+      const er=(err[idx]-nr)/8, eg=(err[idx+1]-ng)/8, eb=(err[idx+2]-nb)/8;
+      for(const[dx,dy]of[[1,0],[2,0],[-1,1],[0,1],[1,1],[0,2]]){const nx=x+dx,ny=y+dy;if(nx>=0&&nx<w&&ny<h){const ni=(ny*w+nx)*4;err[ni]+=er;err[ni+1]+=eg;err[ni+2]+=eb;}}
+    }
+  } else if(algo==='stucki'){
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const idx=(y*w+x)*4;
+      const [nr,ng,nb]=nearestColorRGB(clamp(err[idx]),clamp(err[idx+1]),clamp(err[idx+2]),palette);
+      out[idx]=nr;out[idx+1]=ng;out[idx+2]=nb;out[idx+3]=255;
+      const er=err[idx]-nr, eg=err[idx+1]-ng, eb=err[idx+2]-nb;
+      const sp=[[1,0,8/42],[2,0,4/42],[-2,1,2/42],[-1,1,4/42],[0,1,8/42],[1,1,4/42],[2,1,2/42],[-2,2,1/42],[-1,2,2/42],[0,2,4/42],[1,2,2/42],[2,2,1/42]];
+      for(const[dx,dy,w_]of sp){const nx=x+dx,ny=y+dy;if(nx>=0&&nx<w&&ny<h){const ni=(ny*w+nx)*4;err[ni]+=er*w_;err[ni+1]+=eg*w_;err[ni+2]+=eb*w_;}}
+    }
+  } else if(algo==='sierra'){
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const idx=(y*w+x)*4;
+      const [nr,ng,nb]=nearestColorRGB(clamp(err[idx]),clamp(err[idx+1]),clamp(err[idx+2]),palette);
+      out[idx]=nr;out[idx+1]=ng;out[idx+2]=nb;out[idx+3]=255;
+      const er=err[idx]-nr, eg=err[idx+1]-ng, eb=err[idx+2]-nb;
+      const sp=[[1,0,5/32],[2,0,3/32],[-2,1,2/32],[-1,1,4/32],[0,1,5/32],[1,1,4/32],[2,1,2/32],[-1,2,2/32],[0,2,3/32],[1,2,2/32]];
+      for(const[dx,dy,w_]of sp){const nx=x+dx,ny=y+dy;if(nx>=0&&nx<w&&ny<h){const ni=(ny*w+nx)*4;err[ni]+=er*w_;err[ni+1]+=eg*w_;err[ni+2]+=eb*w_;}}
+    }
+  } else if(algo==='bayer2'||algo==='bayer4'||algo==='bayer8'){
+    const mat=algo==='bayer2'?BAYER2:algo==='bayer4'?BAYER4:BAYER8;
+    const ms=mat.length, mn=ms*ms;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const idx=(y*w+x)*4;
+      const t=(mat[y%ms][x%ms]/mn-0.5)*(threshold/1.2);
+      const [nr,ng,nb]=nearestColorRGB(clamp(data[idx]+t),clamp(data[idx+1]+t),clamp(data[idx+2]+t),palette);
+      out[idx]=nr;out[idx+1]=ng;out[idx+2]=nb;out[idx+3]=255;
+    }
+  } else if(algo==='random'){
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const idx=(y*w+x)*4;
+      const t=(Math.random()-0.5)*threshold;
+      const [nr,ng,nb]=nearestColorRGB(clamp(data[idx]+t),clamp(data[idx+1]+t),clamp(data[idx+2]+t),palette);
+      out[idx]=nr;out[idx+1]=ng;out[idx+2]=nb;out[idx+3]=255;
+    }
+  } else if(algo==='void'){
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const idx=(y*w+x)*4;
+      const t=((Math.sin(x*0.618+y*1.414)*0.5+Math.sin(y*0.618+x*1.732)*0.5))*threshold*0.8;
+      const [nr,ng,nb]=nearestColorRGB(clamp(data[idx]+t),clamp(data[idx+1]+t),clamp(data[idx+2]+t),palette);
+      out[idx]=nr;out[idx+1]=ng;out[idx+2]=nb;out[idx+3]=255;
+    }
+  } else if(algo==='halftone'){
+    const cellSize=Math.max(3,Math.floor(threshold/32));
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const idx=(y*w+x)*4;
+      const cx=Math.floor(x/cellSize)*cellSize+cellSize/2;
+      const cy=Math.floor(y/cellSize)*cellSize+cellSize/2;
+      const ci=(Math.floor(cy)*w+Math.floor(cx))*4;
+      const bri=(data[Math.min(ci,data.length-4)]+data[Math.min(ci+1,data.length-3)]+data[Math.min(ci+2,data.length-2)])/3/255;
+      const dist=Math.sqrt((x-cx)**2+(y-cy)**2);
+      const r=cellSize*0.5*bri;
+      const on=dist<r;
+      const [nr,ng,nb]=nearestColorRGB(on?255:0,on?255:0,on?255:0,palette);
+      out[idx]=nr;out[idx+1]=ng;out[idx+2]=nb;out[idx+3]=255;
+    }
+  } else if(algo==='linescreen'){
+    const freq=Math.max(2,Math.floor(threshold/32));
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const idx=(y*w+x)*4;
+      const bri=(data[idx]+data[idx+1]+data[idx+2])/3/255;
+      const linePos=(y%freq)/freq;
+      const on=linePos<bri;
+      const [nr,ng,nb]=nearestColorRGB(on?255:0,on?255:0,on?255:0,palette);
+      out[idx]=nr;out[idx+1]=ng;out[idx+2]=nb;out[idx+3]=255;
+    }
+  }
+  return out;
+}
+
+function clamp(v){return Math.max(0,Math.min(255,v));}
+
+// ---- MATRIX VISUALIZER ----
+function drawMatrix(){
+  const c=document.getElementById('matrix-canvas');
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const algo=state.algo;
+  if(!['bayer2','bayer4','bayer8'].includes(algo)){
+    ctx.fillStyle='#333366';ctx.font='9px Share Tech Mono';ctx.textAlign='center';
+    ctx.fillText('N/A FOR THIS ALGO',c.width/2,c.height/2);return;
+  }
+  const mat=algo==='bayer2'?BAYER2:algo==='bayer4'?BAYER4:BAYER8;
+  const ms=mat.length;
+  const cs=Math.min(c.width,c.height)/ms;
+  const mn=ms*ms;
+  for(let y=0;y<ms;y++)for(let x=0;x<ms;x++){
+    const v=mat[y][x]/mn;
+    ctx.fillStyle=`rgb(${Math.round(v*68)},${Math.round(v*68)},${Math.round(v*255)})`;
+    ctx.fillRect(x*cs,y*cs,cs,cs);
+  }
+}
+
+// ---- HISTOGRAM ----
+function drawHistogram(out, w, h, palette){
+  const c=document.getElementById('hist-canvas');
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const counts={};
+  palette.forEach(p=>counts[p]=0);
+  for(let i=0;i<w*h;i++){
+    const idx=i*4;
+    const hex='#'+[out[idx],out[idx+1],out[idx+2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+    if(counts[hex]!==undefined) counts[hex]++;
+  }
+  const total=w*h||1;
+  const bw=c.width/palette.length;
+  palette.forEach((hex,i)=>{
+    const pct=counts[hex]/total;
+    const bh=pct*c.height;
+    ctx.fillStyle=hex;
+    ctx.fillRect(i*bw, c.height-bh, bw-1, bh);
+  });
+}
+
+// ---- CONFETTI ----
+const confCanvas=document.getElementById('confetti-canvas');
+confCanvas.width=window.innerWidth; confCanvas.height=window.innerHeight;
+window.addEventListener('resize',()=>{confCanvas.width=window.innerWidth;confCanvas.height=window.innerHeight;});
+const confCtx=confCanvas.getContext('2d');
+let particles=[];
+let confAnimId=null;
+
+function spawnConfetti(){
+  const palette=getPalette(state.palette);
+  for(let i=0;i<80;i++){
+    particles.push({
+      x:Math.random()*window.innerWidth,
+      y:-8,
+      vx:(Math.random()-0.5)*4,
+      vy:Math.random()*4+2,
+      size:Math.floor(Math.random()*5)+3,
+      color:palette[Math.floor(Math.random()*palette.length)],
+      rot:Math.random()*Math.PI,
+      rotv:(Math.random()-0.5)*0.2,
+      life:1
+    });
+  }
+  if(!confAnimId) animateConfetti();
+}
+
+function animateConfetti(){
+  confCtx.clearRect(0,0,confCanvas.width,confCanvas.height);
+  particles=particles.filter(p=>p.y<confCanvas.height+20&&p.life>0);
+  particles.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.rot+=p.rotv; p.life-=0.008;
+    confCtx.save();
+    confCtx.translate(p.x,p.y);
+    confCtx.rotate(p.rot);
+    confCtx.fillStyle=p.color;
+    confCtx.globalAlpha=p.life;
+    confCtx.fillRect(-p.size/2,-p.size/2,p.size,p.size);
+    confCtx.restore();
+  });
+  if(particles.length>0){confAnimId=requestAnimationFrame(animateConfetti);}
+  else{confAnimId=null;}
+}
+
+// ---- AUDIO ----
+let audioCtx=null;
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function beep(freq=440,dur=0.05,type='square',vol=0.08){
+  try{
+    const ac=getAudioCtx();
+    const osc=ac.createOscillator();
+    const gain=ac.createGain();
+    osc.connect(gain);gain.connect(ac.destination);
+    osc.type=type;osc.frequency.setValueAtTime(freq,ac.currentTime);
+    gain.gain.setValueAtTime(vol,ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
+    osc.start();osc.stop(ac.currentTime+dur);
+  }catch(e){}
+}
+document.querySelectorAll('.algo-btn').forEach(b=>{
+  const orig=b.onclick;
+  b.onclick=(e)=>{beep(220+Math.random()*440,0.06,'square');orig&&orig.call(b,e);};
+});
+document.querySelectorAll('.pal-btn').forEach(b=>{
+  const orig=b.onclick;
+  b.onclick=(e)=>{beep(330+Math.random()*220,0.04,'sawtooth');orig&&orig.call(b,e);};
+});
+
+// ---- EXPORT ----
+let exportCancelled=false;
+function startExport(){
+  if(!state.img){alert('Upload an image first.');return;}
+  exportCancelled=false;
+  const overlay=document.getElementById('export-progress');
+  overlay.classList.add('show');
+  setExpBar(0,'INITIALIZING...');
+  beep(880,0.1,'square',0.1);
+  const stages=[
+    [5,'READING SOURCE DATA...'],
+    [15,'APPLYING EXPOSURE CORRECTION...'],
+    [30,'QUANTIZING COLOR SPACE...'],
+    [50,'MAPPING PALETTE: '+state.palette.toUpperCase()+'...'],
+    [65,'RUNNING '+ALGO_NAMES[state.algo]+'...'],
+    [80,'DITHERING PIXELS...'],
+    [92,'ENCODING PNG...'],
+    [100,'DONE'],
+  ];
+  let i=0;
+  function next(){
+    if(exportCancelled){overlay.classList.remove('show');return;}
+    if(i>=stages.length){
+      setTimeout(()=>{doDownload();overlay.classList.remove('show');beep(1320,0.2,'square',0.1);},300);
+      return;
+    }
+    const[pct,msg]=stages[i++];
+    setExpBar(pct,msg);
+    setTimeout(next, 180+Math.random()*120);
+  }
+  next();
+}
+function setExpBar(pct,msg){
+  document.getElementById('exp-bar').style.width=pct+'%';
+  document.getElementById('exp-pct').textContent=pct+'%';
+  document.getElementById('exp-stage').textContent=msg;
+}
+function cancelExport(){
+  exportCancelled=true;
+  document.getElementById('export-progress').classList.remove('show');
+  beep(110,0.15,'sawtooth',0.08);
+}
+function doDownload(){
+  const mc=document.getElementById('main-canvas');
+  const link=document.createElement('a');
+  link.download='dither-lab-export.png';
+  link.href=mc.toDataURL('image/png');
+  link.click();
+}
+
+// ---- INIT ----
+drawMatrix();
+document.getElementById('st-algo').textContent=ALGO_NAMES[state.algo];
+document.getElementById('st-pal').textContent=state.palette.toUpperCase();
+</script>
+</body>
+</html>

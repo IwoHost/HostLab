@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Cooldown</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#0d0d0d;--surface:#111;--border:#1e1e1e;--border-hover:#2a2a2a;--accent:#c8a96e;--text:#d4d0c8;--muted:#555;--danger:#8b3a3a;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;}
+
+#confettiCanvas{position:fixed;inset:0;pointer-events:none;z-index:9999;}
+
+.app{max-width:620px;margin:0 auto;padding:40px 24px 80px;}
+
+header{border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+header h1{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:6px;color:var(--accent);}
+.item.checked{border-color:#1a2a1a;}
+.item.checked .item-label{color:var(--muted);text-decoration:none;}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin:0 4px 0 2px;transition:background .3s;}
+.item:not(.checked) .status-dot{background:#3a7a3a;}
+.item.checked .status-dot{background:#7a3a3a;}
+.header-right{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.default-timer-wrap{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted);letter-spacing:2px;}
+.timer-input{background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:12px;width:42px;text-align:center;outline:none;padding:2px 0;}
+.timer-input:focus{border-bottom-color:var(--accent);}
+
+.sound-toggle{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);letter-spacing:2px;cursor:pointer;user-select:none;border:1px solid var(--border);padding:5px 10px;transition:all .15s;}
+.sound-toggle:hover{border-color:var(--border-hover);color:var(--text);}
+.sound-toggle.on{border-color:#2a2218;color:var(--accent);}
+.sound-icon{width:12px;height:12px;position:relative;display:flex;align-items:center;}
+
+.add-row{display:flex;margin-bottom:28px;}
+.add-input{flex:1;background:#0a0a0a;border:1px solid var(--border);border-right:none;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:13px;padding:11px 14px;outline:none;transition:border-color .2s;letter-spacing:.5px;}
+.add-input:focus{border-color:var(--accent);}
+.add-input::placeholder{color:var(--muted);}
+.add-btn{background:var(--accent);border:none;color:#0d0d0d;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:3px;padding:0 20px;cursor:pointer;transition:background .15s;white-space:nowrap;}
+.add-btn:hover{background:#d4b87a;}
+
+.items{display:flex;flex-direction:column;gap:1px;}
+
+.item{background:var(--surface);border:1px solid var(--border);transition:border-color .2s;position:relative;}
+.item:hover{border-color:var(--border-hover);}
+
+.item-main{display:flex;align-items:center;}
+
+.check-btn{width:48px;min-width:48px;height:48px;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0;}
+.check-btn:hover{background:rgba(200,169,110,.05);}
+.check-box{width:16px;height:16px;border:1px solid var(--muted);transition:all .2s;position:relative;flex-shrink:0;}
+.item.checked .check-box{border-color:var(--accent);background:var(--accent);}
+.item.checked .check-box::after{content:'';position:absolute;left:3px;top:0px;width:5px;height:9px;border:2px solid #0d0d0d;border-left:none;border-top:none;transform:rotate(45deg);}
+
+.item-label{flex:1;font-size:13px;letter-spacing:.5px;padding:14px 8px;cursor:pointer;word-break:break-word;line-height:1.5;transition:color .2s;user-select:none;}
+.item-label-edit{flex:1;background:transparent;border:none;border-bottom:1px solid var(--accent);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.5px;padding:14px 8px;outline:none;}
+
+.item-right{display:flex;align-items:center;gap:4px;padding-right:8px;flex-shrink:0;}
+
+.countdown{font-size:12px;letter-spacing:2px;min-width:76px;text-align:right;font-variant-numeric:tabular-nums;font-family:'Share Tech Mono',monospace;}
+.countdown.urgent{color:#c87070;}
+.countdown.normal{color:var(--accent);}
+
+.del-btn{width:32px;height:48px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;display:flex;align-items:center;justify-content:center;transition:color .15s;opacity:0;line-height:1;}
+.item:hover .del-btn{opacity:1;}
+.del-btn:hover{color:var(--danger);}
+
+.empty{text-align:center;padding:60px 0;font-size:11px;color:var(--muted);letter-spacing:3px;}
+
+.reset-bar{margin-top:32px;border-top:1px solid var(--border);padding-top:20px;display:flex;justify-content:space-between;align-items:center;}
+.reset-btn{background:none;border:1px solid var(--border);color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:8px 16px;cursor:pointer;transition:all .15s;}
+.reset-btn:hover{border-color:var(--danger);color:var(--danger);}
+.sort-btn{background:none;border:1px solid var(--border);color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:8px 16px;cursor:pointer;transition:all .15s;}
+.sort-btn:hover{border-color:var(--border-hover);color:var(--text);}
+.sort-btn.on{border-color:#2a2218;color:var(--accent);}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+.item{animation:fadeIn .18s ease;}
+</style>
+</head>
+<body>
+<canvas id="confettiCanvas"></canvas>
+<div class="app">
+  <header>
+    <h1>EMAIL COOLDOWN</h1>
+    <div class="header-right">
+      <div class="default-timer-wrap">
+        <span>DEFAULT</span>
+        <input class="timer-input" id="defaultHours" type="number" min="0.1" max="999" step="0.5" value="5">
+        <span style="font-size:10px;letter-spacing:1px;">HRS</span>
+      </div>
+      <div class="sound-toggle" id="soundToggle" title="toggle ticking sound">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" id="soundIcon">
+          <rect x="1" y="4" width="3" height="4" fill="currentColor"/>
+          <path d="M4 4L7 2v8L4 8" fill="currentColor"/>
+          <path id="wave1" d="M8 4.5 C9 5 9 7 8 7.5" stroke="currentColor" stroke-width="1" fill="none"/>
+          <path id="wave2" d="M9.5 3 C11.5 4.5 11.5 7.5 9.5 9" stroke="currentColor" stroke-width="1" fill="none"/>
+        </svg>
+        <span id="soundLabel">TICK ON</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="add-row">
+    <input class="add-input" id="addInput" placeholder="add email address..." maxlength="200">
+    <button class="add-btn" id="addBtn">ADD</button>
+  </div>
+
+  <div class="items" id="itemList"></div>
+  <div class="empty" id="emptyMsg">NO ITEMS YET</div>
+
+  <div class="reset-bar">
+    <button class="sort-btn" id="sortBtn">SORT BY TIME</button>
+    <button class="reset-btn" id="resetAll">UNCHECK ALL</button>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const STORE_KEY = 'checklist_v3';
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {items:[], defaultHours:5, tickOn:true, sortOn:false}; }
+  catch { return {items:[], defaultHours:5, tickOn:true, sortOn:false}; }
+}
+function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+let state = load();
+
+// ── DOM refs ───────────────────────────────────────────────────────────────
+const listEl        = document.getElementById('itemList');
+const emptyEl       = document.getElementById('emptyMsg');
+const addInputEl    = document.getElementById('addInput');
+const addBtnEl      = document.getElementById('addBtn');
+const defaultHrsEl  = document.getElementById('defaultHours');
+const resetAllBtn   = document.getElementById('resetAll');
+const sortBtnEl     = document.getElementById('sortBtn');
+const soundToggleEl = document.getElementById('soundToggle');
+const soundLabelEl  = document.getElementById('soundLabel');
+const confettiCanvas= document.getElementById('confettiCanvas');
+const ctx           = confettiCanvas.getContext('2d');
+
+defaultHrsEl.value = state.defaultHours;
+
+// ── Audio (Web Audio API tick) ─────────────────────────────────────────────
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTick() {
+  if (!state.tickOn) return;
+  try {
+    const ac = getAudioCtx();
+    const buf = ac.createBuffer(1, ac.sampleRate * 0.04, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ac.sampleRate * 0.005));
+    }
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(0.18, ac.currentTime);
+    const filter = ac.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1200;
+    filter.Q.value = 2;
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ac.destination);
+    src.start();
+  } catch(e) {}
+}
+
+function playDone() {
+  try {
+    const ac = getAudioCtx();
+    [0, 0.12, 0.24].forEach((delay, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = [523, 659, 784][i];
+      gain.gain.setValueAtTime(0, ac.currentTime + delay);
+      gain.gain.linearRampToValueAtTime(0.3, ac.currentTime + delay + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + delay + 0.4);
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start(ac.currentTime + delay);
+      osc.stop(ac.currentTime + delay + 0.5);
+    });
+  } catch(e) {}
+}
+
+// ── Sound toggle ───────────────────────────────────────────────────────────
+function updateSoundUI() {
+  soundToggleEl.classList.toggle('on', state.tickOn);
+  soundLabelEl.textContent = state.tickOn ? 'TICK ON' : 'TICK OFF';
+  document.getElementById('wave1').style.display = state.tickOn ? '' : 'none';
+  document.getElementById('wave2').style.display = state.tickOn ? '' : 'none';
+}
+updateSoundUI();
+soundToggleEl.addEventListener('click', () => {
+  state.tickOn = !state.tickOn;
+  save();
+  updateSoundUI();
+  if (state.tickOn) playTick();
+});
+
+// ── Confetti ───────────────────────────────────────────────────────────────
+let confettiParticles = [];
+let confettiRaf = null;
+
+function resizeCanvas() {
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+const CONFETTI_COLORS = ['#c8a96e','#d4d0c8','#8b6914','#fff5d6','#c87070','#7ecac8','#a96ec8'];
+
+function launchConfetti() {
+  const cx = window.innerWidth / 2;
+  for (let i = 0; i < 140; i++) {
+    const angle = (Math.random() * Math.PI * 2);
+    const speed = 4 + Math.random() * 10;
+    confettiParticles.push({
+      x: cx,
+      y: window.innerHeight * 0.45,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 6,
+      w: 6 + Math.random() * 8,
+      h: 3 + Math.random() * 4,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      rot: Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.3,
+      life: 1,
+      decay: 0.008 + Math.random() * 0.006
+    });
+  }
+  if (!confettiRaf) animateConfetti();
+}
+
+function animateConfetti() {
+  ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  confettiParticles = confettiParticles.filter(p => p.life > 0);
+  confettiParticles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.3;
+    p.vx *= 0.99;
+    p.rot += p.rotV;
+    p.life -= p.decay;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    ctx.restore();
+  });
+  if (confettiParticles.length > 0) {
+    confettiRaf = requestAnimationFrame(animateConfetti);
+  } else {
+    confettiRaf = null;
+    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function getItemHours(item) { return item.hours != null ? item.hours : state.defaultHours; }
+function getRemainingMs(item) {
+  if (!item.checked || !item.checkedAt) return null;
+  return item.checkedAt + getItemHours(item) * 3600000 - Date.now();
+}
+function fmt(ms) {
+  if (ms <= 0) return '00:00:00';
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return [h,m,sec].map(n => String(n).padStart(2,'0')).join(':');
+}
+
+// ── CRUD ───────────────────────────────────────────────────────────────────
+function addItem() {
+  const text = addInputEl.value.trim();
+  if (!text) return;
+  state.items.push({ id: uid(), label: text, checked: false, checkedAt: null, hours: null });
+  addInputEl.value = '';
+  save(); render(); addInputEl.focus();
+}
+
+function toggleItem(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  item.checked = !item.checked;
+  item.checkedAt = item.checked ? Date.now() : null;
+  save(); render();
+}
+
+function deleteItem(id) {
+  state.items = state.items.filter(i => i.id !== id);
+  save(); render();
+}
+
+function updateLabel(id, val) {
+  const item = state.items.find(i => i.id === id);
+  if (item && val.trim()) { item.label = val.trim(); save(); }
+  render();
+}
+
+function updateItemHours(id, val) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  const h = parseFloat(val);
+  item.hours = (isNaN(h) || h <= 0) ? null : h;
+  if (item.checked && item.checkedAt) item.checkedAt = Date.now();
+  save();
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render() {
+  listEl.innerHTML = '';
+  emptyEl.style.display = state.items.length ? 'none' : 'block';
+  sortBtnEl.classList.toggle('on', state.sortOn);
+
+  let items = [...state.items];
+  if (state.sortOn) {
+    items.sort((a, b) => {
+      const ra = getRemainingMs(a);
+      const rb = getRemainingMs(b);
+      if (ra == null && rb == null) return 0;
+      if (ra == null) return -1; // READY first
+      if (rb == null) return 1;
+      return ra - rb; // least time remaining first
+    });
+  }
+  items.forEach(item => {
+    const rem = item.checked ? getRemainingMs(item) : null;
+    const div = document.createElement('div');
+    div.className = 'item' + (item.checked ? ' checked' : '');
+    div.innerHTML = `
+      <div class="item-main">
+        <button class="check-btn" data-action="toggle" data-id="${item.id}">
+          <div class="check-box"></div>
+        </button>
+        <span class="item-label" data-action="edit" data-id="${item.id}">${escHtml(item.label)}</span>
+        <div class="item-right">
+          <div class="status-dot"></div>
+          <span style="font-size:9px;letter-spacing:2px;color:${item.checked ? '#7a3a3a' : '#3a7a3a'};min-width:42px;text-align:center;">${item.checked ? 'IN USE' : 'READY'}</span>
+
+          <span class="countdown ${rem != null && rem < 1800000 ? 'urgent' : 'normal'}" data-id="${item.id}">${rem != null ? fmt(rem) : ''}</span>
+          <button class="del-btn" data-action="delete" data-id="${item.id}">×</button>
+        </div>
+      </div>`;
+    listEl.appendChild(div);
+  });
+}
+
+// ── Tick loop ──────────────────────────────────────────────────────────────
+let lastTickSec = -1;
+function tick() {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const isTick = nowSec !== lastTickSec;
+  if (isTick) lastTickSec = nowSec;
+
+  let needRender = false;
+  state.items.forEach(item => {
+    if (item.checked && item.checkedAt) {
+      const rem = getRemainingMs(item);
+      if (rem <= 0) {
+        item.checked = false; item.checkedAt = null;
+        needRender = true;
+        launchConfetti();
+        playDone();
+      }
+    }
+  });
+
+  if (needRender) { save(); render(); return; }
+
+  // play tick sound once per second if any item is checked
+  if (isTick && state.tickOn) {
+    const anyChecked = state.items.some(i => i.checked);
+    if (anyChecked) playTick();
+  }
+
+  // update countdowns in-place
+  state.items.forEach(item => {
+    const el = listEl.querySelector(`.countdown[data-id="${item.id}"]`);
+    if (!el) return;
+    if (!item.checked) { el.textContent = ''; el.className = 'countdown'; return; }
+    const rem = getRemainingMs(item);
+    el.textContent = rem != null ? fmt(rem) : '';
+    el.className = 'countdown ' + (rem != null && rem < 1800000 ? 'urgent' : 'normal');
+  });
+}
+
+// ── Events ─────────────────────────────────────────────────────────────────
+listEl.addEventListener('click', e => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  if (btn.dataset.action === 'toggle') { toggleItem(id); return; }
+  if (btn.dataset.action === 'delete') { deleteItem(id); return; }
+  if (btn.dataset.action === 'edit') {
+    const item = state.items.find(i => i.id === id);
+    if (!item) return;
+    const inp = document.createElement('input');
+    inp.className = 'item-label-edit';
+    inp.value = item.label;
+    btn.replaceWith(inp);
+    inp.focus(); inp.select();
+    inp.addEventListener('blur', () => updateLabel(id, inp.value));
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') inp.blur();
+      if (e.key === 'Escape') { inp.value = item.label; inp.blur(); }
+    });
+  }
+});
+
+addBtnEl.addEventListener('click', addItem);
+addInputEl.addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+
+defaultHrsEl.addEventListener('change', () => {
+  const h = parseFloat(defaultHrsEl.value);
+  state.defaultHours = (isNaN(h) || h <= 0) ? 5 : h;
+  defaultHrsEl.value = state.defaultHours;
+  save();
+});
+
+sortBtnEl.addEventListener('click', () => {
+  state.sortOn = !state.sortOn;
+  save(); render();
+});
+
+
+resetAllBtn.addEventListener('click', () => {
+  state.items.forEach(i => { i.checked = false; i.checkedAt = null; });
+  save(); render();
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────
+render();
+setInterval(tick, 250);
+</script>
+</body>
+</html>
