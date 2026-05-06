@@ -330,8 +330,7 @@
 
 <script>
     const genBtn   = document.getElementById('gen-btn');
-    const raw = params.get('url') || params.get('dest');
-    const dest = raw ? atob(raw) : null;
+    const link = base + '?url=' + btoa(encodeURIComponent(raw));
     const output   = document.getElementById('output');
     const outLink  = document.getElementById('out-link');
     const copyBtn  = document.getElementById('copy-btn');
