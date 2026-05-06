@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACCESS CHECKPOINT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #050905;
+            --surface: #090e09;
+            --border: #1a2e1a;
+            --green: #00ff41;
+            --dim: #008822;
+            --red: #ff2828;
+            --amber: #ffb300;
+            --text: #b8f0b8;
+            --muted: #3a5a3a;
+            --font: 'Share Tech Mono', monospace;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg, transparent, transparent 3px,
+                rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px
+            );
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.5) 100%);
+            pointer-events: none;
+            z-index: 199;
+        }
+
+        @keyframes flicker {
+            0%,90%,100% { opacity: 1; }
+            91% { opacity: 0.88; }
+            93% { opacity: 1; }
+            95% { opacity: 0.92; }
+        }
+        body { animation: flicker 10s infinite; }
+
+        @keyframes blink {
+            0%,100% { opacity: 1; } 50% { opacity: 0; }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 640px;
+            border: 1px solid var(--border);
+            padding: 2.5rem;
+            position: relative;
+            background: var(--surface);
+            box-shadow: 0 0 60px rgba(0,255,65,0.04), inset 0 0 60px rgba(0,0,0,0.3);
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            inset: 5px;
+            border: 1px solid rgba(0,255,65,0.06);
+            pointer-events: none;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .badge {
+            background: var(--red);
+            color: #fff;
+            font-size: 0.6rem;
+            letter-spacing: 0.25em;
+            padding: 0.2rem 0.6rem;
+        }
+
+        .sys-status {
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+        }
+
+        .sys-status span {
+            color: var(--green);
+            animation: blink 2s step-end infinite;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: var(--green);
+            letter-spacing: 0.15em;
+            text-shadow: 0 0 30px rgba(0,255,65,0.4);
+            line-height: 1;
+        }
+
+        h1::after {
+            content: '_';
+            animation: blink 1s step-end infinite;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.65rem;
+            letter-spacing: 0.25em;
+            margin-top: 0.6rem;
+        }
+
+        /* CHALLENGE AREA */
+        #challenge-area {
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            text-align: center;
+        }
+
+        .challenge-label {
+            font-size: 0.6rem;
+            letter-spacing: 0.3em;
+            color: var(--amber);
+            border: 1px solid rgba(255,179,0,0.2);
+            padding: 0.3rem 1rem;
+        }
+
+        /* TIMER */
+        .timer-num {
+            font-size: 7rem;
+            line-height: 1;
+            color: var(--green);
+            text-shadow: 0 0 50px rgba(0,255,65,0.5);
+            font-variant-numeric: tabular-nums;
+            transition: color 1s, text-shadow 1s;
+        }
+
+        .timer-num.danger {
+            color: var(--red);
+            text-shadow: 0 0 50px rgba(255,40,40,0.5);
+        }
+
+        .timer-label {
+            font-size: 0.65rem;
+            letter-spacing: 0.3em;
+            color: var(--muted);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 2px;
+            background: var(--border);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--green);
+            transition: width 1s linear, background 1s;
+        }
+
+        /* PHRASE */
+        .phrase-display {
+            background: rgba(0,255,65,0.03);
+            border: 1px solid var(--border);
+            padding: 1rem 1.25rem;
+            width: 100%;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            text-align: left;
+            letter-spacing: 0.03em;
+        }
+
+        .phrase-display .ch-correct { color: var(--green); }
+        .phrase-display .ch-wrong { color: var(--red); background: rgba(255,40,40,0.15); }
+        .phrase-display .ch-pending { color: var(--muted); }
+
+        .phrase-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 0.95rem;
+            padding: 0.65rem 0;
+            outline: none;
+            caret-color: var(--green);
+            letter-spacing: 0.03em;
+        }
+
+        .phrase-input:focus { border-bottom-color: var(--dim); }
+
+        .input-label {
+            font-size: 0.58rem;
+            letter-spacing: 0.25em;
+            color: var(--muted);
+            align-self: flex-start;
+            margin-bottom: -0.75rem;
+        }
+
+        /* BINARY */
+        .binary-seq {
+            font-size: 2.2rem;
+            letter-spacing: 0.25em;
+            color: var(--green);
+            text-shadow: 0 0 20px rgba(0,255,65,0.35);
+        }
+
+        .binary-hint {
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+        }
+
+        .binary-input {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 1.5rem;
+            padding: 0.65rem 1rem;
+            width: 160px;
+            text-align: center;
+            outline: none;
+            caret-color: var(--green);
+        }
+
+        .binary-input:focus { border-color: var(--dim); }
+        .binary-input.shake {
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            60% { transform: translateX(6px); }
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--dim);
+            color: var(--green);
+            font-family: var(--font);
+            font-size: 0.7rem;
+            letter-spacing: 0.3em;
+            padding: 0.65rem 2rem;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            text-transform: uppercase;
+        }
+
+        .action-btn:hover:not(:disabled) { background: var(--green); color: var(--bg); border-color: var(--green); }
+        .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .attempts-counter {
+            font-size: 0.62rem;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+        }
+
+        .attempts-counter.warn { color: var(--amber); }
+        .attempts-counter.crit { color: var(--red); }
+
+        /* SUCCESS */
+        #success-area {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            min-height: 220px;
+            justify-content: center;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .success-granted {
+            font-size: 2rem;
+            color: var(--green);
+            text-shadow: 0 0 40px rgba(0,255,65,0.5);
+            letter-spacing: 0.2em;
+            animation: fadeUp 0.4s ease;
+        }
+
+        .proceed-btn {
+            display: inline-block;
+            background: var(--green);
+            color: var(--bg);
+            font-family: var(--font);
+            font-size: 0.75rem;
+            letter-spacing: 0.3em;
+            padding: 0.9rem 2.5rem;
+            text-decoration: none;
+            text-transform: uppercase;
+            box-shadow: 0 0 40px rgba(0,255,65,0.25);
+            animation: fadeUp 0.4s ease 0.2s both;
+            transition: box-shadow 0.2s;
+        }
+
+        .proceed-btn:hover { box-shadow: 0 0 60px rgba(0,255,65,0.5); }
+
+        /* ERROR */
+        #error-area {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            min-height: 220px;
+            justify-content: center;
+            color: var(--red);
+        }
+
+        .error-code { font-size: 2.5rem; }
+
+        .footer-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.58rem;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="top-bar">
+        <div class="badge">⚠ RESTRICTED ACCESS</div>
+        <div class="sys-status">SYS STATUS: <span>ONLINE</span></div>
+    </div>
+
+    <div class="header">
+        <h1>GATEKEEPER</h1>
+        <div class="subtitle">COMPLETE THE ASSIGNED CHALLENGE TO PROCEED</div>
+    </div>
+
+    <div id="challenge-area"></div>
+    <div id="success-area">
+        <div class="success-granted">▶ ACCESS GRANTED</div>
+        <div class="subtitle">Your destination has been unlocked.</div>
+        <a id="proceed-link" href="#" class="proceed-btn">PROCEED TO DESTINATION</a>
+    </div>
+    <div id="error-area">
+        <div class="error-code">ERR_404</div>
+        <div class="subtitle">No destination URL was provided.</div>
+    </div>
+
+    <div class="footer-bar">
+        <span>SESSION: <span id="session-id">——</span></span>
+        <span>CHALLENGE: <span id="challenge-type">——</span></span>
+        <span>v1.0.0</span>
+    </div>
+</div>
+
+<script>
+    const params  = new URLSearchParams(window.location.search);
+    const dest    = params.get('url') || params.get('dest');
+    const cArea   = document.getElementById('challenge-area');
+    const sArea   = document.getElementById('success-area');
+    const eArea   = document.getElementById('error-area');
+
+    document.getElementById('session-id').textContent =
+        Math.random().toString(36).slice(2,8).toUpperCase();
+
+    if (!dest) {
+        cArea.style.display  = 'none';
+        eArea.style.display  = 'flex';
+    } else {
+        const types   = ['timer', 'phrase', 'binary'];
+        const chosen  = types[Math.floor(Math.random() * 3)];
+        document.getElementById('challenge-type').textContent = chosen.toUpperCase();
+        window['run_' + chosen]();
+    }
+
+    /* ─── GRANT ───────────────────────────────────────────────── */
+    function grantAccess() {
+        cArea.style.display = 'none';
+        sArea.style.display = 'flex';
+        document.getElementById('proceed-link').href = dest;
+    }
+
+    /* ─── TIMER ───────────────────────────────────────────────── */
+    function run_timer() {
+        const total = 30;
+        let remaining = total;
+
+        cArea.innerHTML = `
+            <div class="challenge-label">CHALLENGE TYPE: PATIENCE TAX</div>
+            <div class="timer-num" id="t-num">30</div>
+            <div class="timer-label">SECONDS REMAINING — DO NOT CLOSE THIS TAB</div>
+            <div class="progress-bar" style="width:100%">
+                <div class="progress-fill" id="t-prog" style="width:100%"></div>
+            </div>`;
+
+        const tNum  = document.getElementById('t-num');
+        const tProg = document.getElementById('t-prog');
+
+        const iv = setInterval(() => {
+            remaining--;
+            tNum.textContent  = remaining < 10 ? '0' + remaining : remaining;
+            tProg.style.width = (remaining / total * 100) + '%';
+            if (remaining <= 10) {
+                tNum.classList.add('danger');
+                tProg.style.background = 'var(--red)';
+            }
+            if (remaining <= 0) { clearInterval(iv); setTimeout(grantAccess, 500); }
+        }, 1000);
+    }
+
+    /* ─── PHRASE ──────────────────────────────────────────────── */
+    function run_phrase() {
+        const phrases = [
+            "I acknowledge that I may not deserve this link",
+            "The person who sent this is significantly cooler than me",
+            "I have kept someone waiting and I accept the consequences",
+            "I solemnly swear that I am up to some kind of trouble",
+            "Whoever made this had way too much time and I respect it",
+            "I am not worthy but here I am anyway",
+            "This took longer than expected and I have learned nothing"
+        ];
+        const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+
+        cArea.innerHTML = `
+            <div class="challenge-label">CHALLENGE TYPE: TYPEWRITER OATH</div>
+            <div class="phrase-display" id="ph-display">${renderPhrase(phrase,'')}</div>
+            <div class="input-label">TYPE THE PHRASE EXACTLY — NO COPY/PASTE</div>
+            <input id="ph-input" class="phrase-input" type="text"
+                   autocomplete="off" autocorrect="off" autocapitalize="off"
+                   spellcheck="false" placeholder="begin typing...">`;
+
+        const inp = document.getElementById('ph-input');
+        const dis = document.getElementById('ph-display');
+        inp.focus();
+
+        inp.addEventListener('paste', e => e.preventDefault());
+        inp.addEventListener('input', () => {
+            const v = inp.value;
+            dis.innerHTML = renderPhrase(phrase, v);
+            if (v === phrase) { inp.disabled = true; setTimeout(grantAccess, 500); }
+        });
+    }
+
+    function renderPhrase(phrase, typed) {
+        return phrase.split('').map((ch, i) => {
+            if (i >= typed.length) return `<span class="ch-pending">${esc(ch)}</span>`;
+            return typed[i] === ch
+                ? `<span class="ch-correct">${esc(ch)}</span>`
+                : `<span class="ch-wrong">${esc(ch)}</span>`;
+        }).join('');
+    }
+
+    /* ─── BINARY ──────────────────────────────────────────────── */
+    function run_binary() {
+        const num    = Math.floor(Math.random() * 220) + 10;
+        const binStr = num.toString(2).padStart(8, '0');
+        let lives    = 3;
+
+        cArea.innerHTML = `
+            <div class="challenge-label">CHALLENGE TYPE: BINARY DECRYPTION</div>
+            <div>
+                <div class="binary-hint" style="margin-bottom:.5rem">DECODE THIS BINARY SEQUENCE INTO DECIMAL:</div>
+                <div class="binary-seq">${binStr}</div>
+            </div>
+            <input type="number" id="bin-inp" class="binary-input"
+                   placeholder="???" min="0" max="255">
+            <button class="action-btn" id="bin-btn">SUBMIT ANSWER</button>
+            <div class="attempts-counter" id="bin-lives">ATTEMPTS REMAINING: 3</div>`;
+
+        const inp   = document.getElementById('bin-inp');
+        const btn   = document.getElementById('bin-btn');
+        const lives_el = document.getElementById('bin-lives');
+        inp.focus();
+
+        function check() {
+            if (parseInt(inp.value) === num) {
+                lives_el.textContent = '✓ CORRECT';
+                lives_el.style.color = 'var(--green)';
+                btn.disabled = inp.disabled = true;
+                setTimeout(grantAccess, 600);
+            } else {
+                lives--;
+                inp.value = '';
+                inp.classList.add('shake');
+                setTimeout(() => inp.classList.remove('shake'), 350);
+                if (lives <= 0) {
+                    lives_el.textContent  = '⛔ OUT OF ATTEMPTS — RELOADING…';
+                    lives_el.className    = 'attempts-counter crit';
+                    btn.disabled = inp.disabled = true;
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    lives_el.textContent = `ATTEMPTS REMAINING: ${lives}`;
+                    lives_el.className   = 'attempts-counter ' + (lives === 1 ? 'crit' : 'warn');
+                }
+            }
+        }
+
+        btn.addEventListener('click', check);
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+    }
+
+    /* ─── UTIL ────────────────────────────────────────────────── */
+    function esc(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+</script>
+</body>
+</html>

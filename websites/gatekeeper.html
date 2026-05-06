@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GATEKEEPER — Link Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #050905;
+            --surface: #090e09;
+            --border: #1a2e1a;
+            --green: #00ff41;
+            --dim: #008822;
+            --red: #ff2828;
+            --amber: #ffb300;
+            --text: #b8f0b8;
+            --muted: #3a5a3a;
+            --font: 'Share Tech Mono', monospace;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg, transparent, transparent 3px,
+                rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px
+            );
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.5) 100%);
+            pointer-events: none;
+            z-index: 199;
+        }
+
+        @keyframes blink {
+            0%,100% { opacity:1; } 50% { opacity:0; }
+        }
+
+        @keyframes flicker {
+            0%,90%,100% { opacity:1; }
+            91% { opacity:0.88; } 93% { opacity:1; } 95% { opacity:0.92; }
+        }
+        body { animation: flicker 10s infinite; }
+
+        .container {
+            width: 100%;
+            max-width: 620px;
+            border: 1px solid var(--border);
+            padding: 2.5rem;
+            background: var(--surface);
+            box-shadow: 0 0 60px rgba(0,255,65,0.04), inset 0 0 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            inset: 5px;
+            border: 1px solid rgba(0,255,65,0.06);
+            pointer-events: none;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .badge {
+            background: var(--dim);
+            color: var(--green);
+            font-size: 0.6rem;
+            letter-spacing: 0.25em;
+            padding: 0.2rem 0.6rem;
+        }
+
+        .sys-status {
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+        }
+
+        .sys-status span { color: var(--green); animation: blink 2s step-end infinite; }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: var(--green);
+            letter-spacing: 0.15em;
+            text-shadow: 0 0 30px rgba(0,255,65,0.4);
+            line-height: 1;
+        }
+
+        h1::after { content: '_'; animation: blink 1s step-end infinite; }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.65rem;
+            letter-spacing: 0.25em;
+            margin-top: 0.6rem;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .field-label {
+            font-size: 0.6rem;
+            letter-spacing: 0.3em;
+            color: var(--amber);
+        }
+
+        .field-input {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 0.9rem;
+            padding: 0.75rem 1rem;
+            outline: none;
+            caret-color: var(--green);
+            width: 100%;
+            transition: border-color 0.15s;
+        }
+
+        .field-input:focus { border-color: var(--dim); }
+        .field-input::placeholder { color: var(--muted); }
+
+        .generate-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--dim);
+            color: var(--green);
+            font-family: var(--font);
+            font-size: 0.75rem;
+            letter-spacing: 0.4em;
+            padding: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            margin-bottom: 2rem;
+        }
+
+        .generate-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+
+        /* Output area */
+        #output {
+            display: none;
+            flex-direction: column;
+            gap: 1rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .output-label {
+            font-size: 0.6rem;
+            letter-spacing: 0.3em;
+            color: var(--amber);
+        }
+
+        .output-row {
+            display: flex;
+            gap: 0;
+        }
+
+        .output-link {
+            flex: 1;
+            background: rgba(0,255,65,0.04);
+            border: 1px solid var(--border);
+            border-right: none;
+            color: var(--dim);
+            font-family: var(--font);
+            font-size: 0.75rem;
+            padding: 0.75rem 1rem;
+            word-break: break-all;
+            line-height: 1.4;
+            user-select: all;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-family: var(--font);
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            padding: 0 1rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            text-transform: uppercase;
+        }
+
+        .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+        .copy-btn.copied { background: var(--dim); color: var(--green); border-color: var(--dim); }
+
+        .challenge-preview {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .challenge-pill {
+            font-size: 0.58rem;
+            letter-spacing: 0.2em;
+            padding: 0.25rem 0.65rem;
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+
+        .challenge-pill.active {
+            border-color: var(--dim);
+            color: var(--green);
+            background: rgba(0,255,65,0.05);
+        }
+
+        .preview-note {
+            font-size: 0.58rem;
+            letter-spacing: 0.15em;
+            color: var(--muted);
+        }
+
+        .test-link {
+            color: var(--dim);
+            text-decoration: none;
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1px;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .test-link:hover { color: var(--green); border-color: var(--dim); }
+
+        .footer-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.58rem;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+        }
+
+        .error-msg {
+            font-size: 0.65rem;
+            color: var(--red);
+            letter-spacing: 0.15em;
+            display: none;
+            padding: 0.5rem 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="top-bar">
+        <div class="badge">LINK GENERATOR</div>
+        <div class="sys-status">SYS STATUS: <span>ONLINE</span></div>
+    </div>
+
+    <div class="header">
+        <h1>GATEKEEPER</h1>
+        <div class="subtitle">MAKE THEM EARN IT BEFORE THEY GET IN</div>
+    </div>
+
+    <div class="field-group">
+        <div class="field-label">DESTINATION URL</div>
+        <input type="url" class="field-input" id="dest-input"
+               placeholder="https://your-link-here.com" autocomplete="off">
+        <div class="error-msg" id="err-msg">⛔ ENTER A VALID URL (must start with https://)</div>
+    </div>
+
+    <button class="generate-btn" id="gen-btn">▶ GENERATE GATEKEEPER LINK</button>
+
+    <div id="output">
+        <div class="output-label">YOUR GATEKEEPER LINK</div>
+        <div class="output-row">
+            <div class="output-link" id="out-link"></div>
+            <button class="copy-btn" id="copy-btn">COPY</button>
+        </div>
+
+        <div class="challenge-preview">
+            <div class="challenge-pill active">TIMER</div>
+            <div class="challenge-pill active">PHRASE</div>
+            <div class="challenge-pill active">BINARY</div>
+        </div>
+        <div class="preview-note">recipient gets one random challenge — they won't know which until they open it</div>
+        <a id="test-link" href="#" target="_blank" class="test-link">↗ TEST THIS LINK</a>
+    </div>
+
+    <div class="footer-bar">
+        <span>CHALLENGES: TIMER / PHRASE / BINARY</span>
+        <span>v1.0.0</span>
+    </div>
+</div>
+
+<script>
+    const genBtn   = document.getElementById('gen-btn');
+    const destInp  = document.getElementById('dest-input');
+    const output   = document.getElementById('output');
+    const outLink  = document.getElementById('out-link');
+    const copyBtn  = document.getElementById('copy-btn');
+    const testLink = document.getElementById('test-link');
+    const errMsg   = document.getElementById('err-msg');
+
+    genBtn.addEventListener('click', generate);
+    destInp.addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
+    destInp.addEventListener('input', () => { errMsg.style.display = 'none'; });
+
+    function generate() {
+        const raw = destInp.value.trim();
+        if (!raw || !isValidUrl(raw)) {
+            errMsg.style.display = 'block';
+            destInp.focus();
+            return;
+        }
+
+        const base     = window.location.origin + window.location.pathname.replace('gatekeeper.html','') + 'gate.html';
+        const link     = base + '?url=' + encodeURIComponent(raw);
+
+        outLink.textContent    = link;
+        testLink.href          = link;
+        output.style.display   = 'flex';
+        output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    copyBtn.addEventListener('click', () => {
+        const link = outLink.textContent;
+        if (!link) return;
+        navigator.clipboard.writeText(link).then(() => {
+            copyBtn.textContent = 'COPIED!';
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+                copyBtn.textContent = 'COPY';
+                copyBtn.classList.remove('copied');
+            }, 2000);
+        });
+    });
+
+    function isValidUrl(str) {
+        try {
+            const u = new URL(str);
+            return u.protocol === 'https:' || u.protocol === 'http:';
+        } catch { return false; }
+    }
+</script>
+</body>
+</html>
