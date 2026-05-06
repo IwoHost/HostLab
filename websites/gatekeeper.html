@@ -330,7 +330,7 @@
 
 <script>
     const genBtn   = document.getElementById('gen-btn');
-    const link = base + '?url=' + btoa(encodeURIComponent(raw));
+    const destInp  = document.getElementById('dest-input');
     const output   = document.getElementById('output');
     const outLink  = document.getElementById('out-link');
     const copyBtn  = document.getElementById('copy-btn');
@@ -349,12 +349,12 @@
             return;
         }
 
-        const base     = window.location.origin + window.location.pathname.replace('gatekeeper.html','') + 'gate.html';
-        const link = base + '?url=' + btoa(raw);
+        const base = window.location.origin + window.location.pathname.replace('gatekeeper.html','') + 'gate.html';
+        const link = base + '?url=' + btoa(encodeURIComponent(raw));
 
-        outLink.textContent    = link;
-        testLink.href          = link;
-        output.style.display   = 'flex';
+        outLink.textContent  = link;
+        testLink.href        = link;
+        output.style.display = 'flex';
         output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
