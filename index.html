@@ -223,7 +223,19 @@ header {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-meta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .card-index {
@@ -242,9 +254,11 @@ header {
 }
 
 .card-icon {
-  width: 28px;
-  height: 28px;
-  margin-bottom: 12px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .card-icon img {
@@ -412,26 +426,31 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 const PROJECTS = [
   {
     file:  'dither-lab.html',
+    icon:  'other/logo/Dither.png',
     title: 'Dither Lab',
     desc:  'A specialized image processing tool used for applying various dithering algorithms to images. Users can upload photos, adjust parameters like exposure and quantization, and choose from multiple color palettes to create retro-style, pixelated artwork.'
   },
   {
     file:  'checklist.html',
+    icon:  'other/logo/CheckList.png',
     title: 'Checklist',
     desc:  'A task management and checklist application designed with a high-contrast "Share Tech Mono" aesthetic. It features a countdown timer for items, customizable "default hours" for cooldown periods, and includes a confetti animation that triggers when tasks are completed.'
   },
   {
     file:  'vindigators-wrapped-v5.html',
+    icon:  'other/logo/warp.png',
     title: 'Vindigators Wrapped',
     desc:  'A data visualization site that creates a "Wrapped" style presentation (similar to Spotify Wrapped) for project contribution logs. Users paste a version log into the interface, and the site generates an animated slideshow highlighting "MVP" contributors, total commit counts, and a scrolling timeline of project entries.'
   },
   {
     file:  'text-animator-v4.html',
+    icon:  'other/logo/Texter.png',
     title: 'Text Animator',
     desc:  'A web-based utility for creating animated text videos. It provides a sidebar for entering text and customizing its appearance—including font style, color, and background—and supports exporting the final animation as a video file (WebM/MP4).'
   },
   {
     file:  'IPvisualizer.html',
+    icon:  'other/logo/Ipviz.png',
     title: 'IP Visualizer',
     desc:  'An educational tool designed to help users learn and visualize networking concepts like subnetting. It allows users to input an IP address and subnet mask to calculate network details, including the network address, gateway, broadcast address, and binary representations of octets.'
   },
@@ -441,24 +460,26 @@ const PROJECTS = [
     desc:  'A dramatic personal countdown page tracking how long Szymon A. has failed to build a city — complete with a cinematic curtain intro, floating particles, a typewriter roast, and a live timer counting every day, hour, minute, and second of inaction.'
   },
   {
-  file:  'gatekeeper.html',
-  title: 'Link Gatekeeper',
-  desc:  'A link-sharing tool that makes recipients earn their way in. Paste any URL, get a shareable link — whoever opens it gets a random challenge: a countdown timer, a typewriter oath, or a binary decryption puzzle.'
+    file:  'gatekeeper.html',
+    icon:  'other/logo/Kepper.png',
+    title: 'Link Gatekeeper',
+    desc:  'A link-sharing tool that makes recipients earn their way in. Paste any URL, get a shareable link — whoever opens it gets a random challenge: a countdown timer, a typewriter oath, or a binary decryption puzzle.'
   },
   {
-  file:  'gap-relativity-enhanced.html',
-  title: 'Live Gap Visualizer',
-  desc:  'An interactive visualization tool that reveals the temporal gaps between your life and the lives of people around you. It allows users to input names and birth (and death) dates to calculate relationship timelines, including days lived, overlap percentages, decade-by-decade breakdowns, and a combined side-by-side timeline showing every person s lifespan on a shared axis.'
+    file:  'gap-relativity-enhanced.html',
+    icon:  'other/logo/GapViz.png',
+    title: 'Live Gap Visualizer',
+    desc:  'An interactive visualization tool that reveals the temporal gaps between your life and the lives of people around you. It allows users to input names and birth (and death) dates to calculate relationship timelines, including days lived, overlap percentages, decade-by-decade breakdowns, and a combined side-by-side timeline showing every person s lifespan on a shared axis.'
   },
   {
   file:  'voicesynth.html',
-  title: 'VoxSynth',
-  desc:  'A browser-based voice synthesizer that lets you record your own phonemes once and speak anything with them forever. Uses the Web Audio API to schedule syllables on a precise timeline with pitch shifting, jitter, overlap control, and beat interval tuning — producing a Mii-style babble effect from your own recorded voice.'
+    icon:  'other/logo/Voice_Synth.png',
+    title: 'VoxSynth',
+    desc:  'A browser-based voice synthesizer that lets you record your own phonemes once and speak anything with them forever. Uses the Web Audio API to schedule syllables on a precise timeline with pitch shifting, jitter, overlap control, and beat interval tuning — producing a Mii-style babble effect from your own recorded voice.'
   },
   {
-  file:  'flagmark.html',
-  title: 'FlagMark',
-  desc:  'Drop any flag, get a poster. Flagmark extracts colors, reads geometry, and renders a technical print sheet — complete with dimension arrows, grid overlay, and perceptual color analysis — entirely in the browser.'
+    file:  'flagmark.html',
+    icon:  'other/logo/Flag_plac.png',
   }
   
   /* ────────────────────────────────────────────
@@ -520,14 +541,20 @@ function buildCard(project, index) {
   const body = document.createElement('div');
   body.className = 'card-body';
 
+  const icon = project.icon || 'other/logo/HLab_Logo.png';
+
   const descText = desc
     ? `<p class="card-desc">${desc}</p>`
     : `<p class="card-desc" style="color:var(--text-muted);font-style:italic;font-size:12px;">No description found. Add one at other/d_${file.replace('.html','')}.txt</p>`;
 
   body.innerHTML = `
-    <div class="card-icon"><img src="other/logo/HLab_Logo.png" alt="HostLab icon"></div>
-    <div class="card-index">${num}</div>
-    <div class="card-title">${title}</div>
+    <div class="card-meta">
+      <div class="card-icon"><img src="${icon}" alt="${title} icon"></div>
+      <div class="card-meta-text">
+        <div class="card-index">${num}</div>
+        <div class="card-title">${title}</div>
+      </div>
+    </div>
     ${descText}
     <div class="card-footer">
       <span class="card-filename">${file}</span>
