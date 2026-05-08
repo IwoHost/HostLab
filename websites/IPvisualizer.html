@@ -915,7 +915,7 @@ function render(c) {
   $('spotHosts').textContent = usable.toLocaleString();
   $('spotCidr').textContent  = `/${cidr}`;
   $('spotMask').textContent  = intToIp(mask);
-  $('spotRange').textContent = firstInt <= lastInt ? `${intToIp(firstInt)} → ${intToIp(lastInt)}` : 'No usable hosts';
+  $('spotRange').textContent = usable > 0 ? `${intToIp(firstInt)} → ${intToIp(lastInt)}` : 'No usable hosts';
 
   const cards = [
     { cls:'net',  label:'🏠 Network', ip: intToIp(netInt),  desc: 'The starting boundary.' },
@@ -935,6 +935,30 @@ function render(c) {
   $('labelGate').textContent = gateInt ? intToIp(gateInt) : '';
   $('labelBcast').textContent = intToIp(bcast);
   $('rbHostsLabel').textContent = usable > 0 ? `${usable.toLocaleString()} hosts` : 'no hosts';
+
+  const gateCount = cidr >= 31 ? 0 : 1;
+  const bcastCount = cidr === 32 ? 0 : 1;
+  const hostCount = usable;
+  const totalCount = 1 + gateCount + hostCount + bcastCount;
+  const width = n => totalCount ? `${((n / totalCount) * 100).toFixed(4)}%` : '0%';
+  const setSegment = (id, count) => {
+    const el = $(id);
+    if (count === 0) {
+      el.style.display = 'none';
+      el.style.width = '0';
+      el.style.flex = '0';
+    } else {
+      el.style.display = 'flex';
+      el.style.width = width(count);
+      el.style.flex = '0';
+    }
+  };
+  setSegment('rbNet', 1);
+  setSegment('rbGate', gateCount);
+  setSegment('rbHosts', hostCount);
+  setSegment('rbBcast', bcastCount);
+
+  $('results').classList.add('show');
 
   const items = [
     {label:'Input IP',   n:ipInt},
