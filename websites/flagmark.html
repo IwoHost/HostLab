@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flagmark — Poster Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #080808;
+  --surface: #0d0d0d;
+  --border: #1e1e1e;
+  --text: #d8d8d8;
+  --text-dim: #484848;
+}
+
+html, body { height: 100%; overflow: hidden; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); display: flex; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 292px; min-width: 292px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  padding: 26px 20px 22px;
+  gap: 22px;
+}
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+.logo { display: flex; flex-direction: column; gap: 3px; }
+.logo-eyebrow { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--text-dim); }
+.logo-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 300; letter-spacing: 0.04em; color: var(--text); line-height: 1; }
+
+.hr { height: 1px; background: var(--border); flex-shrink: 0; }
+
+.upload-zone {
+  border: 1px dashed #282828; border-radius: 2px;
+  padding: 22px 14px; text-align: center; cursor: pointer;
+  transition: border-color .2s, background .2s; position: relative;
+}
+.upload-zone:hover, .upload-zone.drag-over { border-color: #3c3c3c; background: rgba(255,255,255,.012); }
+.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-icon { font-size: 20px; opacity: .22; margin-bottom: 8px; }
+.upload-label strong { display: block; font-size: 12px; font-weight: 400; color: var(--text); margin-bottom: 3px; }
+.upload-label span { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; letter-spacing: .08em; }
+
+/* ── Upload thumbnail preview ── */
+.upload-zone.has-flag {
+  padding: 0;
+  border-style: solid;
+  border-color: #242424;
+  overflow: hidden;
+  text-align: left;
+}
+.upload-thumb {
+  display: none;
+  width: 100%;
+  position: relative;
+}
+.upload-zone.has-flag .upload-thumb { display: block; }
+.upload-zone.has-flag .upload-icon { display: none; }
+.upload-thumb-img {
+  display: block;
+  width: 52%;
+  aspect-ratio: 3/2;
+  object-fit: cover;
+  object-position: center;
+  border-bottom: 1px solid #1e1e1e;
+  border-right: 1px solid #1e1e1e;
+}
+.upload-thumb-meta {
+  position: absolute;
+  top: 0; left: 0;
+  width: 52%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 6px 7px;
+  background: linear-gradient(to top, rgba(0,0,0,.55) 0%, transparent 60%);
+  pointer-events: none;
+}
+.upload-thumb-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 7px;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.upload-zone.has-flag .upload-label {
+  position: absolute;
+  top: 0; right: 0;
+  width: 48%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px 12px;
+  gap: 2px;
+}
+
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field label { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); }
+.field input, .field textarea {
+  background: transparent; border: none; border-bottom: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px;
+  padding: 7px 0; outline: none; width: 100%; transition: border-color .2s; resize: none;
+}
+.field textarea { height: 54px; line-height: 1.55; }
+.field input:focus, .field textarea:focus { border-bottom-color: #3a3a3a; }
+.field input::placeholder, .field textarea::placeholder { color: #282828; }
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; }
+.toggle-info { display: flex; flex-direction: column; gap: 3px; }
+.toggle-info .t-name { font-size: 12px; color: var(--text); }
+.toggle-info .t-sub { font-size: 8.5px; font-family: 'DM Mono', monospace; color: var(--text-dim); letter-spacing: .1em; }
+.toggle { position: relative; width: 38px; height: 20px; cursor: pointer; flex-shrink: 0; }
+.toggle input { opacity: 0; position: absolute; width: 0; height: 0; }
+.toggle-track { position: absolute; inset: 0; background: #181818; border: 1px solid #2e2e2e; border-radius: 10px; transition: all .25s; }
+.toggle input:checked ~ .toggle-track { background: #d8d8d8; border-color: #d8d8d8; }
+.toggle-thumb { position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; background: #3a3a3a; border-radius: 50%; transition: all .25s; z-index: 1; }
+.toggle input:checked ~ .toggle-track .toggle-thumb { transform: translateX(18px); background: #111; }
+
+.section-label { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+.color-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.chip-swatch { width: 28px; height: 28px; border-radius: 2px; border: 1px solid rgba(255,255,255,.05); transition: background .4s; }
+.chip-hex { font-family: 'DM Mono', monospace; font-size: 7px; color: var(--text-dim); letter-spacing: .02em; }
+.no-colors { font-family: 'DM Mono', monospace; font-size: 10px; color: #282828; letter-spacing: .08em; }
+
+.spacer { flex: 1; }
+
+.download-btn {
+  background: var(--text); color: #000; border: none;
+  padding: 11px 18px; font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  cursor: pointer; width: 100%; transition: background .2s, opacity .2s; border-radius: 1px;
+}
+.download-btn:hover:not(:disabled) { background: #bbb; }
+.download-btn:disabled { opacity: .18; cursor: not-allowed; }
+
+/* ── PREVIEW AREA ── */
+.preview-area {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 48px; overflow: auto; background: #060606;
+}
+
+/* ── POSTER ── */
+.poster {
+  width: 460px;
+  aspect-ratio: 2 / 3;
+  background: #0c0c0c;
+  position: relative;
+  box-shadow: 0 50px 130px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.05);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  transition: background .4s;
+  image-rendering: crisp-edges;
+}
+.poster.mono { background: #f7f6f3; }
+
+/* FIX: registration marks toned down — peripheral, not attention-grabbing */
+.poster-inset {
+  position: absolute; inset: 12px;
+  border: 0.5px solid rgba(255,255,255,.06);
+  pointer-events: none; z-index: 10; transition: border-color .4s;
+}
+.poster.mono .poster-inset { border-color: rgba(0,0,0,.09); }
+
+.reg { position: absolute; z-index: 11; width: 10px; height: 10px; }
+/* FIX: reg marks dimmer — was .18 opacity, now .09 so they stay peripheral */
+.reg::before, .reg::after { content: ''; position: absolute; background: rgba(255,255,255,.09); }
+.reg::before { width: 1px; height: 100%; left: 50%; transform: translateX(-50%); }
+.reg::after  { height: 1px; width: 100%; top: 50%; transform: translateY(-50%); }
+.poster.mono .reg::before, .poster.mono .reg::after { background: rgba(0,0,0,.11); }
+.reg.tl { top: 6px; left: 6px; }
+.reg.tr { top: 6px; right: 6px; }
+.reg.bl { bottom: 6px; left: 6px; }
+.reg.br { bottom: 6px; right: 6px; }
+
+/* ── FLAG SECTION ── */
+.flag-section {
+  flex: 1;
+  min-height: 0;
+  padding: 18px 24px 10px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.flag-layout {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  align-items: center;
+  min-height: 0;
+}
+
+/* ── Y dimension (left vertical strip) ── */
+.dim-y-strip {
+  width: 22px;
+  flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* FIX: dim-y-line uses getBoundingClientRect-based positioning set by JS
+   so it precisely matches the rendered flag bounds — no CSS guessing */
+.dim-y-line {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  background: rgba(255,255,255,.18);
+  transition: background .4s;
+}
+.poster.mono .dim-y-line { background: rgba(0,0,0,.16); }
+.dim-y-line::before {
+  content: '';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  border-left: 3px solid transparent; border-right: 3px solid transparent;
+  border-bottom: 5px solid rgba(255,255,255,.28);
+  transition: border-color .4s;
+}
+.dim-y-line::after {
+  content: '';
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  border-left: 3px solid transparent; border-right: 3px solid transparent;
+  border-top: 5px solid rgba(255,255,255,.28);
+  transition: border-color .4s;
+}
+.poster.mono .dim-y-line::before { border-bottom-color: rgba(0,0,0,.2); }
+.poster.mono .dim-y-line::after  { border-top-color: rgba(0,0,0,.2); }
+
+/* FIX: Y label optical centering — the rotated text needs a slight nudge
+   to look centered between the arrowheads, accounting for letter-spacing */
+.dim-y-label {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg) translateX(1px);
+  font-family: 'DM Mono', monospace; font-size: 7px;
+  letter-spacing: .13em; text-transform: uppercase; white-space: nowrap;
+  color: rgba(255,255,255,.42);
+  background: #0c0c0c;
+  padding: 0 5px;
+  transition: color .4s, background .4s;
+}
+.poster.mono .dim-y-label { color: rgba(0,0,0,.36); background: #f7f6f3; }
+
+/* ── Right side: X-dim row + flag+grid ── */
+.flag-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  align-items: stretch;
+}
+
+/* X-dim strip: hidden until flag loaded */
+.dim-x-strip {
+  height: 11px;
+  flex-shrink: 0;
+  display: none;
+  align-items: flex-end;
+  position: relative;
+}
+.dim-x-strip.visible { display: flex; }
+.dim-x-line {
+  position: absolute;
+  height: 1px;
+  /* top + left set by JS relative to flagAndGrid */
+  background: rgba(255,255,255,.18);
+  z-index: 3;
+  pointer-events: none;
+  transition: background .4s;
+}
+.poster.mono .dim-x-line { background: rgba(0,0,0,.16); }
+.dim-x-line::before {
+  content: '';
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  border-top: 3px solid transparent; border-bottom: 3px solid transparent;
+  border-right: 5px solid rgba(255,255,255,.28);
+  transition: border-color .4s;
+}
+.dim-x-line::after {
+  content: '';
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  border-top: 3px solid transparent; border-bottom: 3px solid transparent;
+  border-left: 5px solid rgba(255,255,255,.28);
+  transition: border-color .4s;
+}
+.poster.mono .dim-x-line::before { border-right-color: rgba(0,0,0,.2); }
+.poster.mono .dim-x-line::after  { border-left-color: rgba(0,0,0,.2); }
+
+/* FIX: X label optical centering — letter-spacing on last char creates
+   right-side visual gap; compensate with 1px leftward nudge */
+.dim-x-label {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(calc(-50% - 1px), -50%);
+  font-family: 'DM Mono', monospace; font-size: 7px;
+  letter-spacing: .13em; text-transform: uppercase; white-space: nowrap;
+  color: rgba(255,255,255,.7);
+  /* no background — label sits directly on flag, keep it clean */
+  padding: 0 3px;
+  transition: color .4s;
+}
+.poster.mono .dim-x-label { color: rgba(0,0,0,.5); }
+
+/* ── Flag + grid container ── */
+.flag-and-grid {
+  /* width/height set explicitly by JS to match flag aspect ratio */
+  flex-shrink: 0;
+  align-self: center;
+  max-width: 100%;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+/* FIX: grid clipped to flag bounds via clip-path set by JS —
+   prevents grid lines from awkwardly crossing flag edges */
+.grid-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.flag-img {
+  position: relative; z-index: 2;
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  box-shadow: 0 6px 32px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.4);
+  transition: filter .4s;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+.poster.mono .flag-img { filter: grayscale(1) contrast(1.06); }
+
+.flag-placeholder {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  opacity: .1; pointer-events: none;
+}
+.flag-placeholder-icon { font-size: 36px; color: #fff; }
+.flag-placeholder-label { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: .22em; text-transform: uppercase; color: #fff; }
+
+/* ── ANALYSIS STRIP ── */
+/* New metrics strip between flag section and bottom */
+.analysis-strip {
+  padding: 8px 24px 0;
+  display: none; /* shown after upload */
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.analysis-strip.visible { display: flex; }
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px 10px;
+}
+.a-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.a-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 5.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.2);
+  transition: color .4s;
+}
+.poster.mono .a-label { color: rgba(0,0,0,.22); }
+.a-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 7.5px;
+  letter-spacing: .06em;
+  color: rgba(255,255,255,.52);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color .4s;
+}
+.poster.mono .a-value { color: rgba(0,0,0,.48); }
+
+/* color coverage bar */
+.coverage-row {
+  display: flex;
+  gap: 1px;
+  height: 5px;
+  overflow: hidden;
+  margin-top: 2px;
+  width: 100%;
+  background: rgba(255,255,255,.06);
+  border-radius: 1px;
+  padding: 1px;
+}
+.poster.mono .coverage-row { background: rgba(0,0,0,.08); }
+.coverage-seg {
+  height: 100%;
+  min-width: 2px;
+  transition: flex-grow .4s;
+  border-radius: 1px;
+  outline: 1px solid rgba(255,255,255,.1);
+}
+
+/* ── BOTTOM ── */
+/* FIX: improved spacing rhythm in bottom section */
+.poster-bottom {
+  padding: 10px 24px 16px;
+  border-top: 0.5px solid rgba(255,255,255,.07);
+  flex-shrink: 0; transition: border-color .4s;
+}
+.poster.mono .poster-bottom { border-top-color: rgba(0,0,0,.1); }
+
+.p-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; font-weight: 300; color: #e2e2e2;
+  letter-spacing: .025em; line-height: 1.05; margin-bottom: 3px;
+  word-break: break-word; transition: color .4s;
+}
+.poster.mono .p-name { color: #111; }
+
+/* FIX: subtitle contrast — was .3 opacity (near invisible), now .55 */
+.p-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-size: 11.5px;
+  color: rgba(255,255,255,.55);
+  letter-spacing: .03em; margin-bottom: 11px;
+  line-height: 1.45; min-height: 11px; transition: color .4s;
+}
+.poster.mono .p-tagline { color: rgba(0,0,0,.52); }
+
+/* FIX: swatches — optical alignment improved with consistent baseline */
+.swatch-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.p-swatch { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.p-swatch-block { width: 18px; height: 18px; border-radius: 1px; flex-shrink: 0; border: 1px solid rgba(255,255,255,.12); }
+.poster.mono .p-swatch-block { border-color: rgba(0,0,0,.14); }
+/* FIX: swatch hex labels — bumped from .25 to .4 opacity for legibility */
+.p-swatch-hex {
+  font-family: 'DM Mono', monospace; font-size: 6.5px;
+  color: rgba(255,255,255,.4); letter-spacing: .04em;
+  transition: color .4s;
+  /* Optical fix: nudge slightly so the monospace block and label share the same visual center */
+  margin-left: 0.5px;
+}
+.poster.mono .p-swatch-hex { color: rgba(0,0,0,.45); }
+
+/* FIX: footer line given more weight so it reads at poster/print scale */
+.poster-meta {
+  margin-top: 10px; padding-top: 7px;
+  border-top: 1px solid rgba(255,255,255,.09);
+  display: flex; justify-content: space-between; align-items: center;
+  transition: border-color .4s;
+}
+.poster.mono .poster-meta { border-top-color: rgba(0,0,0,.13); }
+/* FIX: footer text from .16 to .28 opacity so it survives print/export */
+.meta-txt {
+  font-family: 'DM Mono', monospace; font-size: 6.5px;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: rgba(255,255,255,.28); transition: color .4s;
+}
+.poster.mono .meta-txt { color: rgba(0,0,0,.32); }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">
+    <span class="logo-eyebrow">Poster Studio</span>
+    <span class="logo-title">Flagmark</span>
+  </div>
+  <div class="hr"></div>
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept="image/*">
+    <div class="upload-thumb" id="uploadThumb">
+      <img class="upload-thumb-img" id="uploadThumbImg" src="" alt="">
+      <div class="upload-thumb-meta">
+        <span class="upload-thumb-name" id="uploadThumbName"></span>
+      </div>
+    </div>
+    <div class="upload-icon">⚑</div>
+    <div class="upload-label" id="uploadLabel">
+      <strong>Drop your flag here</strong>
+      <span>PNG · SVG · JPG · any flag</span>
+    </div>
+  </div>
+  <div class="hr"></div>
+  <div class="field">
+    <label>Nation / Name</label>
+    <input type="text" id="nameInput" placeholder="e.g. Valdoria" maxlength="40">
+  </div>
+  <div class="field">
+    <label>Motto or text</label>
+    <textarea id="taglineInput" placeholder="e.g. From the ashes, eternal"></textarea>
+  </div>
+  <div class="hr"></div>
+  <div class="toggle-row">
+    <div class="toggle-info">
+      <span class="t-name">Monochrome</span>
+      <span class="t-sub">Greyscale flag only</span>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" id="monoToggle">
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </label>
+  </div>
+  <div class="hr"></div>
+  <div>
+    <div class="section-label">Extracted colors</div>
+    <div class="color-chips" id="colorChips">
+      <span class="no-colors">Upload a flag to extract</span>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button class="download-btn" id="downloadBtn" disabled>↓&nbsp;&nbsp;Download Poster</button>
+</div>
+
+<div class="preview-area">
+  <div class="poster" id="poster">
+    <div class="poster-inset"></div>
+    <div class="reg tl"></div><div class="reg tr"></div>
+    <div class="reg bl"></div><div class="reg br"></div>
+
+    <div class="flag-section">
+      <div class="flag-layout">
+
+        <!-- Y dimension strip (left) -->
+        <div class="dim-y-strip" id="dimYStrip">
+          <div class="dim-y-line" id="dimYLine">
+            <span class="dim-y-label" id="dimYLabel">—</span>
+          </div>
+        </div>
+
+        <!-- Right: X dim row + flag+grid -->
+        <div class="flag-right">
+          <div class="dim-x-strip" id="dimXStrip"></div>
+
+          <div class="flag-and-grid" id="flagAndGrid">
+            <canvas class="grid-canvas" id="gridCanvas"></canvas>
+            <div class="dim-x-line" id="dimXLine"><span class="dim-x-label" id="dimXLabel">—</span></div>
+            <div class="flag-placeholder" id="flagPlaceholder">
+              <div class="flag-placeholder-icon">⚑</div>
+              <div class="flag-placeholder-label">Awaiting flag</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NEW: Analysis metrics strip -->
+    <div class="analysis-strip" id="analysisStrip">
+      <div class="analysis-grid" id="analysisGrid"></div>
+      <div class="coverage-row" id="coverageRow"></div>
+    </div>
+
+    <div class="poster-bottom">
+      <div class="p-name" id="pName">—</div>
+      <div class="p-tagline" id="pTagline"></div>
+      <div class="swatch-row" id="swatchRow"></div>
+      <div class="poster-meta">
+        <span class="meta-txt" id="metaDim">460 × 690 px</span>
+        <span class="meta-txt">FLAGMARK · POSTER STUDIO</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const fileInput       = document.getElementById('fileInput');
+const uploadZone      = document.getElementById('uploadZone');
+const uploadLabel     = document.getElementById('uploadLabel');
+const nameInput       = document.getElementById('nameInput');
+const taglineInput    = document.getElementById('taglineInput');
+const monoToggle      = document.getElementById('monoToggle');
+const poster          = document.getElementById('poster');
+const flagAndGrid     = document.getElementById('flagAndGrid');
+const flagPlaceholder = document.getElementById('flagPlaceholder');
+const pName           = document.getElementById('pName');
+const pTagline        = document.getElementById('pTagline');
+const swatchRow       = document.getElementById('swatchRow');
+const colorChips      = document.getElementById('colorChips');
+const downloadBtn     = document.getElementById('downloadBtn');
+const gridCanvas      = document.getElementById('gridCanvas');
+const dimXLine        = document.getElementById('dimXLine');
+const dimXLabel       = document.getElementById('dimXLabel');
+const dimYLine        = document.getElementById('dimYLine');
+const dimYLabel       = document.getElementById('dimYLabel');
+const dimXStrip       = document.getElementById('dimXStrip');
+const dimYStrip       = document.getElementById('dimYStrip');
+const analysisStrip   = document.getElementById('analysisStrip');
+const analysisGrid    = document.getElementById('analysisGrid');
+const coverageRow     = document.getElementById('coverageRow');
+const metaDim         = document.getElementById('metaDim');
+
+let rawColors = [];
+let colorCoverage = []; // percentage per dominant color
+let natW = 0, natH = 0;
+let currentFlagEl = null;
+let analysisData = {};
+
+/* ─────────────────────────────────────────────
+   GRID — clipped to flag bounds so lines don't
+   bleed past flag edges (fixes corner noise)
+───────────────────────────────────────────── */
+function drawGrid() {
+  const mono = monoToggle.checked;
+  const W = gridCanvas.offsetWidth;
+  const H = gridCanvas.offsetHeight;
+  if (!W || !H) return;
+  gridCanvas.width  = W * devicePixelRatio;
+  gridCanvas.height = H * devicePixelRatio;
+  gridCanvas.style.width  = W + 'px';
+  gridCanvas.style.height = H + 'px';
+  const ctx = gridCanvas.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  ctx.clearRect(0, 0, W, H);
+
+  const cell = 18;
+  const thin  = mono ? 'rgba(0,0,0,0.055)' : 'rgba(255,255,255,0.042)';
+  const thick = mono ? 'rgba(0,0,0,0.10)'  : 'rgba(255,255,255,0.082)';
+  const boldEvery = 5;
+
+  // FIX: clip grid lines to flag bounds so they don't intrude past edges
+  if (currentFlagEl && natW && natH) {
+    const containerW = W;
+    const containerH = H;
+    const ratio = natW / natH;
+    let rW, rH;
+    if (ratio > containerW / containerH) { rW = containerW; rH = containerW / ratio; }
+    else { rH = containerH; rW = containerH * ratio; }
+    const offX = (containerW - rW) / 2;
+    const offY = (containerH - rH) / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(offX, offY, rW, rH);
+    ctx.clip();
+  }
+
+  for (let x = 0; x <= W; x += cell) {
+    const bold = Math.round(x / cell) % boldEvery === 0;
+    ctx.strokeStyle = bold ? thick : thin;
+    ctx.lineWidth   = bold ? 0.75  : 0.4;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y <= H; y += cell) {
+    const bold = Math.round(y / cell) % boldEvery === 0;
+    ctx.strokeStyle = bold ? thick : thin;
+    ctx.lineWidth   = bold ? 0.75  : 0.4;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  if (currentFlagEl && natW && natH) ctx.restore();
+}
+
+/* ─────────────────────────────────────────────
+   DIMENSION ARROWS
+   FIX: use getBoundingClientRect so the lines
+   map pixel-perfectly to the rendered flag,
+   regardless of object-fit centering.
+───────────────────────────────────────────── */
+function sizeFlagContainer() {
+  if (!natW || !natH) return;
+
+  const flagSection = document.querySelector('.flag-section');
+  const flagRight   = document.querySelector('.flag-right');
+  const xStripH     = dimXStrip.classList.contains('visible') ? 11 : 0;
+
+  const maxW = flagRight.clientWidth;
+  const style = getComputedStyle(flagSection);
+  const maxH  = flagSection.clientHeight
+              - parseFloat(style.paddingTop)
+              - parseFloat(style.paddingBottom)
+              - xStripH;
+
+  const ratio = natW / natH;
+  let w = maxW;
+  let h = w / ratio;
+  if (h > maxH) { h = maxH; w = h * ratio; }
+
+  flagAndGrid.style.width  = Math.round(w) + 'px';
+  flagAndGrid.style.height = Math.round(h) + 'px';
+}
+
+function positionDims() {
+  if (!currentFlagEl || !natW || !natH) return;
+
+  const flagRect   = currentFlagEl.getBoundingClientRect();
+  const gridRect   = flagAndGrid.getBoundingClientRect();
+  const yStripRect = dimYStrip.getBoundingClientRect();
+
+  const rW = flagRect.width;
+  const rH = flagRect.height;
+
+  // X line sits 11px above the flag inside flagAndGrid
+  dimXLine.style.left  = '0px';
+  dimXLine.style.width = rW + 'px';
+  dimXLine.style.top   = '-11px';
+
+  // Y line spans exactly the flag height inside dimYStrip
+  dimYLine.style.top    = (flagRect.top - yStripRect.top) + 'px';
+  dimYLine.style.height = rH + 'px';
+
+  dimXLabel.textContent = natW + ' px';
+  dimYLabel.textContent = natH + ' px';
+  metaDim.textContent   = natW + ' × ' + natH + ' px';
+}
+
+function updateLayout() {
+  sizeFlagContainer();
+  drawGrid();
+  positionDims();
+}
+
+/* ResizeObserver keeps everything accurate on any resize */
+const ro = new ResizeObserver(() => updateLayout());
+ro.observe(document.querySelector('.flag-section'));
+drawGrid();
+
+/* ─────────────────────────────────────────────
+   DRAG & DROP / FILE INPUT
+───────────────────────────────────────────── */
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadFlag(f);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) {
+    loadFlag(e.target.files[0]);
+    // Reset so the same file (or any file) can be picked again without refresh
+    e.target.value = '';
+  }
+});
+
+/* ─────────────────────────────────────────────
+   LOAD FLAG
+───────────────────────────────────────────── */
+function loadFlag(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      natW = img.naturalWidth;
+      natH = img.naturalHeight;
+
+      if (currentFlagEl) currentFlagEl.remove();
+      flagPlaceholder.style.display = 'none';
+
+      const el = document.createElement('img');
+      el.src = ev.target.result;
+      el.className = 'flag-img';
+      flagAndGrid.appendChild(el);
+      currentFlagEl = el;
+
+      // Set aspect-ratio so flagAndGrid container hugs the flag tightly
+      flagAndGrid.style.aspectRatio = natW + ' / ' + natH;
+      dimXStrip.classList.add('visible');
+
+      // Two rAF passes: first for layout, second for accurate getBCR
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        drawGrid();
+        positionDims();
+      }));
+
+      downloadBtn.disabled = false;
+      uploadLabel.innerHTML = `<strong>Click to replace</strong><span>${file.name}</span>`;
+
+      // Show thumbnail preview in upload zone
+      const thumbImg = document.getElementById('uploadThumbImg');
+      const thumbName = document.getElementById('uploadThumbName');
+      thumbImg.src = ev.target.result;
+      thumbName.textContent = file.name.replace(/\.[^.]+$/, '').toUpperCase();
+      uploadZone.classList.add('has-flag');
+      analyzeImage(img);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ─────────────────────────────────────────────
+   IMAGE ANALYSIS
+   Computes all new metrics from pixel data
+───────────────────────────────────────────── */
+function analyzeImage(imgEl) {
+  const SW = 160, SH = 100; // analysis canvas size
+  let d;
+  try {
+    const c = document.createElement('canvas');
+    c.width = SW; c.height = SH;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(imgEl, 0, 0, SW, SH);
+    d = ctx.getImageData(0, 0, SW, SH).data;
+  } catch(e) { rawColors = []; renderColors(); return; }
+
+  // ── Color extraction — interior pixels only, bucket 64 ──
+  // Skip 3% margin on all sides: just enough to avoid edge anti-aliasing
+  // without cutting into diagonal color regions
+  const marginX = Math.floor(SW * 0.03);
+  const marginY = Math.floor(SH * 0.03);
+  const freq = {};
+  let totalPixels = 0;
+  for (let y = marginY; y < SH - marginY; y++) {
+    for (let x = marginX; x < SW - marginX; x++) {
+      const i = (y * SW + x) * 4;
+      if (d[i+3] < 200) continue;
+      totalPixels++;
+      // Bucket 24: fine enough to keep navy/black separate; 1% gate handles noise
+      const bucket = 24;
+      const r = Math.round(d[i]   / bucket) * bucket;
+      const g = Math.round(d[i+1] / bucket) * bucket;
+      const b = Math.round(d[i+2] / bucket) * bucket;
+      const k = `${r}|${g}|${b}`;
+      freq[k] = (freq[k] || 0) + 1;
+    }
+  }
+
+  const sorted = Object.entries(freq).sort((a,b) => b[1]-a[1]);
+  // Minimum threshold: a color must cover at least 4% of pixels to count
+  // (filters out edge-blend noise and anti-aliasing artifacts)
+  const minCount = Math.max(2, totalPixels * 0.04);
+  const colors = [], coverage = [];
+
+  // Perceptual color distance — weighted RGB so dark colors aren't collapsed together
+  function colorDist(r1,g1,b1, r2,g2,b2) {
+    const rmean = (r1+r2)/2;
+    const dr=r1-r2, dg=g1-g2, db=b1-b2;
+    return Math.sqrt((2+rmean/256)*dr*dr + 4*dg*dg + (2+(255-rmean)/256)*db*db);
+  }
+
+  for (const [key, cnt] of sorted) {
+    if (cnt < minCount) break;
+    const [r,g,b] = key.split('|').map(Number);
+    const hex = '#'+[r,g,b].map(v=>Math.min(255,v).toString(16).padStart(2,'0')).join('').toUpperCase();
+    // Threshold 80 in perceptual space: kills edge-blend pinks/mids (dist 40-75)
+    // while keeping distinct flag colors (red vs white ~180, navy vs red ~200+)
+    const close = colors.some(cx => {
+      const cr=parseInt(cx.slice(1,3),16),cg=parseInt(cx.slice(3,5),16),cb=parseInt(cx.slice(5,7),16);
+      return colorDist(r,g,b,cr,cg,cb) < 80;
+    });
+    if (!close) { colors.push(hex); coverage.push(cnt); }
+    if (colors.length >= 6) break;
+  }
+
+  // normalise coverage — use raw counts as flex weights, no rounding needed
+  // Store as raw counts; flex-grow will proportion them correctly
+  const covTotal = coverage.reduce((a,b)=>a+b,0);
+  colorCoverage = coverage.map(c => Math.round((c / covTotal) * 100));
+  // Ensure they sum to 100 by adjusting the largest
+  const covDiff = 100 - colorCoverage.reduce((a,b)=>a+b,0);
+  if (colorCoverage.length > 0) colorCoverage[0] += covDiff;
+
+  rawColors = colors;
+
+  // ── Aspect ratio (simplified fraction) ──
+  const gcd = (a,b) => b===0?a:gcd(b,a%b);
+  const g = gcd(natW, natH);
+  const arW = natW/g, arH = natH/g;
+  // cap to reasonable display ratio
+  const arStr = (arW > 20 || arH > 20) ? (natW/natH).toFixed(3)+':1' : `${arW}:${arH}`;
+
+  // ── Dominant color analysis ──
+  // contrast between lightest and darkest dominant colors
+  function luminance(hex) {
+    const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+    const lin = v => v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);
+    return .2126*lin(r)+.7152*lin(g)+.0722*lin(b);
+  }
+  let contrastRatio = 1;
+  if (colors.length >= 2) {
+    const lums = colors.map(luminance).sort((a,b)=>a-b);
+    contrastRatio = ((lums[lums.length-1]+.05)/(lums[0]+.05)).toFixed(1);
+  }
+
+  // ── Stripe / geometry detection ──
+  // Sample horizontal and vertical bands to detect dominant direction
+  let hVariance = 0, vVariance = 0;
+  const rowMeans = [], colMeans = [];
+
+  for (let y = 0; y < SH; y++) {
+    let sum = 0, cnt2 = 0;
+    for (let x = 0; x < SW; x++) {
+      const i = (y*SW+x)*4;
+      if (d[i+3] < 160) continue;
+      sum += (d[i]+d[i+1]+d[i+2])/3; cnt2++;
+    }
+    rowMeans.push(cnt2 ? sum/cnt2 : 0);
+  }
+  for (let x = 0; x < SW; x++) {
+    let sum = 0, cnt2 = 0;
+    for (let y = 0; y < SH; y++) {
+      const i = (y*SW+x)*4;
+      if (d[i+3] < 160) continue;
+      sum += (d[i]+d[i+1]+d[i+2])/3; cnt2++;
+    }
+    colMeans.push(cnt2 ? sum/cnt2 : 0);
+  }
+
+  const variance = arr => {
+    const m = arr.reduce((a,b)=>a+b,0)/arr.length;
+    return arr.reduce((a,v)=>a+(v-m)**2,0)/arr.length;
+  };
+  hVariance = variance(rowMeans);
+  vVariance = variance(colMeans);
+
+  // Count stripe transitions (significant mean changes between rows/cols)
+  function countStripes(means) {
+    let stripes = 1;
+    for (let i = 1; i < means.length-1; i++) {
+      if (Math.abs(means[i]-means[i-1]) > 12) stripes++;
+    }
+    return Math.ceil(stripes/2);
+  }
+  const hStripes = countStripes(rowMeans);
+  const vStripes = countStripes(colMeans);
+
+  let geometry = 'complex';
+  let stripeCount = '—';
+  if (hVariance > vVariance * 1.4) { geometry = 'horizontal'; stripeCount = hStripes; }
+  else if (vVariance > hVariance * 1.4) { geometry = 'vertical'; stripeCount = vStripes; }
+  else if (hVariance > 30 || vVariance > 30) { geometry = 'diagonal'; stripeCount = Math.max(hStripes, vStripes); }
+
+  // ── Symmetry detection ──
+  // Horizontal symmetry: compare left vs right half
+  let hSymDiff = 0, hSymCount = 0;
+  for (let y = 0; y < SH; y++) {
+    for (let x = 0; x < Math.floor(SW/2); x++) {
+      const li = (y*SW+x)*4;
+      const ri = (y*SW+(SW-1-x))*4;
+      hSymDiff += Math.abs(d[li]-d[ri])+Math.abs(d[li+1]-d[ri+1])+Math.abs(d[li+2]-d[ri+2]);
+      hSymCount++;
+    }
+  }
+  // Vertical symmetry: compare top vs bottom half
+  let vSymDiff = 0, vSymCount = 0;
+  for (let y = 0; y < Math.floor(SH/2); y++) {
+    for (let x = 0; x < SW; x++) {
+      const ti = (y*SW+x)*4;
+      const bi = ((SH-1-y)*SW+x)*4;
+      vSymDiff += Math.abs(d[ti]-d[bi])+Math.abs(d[ti+1]-d[bi+1])+Math.abs(d[ti+2]-d[bi+2]);
+      vSymCount++;
+    }
+  }
+  const hSymScore = 1 - (hSymDiff / hSymCount / 255);
+  const vSymScore = 1 - (vSymDiff / vSymCount / 255);
+  let symmetry = 'none';
+  if (hSymScore > .92 && vSymScore > .92) symmetry = 'both axes';
+  else if (hSymScore > .88) symmetry = 'bilateral';
+  else if (vSymScore > .88) symmetry = 'top/bottom';
+  else if (hSymScore > .78 || vSymScore > .78) symmetry = 'approx';
+
+  // ── Emblem detection ──
+  // Look for a concentrated high-contrast region in the center third
+  let centerContrast = 0, edgeContrast = 0;
+  const cx1 = Math.floor(SW/3), cx2 = Math.floor(2*SW/3);
+  const cy1 = Math.floor(SH/3), cy2 = Math.floor(2*SH/3);
+  let cc=0, ec=0;
+  for (let y=1; y<SH-1; y++) {
+    for (let x=1; x<SW-1; x++) {
+      const i=(y*SW+x)*4;
+      const iv=(y*SW+x+1)*4;
+      const diff=Math.abs(d[i]-d[iv])+Math.abs(d[i+1]-d[iv+1])+Math.abs(d[i+2]-d[iv+2]);
+      if (x>=cx1&&x<=cx2&&y>=cy1&&y<=cy2) { centerContrast+=diff; cc++; }
+      else { edgeContrast+=diff; ec++; }
+    }
+  }
+  const cAvg = cc?centerContrast/cc:0;
+  const eAvg = ec?edgeContrast/ec:0;
+  const emblem = cAvg > eAvg * 1.6 ? 'likely present' : cAvg > eAvg * 1.1 ? 'possible' : 'not detected';
+
+  // ── Centroid balance ──
+  let sumX=0, sumY=0, sumW=0;
+  for (let y=0; y<SH; y++) for (let x=0; x<SW; x++) {
+    const i=(y*SW+x)*4;
+    if (d[i+3]<160) continue;
+    const lum=(d[i]+d[i+1]+d[i+2])/3;
+    sumX+=x*lum; sumY+=y*lum; sumW+=lum;
+  }
+  const centX = sumW ? sumX/sumW/SW : .5;
+  const centY = sumW ? sumY/sumW/SH : .5;
+  const balX = centX < .44?'left-heavy': centX>.56?'right-heavy':'balanced';
+  const balY = centY < .44?'top-heavy': centY>.56?'bottom-heavy':'balanced';
+  const balance = balX===balY&&balX==='balanced'?'centered':`${balX} / ${balY}`;
+
+  // ── Edge angles (dominant gradient direction) ──
+  let angleAccum = 0, angleCount = 0;
+  for (let y=1; y<SH-1; y++) {
+    for (let x=1; x<SW-1; x++) {
+      const gray = p => { const i=p*4; return (d[i]+d[i+1]+d[i+2])/3; };
+      const gx = gray((y*SW+x+1)) - gray((y*SW+x-1));
+      const gy = gray(((y+1)*SW+x)) - gray(((y-1)*SW+x));
+      const mag = Math.sqrt(gx*gx+gy*gy);
+      if (mag > 20) { angleAccum += Math.atan2(Math.abs(gy), Math.abs(gx)); angleCount++; }
+    }
+  }
+  const avgAngle = angleCount ? (angleAccum/angleCount*180/Math.PI).toFixed(1)+'°' : '—';
+
+  // store all metrics
+  analysisData = {
+    resolution: `${natW} × ${natH}`,
+    aspectRatio: arStr,
+    colorCount: colors.length,
+    geometry,
+    stripeCount,
+    symmetry,
+    emblem,
+    balance,
+    edgeAngle: avgAngle,
+    contrast: contrastRatio + ':1',
+  };
+
+  renderColors();
+  renderAnalysis();
+}
+
+/* ─────────────────────────────────────────────
+   RENDER ANALYSIS STRIP
+───────────────────────────────────────────── */
+function renderAnalysis() {
+  const items = [
+    { label: 'Resolution',  value: analysisData.resolution },
+    { label: 'Aspect',      value: analysisData.aspectRatio },
+    { label: 'Colors',      value: analysisData.colorCount },
+    { label: 'Geometry',    value: analysisData.geometry },
+    { label: 'Stripes',     value: analysisData.stripeCount },
+    { label: 'Symmetry',    value: analysisData.symmetry },
+    { label: 'Emblem',      value: analysisData.emblem },
+    { label: 'Balance',     value: analysisData.balance },
+    { label: 'Edge angle',  value: analysisData.edgeAngle },
+    { label: 'Contrast',    value: analysisData.contrast },
+    { label: 'Dom. color',  value: rawColors[0] || '—' },
+    { label: 'Coverage',    value: colorCoverage[0]!=null ? colorCoverage[0]+'%' : '—' },
+  ];
+
+  analysisGrid.innerHTML = '';
+  items.forEach(({ label, value }) => {
+    const cell = document.createElement('div');
+    cell.className = 'a-cell';
+    cell.innerHTML = `<span class="a-label">${label}</span><span class="a-value" title="${value}">${value}</span>`;
+    analysisGrid.appendChild(cell);
+  });
+
+  // color coverage bar — use flex-grow so segments always fill full width
+  coverageRow.innerHTML = '';
+  rawColors.forEach((hex, i) => {
+    const pct = colorCoverage[i] || 1; // minimum 1 so every color shows
+    const seg = document.createElement('div');
+    seg.className = 'coverage-seg';
+    seg.style.flexGrow = pct;
+    seg.style.flexShrink = '1';
+    seg.style.flexBasis = '0';
+    seg.style.width = 'auto';
+    seg.style.background = hex;
+    coverageRow.appendChild(seg);
+  });
+
+  analysisStrip.classList.add('visible');
+}
+
+/* ─────────────────────────────────────────────
+   COLOR HELPERS
+───────────────────────────────────────────── */
+function toGray(hex) {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  const gr=Math.round(0.299*r+0.587*g+0.114*b);
+  const h=gr.toString(16).padStart(2,'0').toUpperCase();
+  return `#${h}${h}${h}`;
+}
+
+function renderColors() {
+  const mono = monoToggle.checked;
+
+  colorChips.innerHTML = '';
+  if (rawColors.length === 0) {
+    colorChips.innerHTML = '<span class="no-colors">Upload a flag to extract</span>';
+  } else {
+    rawColors.forEach((hex, i) => {
+      const d = mono ? toGray(hex) : hex;
+      const pct = colorCoverage[i] != null ? colorCoverage[i] + '%' : '';
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.innerHTML = `<div class="chip-swatch" style="background:${d}" title="${pct} coverage"></div><span class="chip-hex">${d}</span>`;
+      colorChips.appendChild(chip);
+    });
+  }
+
+  // poster swatches — always raw hex
+  swatchRow.innerHTML = '';
+  rawColors.forEach(hex => {
+    const isLight = parseInt(hex.slice(1,3),16) > 200 && parseInt(hex.slice(3,5),16) > 200 && parseInt(hex.slice(5,7),16) > 200;
+    const sw = document.createElement('div');
+    sw.className = 'p-swatch';
+    const block = `<div class="p-swatch-block" style="background:${hex}${isLight ? ';box-shadow:inset 0 0 0 1px rgba(0,0,0,0.18)' : ''}"></div>`;
+    sw.innerHTML = `${block}<span class="p-swatch-hex">${hex}</span>`;
+    swatchRow.appendChild(sw);
+  });
+}
+
+/* ── Live inputs ── */
+nameInput.addEventListener('input',    () => { pName.textContent = nameInput.value.trim() || '—'; });
+taglineInput.addEventListener('input', () => { pTagline.textContent = taglineInput.value; });
+monoToggle.addEventListener('change',  () => {
+  poster.classList.toggle('mono', monoToggle.checked);
+  drawGrid();
+  renderColors();
+});
+
+/* ── Download ── */
+downloadBtn.addEventListener('click', async () => {
+  const label = downloadBtn.textContent;
+  downloadBtn.textContent = '⏳  Rendering…';
+  downloadBtn.disabled = true;
+  const reset = () => { downloadBtn.textContent = label; downloadBtn.disabled = false; };
+  try {
+    // FIX: scale:4 instead of 3 for sharper text/grid lines in export
+    const canvas = await html2canvas(poster, {
+      scale: 4,
+      useCORS: true,
+      backgroundColor: monoToggle.checked ? '#f7f6f3' : '#0c0c0c',
+      logging: false,
+      imageTimeout: 0,
+    });
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.download = `${(nameInput.value.trim()||'flag').toLowerCase().replace(/\s+/g,'-')}-poster.png`;
+      a.href = url;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url),100);
+      reset();
+    }, 'image/png');
+  } catch(e) { console.error(e); reset(); }
+});
+</script>
+</body>
+</html>
