@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BURN NOTE — Incoming</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="../other/logo/DataBurner.png">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:      #080500;
+            --surface: #0d0800;
+            --border:  #2e1a00;
+            --amber:   #ff9500;
+            --dim:     #7a4400;
+            --red:     #ff4a00;
+            --yellow:  #ffe066;
+            --text:    #f0d898;
+            --muted:   #5a3a00;
+            --font:    'Share Tech Mono', monospace;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background: repeating-linear-gradient(
+                0deg, transparent, transparent 3px,
+                rgba(0,0,0,0.15) 3px, rgba(0,0,0,0.15) 4px
+            );
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        body::after {
+            content: '';
+            position: fixed; inset: 0;
+            background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.65) 100%);
+            pointer-events: none;
+            z-index: 199;
+        }
+
+        @keyframes blink   { 0%,100%{opacity:1}50%{opacity:0} }
+        @keyframes flicker { 0%,90%,100%{opacity:1}91%{opacity:.87}93%{opacity:1}95%{opacity:.91} }
+        @keyframes fadeUp  { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
+        @keyframes glitch  {
+            0%,100%{transform:translate(0,0) skew(0deg)}
+            15%{transform:translate(-3px,1px) skew(-1deg)}
+            30%{transform:translate(3px,-1px) skew(0.5deg)}
+            50%{transform:translate(-1px,2px) skew(1deg)}
+            70%{transform:translate(2px,-2px) skew(-0.5deg)}
+        }
+        @keyframes scanline {
+            0%{top:-5%} 100%{top:105%}
+        }
+        @keyframes staticPulse {
+            0%,100%{opacity:1} 50%{opacity:0.75}
+        }
+        @keyframes emberDrift {
+            0%{opacity:0;transform:translateY(0) scale(1)}
+            50%{opacity:0.8}
+            100%{opacity:0;transform:translateY(-80px) scale(0.3)}
+        }
+
+        body { animation: flicker 10s infinite; }
+
+        .container {
+            width: 100%;
+            max-width: 640px;
+            border: 1px solid var(--border);
+            padding: 2.5rem;
+            position: relative;
+            background: var(--surface);
+            box-shadow: 0 0 60px rgba(255,149,0,0.06), inset 0 0 60px rgba(0,0,0,0.4);
+        }
+
+        .container::before {
+            content: '';
+            position: absolute; inset: 5px;
+            border: 1px solid rgba(255,149,0,0.07);
+            pointer-events: none;
+        }
+
+        .scanline-bar {
+            position: absolute;
+            left: 0; right: 0; height: 2px;
+            background: rgba(255,149,0,0.07);
+            pointer-events: none;
+            animation: scanline 5s linear infinite;
+            top: 0;
+            z-index: 10;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .badge { font-size: 0.6rem; letter-spacing: 0.25em; padding: 0.2rem 0.6rem; }
+        .badge-incoming { background: var(--dim);  color: var(--amber); }
+        .badge-burned   { background: #3a0a00;     color: var(--red);   border: 1px solid rgba(255,74,0,0.3); }
+        .badge-error    { background: #1a0e00;     color: var(--yellow); border: 1px solid rgba(255,224,102,0.2); }
+
+        .sys-status { font-size: 0.6rem; letter-spacing: 0.2em; color: var(--muted); }
+        .sys-status span { color: var(--amber); animation: blink 2s step-end infinite; }
+        .sys-status span.dead { color: var(--red); animation: none; }
+
+        .header { text-align: center; margin-bottom: 2.5rem; }
+
+        h1 {
+            font-size: 3rem;
+            color: var(--amber);
+            letter-spacing: 0.15em;
+            text-shadow: 0 0 30px rgba(255,149,0,0.5);
+            line-height: 1;
+        }
+        h1::after { content: '_'; animation: blink 1s step-end infinite; }
+        h1.dead {
+            color: var(--red);
+            text-shadow: 0 0 30px rgba(255,74,0,0.5);
+            animation: glitch 0.6s ease infinite;
+        }
+        h1.dead::after { content: ''; }
+
+        .subtitle { color: var(--muted); font-size: 0.65rem; letter-spacing: 0.25em; margin-top: 0.6rem; }
+
+        /* ── NOTE ── */
+        #note-area {
+            display: none;
+            flex-direction: column;
+            gap: 1.25rem;
+            animation: fadeUp 0.4s ease;
+        }
+
+        .burn-label {
+            font-size: 0.6rem; letter-spacing: 0.3em;
+            color: var(--yellow);
+            border: 1px solid rgba(255,224,102,0.2);
+            padding: 0.3rem 1rem;
+            text-align: center;
+        }
+
+        .note-meta { display: flex; justify-content: space-between; align-items: center; }
+
+        .note-from { font-size: 0.6rem; letter-spacing: 0.25em; color: var(--amber); }
+
+        .burn-cd {
+            font-size: 0.6rem; letter-spacing: 0.2em;
+            color: var(--red);
+            border: 1px solid rgba(255,74,0,0.25);
+            padding: 0.2rem 0.65rem;
+        }
+
+        .note-body {
+            background: rgba(255,149,0,0.03);
+            border: 1px solid var(--border);
+            padding: 1.25rem;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            letter-spacing: 0.03em;
+            color: var(--text);
+            white-space: pre-wrap;
+            word-break: break-word;
+            min-height: 80px;
+        }
+
+        .note-footer {
+            display: flex; justify-content: space-between;
+            font-size: 0.58rem; letter-spacing: 0.2em; color: var(--muted);
+        }
+
+        /* ── BURNED ── */
+        #burned-area {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            min-height: 280px;
+            justify-content: center;
+            text-align: center;
+            animation: fadeUp 0.4s ease;
+            position: relative;
+        }
+
+        canvas#static {
+            display: block;
+            image-rendering: pixelated;
+            border: 1px solid rgba(255,74,0,0.25);
+            animation: staticPulse 0.1s step-end infinite;
+        }
+
+        .burned-title {
+            font-size: 2rem;
+            color: var(--red);
+            letter-spacing: 0.2em;
+            text-shadow: 0 0 40px rgba(255,74,0,0.5);
+            animation: glitch 0.6s ease infinite;
+        }
+
+        .burned-ts {
+            font-size: 0.68rem;
+            letter-spacing: 0.25em;
+            color: var(--muted);
+            line-height: 2;
+        }
+        .burned-ts span { color: var(--red); }
+
+        .burned-delta {
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            color: var(--amber);
+            border: 1px solid rgba(255,149,0,0.25);
+            padding: 0.4rem 1.25rem;
+        }
+
+        /* floating ember particles */
+        .ember {
+            position: absolute;
+            width: 3px; height: 3px;
+            border-radius: 50%;
+            background: var(--amber);
+            pointer-events: none;
+            animation: emberDrift linear infinite;
+        }
+
+        /* ── ERROR ── */
+        #error-area {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            min-height: 220px;
+            justify-content: center;
+            color: var(--red);
+            text-align: center;
+        }
+        .error-code { font-size: 2.5rem; letter-spacing: 0.1em; }
+
+        .footer-bar {
+            display: flex; justify-content: space-between;
+            margin-top: 2rem; padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.58rem; letter-spacing: 0.2em; color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="scanline-bar"></div>
+
+    <div class="top-bar">
+        <div class="badge badge-incoming" id="top-badge">▶ INCOMING TRANSMISSION</div>
+        <div class="sys-status">SYS STATUS: <span id="sys-dot">ONLINE</span></div>
+    </div>
+
+    <div class="header">
+        <h1 id="main-h1">BURN NOTE</h1>
+        <div class="subtitle" id="main-sub">DECRYPTING TRANSMISSION — STAND BY</div>
+    </div>
+
+    <div id="note-area">
+        <div class="burn-label" id="burn-label">BURNS ON: ——</div>
+        <div class="note-meta">
+            <div class="note-from" id="note-from">FROM: ——</div>
+            <div class="burn-cd" id="burn-cd">⚡ ACTIVE</div>
+        </div>
+        <div class="note-body" id="note-body"></div>
+        <div class="note-footer">
+            <span>SESSION: <span id="session-id">——</span></span>
+            <span id="note-received">RECEIVED: ——</span>
+        </div>
+    </div>
+
+    <div id="burned-area">
+        <canvas id="static" width="340" height="130"></canvas>
+        <div class="burned-title">⚠ TRANSMISSION DESTROYED</div>
+        <div class="burned-ts">
+            NOTE INCINERATED ON <span id="burned-on">——</span><br>
+            YOU ARRIVED <span id="late-by">——</span> AFTER DETONATION
+        </div>
+        <div class="burned-delta" id="burned-delta">——</div>
+    </div>
+
+    <div id="error-area">
+        <div class="error-code">ERR_NULL</div>
+        <div class="subtitle" style="margin-top:0.5rem">NO TRANSMISSION FOUND IN THIS LINK.</div>
+        <div class="subtitle" style="margin-top:0.25rem;font-size:0.6rem">GENERATE A BURN NOTE AT THE COMPOSER.</div>
+    </div>
+
+    <div class="footer-bar">
+        <span>ENCRYPTION: XOR + BASE64</span>
+        <span>BURN STATUS: <span id="footer-status">CHECKING</span></span>
+        <span>v1.0.0</span>
+    </div>
+</div>
+
+<script>
+    const noteArea   = document.getElementById('note-area');
+    const burnedArea = document.getElementById('burned-area');
+    const errorArea  = document.getElementById('error-area');
+    const mainH1     = document.getElementById('main-h1');
+    const mainSub    = document.getElementById('main-sub');
+    const topBadge   = document.getElementById('top-badge');
+    const sysDot     = document.getElementById('sys-dot');
+    const footerStat = document.getElementById('footer-status');
+
+    document.getElementById('session-id').textContent =
+        Math.random().toString(36).slice(2,8).toUpperCase();
+
+    /* ── decode ── */
+    function b64uDecode(str) {
+        return decodeURIComponent(escape(atob(str.replace(/-/g,'+').replace(/_/g,'/').replace(/~/g,'='))));
+    }
+    function xorDeobfuscate(str, key) {
+        return str.split('').map((c,i)=>{
+            const code = c.charCodeAt(0) ^ (key.charCodeAt(i % key.length) + i*3 + 7);
+            return String.fromCharCode(code & 0xFF);
+        }).join('');
+    }
+    function decodePayload(hash) {
+        try { return JSON.parse(xorDeobfuscate(b64uDecode(hash), 'burn')); }
+        catch { return null; }
+    }
+
+    /* ── helpers ── */
+    function fmtTs(ts) {
+        return new Date(ts).toLocaleString(undefined,{
+            weekday:'short',year:'numeric',month:'short',
+            day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'
+        }).toUpperCase();
+    }
+    function fmtDelta(ms) {
+        const s=Math.floor(ms/1000);
+        if(s<60)   return s+'S';
+        const m=Math.floor(s/60);
+        if(m<60)   return m+'M '+(s%60)+'S';
+        const h=Math.floor(m/60);
+        if(h<24)   return h+'H '+(m%60)+'M';
+        const d=Math.floor(h/24);
+        return d+'D '+(h%24)+'H';
+    }
+
+    /* ── static canvas ── */
+    function drawStatic(canvas) {
+        const ctx = canvas.getContext('2d');
+        const W=canvas.width, H=canvas.height;
+        function frame() {
+            const img = ctx.createImageData(W,H);
+            for(let i=0;i<img.data.length;i+=4){
+                const v = Math.random() > 0.45
+                    ? (Math.random()*60|0)+(Math.random()*30|0)
+                    : (Math.random()*10|0);
+                // tint amber — red channel boosted
+                const tint = Math.random() > 0.85 ? 80 : 0;
+                img.data[i]   = v + tint;
+                img.data[i+1] = v * 0.5 | 0;
+                img.data[i+2] = 0;
+                img.data[i+3] = 255;
+            }
+            ctx.putImageData(img,0,0);
+            requestAnimationFrame(frame);
+        }
+        frame();
+    }
+
+    /* ── ember particles ── */
+    function spawnEmbers(parent) {
+        for(let i=0;i<12;i++){
+            const e = document.createElement('div');
+            e.className = 'ember';
+            e.style.left   = (Math.random()*100)+'%';
+            e.style.bottom = (Math.random()*20)+'px';
+            e.style.animationDuration = (2+Math.random()*4)+'s';
+            e.style.animationDelay    = (Math.random()*3)+'s';
+            e.style.opacity = '0';
+            e.style.width   = (2+Math.random()*3)+'px';
+            e.style.height  = e.style.width;
+            const r = Math.floor(200+Math.random()*55);
+            const g = Math.floor(Math.random()*120);
+            e.style.background = `rgb(${r},${g},0)`;
+            parent.appendChild(e);
+        }
+    }
+
+    /* ── states ── */
+    function showBurned(burnTs) {
+        const late = Date.now() - burnTs;
+
+        topBadge.className   = 'badge badge-burned';
+        topBadge.textContent = '⚠ TRANSMISSION DESTROYED';
+        sysDot.textContent   = 'DEAD';
+        sysDot.className     = 'dead';
+        mainH1.classList.add('dead');
+        mainH1.textContent   = 'GONE';
+        mainSub.textContent  = 'THIS MESSAGE HAS BEEN INCINERATED';
+        footerStat.textContent = 'BURNED';
+
+        document.getElementById('burned-on').textContent  = fmtTs(burnTs);
+        document.getElementById('late-by').textContent    = fmtDelta(late);
+        document.getElementById('burned-delta').textContent = 'YOU MISSED IT BY ' + fmtDelta(late);
+
+        burnedArea.style.display = 'flex';
+        drawStatic(document.getElementById('static'));
+        spawnEmbers(burnedArea);
+    }
+
+    function showNote(data) {
+        const burnTs = data.b;
+        const from   = (data.f || 'ANONYMOUS').toUpperCase();
+
+        document.getElementById('burn-label').textContent =
+            'BURNS ON: ' + fmtTs(burnTs);
+        document.getElementById('note-from').textContent = 'FROM: ' + from;
+        document.getElementById('note-body').textContent = data.m;
+        document.getElementById('note-received').textContent =
+            'RECEIVED: ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}).toUpperCase();
+
+        footerStat.textContent = 'ACTIVE';
+        mainSub.textContent    = 'TRANSMISSION DECRYPTED — HANDLE WITH CARE';
+
+        const cd = document.getElementById('burn-cd');
+        (function tick() {
+            const rem = burnTs - Date.now();
+            if(rem <= 0){ noteArea.style.display='none'; showBurned(burnTs); return; }
+            cd.textContent = '⚡ BURNS IN: ' + fmtDelta(rem);
+            setTimeout(tick, 1000);
+        })();
+
+        noteArea.style.display = 'flex';
+    }
+
+    function showError() {
+        topBadge.className   = 'badge badge-error';
+        topBadge.textContent = '⚠ NULL TRANSMISSION';
+        mainH1.textContent   = 'ERROR';
+        mainSub.textContent  = 'NOTHING FOUND IN THIS LINK';
+        footerStat.textContent = 'NULL';
+        errorArea.style.display = 'flex';
+    }
+
+    /* ── init ── */
+    const hash = window.location.hash.slice(1);
+    if(!hash) {
+        showError();
+    } else {
+        const data = decodePayload(hash);
+        if(!data || !data.m || !data.b) showError();
+        else if(Date.now() >= data.b)   showBurned(data.b);
+        else                            showNote(data);
+    }
+</script>
+</body>
+</html>
