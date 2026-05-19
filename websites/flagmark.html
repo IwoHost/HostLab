@@ -499,6 +499,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   color: rgba(255,255,255,.28); transition: color .4s;
 }
 .poster.mono .meta-txt { color: rgba(0,0,0,.32); }
+@media (max-width: 768px) {
+  html, body { height: auto; overflow: auto; }
+  body { flex-direction: column; }
+  .sidebar { width: 100%; min-width: unset; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+  .preview-area { min-height: 80vw; }
+}
 </style>
 </head>
 <body>

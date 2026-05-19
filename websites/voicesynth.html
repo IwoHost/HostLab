@@ -406,7 +406,13 @@ body::after {
 }
 .mii-toggle-lbl input[type="checkbox"] { accent-color: var(--green); width: 12px; height: 12px; cursor: pointer; }
 .mii-toggle-lbl:hover { color: var(--green); }
-
+@media (max-width: 768px) {
+  .screen { padding: 24px 12px 36px; }
+  .card { padding: 14px; }
+  .rec-controls { grid-template-columns: 1fr; }
+  .synth-actions { grid-template-columns: 1fr 1fr; }
+  .mii-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>

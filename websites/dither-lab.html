@@ -102,6 +102,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12
 ::-webkit-scrollbar{width:3px;height:3px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--border2);}
+@media (max-width: 768px) {
+  #app { grid-template-columns: 1fr; grid-template-rows: 36px auto 1fr auto 44px; height: auto; min-height: 100vh; }
+  #header { grid-column: 1; }
+  #left { border-right: none; border-bottom: 1px solid var(--border2); max-height: 260px; }
+  #center { min-height: 60vw; }
+  #right { border-left: none; border-top: 1px solid var(--border2); max-height: 300px; }
+  #bottom { grid-column: 1; }
+}
 </style>
 </head>
 <body>
