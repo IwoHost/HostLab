@@ -271,12 +271,20 @@
             font-size: 0.58rem; letter-spacing: 0.2em; color: var(--muted);
         }
     @media (max-width: 600px) {
-    .container { padding: 1.8rem 1.2rem; }
-    h1 { font-size: 2rem; }
-    .subtitle { font-size: 0.55rem; }
-    .badge { font-size: 0.5rem; padding: 0.15rem 0.4rem; }
+    .container { padding: 1.5rem 1rem; }
+    h1 { font-size: 1.8rem; }
+    .subtitle { font-size: 0.55rem; letter-spacing: 0.15em; }
+    .badge { font-size: 0.5rem; padding: 0.15rem 0.4rem; letter-spacing: 0.15em; }
     .sys-status { font-size: 0.5rem; }
-    }        
+    .note-meta { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+    .burn-label { font-size: 0.55rem; letter-spacing: 0.15em; padding: 0.3rem 0.75rem; }
+    .note-body { font-size: 0.85rem; padding: 1rem; }
+    .note-footer { flex-direction: column; gap: 0.3rem; }
+    canvas#static { width: 100% !important; height: auto !important; }
+    .burned-title { font-size: 1.5rem; letter-spacing: 0.1em; }
+    .burned-delta { font-size: 0.7rem; padding: 0.35rem 0.75rem; letter-spacing: 0.1em; }
+    .footer-bar { flex-direction: column; gap: 0.4rem; text-align: center; }
+    }    
     </style> 
 </head>
 <body>
