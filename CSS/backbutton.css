@@ -1,7 +1,7 @@
 .back-home {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
   width: 44px;
   height: 44px;
   border-radius: 50%;
