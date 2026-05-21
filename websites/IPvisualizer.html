@@ -20,31 +20,63 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IP Range Explorer – Learn Subnetting</title>
 <link rel="icon" type="image/png" href="../other/logo/Ipviz.png">
-<link rel="canonical" href="https://iwohost.github.io/HostLab/websites/IPvisualizer.html">
-<link rel="stylesheet" href="../other/backbutton.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
 :root {
+  --bg: #111009;
+  --surface: #1a1815;
+  --panel: #141210;
+  --border: #2d2820;
+  --border-strong: #3d3828;
+
+  --net-bg:    #2a1212;
+  --net-color: #f87171;
+  --net-border:#5a2020;
+
+  --gate-bg:   #261e08;
+  --gate-color:#fbbf24;
+  --gate-border:#5a4010;
+
+  --host-bg:   #0d2318;
+  --host-color:#4ade80;
+  --host-border:#1a5a30;
+
+  --bcast-bg:  #180f30;
+  --bcast-color:#a78bfa;
+  --bcast-border:#3a2060;
+
+  --accent: #3b82f6;
+  --accent-light: #1e3a5f;
+  --text: #e8e0d0;
+  --text-mid: #a09880;
+  --text-soft: #6a6058;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+[data-theme="light"] {
   --bg: #f5f2eb;
   --surface: #ffffff;
   --panel: #faf8f4;
   --border: #e2dcd0;
   --border-strong: #c8bfaf;
 
-  --net-bg:   #fff0f0;
+  --net-bg:    #fff0f0;
   --net-color: #d63031;
   --net-border:#ffb3b3;
 
-  --gate-bg:  #fff8e6;
+  --gate-bg:   #fff8e6;
   --gate-color:#b8860b;
   --gate-border:#ffd97d;
 
-  --host-bg:  #edfff5;
+  --host-bg:   #edfff5;
   --host-color:#00875a;
   --host-border:#a3e6c4;
 
-  --bcast-bg: #f5f0ff;
+  --bcast-bg:  #f5f0ff;
   --bcast-color:#6c3fc5;
   --bcast-border:#c4a8f5;
 
@@ -53,10 +85,29 @@
   --text: #1a1612;
   --text-mid: #5a5248;
   --text-soft: #9a9088;
-  --mono: 'DM Mono', monospace;
-  --sans: 'DM Sans', sans-serif;
-  --radius: 12px;
-  --radius-sm: 8px;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 9998;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-size: 18px;
+}
+.theme-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -570,29 +621,61 @@ h1 {
 }
 
 /* Color themes per class */
-.cls-a .ip-class-header { background: #fff5f5; }
-.cls-a .class-badge { background: #fee2e2; color: #b91c1c; }
+.cls-a .ip-class-header { background: var(--net-bg); }
+.cls-a .class-badge { background: var(--net-bg); color: var(--net-color); border: 1px solid var(--net-border); }
 .cls-a input[type=range] { background: linear-gradient(to right, #ef4444, #fca5a5); }
 .cls-a input[type=range]::-webkit-slider-thumb { background: #dc2626; }
 .cls-a input[type=range]::-moz-range-thumb { background: #dc2626; }
-.cls-a .class-ip-val { color: #b91c1c; }
-.cls-a .class-bin-val .bit-cls { color: #b91c1c; font-weight: 700; }
+.cls-a .class-ip-val { color: var(--net-color); }
 
-.cls-b .ip-class-header { background: #f0fdf4; }
-.cls-b .class-badge { background: #dcfce7; color: #15803d; }
+.cls-b .ip-class-header { background: var(--host-bg); }
+.cls-b .class-badge { background: var(--host-bg); color: var(--host-color); border: 1px solid var(--host-border); }
 .cls-b input[type=range] { background: linear-gradient(to right, #22c55e, #86efac); }
 .cls-b input[type=range]::-webkit-slider-thumb { background: #16a34a; }
 .cls-b input[type=range]::-moz-range-thumb { background: #16a34a; }
-.cls-b .class-ip-val { color: #15803d; }
-.cls-b .class-bin-val .bit-cls { color: #15803d; font-weight: 700; }
+.cls-b .class-ip-val { color: var(--host-color); }
 
-.cls-c .ip-class-header { background: #eff6ff; }
-.cls-c .class-badge { background: #dbeafe; color: #1d4ed8; }
+.cls-c .ip-class-header { background: var(--accent-light); }
+.cls-c .class-badge { background: var(--accent-light); color: var(--accent); border: 1px solid var(--border); }
 .cls-c input[type=range] { background: linear-gradient(to right, #3b82f6, #93c5fd); }
 .cls-c input[type=range]::-webkit-slider-thumb { background: #2563eb; }
 .cls-c input[type=range]::-moz-range-thumb { background: #2563eb; }
-.cls-c .class-ip-val { color: #1d4ed8; }
-.cls-c .class-bin-val .bit-cls { color: #1d4ed8; font-weight: 700; }
+.cls-c .class-ip-val { color: var(--accent); }
+
+/* Public/Private Tabs */
+.range-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.range-tab {
+  flex: 1;
+  padding: 10px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  background: var(--panel);
+  color: var(--text-soft);
+  border: none;
+  transition: all 0.15s;
+  letter-spacing: 0.03em;
+}
+.range-tab:first-child { border-right: 1px solid var(--border); }
+.range-tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+.range-tab:not(.active):hover {
+  background: var(--surface);
+  color: var(--text-mid);
+}
+.range-section { display: none; }
+.range-section.active { display: block; }
 
 .bit-host { color: var(--text-soft); opacity: 0.5; }
 
@@ -605,12 +688,12 @@ footer {
   padding-top: 20px;
 }
 </style>
-    
 </head>
 <body>
+  <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
   <a href="../index.html" class="back-home" title="Back to HostLab">
-        <img src="../other/logo/HLab_Logo.png" alt="HostLab">
-    </a>
+    <img src="../other/logo/HLab_Logo.png" alt="HostLab">
+  </a>
 <div class="page">
 
   <div class="site-header">
@@ -697,130 +780,252 @@ footer {
   <div class="card">
     <div class="card-title">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4h12M2 8h12M2 12h12"/><circle cx="5" cy="4" r="1.5" fill="currentColor"/><circle cx="9" cy="8" r="1.5" fill="currentColor"/><circle cx="6" cy="12" r="1.5" fill="currentColor"/></svg>
-      Private IP Range Explorer
-    </div>
-    <p class="class-sliders-intro">Private IP addresses are reserved for internal networks and are not routable on the public internet. Use the sliders to explore the specific ranges designated for local use.</p>
-
-    <div class="ip-class-section cls-a">
-      <div class="ip-class-header">
-        <div class="ip-class-label">
-          <span class="class-badge">Class A Private</span>
-          <span class="class-range-text">10.0.0.0 — 10.255.255.255</span>
-        </div>
-        <span style="font-size:12px;color:var(--text-soft);">Full Private Range · 16.7M hosts</span>
-      </div>
-      <div class="ip-class-body">
-        <div class="class-slider-row">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 2</span>
-          <input type="range" id="sliderA2" min="0" max="255" value="0">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
-        </div>
-        <div class="class-slider-row">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 3</span>
-          <input type="range" id="sliderA3" min="0" max="255" value="0">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
-        </div>
-        <div class="class-slider-row">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 4</span>
-          <input type="range" id="sliderA4" min="0" max="255" value="0">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
-        </div>
-        <div class="class-ip-display">
-          <div class="class-ip-block">
-            <div class="class-ip-sublabel">Decimal</div>
-            <div class="class-ip-val" id="decA">10.0.0.0</div>
-          </div>
-          <div class="class-ip-block">
-            <div class="class-ip-sublabel">Binary (Variable Octets)</div>
-            <div class="class-bin-val" id="binA">00000000.00000000.00000000</div>
-          </div>
-          <div class="class-desc-block">
-            <div class="class-desc-title">The "10-dot" Network</div>
-            In Class A, the first octet is fixed at <strong>10</strong>. Use the three sliders above to change the 2nd, 3rd, and 4th octets independently to explore any address in the massive Class A private space.
-          </div>
-        </div>
-      </div>
+      IP Range Explorer
     </div>
 
-    <div class="ip-class-section cls-b">
-      <div class="ip-class-header">
-        <div class="ip-class-label">
-          <span class="class-badge">Class B Private</span>
-          <span class="class-range-text">172.16.0.0 — 172.31.255.255</span>
+    <div class="range-tabs">
+      <button class="range-tab active" id="tabPrivate" onclick="switchTab('private')">🔒 Private Ranges</button>
+      <button class="range-tab" id="tabPublic" onclick="switchTab('public')">🌐 Public Ranges</button>
+    </div>
+
+    <!-- PRIVATE -->
+    <div class="range-section active" id="sectionPrivate">
+      <p class="class-sliders-intro">Private IP addresses are reserved for internal networks and are not routable on the public internet. Use the sliders to explore the specific ranges designated for local use.</p>
+
+      <div class="ip-class-section cls-a">
+        <div class="ip-class-header">
+          <div class="ip-class-label">
+            <span class="class-badge">Class A Private</span>
+            <span class="class-range-text">10.0.0.0 — 10.255.255.255</span>
+          </div>
+          <span style="font-size:12px;color:var(--text-soft);">Full Private Range · 16.7M hosts</span>
         </div>
-        <span style="font-size:12px;color:var(--text-soft);">16 blocks · 65,534 hosts each</span>
+        <div class="ip-class-body">
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 2</span>
+            <input type="range" id="sliderA2" min="0" max="255" value="0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+          </div>
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 3</span>
+            <input type="range" id="sliderA3" min="0" max="255" value="0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+          </div>
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 4</span>
+            <input type="range" id="sliderA4" min="0" max="255" value="0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+          </div>
+          <div class="class-ip-display">
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Decimal</div>
+              <div class="class-ip-val" id="decA">10.0.0.0</div>
+            </div>
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Binary (Variable Octets)</div>
+              <div class="class-bin-val" id="binA">00000000.00000000.00000000</div>
+            </div>
+            <div class="class-desc-block">
+              <div class="class-desc-title">The "10-dot" Network</div>
+              In Class A, the first octet is fixed at <strong>10</strong>. Use the three sliders to change octets 2–4 and explore the massive Class A private space.
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="ip-class-body">
-        <div class="class-slider-row">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 2</span>
-          <input type="range" id="sliderB2" min="16" max="31" value="16">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">31</span>
-        </div>
-        <div class="class-slider-row">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 3</span>
-          <input type="range" id="sliderB3" min="0" max="255" value="0">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
-        </div>
-        <div class="class-slider-row">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 4</span>
-          <input type="range" id="sliderB4" min="0" max="255" value="0">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
-        </div>
-        <div class="class-ip-display">
-          <div class="class-ip-block">
-            <div class="class-ip-sublabel">Decimal</div>
-            <div class="class-ip-val" id="decB">172.16.0.0</div>
+
+      <div class="ip-class-section cls-b">
+        <div class="ip-class-header">
+          <div class="ip-class-label">
+            <span class="class-badge">Class B Private</span>
+            <span class="class-range-text">172.16.0.0 — 172.31.255.255</span>
           </div>
-          <div class="class-ip-block">
-            <div class="class-ip-sublabel">Binary (Var Octets)</div>
-            <div class="class-bin-val" id="binB">00010000.00000000.00000000</div>
+          <span style="font-size:12px;color:var(--text-soft);">16 blocks · 65,534 hosts each</span>
+        </div>
+        <div class="ip-class-body">
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 2</span>
+            <input type="range" id="sliderB2" min="16" max="31" value="16">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">31</span>
           </div>
-          <div class="class-desc-block">
-            <div class="class-desc-title">Campus Range</div>
-            Fixed prefix <strong>172</strong>. Octet 2 is restricted to 16–31. Octets 3 and 4 provide full addressing within those blocks. This range is common in large corporate or educational Wi-Fi systems.
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 3</span>
+            <input type="range" id="sliderB3" min="0" max="255" value="0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+          </div>
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 4</span>
+            <input type="range" id="sliderB4" min="0" max="255" value="0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+          </div>
+          <div class="class-ip-display">
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Decimal</div>
+              <div class="class-ip-val" id="decB">172.16.0.0</div>
+            </div>
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Binary (Var Octets)</div>
+              <div class="class-bin-val" id="binB">00010000.00000000.00000000</div>
+            </div>
+            <div class="class-desc-block">
+              <div class="class-desc-title">Campus Range</div>
+              Fixed prefix <strong>172</strong>. Octet 2 is restricted to 16–31. Common in large corporate or educational Wi-Fi systems.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ip-class-section cls-c">
+        <div class="ip-class-header">
+          <div class="ip-class-label">
+            <span class="class-badge">Class C Private</span>
+            <span class="class-range-text">192.168.0.0 — 192.168.255.255</span>
+          </div>
+          <span style="font-size:12px;color:var(--text-soft);">256 blocks · 254 hosts each</span>
+        </div>
+        <div class="ip-class-body">
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 3</span>
+            <input type="range" id="sliderC3" min="0" max="255" value="1">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+          </div>
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 4</span>
+            <input type="range" id="sliderC4" min="0" max="255" value="0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+          </div>
+          <div class="class-ip-display">
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Decimal</div>
+              <div class="class-ip-val" id="decC">192.168.1.0</div>
+            </div>
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Binary (Var Octets)</div>
+              <div class="class-bin-val" id="binC">00000001.00000000</div>
+            </div>
+            <div class="class-desc-block">
+              <div class="class-desc-title">Home Range</div>
+              Fixed prefix <strong>192.168</strong>. Most home routers default to 192.168.0.x or 192.168.1.x.
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="ip-class-section cls-c">
-      <div class="ip-class-header">
-        <div class="ip-class-label">
-          <span class="class-badge">Class C Private</span>
-          <span class="class-range-text">192.168.0.0 — 192.168.255.255</span>
+    <!-- PUBLIC -->
+    <div class="range-section" id="sectionPublic">
+      <p class="class-sliders-intro">Public IP addresses are globally routable on the internet and assigned by ISPs. Each class covers a different scale — from massive ISP blocks down to small business ranges.</p>
+
+      <div class="ip-class-section cls-a">
+        <div class="ip-class-header">
+          <div class="ip-class-label">
+            <span class="class-badge">Class A Public</span>
+            <span class="class-range-text">1.0.0.0 — 126.255.255.255</span>
+          </div>
+          <span style="font-size:12px;color:var(--text-soft);">Excludes 10.x (private) · ~2.1B addresses</span>
         </div>
-        <span style="font-size:12px;color:var(--text-soft);">256 blocks · 254 hosts each</span>
+        <div class="ip-class-body">
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 1</span>
+            <input type="range" id="sliderPA1" min="1" max="126" value="8">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">126</span>
+          </div>
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 2</span>
+            <input type="range" id="sliderPA2" min="0" max="255" value="8">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+          </div>
+          <div class="class-ip-display">
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Decimal</div>
+              <div class="class-ip-val" id="decPA">8.8.0.0</div>
+            </div>
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Binary (Oct 1–2)</div>
+              <div class="class-bin-val" id="binPA">00001000.00001000</div>
+            </div>
+            <div class="class-desc-block">
+              <div class="class-desc-title">Big ISP Territory</div>
+              Class A public blocks are owned by large telecoms and tech giants. For example, <strong>8.8.x.x</strong> belongs to Google (their DNS servers), and <strong>1.x.x.x</strong> to Cloudflare.
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="ip-class-body">
-        <div class="class-slider-row">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 3</span>
-          <input type="range" id="sliderC3" min="0" max="255" value="1">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
-        </div>
-        <div class="class-slider-row">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 4</span>
-          <input type="range" id="sliderC4" min="0" max="255" value="0">
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
-        </div>
-        <div class="class-ip-display">
-          <div class="class-ip-block">
-            <div class="class-ip-sublabel">Decimal</div>
-            <div class="class-ip-val" id="decC">192.168.1.0</div>
+
+      <div class="ip-class-section cls-b">
+        <div class="ip-class-header">
+          <div class="ip-class-label">
+            <span class="class-badge">Class B Public</span>
+            <span class="class-range-text">128.0.0.0 — 191.255.255.255</span>
           </div>
-          <div class="class-ip-block">
-            <div class="class-ip-sublabel">Binary (Var Octets)</div>
-            <div class="class-bin-val" id="binC">00000001.00000000</div>
+          <span style="font-size:12px;color:var(--text-soft);">Excludes 172.16–31 (private) · ~1B addresses</span>
+        </div>
+        <div class="ip-class-body">
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 1</span>
+            <input type="range" id="sliderPB1" min="128" max="191" value="151">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">191</span>
           </div>
-          <div class="class-desc-block">
-            <div class="class-desc-title">Home Range</div>
-            Fixed prefix <strong>192.168</strong>. Adjust octets 3 and 4 to explore the standard residential networking space. Most home routers default to 192.168.0.x or 192.168.1.x.
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 2</span>
+            <input type="range" id="sliderPB2" min="0" max="255" value="101">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+          </div>
+          <div class="class-ip-display">
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Decimal</div>
+              <div class="class-ip-val" id="decPB">151.101.0.0</div>
+            </div>
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Binary (Oct 1–2)</div>
+              <div class="class-bin-val" id="binPB">10010111.01100101</div>
+            </div>
+            <div class="class-desc-block">
+              <div class="class-desc-title">Universities & Mid-Scale</div>
+              Class B public ranges were historically allocated to universities and mid-size organizations. <strong>151.101.x.x</strong> is Fastly's CDN, used by Reddit and GitHub.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ip-class-section cls-c">
+        <div class="ip-class-header">
+          <div class="ip-class-label">
+            <span class="class-badge">Class C Public</span>
+            <span class="class-range-text">192.0.0.0 — 223.255.255.255</span>
+          </div>
+          <span style="font-size:12px;color:var(--text-soft);">Excludes 192.168.x (private) · ~536M addresses</span>
+        </div>
+        <div class="ip-class-body">
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 1</span>
+            <input type="range" id="sliderPC1" min="192" max="223" value="208">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">223</span>
+          </div>
+          <div class="class-slider-row">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">Oct 2</span>
+            <input type="range" id="sliderPC2" min="0" max="255" value="67">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-soft);">255</span>
+          </div>
+          <div class="class-ip-display">
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Decimal</div>
+              <div class="class-ip-val" id="decPC">208.67.0.0</div>
+            </div>
+            <div class="class-ip-block">
+              <div class="class-ip-sublabel">Binary (Oct 1–2)</div>
+              <div class="class-bin-val" id="binPC">11010000.01000011</div>
+            </div>
+            <div class="class-desc-block">
+              <div class="class-desc-title">Small Business & Hosting</div>
+              Class C public blocks give 254 usable hosts each — typical for small businesses and hosting providers. <strong>208.67.x.x</strong> is OpenDNS (now Cisco).
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="card">
+
     <div class="card-title">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="7"/><path d="M8 7v4M8 5v.5"/></svg>
       How Does This All Work?
@@ -1022,11 +1227,56 @@ $('maskInput').addEventListener('input', calculate);
 ['sliderB2', 'sliderB3', 'sliderB4'].forEach(id => $(id).addEventListener('input', renderClassB));
 ['sliderC3', 'sliderC4'].forEach(id => $(id).addEventListener('input', renderClassC));
 
-// Initialization
+// ── Public Sliders ────────────────────────────────────────────────────────────
+function renderPublicA() {
+  const v1 = $('sliderPA1').value, v2 = $('sliderPA2').value;
+  $('decPA').textContent = `${v1}.${v2}.0.0`;
+  $('binPA').innerHTML = [v1, v2].map(v => parseInt(v).toString(2).padStart(8, '0')).join('.');
+}
+function renderPublicB() {
+  const v1 = $('sliderPB1').value, v2 = $('sliderPB2').value;
+  $('decPB').textContent = `${v1}.${v2}.0.0`;
+  $('binPB').innerHTML = [v1, v2].map(v => parseInt(v).toString(2).padStart(8, '0')).join('.');
+}
+function renderPublicC() {
+  const v1 = $('sliderPC1').value, v2 = $('sliderPC2').value;
+  $('decPC').textContent = `${v1}.${v2}.0.0`;
+  $('binPC').innerHTML = [v1, v2].map(v => parseInt(v).toString(2).padStart(8, '0')).join('.');
+}
+
+['sliderPA1', 'sliderPA2'].forEach(id => $(id).addEventListener('input', renderPublicA));
+['sliderPB1', 'sliderPB2'].forEach(id => $(id).addEventListener('input', renderPublicB));
+['sliderPC1', 'sliderPC2'].forEach(id => $(id).addEventListener('input', renderPublicC));
+
+// ── Tab Switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  $('tabPrivate').classList.toggle('active', tab === 'private');
+  $('tabPublic').classList.toggle('active', tab === 'public');
+  $('sectionPrivate').classList.toggle('active', tab === 'private');
+  $('sectionPublic').classList.toggle('active', tab === 'public');
+}
+
+// ── Theme Toggle ──────────────────────────────────────────────────────────────
+const themeToggle = $('themeToggle');
+themeToggle.addEventListener('click', () => {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight) {
+    document.documentElement.removeAttribute('data-theme');
+    themeToggle.textContent = '🌙';
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = '☀️';
+  }
+});
+
+// ── Initialization ────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   renderClassA(); 
   renderClassB(); 
   renderClassC();
+  renderPublicA();
+  renderPublicB();
+  renderPublicC();
   loadPreset('192.168.1.0','/24');
 });
 </script>
