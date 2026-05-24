@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-R7MJHBKJVY');
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=0.85, maximum-scale=5">
+<meta name="description" content="Signal/Noise Radio — an infinite lo-fi radio station generated entirely in your browser. No files, no streams, just synthesis.">
+<meta property="og:title" content="Signal/Noise Radio — HostLab">
+<meta property="og:description" content="Infinite lo-fi, synthesized live in your browser. Never repeats.">
+<meta property="og:type" content="website">
+<title>SIGNAL / NOISE RADIO</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root {
+  --bg:      #040806;
+  --surface: #060c09;
+  --border:  #0d2e20;
+  --teal:    #00c9a0;
+  --dim:     #006b5a;
+  --dimmer:  #003d33;
+  --text:    #a0f0d8;
+  --muted:   #2a6650;
+  --dark:    #020604;
+  --font:    'Share Tech Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* CRT scanlines */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 3px,
+    rgba(0,0,0,0.13) 3px, rgba(0,0,0,0.13) 4px
+  );
+  pointer-events: none;
+  z-index: 300;
+}
+
+/* vignette */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.75) 100%);
+  pointer-events: none;
+  z-index: 299;
+}
+
+@keyframes flicker {
+  0%,89%,100%{opacity:1}
+  90%{opacity:.93}
+  92%{opacity:1}
+  94%{opacity:.96}
+  96%{opacity:1}
+}
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn { from{opacity:0}to{opacity:1} }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+@keyframes spin { from{transform:rotate(0deg)}to{transform:rotate(360deg)} }
+@keyframes stationScroll {
+  0%{opacity:0;transform:translateY(6px)}
+  10%{opacity:1;transform:translateY(0)}
+  80%{opacity:1;transform:translateY(0)}
+  100%{opacity:0;transform:translateY(-6px)}
+}
+@keyframes toastIn {
+  0%{opacity:0;transform:translateY(4px)}
+  20%{opacity:1;transform:translateY(0)}
+  80%{opacity:1;transform:translateY(0)}
+  100%{opacity:0;transform:translateY(-4px)}
+}
+
+body { animation: flicker 12s infinite; }
+
+/* ── CONTAINER ── */
+.radio-unit {
+  width: 100%;
+  max-width: 640px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow:
+    0 0 80px rgba(0,201,160,0.04),
+    0 0 30px rgba(0,0,0,0.6),
+    inset 0 0 60px rgba(0,0,0,0.5);
+  position: relative;
+  animation: fadeUp 0.6s ease;
+}
+
+.radio-unit::before {
+  content: '';
+  position: absolute; inset: 6px;
+  border: 1px solid rgba(0,201,160,0.06);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── TOP BAR ── */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.9rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.badge {
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  color: var(--teal);
+  background: rgba(0,201,160,0.07);
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--dimmer);
+}
+
+.sys-status {
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+.sys-status span {
+  color: var(--teal);
+  animation: blink 2s step-end infinite;
+}
+
+/* ── DISPLAY ── */
+.display-area {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.display-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.freq-line {
+  font-size: 0.55rem;
+  letter-spacing: 0.35em;
+  color: var(--muted);
+}
+
+.track-name {
+  font-size: 1.05rem;
+  color: var(--teal);
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 20px rgba(0,201,160,0.4);
+  min-height: 1.4em;
+  transition: opacity 0.5s;
+}
+
+.track-name::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+}
+
+.station-id {
+  font-size: 0.58rem;
+  letter-spacing: 0.25em;
+  color: var(--dim);
+  min-height: 1em;
+  animation: stationScroll 8s ease-in-out infinite;
+}
+
+.waveform {
+  position: absolute;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  opacity: 0.35;
+}
+
+.waveform-bar {
+  width: 2px;
+  background: var(--teal);
+  border-radius: 1px;
+  animation: waveAnim var(--spd) ease-in-out infinite alternate;
+  height: var(--h);
+  transition: height 0.6s ease;
+}
+
+@keyframes waveAnim {
+  from { transform: scaleY(0.6); }
+  to   { transform: scaleY(1); }
+}
+
+/* skip button inside display */
+.skip-btn {
+  position: absolute;
+  bottom: 0.8rem;
+  right: 1.5rem;
+  background: transparent;
+  border: 1px solid var(--dimmer);
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 0.48rem;
+  letter-spacing: 0.25em;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  z-index: 5;
+}
+.skip-btn:hover { color: var(--teal); border-color: var(--dim); }
+
+/* ── TEMPLATE SELECTOR ── */
+.template-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.template-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 0.5rem;
+  letter-spacing: 0.2em;
+  padding: 0.65rem 0.25rem;
+  cursor: pointer;
+  text-align: center;
+  text-transform: uppercase;
+  transition: color 0.2s, background 0.2s;
+  line-height: 1.4;
+}
+.template-btn:last-child { border-right: none; }
+.template-btn:hover { color: var(--text); background: rgba(0,201,160,0.04); }
+.template-btn.active {
+  color: var(--teal);
+  background: rgba(0,201,160,0.08);
+  text-shadow: 0 0 12px rgba(0,201,160,0.4);
+}
+
+.knobs-section {
+  padding: 1.2rem 1.5rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.knobs-header {
+  font-size: 0.42rem;
+  letter-spacing: 0.3em;
+  color: var(--dimmer);
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--dimmer);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rand-btn {
+  background: transparent;
+  border: 1px solid var(--dimmer);
+  color: var(--dimmer);
+  font-family: var(--font);
+  font-size: 0.38rem;
+  letter-spacing: 0.2em;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.rand-btn:hover { color: var(--teal); border-color: var(--dim); }
+
+.knobs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem 1.2rem;
+}
+
+.knob-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.knob-label {
+  font-size: 0.48rem;
+  letter-spacing: 0.25em;
+  color: var(--muted);
+  text-align: center;
+  transition: color 0.1s;
+}
+
+/* vertical slider */
+.knob-container {
+  position: relative;
+  width: 28px;
+  height: 80px;
+  cursor: ns-resize;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* the rail */
+.knob-track {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 100%;
+  background: var(--dimmer);
+  border-radius: 1px;
+}
+
+/* filled portion */
+.knob-fill {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  bottom: 0;
+  background: var(--teal);
+  border-radius: 1px;
+  opacity: 0.5;
+  transition: height 0.05s;
+}
+
+/* the draggable thumb */
+.knob-indicator {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  width: 18px;
+  height: 6px;
+  background: var(--surface);
+  border: 1px solid var(--teal);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(0,201,160,0.5);
+  transition: box-shadow 0.15s;
+}
+.knob-container:hover .knob-indicator,
+.knob-container.dragging .knob-indicator {
+  box-shadow: 0 0 14px rgba(0,201,160,0.9);
+  background: rgba(0,201,160,0.12);
+}
+
+/* active knob highlight while dragging */
+.knob-wrap.dragging .knob-label {
+  color: var(--teal);
+}
+.knob-wrap.dragging .knob-value {
+  color: var(--teal);
+  text-shadow: 0 0 8px rgba(0,201,160,0.5);
+  font-size: 0.52rem;
+}
+.knob-container.dragging .knob-fill {
+  opacity: 0.85;
+  width: 3px;
+}
+
+/* tick marks on the rail */
+.knob-tick {
+  position: absolute;
+  left: 50%;
+  width: 6px;
+  height: 1px;
+  background: var(--dimmer);
+  transform: translateX(-50%);
+}
+
+.knob-glow { display: none; }
+
+.knob-value {
+  font-size: 0.44rem;
+  letter-spacing: 0.18em;
+  color: var(--dim);
+  text-align: center;
+  transition: color 0.1s, font-size 0.1s, text-shadow 0.1s;
+}
+
+/* ── BOTTOM BAR ── */
+.bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.5rem;
+  position: relative;
+  z-index: 11;
+}
+
+.power-btn {
+  background: transparent;
+  border: 1px solid var(--dimmer);
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 0.6rem;
+  letter-spacing: 0.35em;
+  padding: 0.6rem 1.4rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.power-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(0,201,160,0.08), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.4s;
+}
+.power-btn:hover::before { transform: translateX(100%); }
+.power-btn:hover { border-color: var(--dim); color: var(--teal); }
+.power-btn.on {
+  border-color: var(--teal);
+  color: var(--teal);
+  box-shadow: 0 0 12px rgba(0,201,160,0.15);
+}
+
+.on-air {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.5rem;
+  letter-spacing: 0.3em;
+  color: var(--muted);
+  transition: color 0.3s;
+}
+.on-air.live { color: var(--teal); }
+.on-air-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background 0.3s;
+}
+.on-air.live .on-air-dot {
+  background: var(--teal);
+  box-shadow: 0 0 6px rgba(0,201,160,0.8);
+  animation: pulse 1.5s infinite;
+}
+
+.bottom-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.action-btn {
+  background: transparent;
+  border: 1px solid var(--dimmer);
+  color: var(--dimmer);
+  font-family: var(--font);
+  font-size: 0.45rem;
+  letter-spacing: 0.2em;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+.action-btn:hover { color: var(--teal); border-color: var(--dim); }
+
+/* ── TOAST ── */
+.copy-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,201,160,0.12);
+  border: 1px solid var(--dim);
+  color: var(--teal);
+  font-family: var(--font);
+  font-size: 0.5rem;
+  letter-spacing: 0.3em;
+  padding: 0.5rem 1.2rem;
+  z-index: 500;
+  animation: toastIn 2.5s ease forwards;
+  pointer-events: none;
+}
+
+/* ── OFFLINE SCREEN ── */
+.off-overlay {
+  position: absolute; inset: 0;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  z-index: 10;
+  transition: opacity 0.6s;
+}
+.off-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.off-title {
+  font-size: 1.6rem;
+  color: var(--dim);
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 30px rgba(0,201,160,0.15);
+}
+.off-sub {
+  font-size: 0.55rem;
+  letter-spacing: 0.35em;
+  color: var(--dimmer);
+}
+.off-tap {
+  font-size: 0.48rem;
+  letter-spacing: 0.4em;
+  color: var(--dim);
+  margin-top: 1.2rem;
+  animation: pulse 2s infinite;
+}
+
+@media (max-width: 500px) {
+  .knobs-grid { grid-template-columns: repeat(3, 1fr); gap: 0.4rem 0.6rem; }
+  .knob-container { width: 22px; height: 70px; }
+  .knob-indicator { width: 14px; }
+  .template-btn { font-size: 0.42rem; padding: 0.55rem 0.15rem; }
+  .track-name { font-size: 0.85rem; }
+  .bottom-bar { flex-wrap: wrap; gap: 0.75rem; }
+  .action-btn { font-size: 0.4rem; padding: 0.3rem 0.45rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="radio-unit">
+
+  <!-- tap-to-start splash -->
+  <div class="off-overlay" id="off-overlay">
+    <div class="off-title">S / N</div>
+    <div class="off-sub">SIGNAL / NOISE RADIO</div>
+    <div class="off-tap">TAP ANYWHERE TO BEGIN</div>
+  </div>
+
+  <!-- top -->
+  <div class="top-bar">
+    <div class="badge">SIGNAL / NOISE RADIO</div>
+    <div class="sys-status">CARRIER: <span id="carrier-status">IDLE</span></div>
+  </div>
+
+  <!-- display -->
+  <div class="display-area">
+    <div class="display-inner">
+      <div class="freq-line" id="freq-line">— — . — MHz</div>
+      <div class="track-name" id="track-name">INITIALIZING</div>
+      <div class="station-id" id="station-id">SIGNAL / NOISE RADIO — BROADCASTING LIVE</div>
+    </div>
+    <!-- waveform bars -->
+    <div class="waveform" id="waveform"></div>
+    <!-- skip button -->
+    <button class="skip-btn" id="skip-btn" title="Skip track [S]">▶▶ SKIP</button>
+  </div>
+
+  <!-- templates -->
+  <div class="template-row" id="template-row">
+    <button class="template-btn active" data-tpl="latenight">LATE<br>NIGHT</button>
+    <button class="template-btn" data-tpl="rainy">RAINY<br>CITY</button>
+    <button class="template-btn" data-tpl="cafe">CAFÉ<br>STATIC</button>
+    <button class="template-btn" data-tpl="basement">BASEMENT<br>TAPE</button>
+    <button class="template-btn" data-tpl="signal3am">3AM<br>SIGNAL</button>
+  </div>
+
+  <!-- knobs -->
+  <div class="knobs-section">
+    <div class="knobs-header">
+      <span>AMBIENCE</span>
+      <button class="rand-btn" id="rand-btn" title="Randomize [R]">⟳ RANDOMIZE</button>
+    </div>
+    <div class="knobs-grid" id="knobs-grid">
+
+      <div class="knob-wrap">
+        <div class="knob-label">MOOD</div>
+        <div class="knob-container" id="knob-mood" data-min="-1" data-max="1" data-val="0">
+          <div class="knob-track"></div>
+          <div class="knob-fill" id="kf-mood"></div>
+          <div class="knob-tick" style="top:0"></div><div class="knob-tick" style="top:25%"></div>
+          <div class="knob-tick" style="top:50%"></div><div class="knob-tick" style="top:75%"></div>
+          <div class="knob-tick" style="bottom:0"></div>
+          <div class="knob-indicator" id="ki-mood"></div>
+        </div>
+        <div class="knob-value" id="kv-mood">NEUTRAL</div>
+      </div>
+
+      <div class="knob-wrap">
+        <div class="knob-label">TEXTURE</div>
+        <div class="knob-container" id="knob-texture" data-min="0" data-max="1" data-val="0.4">
+          <div class="knob-track"></div>
+          <div class="knob-fill" id="kf-texture"></div>
+          <div class="knob-tick" style="top:0"></div><div class="knob-tick" style="top:25%"></div>
+          <div class="knob-tick" style="top:50%"></div><div class="knob-tick" style="top:75%"></div>
+          <div class="knob-tick" style="bottom:0"></div>
+          <div class="knob-indicator" id="ki-texture"></div>
+        </div>
+        <div class="knob-value" id="kv-texture">MED</div>
+      </div>
+
+      <div class="knob-wrap">
+        <div class="knob-label">RAIN</div>
+        <div class="knob-container" id="knob-rain" data-min="0" data-max="1" data-val="0">
+          <div class="knob-track"></div>
+          <div class="knob-fill" id="kf-rain"></div>
+          <div class="knob-tick" style="top:0"></div><div class="knob-tick" style="top:25%"></div>
+          <div class="knob-tick" style="top:50%"></div><div class="knob-tick" style="top:75%"></div>
+          <div class="knob-tick" style="bottom:0"></div>
+          <div class="knob-indicator" id="ki-rain"></div>
+        </div>
+        <div class="knob-value" id="kv-rain">OFF</div>
+      </div>
+
+      <div class="knob-wrap">
+        <div class="knob-label">SPACE</div>
+        <div class="knob-container" id="knob-space" data-min="0" data-max="1" data-val="0.5">
+          <div class="knob-track"></div>
+          <div class="knob-fill" id="kf-space"></div>
+          <div class="knob-tick" style="top:0"></div><div class="knob-tick" style="top:25%"></div>
+          <div class="knob-tick" style="top:50%"></div><div class="knob-tick" style="top:75%"></div>
+          <div class="knob-tick" style="bottom:0"></div>
+          <div class="knob-indicator" id="ki-space"></div>
+        </div>
+        <div class="knob-value" id="kv-space">MED</div>
+      </div>
+
+      <div class="knob-wrap">
+        <div class="knob-label">VOL</div>
+        <div class="knob-container" id="knob-vol" data-min="0" data-max="1" data-val="0.75">
+          <div class="knob-track"></div>
+          <div class="knob-fill" id="kf-vol"></div>
+          <div class="knob-tick" style="top:0"></div><div class="knob-tick" style="top:25%"></div>
+          <div class="knob-tick" style="top:50%"></div><div class="knob-tick" style="top:75%"></div>
+          <div class="knob-tick" style="bottom:0"></div>
+          <div class="knob-indicator" id="ki-vol"></div>
+        </div>
+        <div class="knob-value" id="kv-vol">MED</div>
+      </div>
+
+      <div class="knob-wrap">
+        <div class="knob-label">FILTER</div>
+        <div class="knob-container" id="knob-filter" data-min="0" data-max="1" data-val="0.6">
+          <div class="knob-track"></div>
+          <div class="knob-fill" id="kf-filter"></div>
+          <div class="knob-tick" style="top:0"></div><div class="knob-tick" style="top:25%"></div>
+          <div class="knob-tick" style="top:50%"></div><div class="knob-tick" style="top:75%"></div>
+          <div class="knob-tick" style="bottom:0"></div>
+          <div class="knob-indicator" id="ki-filter"></div>
+        </div>
+        <div class="knob-value" id="kv-filter">3.0K</div>
+      </div>
+
+      <div class="knob-wrap">
+        <div class="knob-label">BPM</div>
+        <div class="knob-container" id="knob-bpm" data-min="0" data-max="1" data-val="0.5">
+          <div class="knob-track"></div>
+          <div class="knob-fill" id="kf-bpm"></div>
+          <div class="knob-tick" style="top:0"></div><div class="knob-tick" style="top:25%"></div>
+          <div class="knob-tick" style="top:50%"></div><div class="knob-tick" style="top:75%"></div>
+          <div class="knob-tick" style="bottom:0"></div>
+          <div class="knob-indicator" id="ki-bpm"></div>
+        </div>
+        <div class="knob-value" id="kv-bpm">80</div>
+      </div>
+
+      <div class="knob-wrap">
+        <div class="knob-label">MELODY</div>
+        <div class="knob-container" id="knob-melody" data-min="0" data-max="1" data-val="0.65">
+          <div class="knob-track"></div>
+          <div class="knob-fill" id="kf-melody"></div>
+          <div class="knob-tick" style="top:0"></div><div class="knob-tick" style="top:25%"></div>
+          <div class="knob-tick" style="top:50%"></div><div class="knob-tick" style="top:75%"></div>
+          <div class="knob-tick" style="bottom:0"></div>
+          <div class="knob-indicator" id="ki-melody"></div>
+        </div>
+        <div class="knob-value" id="kv-melody">MED</div>
+      </div>
+
+      <div class="knob-wrap">
+        <div class="knob-label">BASS</div>
+        <div class="knob-container" id="knob-bass" data-min="0" data-max="1" data-val="0.5">
+          <div class="knob-track"></div>
+          <div class="knob-fill" id="kf-bass"></div>
+          <div class="knob-tick" style="top:0"></div><div class="knob-tick" style="top:25%"></div>
+          <div class="knob-tick" style="top:50%"></div><div class="knob-tick" style="top:75%"></div>
+          <div class="knob-tick" style="bottom:0"></div>
+          <div class="knob-indicator" id="ki-bass"></div>
+        </div>
+        <div class="knob-value" id="kv-bass">MED</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- bottom -->
+  <div class="bottom-bar">
+    <button class="power-btn" id="power-btn">▶ TUNE IN</button>
+    <div class="on-air" id="on-air-indicator">
+      <div class="on-air-dot"></div>
+      <span>ON AIR</span>
+    </div>
+    <div class="bottom-actions">
+      <button class="action-btn" id="share-btn" title="Share this vibe [C]">⬡ SHARE</button>
+    </div>
+  </div>
+
+</div>
+
+
+<script>
+// ═══════════════════════════════════════════════════
+//  SIGNAL / NOISE RADIO — ENGINE
+// ═══════════════════════════════════════════════════
+
+// ── TEMPLATES ──────────────────────────────────────
+const TEMPLATES = {
+  latenight:  { bpmMin:70,  bpmMax:78,  moodBias:-.2, reverbSize:2.0, hissAmt:0.010, crackleRate:2500, rainDefault:0,    lpFreq:4000, melodyDensity:.65, label:'LATE NIGHT' },
+  rainy:      { bpmMin:56,  bpmMax:64,  moodBias:-.8, reverbSize:3.2, hissAmt:0.022, crackleRate:1000, rainDefault:.90,  lpFreq:2600, melodyDensity:.38, label:'RAINY CITY' },
+  cafe:       { bpmMin:90,  bpmMax:102, moodBias: .7, reverbSize:0.7, hissAmt:0.004, crackleRate:6000, rainDefault:0,    lpFreq:7000, melodyDensity:.92, label:'CAFÉ STATIC' },
+  basement:   { bpmMin:58,  bpmMax:66,  moodBias:-.6, reverbSize:1.1, hissAmt:0.045, crackleRate:300,  rainDefault:.05,  lpFreq:1800, melodyDensity:.32, label:'BASEMENT TAPE' },
+  signal3am:  { bpmMin:46,  bpmMax:54,  moodBias:-.9, reverbSize:5.5, hissAmt:0.006, crackleRate:7000, rainDefault:.18,  lpFreq:3400, melodyDensity:.18, label:'3AM SIGNAL' },
+};
+const TEMPLATE_KEYS = Object.keys(TEMPLATES);
+
+// ── MUSIC THEORY ───────────────────────────────────
+const midiToHz = n => 440 * Math.pow(2,(n-69)/12);
+const CHORD_INTERVALS = { M:[0,4,7,11], m:[0,3,7,10] };
+
+const PROGRESSIONS_MINOR = [
+  [[0,'m'],[10,'M'],[8,'M'],[10,'M']],
+  [[0,'m'],[5,'m'],[10,'M'],[3,'M']],
+  [[0,'m'],[8,'M'],[3,'M'],[10,'M']],
+  [[0,'m'],[5,'m'],[7,'M'],[10,'M']],
+];
+const PROGRESSIONS_MAJOR = [
+  [[0,'M'],[5,'M'],[9,'m'],[7,'M']],
+  [[0,'M'],[9,'m'],[5,'M'],[7,'M']],
+  [[2,'m'],[7,'M'],[0,'M'],[9,'m']],
+  [[0,'M'],[7,'M'],[9,'m'],[5,'M']],
+];
+
+// ── TRACK NAME GENERATOR ───────────────────────────
+const ADJ  = ['shallow','slow','pale','distant','soft','hollow','faded','late','quiet','still','dim','hazy','worn','grey','blue'];
+const NOUN = ['water','signal','static','tape','neon','rooftop','window','station','fog','current','wire','street','radio','light','rain'];
+const TIME = ['3am','2am','past midnight','at dusk','before dawn','at closing','in winter','at 4am'];
+function genTrackName() {
+  return `${ADJ[Math.floor(Math.random()*ADJ.length)]} ${NOUN[Math.floor(Math.random()*NOUN.length)]}, ${TIME[Math.floor(Math.random()*TIME.length)]}`;
+}
+
+const STATION_IDS = [
+  "SIGNAL / NOISE RADIO — BROADCASTING",
+  "YOU'RE TUNED IN — STAY A WHILE",
+  "LATE NIGHT TRANSMISSION",
+  "SOMEWHERE IN THE STATIC",
+  "SIGNAL / NOISE — NEVER REPEATING",
+  "KEEP THE FREQUENCY",
+  "ALL SYNTHESIS — NO SAMPLES",
+];
+
+// ── WAVEFORM UI ────────────────────────────────────
+const wfEl = document.getElementById('waveform');
+for(let i=0;i<14;i++){
+  const b = document.createElement('div');
+  b.className = 'waveform-bar';
+  const h = 6 + Math.random()*26;
+  const spd = 0.4 + Math.random()*0.8;
+  b.style.setProperty('--h', h+'px');
+  b.style.setProperty('--spd', spd+'s');
+  b.style.animationDelay = (Math.random()*0.8)+'s';
+  wfEl.appendChild(b);
+}
+
+// ── KNOB STATE ─────────────────────────────────────
+const knobState = {
+  mood: 0, texture: 0.4, rain: 0, space: 0.5, vol: 0.75,
+  bpm: 0.5, melody: 0.65, bass: 0.5, filter: 0.6
+};
+
+function updateKnobVisual(id) {
+  const el = document.getElementById('knob-' + id);
+  const ki = document.getElementById('ki-' + id);
+  const kf = document.getElementById('kf-' + id);
+  const kv = document.getElementById('kv-' + id);
+  const min = parseFloat(el.dataset.min);
+  const max = parseFloat(el.dataset.max);
+  const val = parseFloat(el.dataset.val);
+  const pct = (val - min) / (max - min);
+  const trackH = 80;
+  const bottomPx = pct * trackH;
+  ki.style.bottom = bottomPx + 'px';
+  ki.style.top = 'auto';
+  ki.style.transform = 'translate(-50%, 50%)';
+  if(kf) kf.style.height = bottomPx + 'px';
+
+  if(id==='mood'){
+    kv.textContent = pct<0.35?'DARK':pct>0.65?'BRIGHT':'NEUTRAL';
+  } else if(id==='rain'){
+    kv.textContent = pct<0.05?'OFF':pct<0.4?'LIGHT':pct<0.75?'RAIN':'STORM';
+  } else if(id==='texture'){
+    kv.textContent = pct<0.25?'CLEAN':pct<0.6?'MED':'HEAVY';
+  } else if(id==='space'){
+    kv.textContent = pct<0.25?'DRY':pct<0.6?'MED':'VAST';
+  } else if(id==='vol'){
+    kv.textContent = pct<0.05?'MUTE':pct<0.35?'LOW':pct<0.7?'MED':'LOUD';
+  } else if(id==='filter'){
+    const freq = Math.round(Math.exp(Math.log(300) + pct * (Math.log(14000) - Math.log(300))));
+    kv.textContent = freq >= 1000 ? (freq/1000).toFixed(1)+'K' : freq+'HZ';
+  } else if(id==='bpm'){
+    kv.textContent = Math.round(40 + pct * 80);
+  } else if(id==='melody'){
+    kv.textContent = pct<0.15?'SILENT':pct<0.4?'SPARSE':pct<0.7?'MED':'DENSE';
+  } else if(id==='bass'){
+    kv.textContent = pct<0.05?'MUTE':pct<0.35?'LOW':pct<0.7?'MED':'HEAVY';
+  }
+}
+
+function initKnob(id) {
+  const el = document.getElementById('knob-' + id);
+  const wrap = el.closest('.knob-wrap');
+  const min = parseFloat(el.dataset.min);
+  const max = parseFloat(el.dataset.max);
+  el.dataset.val = knobState[id];
+  updateKnobVisual(id);
+
+  let dragging = false, startY = 0, startVal = 0;
+
+  function onStart(e) {
+    dragging = true;
+    startY = (e.touches ? e.touches[0].clientY : e.clientY);
+    startVal = parseFloat(el.dataset.val);
+    el.classList.add('dragging');
+    if(wrap) wrap.classList.add('dragging');
+    e.preventDefault();
+  }
+  function onMove(e) {
+    if(!dragging) return;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY);
+    const delta = (startY - y) / 80;
+    let newVal = Math.min(max, Math.max(min, startVal + delta * (max - min)));
+    el.dataset.val = newVal;
+    knobState[id] = newVal;
+    updateKnobVisual(id);
+    applyKnobs();
+    saveToHash();
+  }
+  function onEnd() {
+    dragging = false;
+    el.classList.remove('dragging');
+    if(wrap) wrap.classList.remove('dragging');
+  }
+
+  el.addEventListener('mousedown',  onStart);
+  el.addEventListener('touchstart', onStart, {passive:false});
+  window.addEventListener('mousemove',  onMove);
+  window.addEventListener('touchmove',  onMove, {passive:false});
+  window.addEventListener('mouseup',   onEnd);
+  window.addEventListener('touchend',  onEnd);
+}
+
+['mood','texture','rain','space','vol','filter','bpm','melody','bass'].forEach(initKnob);
+
+// ── WAVEFORM PULSE ─────────────────────────────────
+const wfBarHeights = [];
+function pulseWaveform() {
+  if(!playing) return;
+  const bars = wfEl.querySelectorAll('.waveform-bar');
+  bars.forEach((b, i) => {
+    const current = wfBarHeights[i] || 14;
+    const nudge   = (Math.random() - 0.5) * 10;
+    const next    = Math.min(28, Math.max(4, current + nudge));
+    wfBarHeights[i] = next;
+    b.style.setProperty('--h', next + 'px');
+  });
+}
+
+// ── LIVE PARAM HELPERS ─────────────────────────────
+function getLiveBPM() { return 40 + knobState.bpm * 80; }
+function getLiveFilterFreq() {
+  return Math.exp(Math.log(300) + knobState.filter * (Math.log(14000) - Math.log(300)));
+}
+
+// ── AUDIO ENGINE ───────────────────────────────────
+let ctx, masterGain, masterFilter, moodFilter, reverbNode, rainGain, hissGain, bassGainNode;
+let currentTemplate = TEMPLATES.latenight;
+let currentTemplateKey = 'latenight';
+let currentChordNotes = [];
+let currentRoot = 60;
+let playing = false;
+let stopFns = [];
+let trackInterval, stationInterval;
+
+// Lookahead scheduler state
+let schedulerTimer = null;
+let nextBassTime = 0;
+let nextMelodyTime = 0;
+let lastMelNote = null;
+let melSwingPhase = true;
+
+function createReverb(size) {
+  const conv = ctx.createConvolver();
+  const len  = ctx.sampleRate * size;
+  const buf  = ctx.createBuffer(2, len, ctx.sampleRate);
+  for(let c=0;c<2;c++){
+    const d = buf.getChannelData(c);
+    for(let i=0;i<len;i++) d[i] = (Math.random()*2-1)*Math.pow(1-i/len, 2.0);
+  }
+  conv.buffer = buf;
+  return conv;
+}
+
+function applyKnobs() {
+  if(!ctx || !playing) return;
+  const tpl = currentTemplate;
+
+  if(hissGain)          hissGain.gain.setTargetAtTime(tpl.hissAmt * (0.3 + knobState.texture * 1.4), ctx.currentTime, 0.02);
+  const rainAmt = Math.max(knobState.rain, tpl.rainDefault);
+  if(rainGain)          rainGain.gain.setTargetAtTime(rainAmt * 0.18, ctx.currentTime, 0.02);
+  if(window._reverbGain) window._reverbGain.gain.setTargetAtTime(0.1 + knobState.space * 0.55, ctx.currentTime, 0.02);
+  if(masterFilter)      masterFilter.frequency.setTargetAtTime(getLiveFilterFreq(), ctx.currentTime, 0.02);
+  if(masterGain)        masterGain.gain.setTargetAtTime(knobState.vol, ctx.currentTime, 0.02);
+  if(bassGainNode)      bassGainNode.gain.setTargetAtTime(knobState.bass * 0.4, ctx.currentTime, 0.02);
+
+  // MOOD → highshelf brightness: -8dB (dark) to +6dB (bright)
+  if(moodFilter) {
+    const moodDb = knobState.mood * 7; // -7 to +7 dB
+    moodFilter.gain.setTargetAtTime(moodDb, ctx.currentTime, 0.05);
+  }
+}
+
+function getChordNotes(rootMidi, type) {
+  return CHORD_INTERVALS[type].map(i => rootMidi + i);
+}
+
+function pickProgression() {
+  const mood = knobState.mood + currentTemplate.moodBias;
+  const useMinor = Math.random() > (0.5 + mood * 0.4);
+  const pool = useMinor ? PROGRESSIONS_MINOR : PROGRESSIONS_MAJOR;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function startEngine() {
+  ctx = new (window.AudioContext||window.webkitAudioContext)();
+  masterGain = ctx.createGain();
+  masterGain.gain.value = 0; // will fade in
+
+  // Mood highshelf filter — wired before masterFilter
+  moodFilter = ctx.createBiquadFilter();
+  moodFilter.type = 'highshelf';
+  moodFilter.frequency.value = 3200;
+  moodFilter.gain.value = knobState.mood * 7;
+
+  masterFilter = ctx.createBiquadFilter();
+  masterFilter.type = 'lowpass';
+  masterFilter.frequency.value = getLiveFilterFreq();
+  masterFilter.Q.value = 0.4;
+
+  reverbNode = createReverb(currentTemplate.reverbSize);
+  const rg = ctx.createGain();
+  rg.gain.value = 0.1 + knobState.space * 0.55;
+  window._reverbGain = rg;
+  reverbNode.connect(rg);
+  rg.connect(moodFilter);
+
+  masterGain.connect(moodFilter);
+  moodFilter.connect(masterFilter);
+  masterFilter.connect(ctx.destination);
+
+  // Bass persistent gain node
+  bassGainNode = ctx.createGain();
+  bassGainNode.gain.value = knobState.bass * 0.4;
+  bassGainNode.connect(masterGain);
+
+  // Hiss
+  const hissBuf = ctx.createBuffer(1, ctx.sampleRate*2, ctx.sampleRate);
+  const hd = hissBuf.getChannelData(0);
+  for(let i=0;i<hd.length;i++) hd[i] = Math.random()*2-1;
+  const hissSource = ctx.createBufferSource();
+  hissSource.buffer = hissBuf; hissSource.loop = true;
+  const hissFilter = ctx.createBiquadFilter();
+  hissFilter.type = 'highpass'; hissFilter.frequency.value = 5500;
+  hissGain = ctx.createGain();
+  hissGain.gain.value = currentTemplate.hissAmt;
+  hissSource.connect(hissFilter); hissFilter.connect(hissGain); hissGain.connect(masterFilter);
+  hissSource.start();
+  stopFns.push(()=>hissSource.stop());
+
+  // Rain
+  const rainBuf = ctx.createBuffer(1, ctx.sampleRate*2, ctx.sampleRate);
+  const rd = rainBuf.getChannelData(0);
+  for(let i=0;i<rd.length;i++) rd[i] = Math.random()*2-1;
+  const rainSource = ctx.createBufferSource();
+  rainSource.buffer = rainBuf; rainSource.loop = true;
+  const rainLp = ctx.createBiquadFilter();
+  rainLp.type = 'bandpass'; rainLp.frequency.value = 1800; rainLp.Q.value = 0.4;
+  rainGain = ctx.createGain();
+  rainGain.gain.value = Math.max(knobState.rain, currentTemplate.rainDefault) * 0.18;
+  rainSource.connect(rainLp); rainLp.connect(rainGain); rainGain.connect(masterFilter);
+  rainSource.start();
+  stopFns.push(()=>rainSource.stop());
+
+  // Fade master gain in
+  masterGain.gain.setTargetAtTime(knobState.vol, ctx.currentTime, 0.2);
+
+  startProgressionEngine();
+  startLookaheadScheduler();
+  startCrackle();
+}
+
+// ── PROGRESSION ENGINE ─────────────────────────────
+function startProgressionEngine() {
+  let stopped = false;
+  const BAR = 3.5;
+  const BARS_PER_CHORD = 2;
+
+  function runProgression() {
+    if(stopped) return;
+    const prog = pickProgression();
+    const rootNote = 48 + Math.floor(Math.random() * 5);
+    let ci = 0;
+    const repeats = Math.random() < 0.4 ? 2 : 1;
+    let rep = 0;
+
+    function nextChord() {
+      if(stopped) return;
+      if(ci >= prog.length) {
+        rep++;
+        if(rep < repeats){ ci=0; nextChord(); return; }
+        setTimeout(runProgression, Math.random() < 0.15 ? 1500 : 0);
+        return;
+      }
+      const [degree, type] = prog[ci];
+      const chordRoot = rootNote + degree;
+      currentRoot = chordRoot;
+      currentChordNotes = [
+        ...getChordNotes(chordRoot+12, type),
+        ...getChordNotes(chordRoot+24, type),
+      ];
+      playPad(getChordNotes(chordRoot+12, type), BAR * BARS_PER_CHORD * 1.15);
+      ci++;
+      setTimeout(nextChord, BAR * BARS_PER_CHORD * 1000);
+    }
+    nextChord();
+  }
+  runProgression();
+  stopFns.push(()=>{ stopped=true; });
+}
+
+function playPad(notes, duration) {
+  pulseWaveform();
+  notes.forEach(n => {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = midiToHz(n);
+    osc.detune.value = (Math.random()-0.5)*14;
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.045, ctx.currentTime+1.4);
+    gain.gain.linearRampToValueAtTime(0.032, ctx.currentTime+duration-1);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime+duration);
+    osc.connect(gain);
+    gain.connect(reverbNode);
+    gain.connect(masterGain);
+    osc.start();
+    osc.stop(ctx.currentTime+duration+0.1);
+  });
+}
+
+// ── LOOKAHEAD SCHEDULER ────────────────────────────
+// Replaces setTimeout-based bass & melody loops.
+// Runs every 25ms, schedules notes up to 120ms ahead.
+// BPM changes take effect within one tick instead of waiting for a full note.
+const LOOKAHEAD = 0.12; // seconds
+const TICK_MS   = 25;
+
+function startLookaheadScheduler() {
+  nextBassTime   = ctx.currentTime + 0.05;
+  nextMelodyTime = ctx.currentTime + 0.05;
+  lastMelNote    = null;
+  melSwingPhase  = true;
+
+  function tick() {
+    if(!ctx) return;
+    const now = ctx.currentTime;
+    const BPM  = getLiveBPM();
+    const beat = 60 / BPM;
+    const swing = 0.61;
+
+    // ── Bass ──
+    while(nextBassTime < now + LOOKAHEAD) {
+      scheduleBassNote(nextBassTime, beat);
+      nextBassTime += beat * 2 + (Math.random()-0.5) * 0.07;
+    }
+
+    // ── Melody ──
+    while(nextMelodyTime < now + LOOKAHEAD) {
+      const isSwung = melSwingPhase;
+      melSwingPhase = !melSwingPhase;
+      const dur = isSwung ? beat*swing : beat*(1-swing+0.5);
+      if(Math.random() <= knobState.melody) {
+        scheduleMelodyNote(nextMelodyTime, dur);
+      }
+      nextMelodyTime += dur;
+    }
+  }
+
+  schedulerTimer = setInterval(tick, TICK_MS);
+  stopFns.push(()=>{ clearInterval(schedulerTimer); schedulerTimer=null; });
+}
+
+function scheduleBassNote(when, beat) {
+  pulseWaveform();
+  const note = currentRoot - 24;
+  const osc  = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = midiToHz(note);
+  gain.gain.setValueAtTime(0.4, when);
+  gain.gain.exponentialRampToValueAtTime(0.001, when + beat*1.9);
+  osc.connect(gain);
+  gain.connect(bassGainNode);
+  osc.start(when);
+  osc.stop(when + beat*2 + 0.05);
+}
+
+function scheduleMelodyNote(when, dur) {
+  pulseWaveform();
+  const available = currentChordNotes.length ? currentChordNotes : [60,63,67,70];
+  let pool;
+  if(!lastMelNote) { pool = available; }
+  else {
+    pool = [];
+    available.forEach(n => {
+      const dist = Math.abs(n-lastMelNote);
+      const w = dist<=2?6:dist<=4?3:1;
+      for(let i=0;i<w;i++) pool.push(n);
+    });
+  }
+  const note = pool[Math.floor(Math.random()*pool.length)];
+  const mel  = note + (Math.random()<0.15?12:0);
+  lastMelNote = mel;
+
+  const osc  = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = midiToHz(mel);
+  gain.gain.setValueAtTime(0, when);
+  gain.gain.linearRampToValueAtTime(0.13, when+0.03);
+  gain.gain.exponentialRampToValueAtTime(0.001, when+dur*0.9);
+  osc.connect(gain);
+  gain.connect(reverbNode);
+  gain.connect(masterGain);
+  osc.start(when);
+  osc.stop(when+dur+0.02);
+}
+
+// ── CRACKLE ────────────────────────────────────────
+function startCrackle() {
+  let stopped = false;
+  const tpl = currentTemplate;
+  function schedulePop() {
+    if(stopped) return;
+    const texAmt = knobState.texture;
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.value = 600 + Math.random()*5000;
+    const vol = (0.03 + texAmt*0.07) * Math.random();
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.018);
+    osc.connect(gain); gain.connect(masterFilter);
+    osc.start(); osc.stop(ctx.currentTime+0.02);
+    const interval = tpl.crackleRate * (0.5 + Math.random()) * (1 + (1-texAmt)*2);
+    setTimeout(schedulePop, interval);
+  }
+  schedulePop();
+  stopFns.push(()=>{ stopped=true; });
+}
+
+// ── STOP ENGINE ────────────────────────────────────
+function stopEngine() {
+  stopFns.forEach(f=>{ try{f();}catch(e){} });
+  stopFns = [];
+  if(ctx){ ctx.close(); ctx=null; }
+  if(trackInterval)   clearInterval(trackInterval);
+  if(stationInterval) clearInterval(stationInterval);
+}
+
+// ── SMOOTH TEMPLATE RESTART ─────────────────────────
+function restartEngine() {
+  // Fade out, then switch
+  if(masterGain && ctx) {
+    masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.12);
+  }
+  setTimeout(() => {
+    stopEngine();
+    startEngine();
+    applyKnobs();
+    freqLine.textContent = randFreq();
+    updateTrackName();
+    trackInterval  = setInterval(updateTrackName, 20000 + Math.random()*25000);
+    stationInterval = setInterval(cycleStationId, 9000);
+  }, 380);
+}
+
+// ── FREQ DISPLAY ───────────────────────────────────
+function randFreq() {
+  return (88 + Math.random()*20).toFixed(1) + ' MHz';
+}
+
+// ── UI CONTROLS ────────────────────────────────────
+const powerBtn   = document.getElementById('power-btn');
+const onAir      = document.getElementById('on-air-indicator');
+const offOverlay = document.getElementById('off-overlay');
+const trackNameEl= document.getElementById('track-name');
+const stationIdEl= document.getElementById('station-id');
+const freqLine   = document.getElementById('freq-line');
+const carrierEl  = document.getElementById('carrier-status');
+
+function updateTrackName() {
+  trackNameEl.style.opacity = '0';
+  setTimeout(()=>{
+    trackNameEl.textContent = genTrackName();
+    trackNameEl.style.opacity = '1';
+  }, 400);
+}
+
+function cycleStationId() {
+  stationIdEl.textContent = STATION_IDS[Math.floor(Math.random()*STATION_IDS.length)];
+}
+
+function startRadio() {
+  if(playing) return;
+  playing = true;
+  powerBtn.textContent = '■ SIGN OFF';
+  powerBtn.classList.add('on');
+  onAir.classList.add('live');
+  offOverlay.classList.add('hidden');
+  carrierEl.textContent = 'LIVE';
+  wfEl.style.opacity = '0.8';
+  startEngine();
+  applyKnobs();
+  freqLine.textContent = randFreq();
+  updateTrackName();
+  trackInterval  = setInterval(updateTrackName, 20000 + Math.random()*25000);
+  stationInterval = setInterval(cycleStationId, 9000);
+}
+
+function stopRadio() {
+  playing = false;
+  powerBtn.textContent = '▶ TUNE IN';
+  powerBtn.classList.remove('on');
+  onAir.classList.remove('live');
+  offOverlay.classList.remove('hidden');
+  carrierEl.textContent = 'IDLE';
+  wfEl.style.opacity = '0.35';
+  stopEngine();
+  clearInterval(trackInterval);
+  clearInterval(stationInterval);
+}
+
+// ── SKIP TRACK ──────────────────────────────────────
+function skipTrack() {
+  if(!playing) return;
+  updateTrackName();
+  freqLine.textContent = randFreq();
+}
+
+// ── RANDOMIZE ───────────────────────────────────────
+function randomizeKnobs() {
+  const tplKeys = TEMPLATE_KEYS;
+  const newTplKey = tplKeys[Math.floor(Math.random()*tplKeys.length)];
+  const tpl = TEMPLATES[newTplKey];
+
+  // Switch template button
+  currentTemplate = tpl;
+  currentTemplateKey = newTplKey;
+  document.querySelectorAll('.template-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tpl === newTplKey);
+  });
+
+  // Randomize knobs with musical constraints
+  const bpmRange = (tpl.bpmMax - tpl.bpmMin) / 80;
+  const bpmBase  = (tpl.bpmMin - 40) / 80;
+  knobState.bpm     = bpmBase + Math.random() * bpmRange;
+  knobState.mood    = (Math.random() * 2 - 1) * 0.85;
+  knobState.texture = 0.1 + Math.random() * 0.8;
+  knobState.rain    = Math.max(tpl.rainDefault, Math.random() < 0.4 ? Math.random() * 0.7 : 0);
+  knobState.space   = 0.2 + Math.random() * 0.7;
+  knobState.vol     = 0.55 + Math.random() * 0.35;
+  knobState.filter  = 0.25 + Math.random() * 0.65;
+  knobState.melody  = 0.15 + Math.random() * 0.75;
+  knobState.bass    = 0.2  + Math.random() * 0.7;
+
+  // Sync visuals
+  ['mood','texture','rain','space','vol','filter','bpm','melody','bass'].forEach(id => {
+    const el = document.getElementById('knob-' + id);
+    el.dataset.val = knobState[id];
+    updateKnobVisual(id);
+  });
+
+  if(playing) restartEngine();
+  saveToHash();
+}
+
+// ── URL HASH STATE ──────────────────────────────────
+function saveToHash() {
+  const state = {
+    t: currentTemplateKey,
+    k: Object.values(knobState).map(v => Math.round(v * 1000) / 1000)
+  };
+  history.replaceState(null, '', '#' + btoa(JSON.stringify(state)));
+}
+
+function loadFromHash() {
+  try {
+    if(!location.hash || location.hash.length < 3) return false;
+    const state = JSON.parse(atob(location.hash.slice(1)));
+    if(!state || !state.k || state.k.length !== 9) return false;
+
+    const tplKey = state.t && TEMPLATES[state.t] ? state.t : 'latenight';
+    currentTemplate    = TEMPLATES[tplKey];
+    currentTemplateKey = tplKey;
+    document.querySelectorAll('.template-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.tpl === tplKey);
+    });
+
+    const keys = ['mood','texture','rain','space','vol','filter','bpm','melody','bass'];
+    keys.forEach((id, i) => {
+      knobState[id] = state.k[i];
+      const el = document.getElementById('knob-' + id);
+      el.dataset.val = knobState[id];
+      updateKnobVisual(id);
+    });
+    return true;
+  } catch(e) { return false; }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'copy-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+function shareVibe() {
+  saveToHash();
+  const url = location.href;
+  if(navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast('LINK COPIED TO CLIPBOARD'));
+  } else {
+    showToast('COPY: ' + url);
+  }
+}
+
+// ── EVENT LISTENERS ─────────────────────────────────
+offOverlay.addEventListener('click', startRadio);
+powerBtn.addEventListener('click', () => playing ? stopRadio() : startRadio());
+document.getElementById('skip-btn').addEventListener('click', skipTrack);
+document.getElementById('rand-btn').addEventListener('click', randomizeKnobs);
+document.getElementById('share-btn').addEventListener('click', shareVibe);
+
+// Template buttons
+document.getElementById('template-row').addEventListener('click', e => {
+  const btn = e.target.closest('.template-btn');
+  if(!btn) return;
+  document.querySelectorAll('.template-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTemplate    = TEMPLATES[btn.dataset.tpl];
+  currentTemplateKey = btn.dataset.tpl;
+
+  const tpl = currentTemplate;
+  const bpmMid = ((tpl.bpmMin + tpl.bpmMax) / 2 - 40) / 80;
+  knobState.bpm    = Math.max(0, Math.min(1, bpmMid));
+  knobState.melody = tpl.melodyDensity;
+  const logMin = Math.log(300), logMax = Math.log(14000);
+  knobState.filter = Math.max(0, Math.min(1, (Math.log(tpl.lpFreq) - logMin) / (logMax - logMin)));
+
+  ['bpm','melody','filter'].forEach(id => {
+    const el = document.getElementById('knob-' + id);
+    el.dataset.val = knobState[id];
+    updateKnobVisual(id);
+  });
+
+  if(playing) restartEngine();
+  saveToHash();
+});
+
+// ── KEYBOARD SHORTCUTS ───────────────────────────────
+document.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  // Space → toggle play
+  if(e.code === 'Space') {
+    e.preventDefault();
+    playing ? stopRadio() : startRadio();
+    return;
+  }
+  // 1–5 → select templates
+  if(e.key >= '1' && e.key <= '5') {
+    const idx = parseInt(e.key) - 1;
+    if(idx < TEMPLATE_KEYS.length) {
+      const btn = document.querySelectorAll('.template-btn')[idx];
+      if(btn) btn.click();
+    }
+    return;
+  }
+  // S → skip track
+  if(e.code === 'KeyS') { skipTrack(); return; }
+  // R → randomize
+  if(e.code === 'KeyR') { randomizeKnobs(); return; }
+  // C → copy/share
+  if(e.code === 'KeyC') { shareVibe(); return; }
+});
+
+// ── INIT ─────────────────────────────────────────────
+loadFromHash();
+</script>
+</body>
+</html>
