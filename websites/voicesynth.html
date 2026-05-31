@@ -522,6 +522,16 @@ body::after {
           <img class="mouth-open"   src="../other/animations/mouth_open.png"   style="opacity:0;z-index:2">
         </div>
       </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <label style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:0.7rem;letter-spacing:0.12em;color:var(--muted);border:1px solid var(--dim);padding:5px 12px;border-radius:3px;transition:color 0.2s,border-color 0.2s;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--dim)'">
+          NOT TALKING
+          <input type="file" accept="image/*" style="display:none" onchange="setCustomAvatar(event,'closed')">
+        </label>
+        <label style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:0.7rem;letter-spacing:0.12em;color:var(--muted);border:1px solid var(--dim);padding:5px 12px;border-radius:3px;transition:color 0.2s,border-color 0.2s;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--dim)'">
+          TALKING
+          <input type="file" accept="image/*" style="display:none" onchange="setCustomAvatar(event,'open')">
+        </label>
+      </div>
 
       <div class="pack-info-bar">
         <span style="color:var(--text-dim)">Pack:</span>
@@ -596,6 +606,7 @@ body::after {
         <button class="btn btn-sm" onclick="savePack()">💾 Save Pack</button>
         <button class="btn btn-sm" onclick="exportPack()">📤 Export</button>
         <button class="btn btn-sm" onclick="importPack()">📥 Import</button>
+        <button class="btn btn-sm" onclick="exportAudio()">🎵 Export Audio</button>
         <button class="btn btn-sm" id="btn-vid-rec" onclick="renderVideo()">🎥 Export Video</button>
       </div>
 
@@ -1356,6 +1367,105 @@ function wrapText(ctx, text, x, y, maxW, lineH) {
     } else { line = test; }
   }
   ctx.fillText(line.trim(), x, y);
+}
+
+async function exportAudio() {
+  const text = document.getElementById('synth-text').value.trim();
+  if (!text) { showNotif('Type something first'); return; }
+  if (!st.pack?.sounds || !Object.keys(st.pack.sounds).length) {
+    showNotif('Load a voice pack first'); return;
+  }
+
+  const phs = textToPhonemes(text);
+  const params = getMiiParams();
+  const SR = 44100;
+
+  const bufCache = {};
+  for (const p of phs) {
+    if (p.type === 'sound' && st.pack.sounds[p.id] && !bufCache[p.id])
+      try { bufCache[p.id] = await blobToBuffer(st.pack.sounds[p.id]); } catch {}
+  }
+
+  const units = params.syllable
+    ? groupIntoSyllables(phs)
+    : phs.map(p => p.type === 'space' ? { type:'space' } : { type:'syllable', sounds:[p] });
+
+  let cursor = 0.05;
+  const gapSec = params.gap / 1000;
+  const schedules = [];
+
+  for (const unit of units) {
+    if (unit.type === 'space') { cursor += 0.16 / params.speed; continue; }
+    let rate = params.pitch * params.speed;
+    if (params.jitter > 0) rate *= (1 + (Math.random()*2-1) * params.jitter);
+    if (params.randPitch)  rate *= (0.75 + Math.random() * 0.5);
+    if (params.randSpeed)  rate *= (0.88 + Math.random() * 0.24);
+    rate = Math.max(0.2, Math.min(4.0, rate));
+    for (let si = 0; si < unit.sounds.length; si++) {
+      const p = unit.sounds[si];
+      if (!bufCache[p.id]) continue;
+      const isLast = si === unit.sounds.length - 1;
+      const offset = Math.max(isLast ? 0 : -(unit.sounds.length-1-si)*0.03, -(cursor-0.01));
+      schedules.push({ buf: bufCache[p.id], when: cursor + offset, rate });
+    }
+    const mainBuf = unit.sounds.map(p => bufCache[p.id]).filter(Boolean).pop();
+    const soundDur = mainBuf ? mainBuf.duration / rate : 0.06;
+    let step = Math.max(gapSec / params.speed, soundDur * (1 - params.cutoff));
+    if (params.randSpeed) step *= (0.85 + Math.random() * 0.3);
+    cursor += Math.max(0.02, step);
+  }
+
+  const totalDuration = cursor + 0.3;
+  const offCtx = new OfflineAudioContext(1, Math.ceil(totalDuration * SR), SR);
+  for (const s of schedules) {
+    const src = offCtx.createBufferSource();
+    src.buffer = s.buf; src.playbackRate.value = s.rate;
+    src.connect(offCtx.destination); src.start(s.when);
+  }
+  const audioBuffer = await offCtx.startRendering();
+
+  // Encode as WAV
+  const pcm = audioBuffer.getChannelData(0);
+  const wavBuf = new ArrayBuffer(44 + pcm.length * 2);
+  const view = new DataView(wavBuf);
+  const ws = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+  ws(0, 'RIFF'); view.setUint32(4, 36 + pcm.length * 2, true);
+  ws(8, 'WAVE'); ws(12, 'fmt ');
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+  view.setUint32(24, SR, true); view.setUint32(28, SR * 2, true);
+  view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+  ws(36, 'data'); view.setUint32(40, pcm.length * 2, true);
+  for (let i = 0; i < pcm.length; i++) {
+    const s = Math.max(-1, Math.min(1, pcm[i]));
+    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+
+  const blob = new Blob([wavBuf], { type: 'audio/wav' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'voxsynth.wav';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  showNotif('✓ Audio exported!');
+}
+
+function setCustomAvatar(e, slot) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const url = ev.target.result;
+    if (slot === 'closed') {
+      document.querySelectorAll('.mouth-closed').forEach(img => img.src = url);
+      _vidImgClosed.src = url;
+      showNotif('✓ Not-talking photo set');
+    } else {
+      document.querySelectorAll('.mouth-open').forEach(img => img.src = url);
+      _vidImgOpen.src = url;
+      showNotif('✓ Talking photo set');
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 function setExportProgress(pct, label) {
