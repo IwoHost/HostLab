@@ -158,6 +158,21 @@ option{background:#000;}
 .fbtn.accent{border-color:var(--accent);color:var(--accent3);}
 .fbtn.accent:hover{background:var(--accent);color:#000;}
 
+/* ── MOBILE ── */
+@media(max-width:768px){
+  #app{grid-template-columns:1fr;grid-template-rows:auto auto auto auto auto;height:auto;min-height:100vh;}
+  #header{grid-column:1;padding:0 12px;}
+  #hinfo{gap:10px;font-size:9px;}
+  #left{grid-column:1;border-right:none;border-bottom:1px solid var(--border2);max-height:none;}
+  #center{grid-column:1;min-height:60vw;padding:20px 0;}
+  #right{grid-column:1;border-left:none;border-top:1px solid var(--border2);}
+  #footer{grid-column:1;}
+  .grid{grid-template-columns:1fr;}
+  select,input[type=color],input[type=text]{font-size:16px;} /* prevent iOS zoom */
+  .btn{padding:10px;}
+  .ec-btn{padding:8px 0;}
+}
+
 /* error correction indicator */
 .ec-row{display:flex;gap:4px;}
 .ec-btn{flex:1;padding:4px 0;text-align:center;border:1px solid var(--border2);color:var(--text3);cursor:pointer;font-size:10px;letter-spacing:1px;}
