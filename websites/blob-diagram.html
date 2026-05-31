@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blobber — Euler & Venn Diagram Maker</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f0eb;
+    --panel: #fffdf9;
+    --border: #e8e0d4;
+    --text: #2d2620;
+    --muted: #9a8f85;
+    --accent: #d4856a;
+
+    --p1: rgba(168,200,230, 0.45);
+    --p2: rgba(196,168,220, 0.45);
+    --p3: rgba(168,220,196, 0.45);
+    --p4: rgba(240,210,160, 0.45);
+    --p5: rgba(240,168,168, 0.45);
+    --p6: rgba(168,230,230, 0.45);
+    --p7: rgba(210,230,168, 0.45);
+    --p8: rgba(220,196,168, 0.45);
+
+    --b1: rgba(168,200,230, 0.85);
+    --b2: rgba(196,168,220, 0.85);
+    --b3: rgba(168,220,196, 0.85);
+    --b4: rgba(240,210,160, 0.85);
+    --b5: rgba(240,168,168, 0.85);
+    --b6: rgba(168,230,230, 0.85);
+    --b7: rgba(210,230,168, 0.85);
+    --b8: rgba(220,196,168, 0.85);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    background: var(--panel);
+    border-bottom: 1.5px solid var(--border);
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  header span.sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: -8px;
+    margin-top: 2px;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #f0ece6; border-color: #ccc4b8; }
+  .btn:active { transform: scale(0.96); }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .btn.primary:hover { background: #c0725a; }
+
+  /* MAIN LAYOUT */
+  .app-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* CANVAS */
+  #canvas {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(168,200,230,0.12) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(196,168,220,0.12) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(168,220,196,0.08) 0%, transparent 60%);
+  }
+
+  /* grid dots */
+  #canvas::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, #c8bdb0 1px, transparent 1px);
+    background-size: 28px 28px;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  /* SIDE PANEL */
+  #side-panel {
+    width: 260px;
+    background: var(--panel);
+    border-left: 1.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .panel-section {
+    padding: 16px;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .panel-section h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .color-swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .color-swatch:hover { transform: scale(1.1); }
+  .color-swatch.active { border-color: var(--text); }
+
+  .input-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .input-row label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .input-row input[type="text"],
+  .input-row input[type="range"] {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .input-row input[type="text"]:focus { border-color: var(--accent); }
+  .input-row input[type="range"] {
+    padding: 4px 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .no-selection {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 20px 0;
+  }
+  .no-selection .icon { font-size: 28px; margin-bottom: 8px; }
+
+  /* BLOB */
+  .blob {
+    position: absolute;
+    border-radius: 24px;
+    cursor: grab;
+    transition: box-shadow 0.2s;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 10px 14px;
+    min-width: 80px;
+    min-height: 60px;
+  }
+  .blob:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.10); }
+  .blob.selected {
+    box-shadow: 0 0 0 2.5px var(--text), 0 8px 32px rgba(0,0,0,0.12) !important;
+  }
+  .blob.dragging {
+    cursor: grabbing;
+    z-index: 9999 !important;
+  }
+  .blob.wobble {
+    animation: wobbleAnim 0.45s cubic-bezier(0.36,0.07,0.19,0.97) both;
+  }
+  @keyframes wobbleAnim {
+    0%   { transform: rotate(0deg) scale(1); }
+    15%  { transform: rotate(-1.5deg) scale(1.025); }
+    30%  { transform: rotate(1.2deg) scale(1.03); }
+    45%  { transform: rotate(-0.8deg) scale(1.015); }
+    60%  { transform: rotate(0.5deg) scale(1.008); }
+    75%  { transform: rotate(-0.2deg) scale(1.003); }
+    100% { transform: rotate(0deg) scale(1); }
+  }
+  .blob-label {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+    pointer-events: none;
+    line-height: 1.2;
+    word-break: break-word;
+    max-width: calc(100% - 8px);
+  }
+
+  /* items inside blob */
+  .blob-items {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    pointer-events: none;
+  }
+  .blob-item-tag {
+    background: rgba(255,255,255,0.55);
+    border-radius: 6px;
+    padding: 3px 7px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.7);
+    pointer-events: all;
+    cursor: default;
+  }
+  .blob-item-tag .remove-item {
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0.5;
+    pointer-events: all;
+    margin-left: 2px;
+  }
+  .blob-item-tag .remove-item:hover { opacity: 1; }
+
+  /* resize handle */
+  .resize-handle {
+    position: absolute;
+    right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.4;
+    transition: opacity 0.15s;
+  }
+  .resize-handle:hover { opacity: 0.9; }
+  .resize-handle svg { pointer-events: none; }
+
+  /* delete btn */
+  .delete-btn {
+    position: absolute;
+    top: -8px; right: -8px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #e05a4e;
+    color: white;
+    font-size: 13px;
+    line-height: 22px;
+    text-align: center;
+    cursor: pointer;
+    display: none;
+    border: 2px solid white;
+    z-index: 10001;
+    transition: transform 0.15s;
+  }
+  .blob.selected .delete-btn { display: block; }
+  .delete-btn:hover { transform: scale(1.15); }
+
+  /* toast */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--text);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 99999;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* add-item section */
+  .add-item-row {
+    display: flex;
+    gap: 6px;
+  }
+  .add-item-row input {
+    flex: 1;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .add-item-row input:focus { border-color: var(--accent); }
+  .add-item-row button {
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+  .add-item-row button:hover { background: #c0725a; }
+
+  /* opacity slider label */
+  .slider-value {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  /* help text */
+  .help-tip {
+    background: rgba(212,133,106,0.1);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-top: 8px;
+  }
+
+  /* canvas empty state */
+  .empty-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--muted);
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .empty-hint .big { font-family: 'Fraunces', serif; font-size: 48px; line-height:1; margin-bottom: 8px; }
+  .empty-hint p { font-size: 14px; line-height: 1.6; }
+
+  /* layer badge */
+  .layer-badge {
+    position: absolute;
+    bottom: 6px;
+    right: 22px;
+    font-size: 10px;
+    color: rgba(45,38,32,0.4);
+    font-weight: 500;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Blobber</h1>
+  <span class="sub">euler &amp; venn diagrams</span>
+  <div class="toolbar">
+    <button class="btn primary" id="addBlobBtn">＋ New Blob</button>
+    <button class="btn" id="clearBtn">🗑 Clear all</button>
+    <button class="btn" id="exportBtn">↓ Export PNG</button>
+  </div>
+</header>
+
+<div class="app-body">
+  <div id="canvas">
+    <div class="empty-hint" id="emptyHint">
+      <div class="big">🫧</div>
+      <p>Click <strong>New Blob</strong> to start<br>Drag blobs to nest &amp; overlap</p>
+    </div>
+  </div>
+
+  <div id="side-panel">
+    <div class="panel-section">
+      <h3>Colors</h3>
+      <div class="color-grid" id="colorGrid"></div>
+    </div>
+
+    <div class="panel-section" id="selectionPanel">
+      <div class="no-selection">
+        <div class="icon">👆</div>
+        Click a blob to edit it
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast">Copied!</div>
+
+<script>
+// ─── State ──────────────────────────────────────────────────────────────────
+const COLORS = [
+  { fill: 'rgba(168,200,230,0.40)', border: 'rgba(120,165,210,0.70)', label: 'Sky' },
+  { fill: 'rgba(196,168,220,0.40)', border: 'rgba(160,120,205,0.70)', label: 'Lavender' },
+  { fill: 'rgba(168,220,196,0.40)', border: 'rgba(100,185,148,0.70)', label: 'Mint' },
+  { fill: 'rgba(240,210,160,0.40)', border: 'rgba(210,170,90,0.70)',  label: 'Honey' },
+  { fill: 'rgba(240,168,168,0.40)', border: 'rgba(210,110,110,0.70)', label: 'Rose' },
+  { fill: 'rgba(168,230,230,0.40)', border: 'rgba(90,190,190,0.70)',  label: 'Teal' },
+  { fill: 'rgba(210,230,168,0.40)', border: 'rgba(155,195,90,0.70)',  label: 'Lime' },
+  { fill: 'rgba(220,196,168,0.40)', border: 'rgba(180,145,100,0.70)', label: 'Sand' },
+];
+
+const BORDER_COLORS = COLORS.map(c => c.border);
+const FILL_COLORS   = COLORS.map(c => c.fill);
+
+let blobs = [];
+let selectedId = null;
+let blobCounter = 0;
+let dragState = null;
+let resizeState = null;
+
+const canvas    = document.getElementById('canvas');
+const sidePanel = document.getElementById('selectionPanel');
+const emptyHint = document.getElementById('emptyHint');
+
+// ─── Color Grid ─────────────────────────────────────────────────────────────
+const colorGrid = document.getElementById('colorGrid');
+COLORS.forEach((c, i) => {
+  const sw = document.createElement('div');
+  sw.className = 'color-swatch';
+  sw.style.background = c.fill;
+  sw.style.border = `2px solid ${c.border}`;
+  sw.title = c.label;
+  sw.dataset.index = i;
+  sw.addEventListener('click', () => {
+    if (!selectedId) return;
+    const blob = blobs.find(b => b.id === selectedId);
+    if (!blob) return;
+    blob.colorIndex = i;
+    renderBlob(blob);
+    showToast(`Color → ${c.label}`);
+  });
+  colorGrid.appendChild(sw);
+});
+
+// ─── Create Blob ─────────────────────────────────────────────────────────────
+function createBlob(opts = {}) {
+  const id = ++blobCounter;
+  const ci = opts.colorIndex ?? (id - 1) % COLORS.length;
+  const blob = {
+    id,
+    label: opts.label ?? `Group ${id}`,
+    x: opts.x ?? 80 + (id * 30) % 300,
+    y: opts.y ?? 80 + (id * 20) % 200,
+    w: opts.w ?? 280,
+    h: opts.h ?? 200,
+    colorIndex: ci,
+    zIndex: id,
+    opacity: opts.opacity ?? 1,
+    items: opts.items ?? [],
+    el: null,
+  };
+  blobs.push(blob);
+  mountBlob(blob);
+  updateEmptyHint();
+  return blob;
+}
+
+function mountBlob(blob) {
+  const el = document.createElement('div');
+  el.className = 'blob';
+  el.dataset.id = blob.id;
+  blob.el = el;
+
+  // delete btn
+  const del = document.createElement('div');
+  del.className = 'delete-btn';
+  del.textContent = '×';
+  del.addEventListener('click', (e) => { e.stopPropagation(); deleteBlob(blob.id); });
+  el.appendChild(del);
+
+  // label
+  const lbl = document.createElement('div');
+  lbl.className = 'blob-label';
+  lbl.textContent = blob.label;
+  el.appendChild(lbl);
+
+  // items container
+  const items = document.createElement('div');
+  items.className = 'blob-items';
+  el.appendChild(items);
+
+  // layer badge
+  const badge = document.createElement('div');
+  badge.className = 'layer-badge';
+  badge.textContent = `z:${blob.zIndex}`;
+  el.appendChild(badge);
+
+  // resize handle
+  const rh = document.createElement('div');
+  rh.className = 'resize-handle';
+  rh.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 10 L10 2 M6 10 L10 6" stroke="#555" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+  rh.addEventListener('mousedown', (e) => { e.stopPropagation(); startResize(e, blob); });
+  el.appendChild(rh);
+
+  // drag
+  el.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('resize-handle') || e.target.classList.contains('delete-btn') || e.target.classList.contains('remove-item')) return;
+    startDrag(e, blob);
+  });
+
+  el.addEventListener('click', (e) => {
+    if (e.target.classList.contains('delete-btn') || e.target.classList.contains('remove-item')) return;
+    selectBlob(blob.id);
+  });
+
+  canvas.appendChild(el);
+  renderBlob(blob);
+}
+
+function renderBlob(blob) {
+  const c = COLORS[blob.colorIndex];
+  const el = blob.el;
+  if (!el) return;
+  el.style.left   = blob.x + 'px';
+  el.style.top    = blob.y + 'px';
+  el.style.width  = blob.w + 'px';
+  el.style.height = blob.h + 'px';
+  el.style.zIndex = blob.zIndex;
+  el.style.background = c.fill;
+  el.style.border = `2px solid ${c.border}`;
+  el.style.opacity = blob.opacity;
+
+  // label
+  el.querySelector('.blob-label').textContent = blob.label;
+
+  // badge
+  el.querySelector('.layer-badge').textContent = `z:${blob.zIndex}`;
+
+  // items
+  const itemsEl = el.querySelector('.blob-items');
+  itemsEl.innerHTML = '';
+  blob.items.forEach((item, idx) => {
+    const tag = document.createElement('div');
+    tag.className = 'blob-item-tag';
+    tag.textContent = item;
+    const rm = document.createElement('span');
+    rm.className = 'remove-item';
+    rm.textContent = '✕';
+    rm.addEventListener('click', (e) => {
+      e.stopPropagation();
+      blob.items.splice(idx, 1);
+      renderBlob(blob);
+      renderSidePanel();
+    });
+    tag.appendChild(rm);
+    itemsEl.appendChild(tag);
+  });
+}
+
+// ─── Select ──────────────────────────────────────────────────────────────────
+function selectBlob(id) {
+  blobs.forEach(b => b.el?.classList.remove('selected'));
+  selectedId = id;
+  if (id) {
+    const blob = blobs.find(b => b.id === id);
+    if (blob) {
+      blob.el.classList.add('selected');
+      // bring to front within current stack
+      const maxZ = Math.max(...blobs.map(b => b.zIndex));
+      blob.zIndex = maxZ + 1;
+      renderBlob(blob);
+    }
+  }
+  renderSidePanel();
+}
+
+function deselectAll() {
+  blobs.forEach(b => b.el?.classList.remove('selected'));
+  selectedId = null;
+  renderSidePanel();
+}
+
+canvas.addEventListener('click', (e) => {
+  if (e.target === canvas || e.target.classList.contains('empty-hint') || e.target.closest('.empty-hint')) {
+    deselectAll();
+  }
+});
+
+// ─── Side Panel ──────────────────────────────────────────────────────────────
+function renderSidePanel() {
+  const blob = blobs.find(b => b.id === selectedId);
+  if (!blob) {
+    sidePanel.innerHTML = `<h3>Selection</h3><div class="no-selection"><div class="icon">👆</div>Click a blob to edit it</div>`;
+    return;
+  }
+  sidePanel.innerHTML = `
+    <h3>Edit Blob</h3>
+    <div class="input-row">
+      <label>Label</label>
+      <input type="text" id="labelInput" value="${escapeHtml(blob.label)}" placeholder="Group name…">
+    </div>
+    <div class="input-row">
+      <label>Opacity <span class="slider-value" id="opacityVal">${Math.round(blob.opacity * 100)}%</span></label>
+      <input type="range" id="opacityInput" min="20" max="100" value="${Math.round(blob.opacity * 100)}">
+    </div>
+    <div class="input-row">
+      <label>Border Radius</label>
+      <input type="range" id="radiusInput" min="4" max="80" value="${parseInt(blob.el?.style.borderRadius) || 24}">
+    </div>
+    <div class="input-row">
+      <label>Layer (Z)</label>
+      <input type="range" id="zInput" min="1" max="20" value="${blob.zIndex}">
+    </div>
+    <div class="input-row" style="margin-top:12px">
+      <label>Add Item (text or emoji)</label>
+      <div class="add-item-row">
+        <input type="text" id="itemInput" placeholder="🏳 Label or emoji…">
+        <button id="addItemBtn">+</button>
+      </div>
+    </div>
+    <div class="help-tip">💡 Drag blobs to nest or overlap. Use Z-layer to control stacking. Add emojis as items!</div>
+  `;
+
+  document.getElementById('labelInput').addEventListener('input', (e) => {
+    blob.label = e.target.value;
+    renderBlob(blob);
+  });
+
+  const opIn = document.getElementById('opacityInput');
+  const opVal = document.getElementById('opacityVal');
+  opIn.addEventListener('input', (e) => {
+    blob.opacity = e.target.value / 100;
+    opVal.textContent = e.target.value + '%';
+    renderBlob(blob);
+  });
+
+  const rIn = document.getElementById('radiusInput');
+  rIn.addEventListener('input', (e) => {
+    blob.el.style.borderRadius = e.target.value + 'px';
+  });
+
+  const zIn = document.getElementById('zInput');
+  zIn.addEventListener('input', (e) => {
+    blob.zIndex = parseInt(e.target.value);
+    renderBlob(blob);
+  });
+
+  document.getElementById('addItemBtn').addEventListener('click', () => {
+    const v = document.getElementById('itemInput').value.trim();
+    if (!v) return;
+    blob.items.push(v);
+    document.getElementById('itemInput').value = '';
+    renderBlob(blob);
+  });
+  document.getElementById('itemInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('addItemBtn').click();
+  });
+}
+
+// ─── Drag ────────────────────────────────────────────────────────────────────
+function startDrag(e, blob) {
+  e.preventDefault();
+  selectBlob(blob.id);
+  const rect = canvas.getBoundingClientRect();
+  dragState = {
+    blob,
+    startX: e.clientX - rect.left - blob.x,
+    startY: e.clientY - rect.top  - blob.y,
+  };
+  blob.el.classList.add('dragging');
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (dragState) {
+    const rect = canvas.getBoundingClientRect();
+    dragState.blob.x = e.clientX - rect.left - dragState.startX;
+    dragState.blob.y = e.clientY - rect.top  - dragState.startY;
+    renderBlob(dragState.blob);
+    return;
+  }
+  if (resizeState) {
+    const rect = canvas.getBoundingClientRect();
+    const b = resizeState.blob;
+    b.w = Math.max(80,  resizeState.startW + (e.clientX - rect.left) - resizeState.startMX);
+    b.h = Math.max(60,  resizeState.startH + (e.clientY - rect.top)  - resizeState.startMY);
+    renderBlob(b);
+  }
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (dragState) {
+    const blob = dragState.blob;
+    blob.el.classList.remove('dragging');
+    // wobble!
+    blob.el.classList.remove('wobble');
+    void blob.el.offsetWidth; // reflow
+    blob.el.classList.add('wobble');
+    blob.el.addEventListener('animationend', () => blob.el.classList.remove('wobble'), { once: true });
+    dragState = null;
+  }
+  resizeState = null;
+});
+
+function startResize(e, blob) {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  resizeState = {
+    blob,
+    startW: blob.w,
+    startH: blob.h,
+    startMX: e.clientX - rect.left,
+    startMY: e.clientY - rect.top,
+  };
+}
+
+// ─── Delete ──────────────────────────────────────────────────────────────────
+function deleteBlob(id) {
+  const blob = blobs.find(b => b.id === id);
+  if (!blob) return;
+  blob.el.style.transition = 'transform 0.2s, opacity 0.2s';
+  blob.el.style.transform = 'scale(0.85)';
+  blob.el.style.opacity = '0';
+  setTimeout(() => {
+    blob.el.remove();
+    blobs = blobs.filter(b => b.id !== id);
+    if (selectedId === id) deselectAll();
+    updateEmptyHint();
+  }, 200);
+}
+
+// ─── Buttons ─────────────────────────────────────────────────────────────────
+document.getElementById('addBlobBtn').addEventListener('click', () => {
+  const ci = blobs.length % COLORS.length;
+  const b = createBlob({ colorIndex: ci });
+  // pop-in animation
+  b.el.style.transition = 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s';
+  b.el.style.transform = 'scale(0.7)';
+  b.el.style.opacity = '0';
+  requestAnimationFrame(() => {
+    b.el.style.transform = 'scale(1)';
+    b.el.style.opacity = String(b.opacity);
+  });
+  setTimeout(() => { b.el.style.transition = ''; }, 400);
+  selectBlob(b.id);
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (!blobs.length) return;
+  if (!confirm('Clear all blobs?')) return;
+  [...blobs].forEach(b => deleteBlob(b.id));
+});
+
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  showToast('Loading export library…');
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  document.head.appendChild(script);
+  script.onload = async () => {
+    deselectAll();
+    await new Promise(r => setTimeout(r, 80));
+    const c = await html2canvas(canvas, { backgroundColor: '#f4f0eb', scale: 2, useCORS: true });
+    const a = document.createElement('a');
+    a.download = 'blobber-diagram.png';
+    a.href = c.toDataURL('image/png');
+    a.click();
+    showToast('Downloaded! 🎉');
+  };
+});
+
+// ─── Keyboard ────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') deselectAll();
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+    if (document.activeElement.tagName === 'INPUT') return;
+    deleteBlob(selectedId);
+  }
+});
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function updateEmptyHint() {
+  emptyHint.style.opacity = blobs.length === 0 ? '1' : '0';
+}
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─── Demo ────────────────────────────────────────────────────────────────────
+(function demo() {
+  const eu = createBlob({ label: 'EU', x: 120, y: 80, w: 420, h: 340, colorIndex: 0 });
+  setTimeout(() => {
+    const eea = createBlob({ label: 'EEA', x: 60, y: 40, w: 560, h: 420, colorIndex: 1 });
+    eea.zIndex = 1; eu.zIndex = 2;
+    renderBlob(eea); renderBlob(eu);
+    setTimeout(() => {
+      const schengen = createBlob({ label: 'Schengen', x: 90, y: 320, w: 480, h: 160, colorIndex: 2,
+        items: ['🇮🇸','🇳🇴','🇨🇭','🇱🇮'] });
+      schengen.zIndex = 3; renderBlob(schengen);
+      setTimeout(() => {
+        const nato = createBlob({ label: 'NATO', x: 450, y: 100, w: 280, h: 340, colorIndex: 4,
+          items: ['🇺🇸','🇨🇦','🇬🇧','🇹🇷'] });
+        nato.zIndex = 1; renderBlob(nato);
+        selectBlob(eu.id);
+      }, 200);
+    }, 150);
+  }, 100);
+})();
+</script>
+</body>
+</html>
