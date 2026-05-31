@@ -154,14 +154,39 @@ body { animation: flicker 12s infinite; }
   position: relative;
   min-height: 110px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  flex-direction: row;
+  align-items: center;
+  gap: 1.2rem;
+  justify-content: flex-start;
+}
+
+.display-photo {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  object-fit: cover;
+  filter: sepia(1) hue-rotate(130deg) saturate(1.5) brightness(0.6);
+  border: 1px solid var(--border);
+  transition: filter 1.2s ease, box-shadow 1.2s ease;
+}
+
+.display-photo.playing {
+  filter: sepia(1) hue-rotate(130deg) saturate(3) brightness(0.95);
+  box-shadow: 0 0 18px rgba(0,201,160,0.25);
+  animation: photoPulse 3s ease-in-out infinite;
+}
+
+@keyframes photoPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(0,201,160,0.15); }
+  50%       { box-shadow: 0 0 28px rgba(0,201,160,0.4); }
 }
 
 .display-inner {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .freq-line {
@@ -570,6 +595,7 @@ body { animation: flicker 12s infinite; }
 
   <!-- display -->
   <div class="display-area">
+    <img class="display-photo" id="display-photo" src="../other/radio_photo.png" onerror="this.style.display='none'">
     <div class="display-inner">
       <div class="freq-line" id="freq-line">— — . — MHz</div>
       <div class="track-name" id="track-name">INITIALIZING</div>
@@ -1262,6 +1288,7 @@ function startRadio() {
   onAir.classList.add('live');
   offOverlay.classList.add('hidden');
   carrierEl.textContent = 'LIVE';
+  document.getElementById('display-photo')?.classList.add('playing');
   wfEl.style.opacity = '0.8';
   startEngine();
   applyKnobs();
@@ -1279,6 +1306,7 @@ function stopRadio() {
   offOverlay.classList.remove('hidden');
   carrierEl.textContent = 'IDLE';
   wfEl.style.opacity = '0.35';
+  document.getElementById('display-photo')?.classList.remove('playing');
   stopEngine();
   clearInterval(trackInterval);
   clearInterval(stationInterval);

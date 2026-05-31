@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+<!-- Google tag (gtag.js) -->
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-R7MJHBKJVY');
+</script>
+<meta name="description" content="QR Forge — generate stylized QR codes with custom colors, dot shapes, embedded logos, and pixel effects.">
+<meta property="og:title" content="QR Forge — HostLab">
+<meta property="og:description" content="Generate stylized QR codes with custom colors, dot shapes, and effects.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://iwohost.github.io/HostLab/websites/qr-forge.html">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOPE QR</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../other/backbutton.css">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#000;--panel:#0a0a0a;--border:#0d1a10;--border2:#1a3322;
+  --text:#c8e8d0;--text2:#44aa66;--text3:#1a4422;
+  --accent:#00cc44;--accent2:#44ff88;--accent3:#aaffcc;
+  --neon1:#ff00ff;--neon2:#00ffff;--neon3:#ffff00;--neon4:#ff4400;
+  --neon5:#00ff44;--neon6:#ff0088;
+  --mono:'Share Tech Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;min-height:100vh;overflow-x:hidden;}
+#app{display:grid;grid-template-rows:36px 1fr 44px;grid-template-columns:200px 1fr 180px;height:100vh;border:1px solid var(--border2);}
+
+/* HEADER */
+#header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);padding:0 16px;background:var(--panel);}
+#logo{font-family:VT323,monospace;font-size:22px;letter-spacing:6px;color:var(--accent3);animation:logopulse 3s ease-in-out infinite;}
+@keyframes logopulse{0%,100%{text-shadow:0 0 8px var(--accent),0 0 20px var(--accent);}50%{text-shadow:0 0 3px var(--accent);}}
+#logo span{color:var(--neon1);}
+#header{position:relative;}
+#header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),var(--neon1),var(--accent),transparent);animation:headerline 4s linear infinite;background-size:200% 100%;}
+@keyframes headerline{0%{background-position:200% 0}100%{background-position:-200% 0}}
+#hinfo{display:flex;gap:20px;color:var(--text3);font-size:10px;letter-spacing:2px;}
+#hinfo b{color:var(--text2);}
+
+/* LEFT PANEL */
+#left{border-right:1px solid var(--border2);overflow-y:auto;overflow-x:hidden;background:var(--panel);}
+.section{border-bottom:1px solid var(--border);padding:10px;}
+.label{font-size:9px;letter-spacing:3px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;}
+
+/* INPUT */
+#qr-input{width:100%;background:#000;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 8px;resize:none;outline:none;line-height:1.5;}
+#qr-input:focus{border-color:var(--accent);}
+#char-count{font-size:9px;color:var(--text3);text-align:right;margin-top:3px;}
+
+/* SELECTS / BUTTONS */
+select,input[type=color]{background:#000;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;width:100%;cursor:pointer;outline:none;}
+select:focus,select:hover{border-color:var(--accent);}
+option{background:#000;}
+
+.btn{display:block;width:100%;padding:7px;background:transparent;border:1px solid var(--accent);color:var(--accent3);font-family:var(--mono);font-size:11px;letter-spacing:2px;cursor:pointer;text-align:center;text-transform:uppercase;transition:all .15s;}
+.btn:hover{background:var(--accent);color:#000;}
+.btn.secondary{border-color:var(--border2);color:var(--text2);}
+.btn.secondary:hover{border-color:var(--text2);background:transparent;color:var(--text);}
+
+/* COLOR ROW */
+.color-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.color-row label{font-size:9px;letter-spacing:2px;color:var(--text3);flex:1;}
+.color-row input[type=color]{width:36px;height:22px;padding:1px;flex:none;}
+.color-row input[type=text]{flex:1;background:#000;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;padding:3px 5px;outline:none;}
+.color-row input[type=text]:focus{border-color:var(--accent);}
+
+/* LOGO UPLOAD */
+#logo-preview-wrap{display:flex;align-items:center;gap:8px;margin-top:6px;}
+#logo-thumb{width:32px;height:32px;background:#111;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text3);overflow:hidden;flex-shrink:0;}
+#logo-thumb img{width:100%;height:100%;object-fit:contain;}
+#logo-file{display:none;}
+#logo-clear{font-size:9px;color:var(--neon4);cursor:pointer;letter-spacing:1px;}
+#logo-clear:hover{text-decoration:underline;}
+
+/* SLIDER */
+.slider-row{margin-bottom:8px;}
+.slider-row input[type=range]{width:100%;accent-color:var(--accent);height:2px;cursor:pointer;}
+.slider-row .val{color:var(--accent2);float:right;font-size:10px;}
+
+/* CENTER */
+#center{position:relative;overflow:visible;background:#000;display:flex;align-items:center;justify-content:center;}
+#center-grid{position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:32px 32px;opacity:0.35;}
+#qr-canvas{image-rendering:pixelated;position:relative;z-index:2;transition:opacity .2s;}
+#qr-canvas.forging{opacity:0.4;}
+
+/* SCAN BEAM */
+#scan-beam{position:absolute;left:0;right:0;height:3px;z-index:5;pointer-events:none;opacity:0;
+  background:linear-gradient(90deg,transparent,var(--neon2),transparent);
+  box-shadow:0 0 12px var(--neon2),0 0 30px var(--neon2);}
+#scan-beam.active{animation:scanbeam .45s ease-in-out forwards;}
+@keyframes scanbeam{0%{top:0%;opacity:1;}100%{top:100%;opacity:0;}}
+
+/* AMBIENT SCAN */
+#ambient-beam{position:absolute;left:0;right:0;height:2px;z-index:4;pointer-events:none;opacity:0;
+  background:linear-gradient(90deg,transparent,rgba(0,255,255,.5),transparent);
+  box-shadow:0 0 8px var(--neon2);}
+#ambient-beam.on{animation:ambientscan 3.5s linear infinite;opacity:1;}
+@keyframes ambientscan{0%{top:-2px;}100%{top:100%;}}
+
+
+#placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text3);pointer-events:none;position:relative;z-index:2;}
+#placeholder .big{font-family:VT323,monospace;font-size:72px;color:var(--border2);animation:plsblink 2.8s step-end infinite;}
+@keyframes plsblink{0%,100%{opacity:.6}50%{opacity:.2}}
+#placeholder .small{font-size:10px;letter-spacing:4px;animation:plsfade 3s ease-in-out infinite alternate;}
+@keyframes plsfade{from{opacity:.3}to{opacity:.7}}
+
+/* corner decorations on placeholder */
+#placeholder::before,#placeholder::after{content:'';position:absolute;width:40px;height:40px;border-color:var(--border2);border-style:solid;opacity:.4;}
+#placeholder::before{top:30%;left:20%;border-width:2px 0 0 2px;}
+#placeholder::after{bottom:30%;right:20%;border-width:0 2px 2px 0;}
+
+/* SCANLINE OVERLAY */
+#scanline{position:absolute;inset:0;pointer-events:none;z-index:6;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.09) 2px,rgba(0,0,0,.09) 4px);
+  opacity:0;}
+#scanline.on{opacity:1;}
+
+/* NEON GLOW on canvas */
+.glow-off #qr-canvas{filter:none;}
+.glow-low #qr-canvas{filter:drop-shadow(0 0 4px currentColor);}
+.glow-med #qr-canvas{filter:drop-shadow(0 0 8px currentColor) drop-shadow(0 0 18px currentColor);}
+.glow-high #qr-canvas{filter:drop-shadow(0 0 12px currentColor) drop-shadow(0 0 28px currentColor) drop-shadow(0 0 50px currentColor);}
+.glow-pulse #qr-canvas{animation:glowpulse 2s ease-in-out infinite;}
+@keyframes glowpulse{
+  0%,100%{filter:drop-shadow(0 0 6px currentColor) drop-shadow(0 0 16px currentColor);}
+  50%{filter:drop-shadow(0 0 14px currentColor) drop-shadow(0 0 40px currentColor) drop-shadow(0 0 60px currentColor);}
+}
+
+/* RIGHT PANEL */
+#right{border-left:1px solid var(--border2);overflow-y:auto;background:var(--panel);}
+.stat-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:10px;}
+.stat-row .sk{color:var(--text3);}
+.stat-row .sv{color:var(--accent2);}
+
+/* PRESET PALETTE SWATCHES */
+#presets{display:flex;flex-direction:column;gap:3px;}
+.preset-btn{display:flex;align-items:center;gap:6px;padding:4px 6px;cursor:pointer;border:1px solid transparent;font-size:9px;letter-spacing:1px;color:var(--text2);}
+.preset-btn:hover{border-color:var(--border2);}
+.preset-btn.active{border-color:var(--accent);color:var(--accent3);}
+.preset-swatches{display:flex;gap:2px;}
+.pswatch{width:10px;height:10px;border:none;flex-shrink:0;}
+
+/* FOOTER */
+#footer{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border2);padding:0 16px;background:var(--panel);font-size:9px;color:var(--text3);letter-spacing:2px;}
+#footer-actions{display:flex;gap:10px;}
+.fbtn{padding:4px 12px;border:1px solid var(--border2);color:var(--text2);cursor:pointer;letter-spacing:2px;font-family:var(--mono);font-size:9px;background:transparent;text-transform:uppercase;}
+.fbtn:hover{border-color:var(--accent2);color:var(--accent3);}
+.fbtn.accent{border-color:var(--accent);color:var(--accent3);}
+.fbtn.accent:hover{background:var(--accent);color:#000;}
+
+/* error correction indicator */
+.ec-row{display:flex;gap:4px;}
+.ec-btn{flex:1;padding:4px 0;text-align:center;border:1px solid var(--border2);color:var(--text3);cursor:pointer;font-size:10px;letter-spacing:1px;}
+.ec-btn.active{border-color:var(--accent);color:var(--accent3);}
+.ec-btn:hover:not(.active){border-color:var(--text2);color:var(--text2);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div id="logo">DOPE<span>·</span>QR</div>
+    <div id="hinfo">
+      <span>V<b>1.0</b></span>
+      <span>MODE<b id="h-mode">URL</b></span>
+      <span>EC<b id="h-ec">M</b></span>
+      <span>SIZE<b id="h-size">—</b></span>
+    </div>
+  </div>
+
+  <!-- LEFT PANEL -->
+  <div id="left">
+
+    <div class="section">
+      <div class="label">Input</div>
+      <select id="mode-select" onchange="onModeChange()">
+        <option value="url">URL</option>
+        <option value="text">Plain Text</option>
+        <option value="email">Email</option>
+        <option value="phone">Phone</option>
+        <option value="sms">SMS</option>
+        <option value="wifi">Wi-Fi</option>
+        <option value="vcard">vCard</option>
+      </select>
+      <div id="input-fields" style="margin-top:8px;"></div>
+      <div id="char-count">0 / —</div>
+    </div>
+
+    <div class="section">
+      <div class="label">Error Correction</div>
+      <div class="ec-row">
+        <div class="ec-btn" data-ec="L">L</div>
+        <div class="ec-btn active" data-ec="M">M</div>
+        <div class="ec-btn" data-ec="Q">Q</div>
+        <div class="ec-btn" data-ec="H">H</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Dot Style</div>
+      <select id="dot-style">
+        <option value="square">Square</option>
+        <option value="round">Round</option>
+        <option value="dots">Dots</option>
+        <option value="diamond">Diamond</option>
+        <option value="star">Star</option>
+        <option value="cross">Cross</option>
+        <option value="glitch">Glitch</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="label">Colors</div>
+      <div class="color-row">
+        <label>DOTS</label>
+        <input type="color" id="color-fg" value="#ccccff">
+        <input type="text" id="color-fg-hex" value="#ccccff" maxlength="7">
+      </div>
+      <div class="color-row">
+        <label>BG</label>
+        <input type="color" id="color-bg" value="#000000">
+        <input type="text" id="color-bg-hex" value="#000000" maxlength="7">
+      </div>
+      <div class="color-row">
+        <label>EYES</label>
+        <input type="color" id="color-eye" value="#ff00ff">
+        <input type="text" id="color-eye-hex" value="#ff00ff" maxlength="7">
+      </div>
+      <div style="margin-top:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:9px;letter-spacing:2px;color:var(--text3);">GRADIENT</span>
+          <input type="checkbox" id="gradient-check" onchange="generate()">
+        </div>
+        <div id="gradient-controls" style="display:none;">
+          <div class="color-row">
+            <label>FROM</label>
+            <input type="color" id="color-grad1" value="#ff00ff">
+            <input type="text" id="color-grad1-hex" value="#ff00ff" maxlength="7">
+          </div>
+          <div class="color-row">
+            <label>TO</label>
+            <input type="color" id="color-grad2" value="#00ffff">
+            <input type="text" id="color-grad2-hex" value="#00ffff" maxlength="7">
+          </div>
+          <select id="gradient-dir" onchange="generate()" style="margin-top:2px;">
+            <option value="radial">Radial (center out)</option>
+            <option value="linear-lr">Linear → Right</option>
+            <option value="linear-tb">Linear ↓ Down</option>
+            <option value="linear-diag">Linear ↘ Diagonal</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Logo</div>
+      <button class="btn secondary" onclick="document.getElementById('logo-file').click()">UPLOAD LOGO</button>
+      <input type="file" id="logo-file" accept="image/*">
+      <div id="logo-preview-wrap">
+        <div id="logo-thumb"><span>N/A</span></div>
+        <div>
+          <div style="font-size:9px;color:var(--text3);margin-bottom:3px;letter-spacing:1px;" id="logo-name">no file</div>
+          <div id="logo-clear" style="display:none;" onclick="clearLogo()">✕ REMOVE</div>
+        </div>
+      </div>
+      <div class="slider-row" style="margin-top:8px;">
+        <div class="label" style="margin-bottom:2px;">LOGO SIZE <span class="val" id="logo-size-val">22%</span></div>
+        <input type="range" id="logo-size" min="10" max="35" value="22" oninput="document.getElementById('logo-size-val').textContent=this.value+'%';generate()">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Size</div>
+      <div class="slider-row">
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-bottom:4px;letter-spacing:2px;">
+          <span>SCALE</span><span class="val" id="scale-val">8×</span>
+        </div>
+        <input type="range" id="scale" min="4" max="20" value="8" oninput="document.getElementById('scale-val').textContent=this.value+'×';generate()">
+      </div>
+      <div class="slider-row">
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-bottom:4px;letter-spacing:2px;">
+          <span>MARGIN</span><span class="val" id="margin-val">2</span>
+        </div>
+        <input type="range" id="margin" min="0" max="8" value="2" oninput="document.getElementById('margin-val').textContent=this.value;generate()">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Effects</div>
+      <div class="slider-row">
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-bottom:4px;letter-spacing:2px;">
+          <span>GLOW</span>
+          <select id="glow-level" style="width:auto;padding:1px 4px;font-size:9px;" onchange="applyGlow()">
+            <option value="off">OFF</option>
+            <option value="low">LOW</option>
+            <option value="med" selected>MED</option>
+            <option value="high">HIGH</option>
+            <option value="pulse">PULSE</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:9px;letter-spacing:2px;color:var(--text3);">SCANLINES</span>
+        <input type="checkbox" id="scanlines" onchange="document.getElementById('scanline').classList.toggle('on',this.checked)">
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:9px;letter-spacing:2px;color:var(--text3);">NOISE</span>
+        <input type="checkbox" id="noise-check" onchange="generate()">
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:9px;letter-spacing:2px;color:var(--text3);">CHROMA AB</span>
+        <input type="checkbox" id="chroma-check" onchange="toggleChroma()">
+      </div>
+      <div id="chroma-controls" style="display:none;margin-top:2px;">
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-bottom:4px;letter-spacing:2px;">
+          <span>INTENSITY</span><span id="chroma-val" style="color:var(--accent2);">3px</span>
+        </div>
+        <input type="range" id="chroma-intensity" min="1" max="12" value="3" style="width:100%;accent-color:var(--neon1);height:2px;cursor:pointer;" oninput="document.getElementById('chroma-val').textContent=this.value+'px';generate()">
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+        <span style="font-size:9px;letter-spacing:2px;color:var(--text3);">AMBIENT SCAN</span>
+        <input type="checkbox" id="ambient-scan" onchange="toggleAmbientScan()">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Finder Eyes</div>
+      <select id="eye-style" onchange="state.eyeStyle=this.value;generate()">
+        <option value="square">Square</option>
+        <option value="rounded">Rounded</option>
+        <option value="circle">Circle</option>
+        <option value="diamond">Diamond</option>
+        <option value="squircle">Squircle</option>
+      </select>
+    </div>
+
+  </div>
+
+  <!-- CENTER -->
+  <div id="center">
+    <div id="center-grid"></div>
+    <div id="placeholder">
+      <div class="big">QR</div>
+      <div class="small">TYPE SOMETHING TO FORGE</div>
+    </div>
+    <canvas id="qr-canvas" style="display:none;"></canvas>
+    <div id="scan-beam"></div>
+    <div id="ambient-beam"></div>
+    <div id="scanline"></div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right">
+
+    <div class="section">
+      <div class="label">Presets</div>
+      <div id="presets">
+        <div class="preset-btn active" data-preset="cyber" onclick="applyPreset(this)">
+          <div class="preset-swatches"><div class="pswatch" style="background:#ccccff"></div><div class="pswatch" style="background:#000"></div><div class="pswatch" style="background:#ff00ff"></div></div>
+          CYBER
+        </div>
+        <div class="preset-btn" data-preset="matrix" onclick="applyPreset(this)">
+          <div class="preset-swatches"><div class="pswatch" style="background:#00ff44"></div><div class="pswatch" style="background:#000"></div><div class="pswatch" style="background:#00cc33"></div></div>
+          MATRIX
+        </div>
+        <div class="preset-btn" data-preset="plasma" onclick="applyPreset(this)">
+          <div class="preset-swatches"><div class="pswatch" style="background:#ff00ff"></div><div class="pswatch" style="background:#0a0014"></div><div class="pswatch" style="background:#00ffff"></div></div>
+          PLASMA
+        </div>
+        <div class="preset-btn" data-preset="amber" onclick="applyPreset(this)">
+          <div class="preset-swatches"><div class="pswatch" style="background:#ffaa00"></div><div class="pswatch" style="background:#110800"></div><div class="pswatch" style="background:#ff6600"></div></div>
+          AMBER
+        </div>
+        <div class="preset-btn" data-preset="ghost" onclick="applyPreset(this)">
+          <div class="preset-swatches"><div class="pswatch" style="background:#ffffff"></div><div class="pswatch" style="background:#0a0a0a"></div><div class="pswatch" style="background:#aaaaaa"></div></div>
+          GHOST
+        </div>
+        <div class="preset-btn" data-preset="blood" onclick="applyPreset(this)">
+          <div class="preset-swatches"><div class="pswatch" style="background:#ff2222"></div><div class="pswatch" style="background:#0a0000"></div><div class="pswatch" style="background:#ff0044"></div></div>
+          BLOOD
+        </div>
+        <div class="preset-btn" data-preset="ice" onclick="applyPreset(this)">
+          <div class="preset-swatches"><div class="pswatch" style="background:#88eeff"></div><div class="pswatch" style="background:#000a12"></div><div class="pswatch" style="background:#ffffff"></div></div>
+          ICE
+        </div>
+        <div class="preset-btn" data-preset="solar" onclick="applyPreset(this)">
+          <div class="preset-swatches"><div class="pswatch" style="background:#ffee00"></div><div class="pswatch" style="background:#0c0800"></div><div class="pswatch" style="background:#ff8800"></div></div>
+          SOLAR
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Stats</div>
+      <div class="stat-row"><span class="sk">VERSION</span><span class="sv" id="s-ver">—</span></div>
+      <div class="stat-row"><span class="sk">MODULES</span><span class="sv" id="s-mod">—</span></div>
+      <div class="stat-row"><span class="sk">PIXELS</span><span class="sv" id="s-px">—</span></div>
+      <div class="stat-row"><span class="sk">DATA CAP</span><span class="sv" id="s-cap">—</span></div>
+      <div class="stat-row"><span class="sk">CHARS</span><span class="sv" id="s-chars">—</span></div>
+      <div class="stat-row"><span class="sk">DOT STYLE</span><span class="sv" id="s-dot">SQUARE</span></div>
+      <div class="stat-row"><span class="sk">EC LEVEL</span><span class="sv" id="s-ec2">M</span></div>
+      <div class="stat-row"><span class="sk">LOGO SAFE</span><span class="sv" id="s-logo-safe">—</span></div>
+    </div>
+
+    <div class="section" style="border:none;">
+      <div class="label">Export</div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <button class="btn" onclick="exportPNG()">EXPORT PNG</button>
+        <button class="btn secondary" onclick="exportSVG()">EXPORT SVG</button>
+        <button class="btn secondary" onclick="copyToClipboard()">COPY TO CLIPBOARD</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div id="footer">
+    <span>DOPE·QR // HOSTLAB</span>
+    <div id="footer-actions">
+      <button class="fbtn" onclick="resetAll()">RESET</button>
+      <button class="fbtn accent" onclick="generate()">FORGE</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────────
+let state = {
+  ec: 'M',
+  dotStyle: 'square',
+  fgColor: '#ccccff',
+  bgColor: '#000000',
+  eyeColor: '#ff00ff',
+  gradColor1: '#ff00ff',
+  gradColor2: '#00ffff',
+  scale: 8,
+  margin: 2,
+  logoImg: null,
+  logoName: '',
+  logoSize: 22,
+  mode: 'url',
+  glow: 'med',
+  eyeStyle: 'square',
+  chromaIntensity: 3,
+};
+
+const PRESETS = {
+  cyber:  {fg:'#ccccff', bg:'#000000', eye:'#ff00ff', g1:'#ff00ff', g2:'#00ffff'},
+  matrix: {fg:'#00ff44', bg:'#000000', eye:'#00cc33', g1:'#00ff44', g2:'#ccff00'},
+  plasma: {fg:'#ff00ff', bg:'#0a0014', eye:'#00ffff', g1:'#ff00ff', g2:'#00ffff'},
+  amber:  {fg:'#ffaa00', bg:'#110800', eye:'#ff6600', g1:'#ffee00', g2:'#ff4400'},
+  ghost:  {fg:'#ffffff', bg:'#0a0a0a', eye:'#aaaaaa', g1:'#ffffff', g2:'#666688'},
+  blood:  {fg:'#ff2222', bg:'#0a0000', eye:'#ff0044', g1:'#ff0044', g2:'#ff6600'},
+  ice:    {fg:'#88eeff', bg:'#000a12', eye:'#ffffff',  g1:'#ffffff', g2:'#0088ff'},
+  solar:  {fg:'#ffee00', bg:'#0c0800', eye:'#ff8800', g1:'#ffff00', g2:'#ff4400'},
+};
+
+// ── MODE FIELDS ────────────────────────────────────────────────────────────────
+const MODE_FIELDS = {
+  url: [{id:'f-url', label:'URL', placeholder:'https://example.com', type:'text'}],
+  text: [{id:'f-text', label:'TEXT', placeholder:'Enter your text here...', type:'textarea'}],
+  email: [
+    {id:'f-email', label:'EMAIL', placeholder:'user@example.com', type:'text'},
+    {id:'f-subject', label:'SUBJECT', placeholder:'Optional subject', type:'text'},
+    {id:'f-body', label:'BODY', placeholder:'Optional body', type:'textarea'},
+  ],
+  phone: [{id:'f-phone', label:'PHONE', placeholder:'+1234567890', type:'text'}],
+  sms: [
+    {id:'f-sms-num', label:'NUMBER', placeholder:'+1234567890', type:'text'},
+    {id:'f-sms-msg', label:'MESSAGE', placeholder:'Optional message', type:'text'},
+  ],
+  wifi: [
+    {id:'f-ssid', label:'SSID', placeholder:'Network name', type:'text'},
+    {id:'f-pass', label:'PASSWORD', placeholder:'Password', type:'text'},
+    {id:'f-enc', label:'ENCRYPTION', placeholder:'', type:'select', options:['WPA','WEP','nopass']},
+    {id:'f-hidden', label:'HIDDEN', placeholder:'', type:'select', options:['false','true']},
+  ],
+  vcard: [
+    {id:'f-vname', label:'NAME', placeholder:'Full Name', type:'text'},
+    {id:'f-vorg', label:'ORG', placeholder:'Company (optional)', type:'text'},
+    {id:'f-vtel', label:'PHONE', placeholder:'+1234567890', type:'text'},
+    {id:'f-vmail', label:'EMAIL', placeholder:'email@example.com', type:'text'},
+    {id:'f-vurl', label:'URL', placeholder:'https://example.com', type:'text'},
+  ],
+};
+
+const EC_CAPS = {L:7,M:15,Q:25,H:30}; // % data recovery
+
+function buildFields(mode) {
+  const container = document.getElementById('input-fields');
+  container.innerHTML = '';
+  MODE_FIELDS[mode].forEach(f => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:6px;';
+    const lbl = document.createElement('div');
+    lbl.className = 'label';
+    lbl.textContent = f.label;
+    wrap.appendChild(lbl);
+    let el;
+    if (f.type === 'textarea') {
+      el = document.createElement('textarea');
+      el.rows = 3;
+      el.style.cssText = 'width:100%;background:#000;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 7px;resize:vertical;outline:none;line-height:1.5;';
+    } else if (f.type === 'select') {
+      el = document.createElement('select');
+      f.options.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o; opt.textContent = o;
+        el.appendChild(opt);
+      });
+    } else {
+      el = document.createElement('input');
+      el.type = 'text';
+      el.placeholder = f.placeholder;
+    }
+    el.id = f.id;
+    el.addEventListener('input', () => { updateCharCount(); generate(); });
+    wrap.appendChild(el);
+    container.appendChild(wrap);
+  });
+}
+
+function getPayload() {
+  const g = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  switch(state.mode) {
+    case 'url':   return g('f-url') || '';
+    case 'text':  return g('f-text') || '';
+    case 'email': {
+      const e=g('f-email'), s=g('f-subject'), b=g('f-body');
+      if(!e) return '';
+      let v=`mailto:${e}`;
+      const p=[];
+      if(s) p.push('subject='+encodeURIComponent(s));
+      if(b) p.push('body='+encodeURIComponent(b));
+      if(p.length) v+='?'+p.join('&');
+      return v;
+    }
+    case 'phone': return g('f-phone') ? `tel:${g('f-phone')}` : '';
+    case 'sms': {
+      const n=g('f-sms-num'), m=g('f-sms-msg');
+      if(!n) return '';
+      return m ? `sms:${n}?body=${encodeURIComponent(m)}` : `sms:${n}`;
+    }
+    case 'wifi': {
+      const s=g('f-ssid'), p=g('f-pass'), enc=document.getElementById('f-enc')?.value||'WPA', h=document.getElementById('f-hidden')?.value||'false';
+      if(!s) return '';
+      return `WIFI:T:${enc};S:${s};P:${p};H:${h};;`;
+    }
+    case 'vcard': {
+      const n=g('f-vname'); if(!n) return '';
+      const parts=[`BEGIN:VCARD`,`VERSION:3.0`,`FN:${n}`];
+      if(g('f-vorg')) parts.push(`ORG:${g('f-vorg')}`);
+      if(g('f-vtel')) parts.push(`TEL:${g('f-vtel')}`);
+      if(g('f-vmail')) parts.push(`EMAIL:${g('f-vmail')}`);
+      if(g('f-vurl')) parts.push(`URL:${g('f-vurl')}`);
+      parts.push('END:VCARD');
+      return parts.join('\n');
+    }
+  }
+  return '';
+}
+
+function updateCharCount() {
+  const p = getPayload();
+  document.getElementById('char-count').textContent = `${p.length} chars`;
+  document.getElementById('s-chars').textContent = p.length || '—';
+}
+
+// ── QR GENERATION ──────────────────────────────────────────────────────────────
+function fireScanBeam() {
+  const beam = document.getElementById('scan-beam');
+  beam.classList.remove('active');
+  void beam.offsetWidth;
+  beam.classList.add('active');
+  beam.addEventListener('animationend', () => beam.classList.remove('active'), {once:true});
+}
+
+function generate() {
+  const payload = getPayload();
+  if (!payload) {
+    document.getElementById('qr-canvas').style.display = 'none';
+    document.getElementById('placeholder').style.display = 'flex';
+    updateStats(null);
+    return;
+  }
+  fireScanBeam();
+  try {
+    const qr = qrcode(0, state.ec);
+    qr.addData(payload);
+    qr.make();
+    drawQR(qr);
+    updateStats(qr);
+  } catch(e) {
+    try {
+      const qr = qrcode(40, state.ec);
+      qr.addData(payload);
+      qr.make();
+      drawQR(qr);
+      updateStats(qr);
+    } catch(e2) {
+      console.error('QR generation failed', e2);
+    }
+  }
+}
+
+function drawQR(qr) {
+  const canvas = document.getElementById('qr-canvas');
+  const ctx = canvas.getContext('2d');
+  const n = qr.getModuleCount();
+  const scale = state.scale;
+  const margin = state.margin;
+  const total = (n + margin * 2) * scale;
+  canvas.width = total;
+  canvas.height = total;
+
+  // Background
+  ctx.fillStyle = state.bgColor;
+  ctx.fillRect(0, 0, total, total);
+
+  const noise = document.getElementById('noise-check').checked;
+  const useGrad = document.getElementById('gradient-check').checked;
+  const gradDir = document.getElementById('gradient-dir').value;
+
+  // Build gradient fill for non-eye modules
+  let gradFill = null;
+  if (useGrad) {
+    const c1 = state.gradColor1, c2 = state.gradColor2;
+    if (gradDir === 'radial') {
+      const grad = ctx.createRadialGradient(total/2,total/2,0,total/2,total/2,total*0.6);
+      grad.addColorStop(0, c1); grad.addColorStop(1, c2);
+      gradFill = grad;
+    } else if (gradDir === 'linear-lr') {
+      const grad = ctx.createLinearGradient(0,0,total,0);
+      grad.addColorStop(0,c1); grad.addColorStop(1,c2);
+      gradFill = grad;
+    } else if (gradDir === 'linear-tb') {
+      const grad = ctx.createLinearGradient(0,0,0,total);
+      grad.addColorStop(0,c1); grad.addColorStop(1,c2);
+      gradFill = grad;
+    } else {
+      const grad = ctx.createLinearGradient(0,0,total,total);
+      grad.addColorStop(0,c1); grad.addColorStop(1,c2);
+      gradFill = grad;
+    }
+  }
+
+  // finder origins: TL(0,0) TR(0,n-7) BL(n-7,0)
+  const finderOrigins = [[0,0],[0,n-7],[n-7,0]];
+  const finderSet = new Set();
+  finderOrigins.forEach(([fr,fc]) => {
+    for(let r=fr-1;r<fr+8;r++) for(let c=fc-1;c<fc+8;c++) finderSet.add(`${r},${c}`);
+  });
+
+  // Draw data modules (skip finder zones)
+  for (let row = 0; row < n; row++) {
+    for (let col = 0; col < n; col++) {
+      if (finderSet.has(`${row},${col}`)) continue;
+      if (!qr.isDark(row, col)) continue;
+      ctx.fillStyle = gradFill || state.fgColor;
+      const x = (col + margin) * scale;
+      const y = (row + margin) * scale;
+      drawDot(ctx, x, y, scale, state.dotStyle, noise);
+    }
+  }
+
+  // Draw custom finder eyes
+  finderOrigins.forEach(([fr, fc]) => {
+    const x = (fc + margin) * scale;
+    const y = (fr + margin) * scale;
+    drawFinder(ctx, x, y, scale, state.eyeStyle, state.eyeColor, state.bgColor);
+  });
+
+  // Noise overlay
+  if (noise) {
+    try {
+      const imgData = ctx.getImageData(0, 0, total, total);
+      const d = imgData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const nv = (Math.random() - 0.5) * 18;
+        d[i]   = Math.min(255, Math.max(0, d[i]   + nv));
+        d[i+1] = Math.min(255, Math.max(0, d[i+1] + nv));
+        d[i+2] = Math.min(255, Math.max(0, d[i+2] + nv));
+      }
+      ctx.putImageData(imgData, 0, 0);
+    } catch(e) {}
+  }
+
+  // Draw logo (before chroma so it gets distorted too)
+  if (state.logoImg) {
+    const logoW = total * (state.logoSize / 100);
+    const lx = (total - logoW) / 2;
+    const ly = (total - logoW) / 2;
+    ctx.fillStyle = state.bgColor;
+    ctx.fillRect(lx - 4, ly - 4, logoW + 8, logoW + 8);
+    ctx.drawImage(state.logoImg, lx, ly, logoW, logoW);
+  }
+
+  // Chromatic aberration
+  if (document.getElementById('chroma-check').checked) {
+    applyChroma(canvas, +document.getElementById('chroma-intensity').value);
+  }
+
+  document.getElementById('qr-canvas').style.display = 'block';
+  document.getElementById('placeholder').style.display = 'none';
+  applyGlow();
+  document.getElementById('h-size').textContent = `${total}px`;
+  document.getElementById('s-px').textContent = `${total}×${total}`;
+}
+
+function isEyeModule(row, col, n) {
+  const inTL = row < 8 && col < 8;
+  const inTR = row < 8 && col >= n - 8;
+  const inBL = row >= n - 8 && col < 8;
+  return inTL || inTR || inBL;
+}
+
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w, y, x+w, y+r, r);
+  ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h); ctx.arcTo(x, y+h, x, y+h-r, r);
+  ctx.lineTo(x, y+r); ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+}
+
+function drawFinder(ctx, x, y, s, style, color, bg) {
+  const W = 7 * s;
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, W, W); // clear area first so bg shows inside
+  ctx.fillStyle = bg;
+  switch(style) {
+    case 'square':
+      ctx.fillRect(x+s, y+s, 5*s, 5*s);
+      ctx.fillStyle = color;
+      ctx.fillRect(x+2*s, y+2*s, 3*s, 3*s);
+      break;
+    case 'rounded': {
+      const r1 = s * 0.9;
+      ctx.fillStyle = bg;
+      rrect(ctx, x+s, y+s, 5*s, 5*s, r1); ctx.fill();
+      ctx.fillStyle = color;
+      rrect(ctx, x+2*s, y+2*s, 3*s, 3*s, r1*0.6); ctx.fill();
+      // redraw outer as rounded
+      ctx.fillStyle = color;
+      rrect(ctx, x, y, W, W, r1*1.2); ctx.fill();
+      ctx.fillStyle = bg;
+      rrect(ctx, x+s, y+s, 5*s, 5*s, r1); ctx.fill();
+      ctx.fillStyle = color;
+      rrect(ctx, x+2*s, y+2*s, 3*s, 3*s, r1*0.6); ctx.fill();
+      break;
+    }
+    case 'circle': {
+      const R = W / 2;
+      const cx = x + R, cy = y + R;
+      ctx.fillStyle = bg; ctx.fillRect(x-2, y-2, W+4, W+4);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = bg;
+      ctx.beginPath(); ctx.arc(cx, cy, R - s, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(cx, cy, R - 2*s, 0, Math.PI*2); ctx.fill();
+      break;
+    }
+    case 'diamond': {
+      ctx.fillStyle = bg; ctx.fillRect(x-2, y-2, W+4, W+4);
+      const cx=x+W/2, cy=y+W/2;
+      const drawDiamond = (cx,cy,hw) => {
+        ctx.beginPath();
+        ctx.moveTo(cx,cy-hw); ctx.lineTo(cx+hw,cy);
+        ctx.lineTo(cx,cy+hw); ctx.lineTo(cx-hw,cy);
+        ctx.closePath(); ctx.fill();
+      };
+      ctx.fillStyle = color; drawDiamond(cx,cy,W/2);
+      ctx.fillStyle = bg;    drawDiamond(cx,cy,W/2-s);
+      ctx.fillStyle = color; drawDiamond(cx,cy,W/2-2*s);
+      break;
+    }
+    case 'squircle': {
+      const r2 = s * 1.6;
+      ctx.fillStyle = bg; ctx.fillRect(x-2, y-2, W+4, W+4);
+      ctx.fillStyle = color;
+      rrect(ctx, x, y, W, W, r2); ctx.fill();
+      ctx.fillStyle = bg;
+      rrect(ctx, x+s, y+s, 5*s, 5*s, r2*0.7); ctx.fill();
+      ctx.fillStyle = color;
+      rrect(ctx, x+2*s, y+2*s, 3*s, 3*s, r2*0.4); ctx.fill();
+      break;
+    }
+  }
+}
+
+function applyChroma(canvas, offset) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  let srcData;
+  try { srcData = ctx.getImageData(0, 0, w, h); } catch(e) { return; }
+  const src = srcData.data;
+  const dst = ctx.createImageData(w, h);
+  const d = dst.data;
+  for (let py = 0; py < h; py++) {
+    for (let px = 0; px < w; px++) {
+      const i = (py * w + px) * 4;
+      const ri = (py * w + Math.max(0, px - offset)) * 4;
+      const bi = (py * w + Math.min(w-1, px + offset)) * 4;
+      d[i]   = src[ri];
+      d[i+1] = src[i+1];
+      d[i+2] = src[bi+2];
+      d[i+3] = Math.max(src[ri+3], src[i+3], src[bi+3]);
+    }
+  }
+  ctx.putImageData(dst, 0, 0);
+}
+
+function drawDot(ctx, x, y, s, style, noise) {
+  const p = noise ? (Math.random() > 0.03 ? 1 : 0.6) : 1;
+  ctx.globalAlpha = p;
+  switch(style) {
+    case 'square':
+      ctx.fillRect(x+0.5, y+0.5, s-1, s-1);
+      break;
+    case 'round': {
+      ctx.beginPath();
+      ctx.arc(x+s/2, y+s/2, s*0.42, 0, Math.PI*2);
+      ctx.fill();
+      break;
+    }
+    case 'dots': {
+      ctx.beginPath();
+      ctx.arc(x+s/2, y+s/2, s*0.35, 0, Math.PI*2);
+      ctx.fill();
+      break;
+    }
+    case 'diamond': {
+      const cx=x+s/2, cy=y+s/2, h=s*0.45;
+      ctx.beginPath();
+      ctx.moveTo(cx,cy-h); ctx.lineTo(cx+h,cy);
+      ctx.lineTo(cx,cy+h); ctx.lineTo(cx-h,cy);
+      ctx.closePath(); ctx.fill();
+      break;
+    }
+    case 'star': {
+      const cx=x+s/2, cy=y+s/2, or=s*0.46, ir=s*0.2, pts=5;
+      ctx.beginPath();
+      for(let i=0;i<pts*2;i++){
+        const angle=i*Math.PI/pts - Math.PI/2;
+        const r2=i%2===0?or:ir;
+        ctx.lineTo(cx+Math.cos(angle)*r2, cy+Math.sin(angle)*r2);
+      }
+      ctx.closePath(); ctx.fill();
+      break;
+    }
+    case 'cross': {
+      const cx=x+s/2, cy=y+s/2, t=s*0.2, h=s*0.46;
+      ctx.fillRect(cx-t, cy-h, t*2, h*2);
+      ctx.fillRect(cx-h, cy-t, h*2, t*2);
+      break;
+    }
+    case 'glitch': {
+      const ox=(Math.random()-0.5)*s*0.3, oy=(Math.random()-0.5)*s*0.3;
+      ctx.fillRect(x+0.5+ox, y+0.5+oy, s-1, s*0.45);
+      ctx.globalAlpha *= 0.7;
+      ctx.fillRect(x+0.5-ox, y+s*0.5+oy, s-1, s*0.45);
+      break;
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function toggleChroma() {
+  const on = document.getElementById('chroma-check').checked;
+  document.getElementById('chroma-controls').style.display = on ? 'block' : 'none';
+  generate();
+}
+
+function toggleAmbientScan() {
+  const on = document.getElementById('ambient-scan').checked;
+  document.getElementById('ambient-beam').classList.toggle('on', on);
+}
+
+function updateStats(qr) {
+  if (!qr) {
+    ['s-ver','s-mod','s-px','s-cap','s-chars'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
+    document.getElementById('h-size').textContent = '—';
+    return;
+  }
+  const n = qr.getModuleCount();
+  const ver = Math.round((n - 17) / 4);
+  document.getElementById('s-ver').textContent = ver;
+  document.getElementById('s-mod').textContent = `${n}×${n}`;
+  document.getElementById('s-ec2').textContent = state.ec;
+  document.getElementById('s-dot').textContent = state.dotStyle.toUpperCase();
+  // Logo safety: EC recovery % minus a buffer, logo occupies logoSize^2 % of area
+  const ecRecovery = {L:7,M:15,Q:25,H:30};
+  const safeEl = document.getElementById('s-logo-safe');
+  if (state.logoImg) {
+    const logoArea = Math.pow(state.logoSize / 100, 2) * 100;
+    const safe = logoArea < ecRecovery[state.ec] * 0.85;
+    safeEl.textContent = safe ? 'YES ✓' : 'RISKY ⚠';
+    safeEl.style.color = safe ? 'var(--neon5)' : 'var(--neon4)';
+  } else {
+    safeEl.textContent = '—';
+    safeEl.style.color = 'var(--accent2)';
+  }
+  document.getElementById('h-ec').textContent = state.ec;
+  document.getElementById('h-mode').textContent = state.mode.toUpperCase();
+  // Capacity table (approximate alphanumeric chars at each EC level)
+  const capTable = {L:4296,M:3391,Q:2420,H:1852};
+  document.getElementById('s-cap').textContent = `~${capTable[state.ec]} chars`;
+}
+
+// ── COLOR SYNC ─────────────────────────────────────────────────────────────────
+function syncColor(pickerId, hexId, stateKey) {
+  const picker = document.getElementById(pickerId);
+  const hex = document.getElementById(hexId);
+  picker.addEventListener('input', () => {
+    hex.value = picker.value;
+    state[stateKey] = picker.value;
+    generate();
+  });
+  hex.addEventListener('input', () => {
+    if (/^#[0-9a-fA-F]{6}$/.test(hex.value)) {
+      picker.value = hex.value;
+      state[stateKey] = hex.value;
+      generate();
+    }
+  });
+}
+syncColor('color-fg','color-fg-hex','fgColor');
+syncColor('color-bg','color-bg-hex','bgColor');
+syncColor('color-eye','color-eye-hex','eyeColor');
+syncColor('color-grad1','color-grad1-hex','gradColor1');
+syncColor('color-grad2','color-grad2-hex','gradColor2');
+
+document.getElementById('gradient-check').addEventListener('change', e => {
+  document.getElementById('gradient-controls').style.display = e.target.checked ? 'block' : 'none';
+  generate();
+});
+
+// ── EC BUTTONS ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('.ec-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ec-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.ec = btn.dataset.ec;
+    document.getElementById('h-ec').textContent = state.ec;
+    generate();
+  });
+});
+
+// ── DOT STYLE ─────────────────────────────────────────────────────────────────
+document.getElementById('dot-style').addEventListener('change', e => {
+  state.dotStyle = e.target.value;
+  generate();
+});
+
+// ── SCALE/MARGIN ──────────────────────────────────────────────────────────────
+document.getElementById('scale').addEventListener('input', e => {
+  state.scale = +e.target.value;
+  generate();
+});
+document.getElementById('margin').addEventListener('input', e => {
+  state.margin = +e.target.value;
+  generate();
+});
+
+// ── LOGO ──────────────────────────────────────────────────────────────────────
+document.getElementById('logo-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      state.logoImg = img;
+      state.logoName = file.name;
+      document.getElementById('logo-name').textContent = file.name.length > 18 ? file.name.slice(0,15)+'...' : file.name;
+      document.getElementById('logo-clear').style.display = 'block';
+      const thumb = document.getElementById('logo-thumb');
+      thumb.innerHTML = '';
+      const ti = document.createElement('img');
+      ti.src = ev.target.result;
+      thumb.appendChild(ti);
+      // Auto-bump EC to H so logo doesn't destroy scannability
+      if (state.ec !== 'H') {
+        state.ec = 'H';
+        document.querySelectorAll('.ec-btn').forEach(b => b.classList.toggle('active', b.dataset.ec === 'H'));
+        document.getElementById('h-ec').textContent = 'H';
+      }
+      generate();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+document.getElementById('logo-size').addEventListener('input', e => {
+  state.logoSize = +e.target.value;
+  generate();
+});
+function clearLogo() {
+  state.logoImg = null;
+  state.logoName = '';
+  document.getElementById('logo-name').textContent = 'no file';
+  document.getElementById('logo-clear').style.display = 'none';
+  document.getElementById('logo-thumb').innerHTML = '<span>N/A</span>';
+  document.getElementById('logo-file').value = '';
+  generate();
+}
+
+// ── MODE ──────────────────────────────────────────────────────────────────────
+function onModeChange() {
+  state.mode = document.getElementById('mode-select').value;
+  buildFields(state.mode);
+  updateCharCount();
+  generate();
+}
+
+// ── GLOW ──────────────────────────────────────────────────────────────────────
+function applyGlow() {
+  const canvas = document.getElementById('qr-canvas');
+  const level = document.getElementById('glow-level').value;
+  state.glow = level;
+  const useGrad = document.getElementById('gradient-check').checked;
+  canvas.style.color = useGrad ? state.gradColor1 : state.fgColor;
+  document.getElementById('center').className = `glow-${level}`;
+}
+
+// ── PRESETS ───────────────────────────────────────────────────────────────────
+function applyPreset(el) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const p = PRESETS[el.dataset.preset];
+  state.fgColor = p.fg;
+  state.bgColor = p.bg;
+  state.gradColor1 = p.g1;
+  state.gradColor2 = p.g2;
+  document.getElementById('color-grad1').value = p.g1;
+  document.getElementById('color-grad1-hex').value = p.g1;
+  document.getElementById('color-grad2').value = p.g2;
+  document.getElementById('color-grad2-hex').value = p.g2;
+  state.eyeColor = p.eye;
+  document.getElementById('color-fg').value = p.fg;
+  document.getElementById('color-fg-hex').value = p.fg;
+  document.getElementById('color-bg').value = p.bg;
+  document.getElementById('color-bg-hex').value = p.bg;
+  document.getElementById('color-eye').value = p.eye;
+  document.getElementById('color-eye-hex').value = p.eye;
+  generate();
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function exportPNG() {
+  const canvas = document.getElementById('qr-canvas');
+  if (!canvas.width) return;
+  const link = document.createElement('a');
+  link.download = 'qr-forge.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function exportSVG() {
+  const payload = getPayload();
+  if (!payload) return;
+  const qr = qrcode(0, state.ec);
+  qr.addData(payload);
+  qr.make();
+  const n = qr.getModuleCount();
+  const s = 10;
+  const m = state.margin;
+  const total = (n + m*2) * s;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" width="${total}" height="${total}">`;
+  svg += `<rect width="${total}" height="${total}" fill="${state.bgColor}"/>`;
+  for (let row = 0; row < n; row++) {
+    for (let col = 0; col < n; col++) {
+      if (!qr.isDark(row, col)) continue;
+      const isEye = isEyeModule(row, col, n);
+      const color = isEye ? state.eyeColor : state.fgColor;
+      const x = (col + m) * s + 0.5;
+      const y = (row + m) * s + 0.5;
+      const sz = s - 1;
+      if (state.dotStyle === 'round' || state.dotStyle === 'dots') {
+        const r = state.dotStyle === 'dots' ? sz*0.35 : sz*0.42;
+        svg += `<circle cx="${x+sz/2}" cy="${y+sz/2}" r="${r}" fill="${color}"/>`;
+      } else {
+        svg += `<rect x="${x}" y="${y}" width="${sz}" height="${sz}" fill="${color}"/>`;
+      }
+    }
+  }
+  svg += '</svg>';
+  const blob = new Blob([svg], {type:'image/svg+xml'});
+  const link = document.createElement('a');
+  link.download = 'qr-forge.svg';
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function copyToClipboard() {
+  const canvas = document.getElementById('qr-canvas');
+  if (!canvas.width) return;
+  canvas.toBlob(blob => {
+    navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+      .then(() => {
+        const btn = event.target;
+        const orig = btn.textContent;
+        btn.textContent = 'COPIED!';
+        setTimeout(() => btn.textContent = orig, 1200);
+      })
+      .catch(() => exportPNG());
+  });
+}
+
+// ── RESET ─────────────────────────────────────────────────────────────────────
+function resetAll() {
+  document.getElementById('mode-select').value = 'url';
+  onModeChange();
+  applyPreset(document.querySelector('[data-preset="cyber"]'));
+  document.getElementById('dot-style').value = 'square';
+  state.dotStyle = 'square';
+  document.getElementById('scale').value = 8;
+  state.scale = 8;
+  document.getElementById('scale-val').textContent = '8×';
+  document.getElementById('margin').value = 2;
+  state.margin = 2;
+  document.getElementById('margin-val').textContent = '2';
+  document.getElementById('glow-level').value = 'med';
+  document.getElementById('scanlines').checked = false;
+  document.getElementById('noise-check').checked = false;
+  document.getElementById('gradient-check').checked = false;
+  document.getElementById('gradient-controls').style.display = 'none';
+  document.getElementById('chroma-check').checked = false;
+  document.getElementById('chroma-controls').style.display = 'none';
+  document.getElementById('ambient-scan').checked = false;
+  document.getElementById('ambient-beam').classList.remove('on');
+  document.getElementById('eye-style').value = 'square';
+  state.eyeStyle = 'square';
+  document.getElementById('scanline').classList.remove('on');
+  clearLogo();
+  document.querySelectorAll('.ec-btn').forEach(b => b.classList.toggle('active', b.dataset.ec === 'M'));
+  state.ec = 'M';
+  generate();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+buildFields('url');
+
+// Default state
+applyPreset(document.querySelector('[data-preset="matrix"]'));
+state.ec = 'H';
+state.scale = 12;
+state.eyeStyle = 'squircle';
+document.querySelectorAll('.ec-btn').forEach(b => b.classList.toggle('active', b.dataset.ec === 'H'));
+document.getElementById('h-ec').textContent = 'H';
+document.getElementById('scale').value = 12;
+document.getElementById('scale-val').textContent = '12×';
+document.getElementById('eye-style').value = 'squircle';
+
+// Pre-fill URL
+const urlField = document.getElementById('f-url');
+if (urlField) {
+  urlField.value = 'https://iwohost.github.io/HostLab/';
+  updateCharCount();
+}
+
+// Default effects
+document.getElementById('chroma-check').checked = true;
+document.getElementById('chroma-controls').style.display = 'block';
+document.getElementById('chroma-intensity').value = 12;
+document.getElementById('chroma-val').textContent = '12px';
+state.chromaIntensity = 12;
+document.getElementById('noise-check').checked = true;
+
+// Pre-load default logo
+function setLogoFromDataUrl(dataUrl, name) {
+  const img = new Image();
+  img.onload = () => {
+    state.logoImg = img;
+    state.logoName = name;
+    document.getElementById('logo-name').textContent = name.length > 18 ? name.slice(0,15)+'...' : name;
+    document.getElementById('logo-clear').style.display = 'block';
+    const thumb = document.getElementById('logo-thumb');
+    thumb.innerHTML = '';
+    const ti = document.createElement('img'); ti.src = dataUrl;
+    thumb.appendChild(ti);
+    generate();
+  };
+  img.src = dataUrl;
+}
+
+fetch('../other/logo/HLab_Logo.png')
+  .then(r => r.blob())
+  .then(blob => new Promise(res => {
+    const fr = new FileReader();
+    fr.onload = e => res(e.target.result);
+    fr.readAsDataURL(blob);
+  }))
+  .then(dataUrl => setLogoFromDataUrl(dataUrl, 'HLab_Logo.png'))
+  .catch(() => {});
+
+applyGlow();
+generate();
+</script>
+</body>
+</html>
