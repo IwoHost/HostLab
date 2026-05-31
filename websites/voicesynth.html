@@ -596,7 +596,17 @@ body::after {
         <button class="btn btn-sm" onclick="savePack()">💾 Save Pack</button>
         <button class="btn btn-sm" onclick="exportPack()">📤 Export</button>
         <button class="btn btn-sm" onclick="importPack()">📥 Import</button>
-        <button class="btn btn-sm" id="btn-vid-rec" onclick="toggleVideoRec()">🎥 Record Video</button>
+        <button class="btn btn-sm" id="btn-vid-rec" onclick="renderVideo()">🎥 Export Video</button>
+      </div>
+
+      <div id="vid-export-progress" style="display:none;width:100%;margin-top:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span id="vid-export-label" style="font-size:0.72rem;letter-spacing:0.12em;color:var(--muted)">RENDERING…</span>
+          <span id="vid-export-pct" style="font-size:0.72rem;color:var(--accent)">0%</span>
+        </div>
+        <div style="height:3px;background:var(--dim);border-radius:2px;overflow:hidden;">
+          <div id="vid-export-bar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width 0.15s ease;"></div>
+        </div>
       </div>
 
     </div>
@@ -1119,7 +1129,6 @@ function scheduleBuffer(buf, when, rate) {
   src.buffer = buf;
   src.playbackRate.value = rate;
   src.connect(ac.destination);
-  if (_vidRec) src.connect(_vidRec.audioDest);
   src.start(when);
   return src;
 }
@@ -1328,10 +1337,8 @@ async function handleImport(e) {
 }
 
 /* ============================================================
-   VIDEO EXPORT
+   VIDEO EXPORT — AUTO RENDER
    ============================================================ */
-let _vidRec = null;
-
 const _vidImgClosed = new Image();
 const _vidImgOpen   = new Image();
 _vidImgClosed.src = '../other/animations/mouth_closed.png';
@@ -1346,115 +1353,199 @@ function wrapText(ctx, text, x, y, maxW, lineH) {
       ctx.fillText(line.trim(), x, y);
       line = words[n] + ' ';
       y += lineH;
-    } else {
-      line = test;
-    }
+    } else { line = test; }
   }
   ctx.fillText(line.trim(), x, y);
 }
 
-function toggleVideoRec() {
-  if (_vidRec) {
-    stopVideoRec();
-  } else {
-    startVideoRec();
-  }
+function setExportProgress(pct, label) {
+  document.getElementById('vid-export-bar').style.width = pct + '%';
+  document.getElementById('vid-export-pct').textContent = pct + '%';
+  if (label) document.getElementById('vid-export-label').textContent = label;
 }
 
-function startVideoRec() {
+async function renderVideo() {
   const text = document.getElementById('synth-text').value.trim();
   if (!text) { showNotif('Type something first'); return; }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = 720; canvas.height = 720;
-  const c = canvas.getContext('2d');
-
-  const ac = getAC();
-  const audioDest = ac.createMediaStreamDestination();
-
-  const canvasStream = canvas.captureStream(30);
-  for (const track of audioDest.stream.getAudioTracks()) canvasStream.addTrack(track);
-
-  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
-    ? 'video/webm;codecs=vp9,opus' : 'video/webm';
-  const recorder = new MediaRecorder(canvasStream, { mimeType });
-  const chunks = [];
-  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-  recorder.onstop = () => {
-    const blob = new Blob(chunks, { type: 'video/webm' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'voxsynth.webm';
-    a.click();
-    _vidRec = null;
-    const btn = document.getElementById('btn-vid-rec');
-    if (btn) { btn.textContent = '🎥 Record Video'; btn.classList.remove('btn-danger'); }
-  };
-
-  recorder.start();
-
-  _vidRec = { canvas, c, audioDest, recorder, text };
-
-  const btn = document.getElementById('btn-vid-rec');
-  if (btn) { btn.textContent = '⏹ Stop & Save'; btn.classList.add('btn-danger'); }
-  showNotif('Recording — speak now, press Stop & Save when done');
-
-  function renderFrame() {
-    if (!_vidRec) return;
-    const W = 720, H = 720;
-
-    // Background
-    c.fillStyle = '#0a0e14';
-    c.fillRect(0, 0, W, H);
-
-    // Subtle grid
-    c.strokeStyle = 'rgba(0,212,255,0.04)';
-    c.lineWidth = 1;
-    for (let i = 0; i < W; i += 40) { c.beginPath(); c.moveTo(i,0); c.lineTo(i,H); c.stroke(); }
-    for (let j = 0; j < H; j += 40) { c.beginPath(); c.moveTo(0,j); c.lineTo(W,j); c.stroke(); }
-
-    // Avatar circle
-    const cx = W / 2, cy = 290, r = 200;
-    c.save();
-    c.beginPath();
-    c.arc(cx, cy, r, 0, Math.PI * 2);
-    c.clip();
-    const img = _mouthOpen ? _vidImgOpen : _vidImgClosed;
-    if (img.complete && img.naturalWidth > 0) c.drawImage(img, cx - r, cy - r, r * 2, r * 2);
-    c.restore();
-
-    // Circle border glow
-    c.save();
-    c.shadowColor = 'rgba(0,212,255,0.4)';
-    c.shadowBlur = 20;
-    c.strokeStyle = 'rgba(0,212,255,0.5)';
-    c.lineWidth = 2;
-    c.beginPath(); c.arc(cx, cy, r + 1, 0, Math.PI * 2); c.stroke();
-    c.restore();
-
-    // Text
-    c.fillStyle = '#c8e6f0';
-    c.font = 'bold 26px "Share Tech Mono", monospace';
-    c.textAlign = 'center';
-    c.textBaseline = 'top';
-    wrapText(c, _vidRec.text, W / 2, 530, W - 80, 36);
-
-    // VoxSynth label
-    c.fillStyle = 'rgba(0,212,255,0.3)';
-    c.font = '13px "Share Tech Mono", monospace';
-    c.textAlign = 'center';
-    c.textBaseline = 'bottom';
-    c.fillText('VOXSYNTH', W / 2, H - 20);
-
-    requestAnimationFrame(renderFrame);
+  if (!st.pack?.sounds || !Object.keys(st.pack.sounds).length) {
+    showNotif('Load a voice pack first'); return;
   }
 
-  renderFrame();
+  // Create AudioContext HERE — synchronously inside the click handler
+  // so the browser doesn't suspend it
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+
+  const btn = document.getElementById('btn-vid-rec');
+  btn.disabled = true;
+  btn.textContent = '⏳ Preparing…';
+  const progress = document.getElementById('vid-export-progress');
+  progress.style.display = 'block';
+  setExportProgress(0, 'BUILDING SCHEDULE…');
+  try {
+    await doRenderVideo(text, ac);
+    showNotif('✓ Video exported!');
+  } catch(e) {
+    showNotif('Export failed: ' + e.message);
+    console.error('Video export error:', e);
+  }
+  try { ac.close(); } catch {}
+  progress.style.display = 'none';
+  btn.disabled = false;
+  btn.textContent = '🎥 Export Video';
 }
 
-function stopVideoRec() {
-  if (!_vidRec) return;
-  _vidRec.recorder.stop();
+async function doRenderVideo(text, ac) {
+  const FPS = 30, W = 720, H = 720, SR = 44100;
+
+  // 1. Build schedule
+  const phs = textToPhonemes(text);
+  const params = getMiiParams();
+  const bufCache = {};
+  for (const p of phs) {
+    if (p.type === 'sound' && st.pack.sounds[p.id] && !bufCache[p.id])
+      try { bufCache[p.id] = await blobToBuffer(st.pack.sounds[p.id]); } catch {}
+  }
+  const units = params.syllable
+    ? groupIntoSyllables(phs)
+    : phs.map(p => p.type === 'space' ? { type:'space' } : { type:'syllable', sounds:[p] });
+
+  let cursor = 0.05;
+  const gapSec = params.gap / 1000;
+  const highlights = [], schedules = [];
+
+  for (let ui = 0; ui < units.length; ui++) {
+    const unit = units[ui];
+    highlights.push({ atSec: cursor });
+    if (unit.type === 'space') { cursor += 0.16 / params.speed; continue; }
+
+    let rate = params.pitch * params.speed;
+    if (params.jitter > 0) rate *= (1 + (Math.random()*2-1) * params.jitter);
+    if (params.randPitch)  rate *= (0.75 + Math.random() * 0.5);
+    if (params.randSpeed)  rate *= (0.88 + Math.random() * 0.24);
+    rate = Math.max(0.2, Math.min(4.0, rate));
+
+    for (let si = 0; si < unit.sounds.length; si++) {
+      const p = unit.sounds[si];
+      if (!bufCache[p.id]) continue;
+      const isLast = si === unit.sounds.length - 1;
+      const offset = Math.max(isLast ? 0 : -(unit.sounds.length-1-si)*0.03, -(cursor-0.01));
+      schedules.push({ buf: bufCache[p.id], when: cursor + offset, rate });
+    }
+    const mainBuf = unit.sounds.map(p => bufCache[p.id]).filter(Boolean).pop();
+    const soundDur = mainBuf ? mainBuf.duration / rate : 0.06;
+    let step = Math.max(gapSec / params.speed, soundDur * (1 - params.cutoff));
+    if (params.randSpeed) step *= (0.85 + Math.random() * 0.3);
+    cursor += Math.max(0.02, step);
+  }
+
+  const totalDuration = cursor + 0.5;
+
+  // 2. Render audio offline
+  setExportProgress(10, 'RENDERING AUDIO…');
+  const offCtx = new OfflineAudioContext(1, Math.ceil(totalDuration * SR), SR);
+  for (const s of schedules) {
+    const src = offCtx.createBufferSource();
+    src.buffer = s.buf; src.playbackRate.value = s.rate;
+    src.connect(offCtx.destination); src.start(s.when);
+  }
+  const audioBuffer = await offCtx.startRendering();
+
+  // 3. Precompute mouth states
+  const totalFrames = Math.ceil(totalDuration * FPS);
+  const mouthAt = new Array(totalFrames).fill(false);
+  for (let hi = 0; hi < highlights.length; hi++) {
+    const start = highlights[hi].atSec;
+    const end = hi + 1 < highlights.length ? highlights[hi+1].atSec : start + 0.4;
+    for (let f = Math.floor(start*FPS); f < Math.min(totalFrames, Math.ceil(end*FPS)); f++)
+      mouthAt[f] = Math.floor((f/FPS - start) / 0.15) % 2 === 0;
+  }
+
+  // 4. Setup canvas + MediaRecorder
+  setExportProgress(20, 'RECORDING…');
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  canvas.style.cssText = 'position:fixed;top:-9999px;left:-9999px;';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  drawVideoFrame(ctx, W, H, false, text);
+
+  const audioDest = ac.createMediaStreamDestination();
+  const audioSrc = ac.createBufferSource();
+  audioSrc.buffer = audioBuffer;
+  audioSrc.connect(audioDest);
+
+  const stream = canvas.captureStream(FPS);
+  audioDest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+
+  const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+    ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+  const recorder = new MediaRecorder(stream, { mimeType: mime });
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+  await new Promise((resolve, reject) => {
+    recorder.onstop = resolve;
+    recorder.onerror = e => reject(new Error('Recorder error: ' + e));
+    recorder.start(100); // collect data every 100ms
+
+    const startMs = Date.now();
+    audioSrc.start(ac.currentTime + 0.05);
+
+    const interval = setInterval(() => {
+      const elapsed = (Date.now() - startMs) / 1000;
+      const f = Math.min(Math.floor(elapsed * FPS), totalFrames - 1);
+      drawVideoFrame(ctx, W, H, mouthAt[f] || false, text);
+      setExportProgress(20 + Math.round(Math.min(elapsed / totalDuration, 1) * 75), 'RECORDING…');
+      if (elapsed >= totalDuration + 0.3) {
+        clearInterval(interval);
+        setExportProgress(98, 'FINISHING…');
+        recorder.stop();
+      }
+    }, 1000 / FPS);
+  });
+
+  document.body.removeChild(canvas);
+
+  setExportProgress(100, 'DONE');
+  const blob = new Blob(chunks, { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'voxsynth.' + ext;
+  a.click();
+  ac.close();
+}
+
+function drawVideoFrame(ctx, W, H, mouthOpen, text) {
+  ctx.fillStyle = '#0a0e14';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(0,212,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < W; i += 40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,H); ctx.stroke(); }
+  for (let j = 0; j < H; j += 40) { ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(W,j); ctx.stroke(); }
+
+  const cx = W/2, cy = 290, r = 200;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
+  const img = mouthOpen ? _vidImgOpen : _vidImgClosed;
+  if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, cx-r, cy-r, r*2, r*2);
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,212,255,0.4)'; ctx.shadowBlur = 20;
+  ctx.strokeStyle = 'rgba(0,212,255,0.5)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, r+1, 0, Math.PI*2); ctx.stroke();
+  ctx.restore();
+
+  ctx.fillStyle = '#c8e6f0';
+  ctx.font = 'bold 26px monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  wrapText(ctx, text, W/2, 530, W-80, 36);
+
+  ctx.fillStyle = 'rgba(0,212,255,0.3)';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText('VOXSYNTH', W/2, H-20);
 }
 
 /* ============================================================
