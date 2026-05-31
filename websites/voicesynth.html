@@ -454,7 +454,7 @@ body::after {
       <div id="pack-panel" style="display:none" class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <span class="label">Voice Packs</span>
-          <button class="btn btn-xs" onclick="document.getElementById('folder-input').click()">📂 Load Folder</button>
+          <button class="btn btn-xs" onclick="document.getElementById('import-input').click()">📦 Load .vspack</button>
         </div>
         <div id="pack-list">
           <div style="color:var(--text-dim);font-size:0.78rem;">Loading...</div>
@@ -596,6 +596,7 @@ body::after {
         <button class="btn btn-sm" onclick="savePack()">💾 Save Pack</button>
         <button class="btn btn-sm" onclick="exportPack()">📤 Export</button>
         <button class="btn btn-sm" onclick="importPack()">📥 Import</button>
+        <button class="btn btn-sm" id="btn-vid-rec" onclick="toggleVideoRec()">🎥 Record Video</button>
       </div>
 
     </div>
@@ -607,7 +608,7 @@ body::after {
 
 <!-- Hidden file inputs -->
 <input type="file" id="folder-input" webkitdirectory style="display:none" onchange="handleFolderLoad(event)">
-<input type="file" id="import-input" accept=".vspack,.json" style="display:none" onchange="handleImport(event)">
+<input type="file" id="import-input" accept=".vspack,.json,application/json,*/*" style="display:none" onchange="handleImport(event)">
 
 <script>
 /* ============================================================
@@ -1118,6 +1119,7 @@ function scheduleBuffer(buf, when, rate) {
   src.buffer = buf;
   src.playbackRate.value = rate;
   src.connect(ac.destination);
+  if (_vidRec) src.connect(_vidRec.audioDest);
   src.start(when);
   return src;
 }
@@ -1317,11 +1319,142 @@ async function handleImport(e) {
     const cnt = Object.keys(sounds).length;
     setSynthPackInfo(st.pack.name, cnt);
     updatePhonemeStrip();
+    showScreen('synth');
     notify(`✓ Imported "${st.pack.name}" (${cnt} sounds)`);
   } catch (err) {
     notify('Import failed: ' + err.message);
   }
   e.target.value = '';
+}
+
+/* ============================================================
+   VIDEO EXPORT
+   ============================================================ */
+let _vidRec = null;
+
+const _vidImgClosed = new Image();
+const _vidImgOpen   = new Image();
+_vidImgClosed.src = '../other/animations/mouth_closed.png';
+_vidImgOpen.src   = '../other/animations/mouth_open.png';
+
+function wrapText(ctx, text, x, y, maxW, lineH) {
+  const words = text.split(' ');
+  let line = '';
+  for (let n = 0; n < words.length; n++) {
+    const test = line + words[n] + ' ';
+    if (ctx.measureText(test).width > maxW && n > 0) {
+      ctx.fillText(line.trim(), x, y);
+      line = words[n] + ' ';
+      y += lineH;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line.trim(), x, y);
+}
+
+function toggleVideoRec() {
+  if (_vidRec) {
+    stopVideoRec();
+  } else {
+    startVideoRec();
+  }
+}
+
+function startVideoRec() {
+  const text = document.getElementById('synth-text').value.trim();
+  if (!text) { showNotif('Type something first'); return; }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 720; canvas.height = 720;
+  const c = canvas.getContext('2d');
+
+  const ac = getAC();
+  const audioDest = ac.createMediaStreamDestination();
+
+  const canvasStream = canvas.captureStream(30);
+  for (const track of audioDest.stream.getAudioTracks()) canvasStream.addTrack(track);
+
+  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+    ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+  const recorder = new MediaRecorder(canvasStream, { mimeType });
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: 'video/webm' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'voxsynth.webm';
+    a.click();
+    _vidRec = null;
+    const btn = document.getElementById('btn-vid-rec');
+    if (btn) { btn.textContent = '🎥 Record Video'; btn.classList.remove('btn-danger'); }
+  };
+
+  recorder.start();
+
+  _vidRec = { canvas, c, audioDest, recorder, text };
+
+  const btn = document.getElementById('btn-vid-rec');
+  if (btn) { btn.textContent = '⏹ Stop & Save'; btn.classList.add('btn-danger'); }
+  showNotif('Recording — speak now, press Stop & Save when done');
+
+  function renderFrame() {
+    if (!_vidRec) return;
+    const W = 720, H = 720;
+
+    // Background
+    c.fillStyle = '#0a0e14';
+    c.fillRect(0, 0, W, H);
+
+    // Subtle grid
+    c.strokeStyle = 'rgba(0,212,255,0.04)';
+    c.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) { c.beginPath(); c.moveTo(i,0); c.lineTo(i,H); c.stroke(); }
+    for (let j = 0; j < H; j += 40) { c.beginPath(); c.moveTo(0,j); c.lineTo(W,j); c.stroke(); }
+
+    // Avatar circle
+    const cx = W / 2, cy = 290, r = 200;
+    c.save();
+    c.beginPath();
+    c.arc(cx, cy, r, 0, Math.PI * 2);
+    c.clip();
+    const img = _mouthOpen ? _vidImgOpen : _vidImgClosed;
+    if (img.complete && img.naturalWidth > 0) c.drawImage(img, cx - r, cy - r, r * 2, r * 2);
+    c.restore();
+
+    // Circle border glow
+    c.save();
+    c.shadowColor = 'rgba(0,212,255,0.4)';
+    c.shadowBlur = 20;
+    c.strokeStyle = 'rgba(0,212,255,0.5)';
+    c.lineWidth = 2;
+    c.beginPath(); c.arc(cx, cy, r + 1, 0, Math.PI * 2); c.stroke();
+    c.restore();
+
+    // Text
+    c.fillStyle = '#c8e6f0';
+    c.font = 'bold 26px "Share Tech Mono", monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'top';
+    wrapText(c, _vidRec.text, W / 2, 530, W - 80, 36);
+
+    // VoxSynth label
+    c.fillStyle = 'rgba(0,212,255,0.3)';
+    c.font = '13px "Share Tech Mono", monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'bottom';
+    c.fillText('VOXSYNTH', W / 2, H - 20);
+
+    requestAnimationFrame(renderFrame);
+  }
+
+  renderFrame();
+}
+
+function stopVideoRec() {
+  if (!_vidRec) return;
+  _vidRec.recorder.stop();
 }
 
 /* ============================================================
