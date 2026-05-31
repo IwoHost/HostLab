@@ -173,7 +173,7 @@ body::after {
 
 /* ===== AVATAR ===== */
 .avatar-ring {
-  border-radius: 0;
+  border-radius: 50%;
   overflow: hidden;
   border: 1px solid var(--dim);
   box-shadow: var(--glow);
@@ -188,7 +188,7 @@ body::after {
   object-fit: cover; transition: opacity 0.06s;
 }
 
-.avatar-ring .avatar-emoji { font-size: 3.5rem; z-index: 0; }
+.avatar-ring .avatar-emoji { display: none; }
 
 .avatar-pulse {
   position: absolute; inset: -8px;
@@ -436,9 +436,8 @@ body::after {
     <div class="inner">
       <div class="synth-avatar-wrap">
         <div class="avatar-ring" style="width:150px;height:150px;">
-          <span class="avatar-emoji">🎤</span>
-          <img class="mouth-closed" src="./other/animations/mouth_closed.png" style="opacity:1" onerror="this.style.display='none'">
-          <img class="mouth-open"   src="./other/animations/mouth_open.png"   style="opacity:0" onerror="this.style.display='none'">
+          <img class="mouth-closed" src="../other/animations/mouth_closed.png" style="opacity:1">
+          <img class="mouth-open"   src="../other/animations/mouth_open.png"   style="opacity:0">
         </div>
       </div>
 
@@ -519,9 +518,8 @@ body::after {
       <div class="synth-avatar-wrap">
         <div class="avatar-pulse" id="avatar-pulse"></div>
         <div class="avatar-ring" style="width:180px;height:180px;" id="synth-avatar">
-          <span class="avatar-emoji">🎤</span>
-          <img class="mouth-closed" src="./other/animations/mouth_closed.png" style="opacity:1;z-index:2" onerror="this.style.display='none'">
-          <img class="mouth-open"   src="./other/animations/mouth_open.png"   style="opacity:0;z-index:2" onerror="this.style.display='none'">
+          <img class="mouth-closed" src="../other/animations/mouth_closed.png" style="opacity:1;z-index:2">
+          <img class="mouth-open"   src="../other/animations/mouth_open.png"   style="opacity:0;z-index:2">
         </div>
       </div>
 
