@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HostLab · Archives</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0c0c0c;
+  --surface: #111110;
+  --surface2: #161614;
+  --text-primary: #f0f0ee;
+  --text-secondary: #888884;
+  --text-muted: #3a3a38;
+  --border: #222220;
+  --border-dim: #1a1a18;
+  --accent: #f0f0ee;
+  --tag-bg: #1a1a18;
+  --rip-red: #5c1a1a;
+  --rip-red-glow: #3a0f0f;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Syne Mono', monospace;
+}
+
+html.light {
+  --bg: #f0ede6;
+  --surface: #e8e5de;
+  --surface2: #ffffff;
+  --text-primary: #0f0f0f;
+  --text-secondary: #6b6b6b;
+  --text-muted: #b0b0b0;
+  --border: #d8d5ce;
+  --border-dim: #e2dfd8;
+  --accent: #0f0f0f;
+  --tag-bg: #e0ddd6;
+  --rip-red: #8b2222;
+  --rip-red-glow: #f5e0e0;
+}
+
+html, body { transition: background 0.35s ease, color 0.35s ease; }
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* subtle grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 48px 64px 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+}
+
+.logo {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.logo span { color: var(--text-muted); }
+.logo .sub {
+  color: var(--text-secondary);
+  padding-left: 2px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.header-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+/* ── HERO ── */
+.hero {
+  padding: 80px 64px 64px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.hero::after {
+  content: '†';
+  position: absolute;
+  right: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 220px;
+  font-weight: 700;
+  color: var(--border-dim);
+  line-height: 1;
+  pointer-events: none;
+  font-family: var(--font-display);
+  letter-spacing: -0.05em;
+}
+
+.hero-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.hero h1 {
+  font-size: clamp(52px, 7.5vw, 90px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  color: var(--text-primary);
+}
+
+.hero h1 em {
+  font-style: normal;
+  color: var(--text-muted);
+}
+
+.hero-sub {
+  margin-top: 28px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 380px;
+  line-height: 1.6;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 32px;
+  margin-top: 40px;
+}
+
+.hero-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hero-stat-num {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.hero-stat-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* ── GRID ── */
+.grid-header {
+  padding: 32px 64px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.grid-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.count-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--tag-bg);
+  padding: 4px 10px;
+  border-radius: 100px;
+  transition: background 0.35s ease;
+}
+
+.grid {
+  padding: 0 64px 80px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 2px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── TOMBSTONE CARD ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  animation: fadeUp 0.5s ease both;
+  position: relative;
+  transition: background 0.35s ease, border-color 0.35s ease;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--rip-red);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.card:hover::before { opacity: 1; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card:nth-child(1) { animation-delay: 0.05s; }
+.card:nth-child(2) { animation-delay: 0.10s; }
+.card:nth-child(3) { animation-delay: 0.15s; }
+.card:nth-child(4) { animation-delay: 0.20s; }
+.card:nth-child(5) { animation-delay: 0.25s; }
+.card:nth-child(6) { animation-delay: 0.30s; }
+.card:nth-child(7) { animation-delay: 0.35s; }
+.card:nth-child(8) { animation-delay: 0.40s; }
+
+.card-body {
+  padding: 24px 24px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.card-index {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.15;
+  transition: color 0.35s ease;
+}
+
+.rip-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--rip-red);
+  background: var(--rip-red-glow);
+  border: 1px solid var(--rip-red);
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  flex: 1;
+  transition: color 0.35s ease;
+}
+
+.card-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  transition: border-color 0.35s ease;
+}
+
+.card-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.card-meta-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.card-meta-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  transition: color 0.35s ease;
+}
+
+.card-meta-value.cause {
+  color: var(--rip-red);
+  font-size: 10px;
+  line-height: 1.4;
+  transition: color 0.35s ease;
+}
+
+/* ── PROGRESS BAR ── */
+.progress-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.progress-pct {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.progress-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--text-muted);
+  border-radius: 2px;
+  transition: width 1s ease 0.4s;
+}
+
+.progress-fill[data-pct] {
+  width: 0%;
+}
+
+.progress-fill.animated {
+  width: var(--pct);
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-left {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.footer-right {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ── THEME SWITCH ── */
+.theme-switch { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+.switch-label { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); letter-spacing:0.12em; text-transform:uppercase; transition:color 0.35s ease; }
+.switch-track { width:36px; height:20px; background:#2a2a28; border-radius:100px; border:1px solid var(--border); position:relative; flex-shrink:0; transition:background 0.35s ease, border-color 0.35s ease; }
+.switch-thumb { position:absolute; top:3px; left:3px; width:12px; height:12px; border-radius:50%; background:#555550; transition:transform 0.3s ease, background 0.35s ease; }
+html.light .switch-thumb { transform:translateX(16px); background:#0f0f0f; }
+html.light .switch-track { background:#d0ceca; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  header, .hero, .grid-header, .grid, footer { padding-left: 24px; padding-right: 24px; }
+  .grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 44px; }
+  .hero::after { font-size: 120px; right: 20px; }
+  .hero-stats { flex-wrap: wrap; gap: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="../index.html" class="logo">HOST<span>·</span>LAB<span class="sub"> / ARCHIVES</span></a>
+  <div class="header-right">
+    <div class="header-meta" id="site-count">— PROJECTS</div>
+    <div class="theme-switch" id="theme-switch" title="Toggle light mode">
+      <span class="switch-label" id="switch-label">LIGHT</span>
+      <div class="switch-track"><div class="switch-thumb"></div></div>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-label">The Unfinished</div>
+  <h1>Arch<em>ives</em></h1>
+  <p class="hero-sub">Projects that never made it. Killed by scope creep, lost motivation, bad timing, or the classic "I'll finish it later."</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-num" id="stat-count">0</span>
+      <span class="hero-stat-label">Casualties</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num" id="stat-avg">—</span>
+      <span class="hero-stat-label">Avg. Completion</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">∞</span>
+      <span class="hero-stat-label">Good Intentions</span>
+    </div>
+  </div>
+</section>
+
+<div class="grid-header">
+  <span class="grid-label">All casualties</span>
+  <span class="count-badge" id="count-badge">0</span>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<footer>
+  <div class="footer-left">HOSTLAB · ARCHIVES</div>
+  <div class="footer-right" id="footer-date"></div>
+</footer>
+
+<script>
+/* ════════════════════════════════════════════
+   ADD YOUR UNFINISHED PROJECTS HERE
+   Each entry:
+     title       — project name
+     desc        — what it was going to be
+     born        — when you started it (e.g. 'Mar 2023')
+     died        — when you gave up (e.g. 'Jun 2023') or 'Ongoing suffering'
+     cause       — why it died (be honest)
+     completion  — 0–100 (percentage done when abandoned)
+     file        — optional: filename in otherwebsites/websites/ if it exists
+   ════════════════════════════════════════════ */
+const GRAVEYARD = [
+  {
+    title:      'App Idea Spinner',
+    desc:       'A slot machine that spins three reels — style, app type, and vibe — to generate random app ideas. Built around a custom SVG slot machine with a crank.',
+    born:       'May 2026',
+    died:       'May 2026',
+    cause:      'Fun novelty, never grew into anything more.',
+    completion: 90,
+    file:       'app-idea-spinner.html'
+  },
+  {
+    title:      'Waveform Sculptor',
+    desc:       'Draw any waveform on an oscilloscope-style canvas and hear it play back in real time via the Web Audio API. Supports WAV export.',
+    born:       'May 2026',
+    died:       'May 2026',
+    cause:      'Cool proof of concept, no clear direction after.',
+    completion: 85,
+    file:       'waveform-sculptor.html'
+  },
+  {
+    title:      'Packet Journey',
+    desc:       'An animated, step-by-step visualizer that traces what actually happens when you hit Enter on a URL — DNS resolution, TCP handshake, TLS, HTTP exchange, server processing, and browser rendering.',
+    born:       'May 2026',
+    died:       'May 2026',
+    cause:      'Shelved before it went anywhere — but the demo works.',
+    completion: 85,
+    file:       'packet-journey.html'
+  },
+  /* ────────────────────────────────────────────
+     ADD YOUR PROJECTS BELOW:
+     {
+       title:      'Your Project Name',
+       desc:       'What it was supposed to be.',
+       born:       'Mon YYYY',
+       died:       'Mon YYYY',
+       cause:      'Why it died.',
+       completion: 0-100,
+       file:       'optional-file.html'
+     },
+  ──────────────────────────────────────────── */
+];
+/* ════════════════════════════════════════════ */
+
+const grid        = document.getElementById('grid');
+const countBadge  = document.getElementById('count-badge');
+const siteCount   = document.getElementById('site-count');
+const statCount   = document.getElementById('stat-count');
+const statAvg     = document.getElementById('stat-avg');
+
+document.getElementById('footer-date').textContent =
+  new Date().toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' }).toUpperCase();
+
+countBadge.textContent = GRAVEYARD.length;
+siteCount.textContent  = GRAVEYARD.length + ' PROJECT' + (GRAVEYARD.length !== 1 ? 'S' : '');
+statCount.textContent  = GRAVEYARD.length;
+
+const avg = GRAVEYARD.length
+  ? Math.round(GRAVEYARD.reduce((s, p) => s + (p.completion || 0), 0) / GRAVEYARD.length)
+  : 0;
+statAvg.textContent = avg + '%';
+
+const themeSwitch = document.getElementById('theme-switch');
+const switchLabel = document.getElementById('switch-label');
+themeSwitch.addEventListener('click', () => {
+  const isLight = document.documentElement.classList.toggle('light');
+  switchLabel.textContent = isLight ? 'DARK' : 'LIGHT';
+  localStorage.setItem('hostlab-theme', isLight ? 'light' : 'dark');
+});
+if (localStorage.getItem('hostlab-theme') === 'light') {
+  document.documentElement.classList.add('light');
+  switchLabel.textContent = 'DARK';
+}
+
+function buildCard(project, index) {
+  const { title, desc, born, died, cause, completion, file } = project;
+  const num = String(index + 1).padStart(2, '0');
+  const pct = completion ?? 0;
+
+  const card = document.createElement(file ? 'a' : 'div');
+  card.className = 'card';
+  if (file) card.href = `../websites/${file}`;
+
+  card.innerHTML = `
+    <div class="card-body">
+      <div class="card-header-row">
+        <div class="card-title-block">
+          <div class="card-index">${num}</div>
+          <div class="card-title">${title}</div>
+        </div>
+        <span class="rip-badge">† R.I.P.</span>
+      </div>
+
+      <p class="card-desc">${desc}</p>
+
+      <div class="progress-row">
+        <div class="progress-label-row">
+          <span class="progress-label">Completion</span>
+          <span class="progress-pct">${pct}%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="--pct:${pct}%" data-pct="${pct}"></div>
+        </div>
+      </div>
+
+      <div class="card-meta-grid">
+        <div class="card-meta-item">
+          <span class="card-meta-label">Born</span>
+          <span class="card-meta-value">${born || '—'}</span>
+        </div>
+        <div class="card-meta-item">
+          <span class="card-meta-label">Died</span>
+          <span class="card-meta-value">${died || '—'}</span>
+        </div>
+        <div class="card-meta-item" style="grid-column:1/-1">
+          <span class="card-meta-label">Cause of death</span>
+          <span class="card-meta-value cause">${cause || 'Unknown'}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return card;
+}
+
+GRAVEYARD.forEach((project, i) => {
+  grid.appendChild(buildCard(project, i));
+});
+
+/* animate progress bars on intersection */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('animated');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.3 });
+
+document.querySelectorAll('.progress-fill').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

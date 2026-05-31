@@ -403,6 +403,8 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 <header>
   <a href="index.html" class="logo">HOST<span>·</span>LAB</a>
   <div style="display:flex;align-items:center;gap:24px;">
+    <a href="pages/archives.html" style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;color:var(--text-muted);text-decoration:none;" onmouseover="this.style.color='var(--text-secondary)'" onmouseout="this.style.color='var(--text-muted)'">ARCHIVES</a>
+    <a href="pages/games.html" style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;color:var(--text-muted);text-decoration:none;" onmouseover="this.style.color='var(--text-secondary)'" onmouseout="this.style.color='var(--text-muted)'">GAMES</a>
     <div class="header-meta" id="site-count">— PROJECTS</div>
     <div class="theme-switch" id="theme-switch" title="Toggle light mode">
       <span class="switch-label" id="switch-label">LIGHT</span>
@@ -441,6 +443,20 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
      desc  → other/d_{file}.txt
    ════════════════════════════════════════════ */
 const PROJECTS = [
+  {
+    href:  'pages/games.html',
+    file:  'games.html',
+    icon:  'other/logo/HLab_Logo.png',
+    title: 'Games',
+    desc:  'Games and interactive experiments — some released on itch.io, some living right here in the browser.'
+  },
+  {
+    href:  'pages/archives.html',
+    file:  'archives.html',
+    icon:  'other/logo/HLab_Logo.png',
+    title: 'Archives',
+    desc:  'Projects that never made it. Killed by scope creep, lost motivation, bad timing, or the classic "I\'ll finish it later."'
+  },
   {
     file:  'dither-lab.html',
     icon:  'other/logo/Dither.png',
@@ -511,8 +527,8 @@ const PROJECTS = [
     icon:  'other/logo/Radio.png',
     title: 'Lo-Fi <q> randome </q> Radio',
     desc:  'A client-side, procedurally generated lo-fi radio station that runs entirely in the browser without files, streams, or servers. It synthesizes music in real time using the Web Audio API layering bass lines, melodies, chord progressions, rain, hiss, and crackle and lets users shape the sound through nine live controls. Because all audio is computed locally from mathematical synthesis, no two sessions ever sound the same.',
-  }
-  
+  },
+
   /* ────────────────────────────────────────────
      ADD NEW PROJECTS BELOW THIS LINE:
      {
@@ -531,8 +547,9 @@ const siteCount  = document.getElementById('site-count');
 document.getElementById('footer-date').textContent =
   new Date().toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' }).toUpperCase();
 
-countBadge.textContent = PROJECTS.length;
-siteCount.textContent  = PROJECTS.length + ' PROJECT' + (PROJECTS.length !== 1 ? 'S' : '');
+const projectCount = PROJECTS.length - 2;
+countBadge.textContent = projectCount;
+siteCount.textContent  = projectCount + ' PROJECT' + (projectCount !== 1 ? 'S' : '');
 
 const themeSwitch = document.getElementById('theme-switch');
 const switchLabel = document.getElementById('switch-label');
@@ -556,7 +573,8 @@ function buildCard(project, index) {
 
   const card = document.createElement('a');
   card.className = 'card';
-  card.href = `websites/${file}`;
+  card.href = project.href || `websites/${file}`;
+  if (project.external) { card.target = '_blank'; card.rel = 'noopener'; }
 
   const thumb = document.createElement('div');
   thumb.className = 'card-thumb';

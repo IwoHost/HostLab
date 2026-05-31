@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HostLab · Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0c0c0c;
+  --surface: #111110;
+  --surface2: #161614;
+  --text-primary: #f0f0ee;
+  --text-secondary: #888884;
+  --text-muted: #3a3a38;
+  --border: #222220;
+  --border-dim: #1a1a18;
+  --accent: #f0f0ee;
+  --tag-bg: #1a1a18;
+  --play-green: #1a3a1a;
+  --play-green-bright: #2d6b2d;
+  --play-green-text: #5db85d;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Syne Mono', monospace;
+}
+
+html.light {
+  --bg: #f0ede6;
+  --surface: #ffffff;
+  --surface2: #f7f5f0;
+  --text-primary: #0f0f0f;
+  --text-secondary: #6b6b6b;
+  --text-muted: #b0b0b0;
+  --border: #d8d5ce;
+  --border-dim: #e8e5de;
+  --accent: #0f0f0f;
+  --tag-bg: #e8e5de;
+  --play-green: #e0f0e0;
+  --play-green-bright: #2d6b2d;
+  --play-green-text: #1a5c1a;
+}
+
+html, body { transition: background 0.35s ease, color 0.35s ease; }
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* scanline effect — game aesthetic */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 48px 64px 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+}
+
+.logo {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.logo span { color: var(--text-muted); }
+.logo .sub { color: var(--text-secondary); padding-left: 2px; }
+
+.header-right { display: flex; align-items: center; gap: 24px; }
+
+.header-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+/* ── HERO ── */
+.hero {
+  padding: 80px 64px 64px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.hero-bg-symbol {
+  position: absolute;
+  right: 56px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 200px;
+  font-weight: 700;
+  color: var(--border-dim);
+  line-height: 1;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  letter-spacing: -0.05em;
+  user-select: none;
+}
+
+.hero-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.hero h1 {
+  font-size: clamp(52px, 7.5vw, 90px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  color: var(--text-primary);
+}
+
+.hero h1 em { font-style: normal; color: var(--text-muted); }
+
+.hero-sub {
+  margin-top: 28px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 380px;
+  line-height: 1.6;
+}
+
+.itch-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 32px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  padding: 10px 18px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.itch-link:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+.itch-link svg { flex-shrink: 0; }
+
+/* ── SECTION ── */
+.section-header {
+  padding: 36px 64px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.count-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--tag-bg);
+  padding: 4px 10px;
+  border-radius: 100px;
+  transition: background 0.35s ease;
+}
+
+.grid {
+  padding: 0 64px 80px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 2px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── GAME CARD ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.35s ease, border-color 0.35s ease;
+  animation: fadeUp 0.5s ease both;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  z-index: 1;
+}
+
+html.light .card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card:nth-child(1) { animation-delay: 0.05s; }
+.card:nth-child(2) { animation-delay: 0.10s; }
+.card:nth-child(3) { animation-delay: 0.15s; }
+.card:nth-child(4) { animation-delay: 0.20s; }
+.card:nth-child(5) { animation-delay: 0.25s; }
+.card:nth-child(6) { animation-delay: 0.30s; }
+
+/* thumbnail */
+.card-thumb {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: var(--tag-bg);
+  overflow: hidden;
+  position: relative;
+}
+
+.card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.card:hover .card-thumb img { transform: scale(1.04); }
+
+.card-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--tag-bg) 0px, var(--tag-bg) 8px,
+    var(--border) 8px, var(--border) 9px
+  );
+}
+
+/* play overlay */
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  background: rgba(0,0,0,0.45);
+}
+
+.card:hover .play-overlay { opacity: 1; }
+
+.play-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play-btn svg path { fill: var(--bg); }
+
+.card-body {
+  padding: 18px 22px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.card-title-block { display: flex; flex-direction: column; gap: 4px; }
+
+.card-index {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.card-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.platform-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.35s ease;
+}
+
+.platform-badge.itch {
+  background: var(--play-green);
+  color: var(--play-green-text);
+  border: 1px solid var(--play-green-bright);
+}
+
+.platform-badge.browser {
+  background: var(--tag-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.card-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  flex: 1;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  transition: border-color 0.35s ease;
+}
+
+.card-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  background: var(--tag-bg);
+  padding: 3px 7px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+.card-arrow {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.card:hover .card-arrow {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.card-arrow svg path { stroke: var(--text-primary); }
+.card:hover .card-arrow svg path { stroke: var(--bg); }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-left { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; }
+.footer-right { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
+
+/* ── THEME SWITCH ── */
+.theme-switch { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+.switch-label { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); letter-spacing:0.12em; text-transform:uppercase; }
+.switch-track { width:36px; height:20px; background:#2a2a28; border-radius:100px; border:1px solid var(--border); position:relative; flex-shrink:0; transition:background 0.35s ease, border-color 0.35s ease; }
+.switch-thumb { position:absolute; top:3px; left:3px; width:12px; height:12px; border-radius:50%; background:#555550; transition:transform 0.3s ease, background 0.35s ease; }
+html.light .switch-thumb { transform:translateX(16px); background:#0f0f0f; }
+html.light .switch-track { background:#d0ceca; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  header, .hero, .section-header, .grid, footer { padding-left: 24px; padding-right: 24px; }
+  .grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 44px; }
+  .hero-bg-symbol { font-size: 110px; right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="../index.html" class="logo">HOST<span>·</span>LAB<span class="sub"> / GAMES</span></a>
+  <div class="header-right">
+    <div class="header-meta" id="site-count">— GAMES</div>
+    <div class="theme-switch" id="theme-switch" title="Toggle light mode">
+      <span class="switch-label" id="switch-label">LIGHT</span>
+      <div class="switch-track"><div class="switch-thumb"></div></div>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-bg-symbol">&gt;_</div>
+  <div class="hero-label">Press start</div>
+  <h1>Ga<em>mes</em></h1>
+  <p class="hero-sub">Games and interactive experiments. Some released on itch.io, some living right here in the browser.</p>
+  <a href="https://itch.io" target="_blank" rel="noopener" class="itch-link" id="itch-profile-link">
+    <svg width="14" height="14" viewBox="0 0 245 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M31.99 0C22.58 5.86 0 38.83 0 45.07v8.38c0 16.79 15.73 31.5 30 31.5 17.13 0 31.5-14.37 31.5-31.5 0 17.13 14.37 31.5 31.5 31.5s31.5-14.37 31.5-31.5c0 17.13 14.37 31.5 31.5 31.5s31.5-14.37 31.5-31.5c0 17.13 14.37 31.5 31.5 31.5 14.27 0 30-14.71 30-31.5v-8.38c0-6.24-22.58-39.21-32-45.07C206.35-.04 38.65-.04 31.99 0z" fill="currentColor"/>
+      <path d="M30 101.5v118h185v-118c-8.32 5.39-19.56 8.5-30 8.5-13.97 0-26.32-5.04-35.25-13.16C140.82 104.96 128.47 110 114.5 110s-26.32-5.04-35.25-13.16C70.32 104.96 57.97 110 44 110c-10.44 0-21.68-3.11-30-8.5z" fill="currentColor" opacity="0.4"/>
+      <rect x="75" y="130" width="95" height="60" rx="4" fill="currentColor"/>
+    </svg>
+    VIEW ITCH.IO PROFILE →
+  </a>
+</section>
+
+<div class="section-header">
+  <span class="section-label">All games</span>
+  <span class="count-badge" id="count-badge">0</span>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<footer>
+  <div class="footer-left">HOSTLAB · GAMES</div>
+  <div class="footer-right" id="footer-date"></div>
+</footer>
+
+<script>
+/* ════════════════════════════════════════════
+   CONFIGURATION
+   ════════════════════════════════════════════
+   Set your itch.io profile URL here:
+*/
+const ITCH_PROFILE = 'https://komornicy.itch.io';
+
+/* ════════════════════════════════════════════
+   ADD YOUR GAMES HERE
+   Each entry:
+     title    — game name
+     desc     — short description
+     platform — 'itch' | 'browser'
+     url      — full itch.io URL or ../websites/filename.html
+     cover    — path to cover image (optional)
+     tags     — array of short tag strings (optional)
+     year     — release year (optional)
+   ════════════════════════════════════════════ */
+const GAMES = [
+  {
+    title:    'BMTD — Better Magic TD',
+    desc:     'A strategic tower defense card game where you construct custom spells by combining elemental cards. Fairies provide resources — but mistreat them and they get angry.',
+    platform: 'itch',
+    url:      'https://komornicy.itch.io/bettermagictd',
+    cover:    '',
+    tags:     ['tower defense', 'card game', 'free'],
+    year:     '2024'
+  },
+  /* ────────────────────────────────────────────
+     ADD YOUR GAMES BELOW:
+     For itch.io games, set platform: 'itch' and url to the full itch.io link.
+     For browser games here, set platform: 'browser' and url to ../websites/filename.html
+  ──────────────────────────────────────────── */
+];
+/* ════════════════════════════════════════════ */
+
+document.getElementById('itch-profile-link').href = ITCH_PROFILE;
+document.getElementById('footer-date').textContent =
+  new Date().toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' }).toUpperCase();
+
+const grid       = document.getElementById('grid');
+const countBadge = document.getElementById('count-badge');
+const siteCount  = document.getElementById('site-count');
+
+countBadge.textContent = GAMES.length;
+siteCount.textContent  = GAMES.length + ' GAME' + (GAMES.length !== 1 ? 'S' : '');
+
+const themeSwitch = document.getElementById('theme-switch');
+const switchLabel = document.getElementById('switch-label');
+themeSwitch.addEventListener('click', () => {
+  const isLight = document.documentElement.classList.toggle('light');
+  switchLabel.textContent = isLight ? 'DARK' : 'LIGHT';
+  localStorage.setItem('hostlab-theme', isLight ? 'light' : 'dark');
+});
+if (localStorage.getItem('hostlab-theme') === 'light') {
+  document.documentElement.classList.add('light');
+  switchLabel.textContent = 'DARK';
+}
+
+function buildCard(game, index) {
+  const { title, desc, platform, url, cover, tags, year } = game;
+  const num = String(index + 1).padStart(2, '0');
+  const isExternal = platform === 'itch';
+
+  const card = document.createElement('a');
+  card.className = 'card';
+  card.href = url;
+  if (isExternal) { card.target = '_blank'; card.rel = 'noopener'; }
+
+  const tagHTML = (tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+
+  const thumbContent = cover
+    ? `<img src="${cover}" alt="${title} cover"><div class="play-overlay"><div class="play-btn"><svg width="14" height="16" viewBox="0 0 14 16" fill="none"><path d="M1 1L13 8L1 15V1Z" fill="white"/></svg></div></div>`
+    : `<div class="card-thumb-placeholder">NO COVER</div>`;
+
+  card.innerHTML = `
+    <div class="card-thumb">${thumbContent}</div>
+    <div class="card-body">
+      <div class="card-header-row">
+        <div class="card-title-block">
+          <div class="card-index">${num}${year ? ' · ' + year : ''}</div>
+          <div class="card-title">${title}</div>
+        </div>
+        <span class="platform-badge ${platform}">${platform === 'itch' ? 'ITCH.IO' : 'BROWSER'}</span>
+      </div>
+      <p class="card-desc">${desc}</p>
+      <div class="card-footer">
+        <div class="card-tags">${tagHTML}</div>
+        <span class="card-arrow">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+  `;
+
+  return card;
+}
+
+GAMES.forEach((game, i) => grid.appendChild(buildCard(game, i)));
+</script>
+</body>
+</html>

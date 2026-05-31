@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Idea Spinner</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;600&family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  min-height: 100vh;
+  background: radial-gradient(ellipse 70% 50% at 50% 25%, #2e0507 0%, #0b0101 70%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Oswald', sans-serif;
+}
+
+/* hide side lever + all text labels from the SVG */
+#g9 { display: none; }
+#svg1 text { display: none; }
+
+/* Machine wrapper — SVG is 639x432, displayed at 540px wide */
+/* scale factor = 540/639 = 0.8451                           */
+#machine-wrap {
+  position: relative;
+  width: 540px;
+  display: block;
+  filter: drop-shadow(0 20px 60px rgba(0,0,0,0.85));
+}
+#machine-wrap > svg {
+  display: block;
+  width: 540px;
+  height: auto;
+}
+
+/* Reel overlays over the three SVG windows                 */
+/* rect4: x=177.6, y=127.4, w=97.4, h=69.9 (SVG coords)   */
+/* rect5: x=277.2, y=127.4, w=97.4, h=69.9                 */
+/* rect6: x=374.9, y=127.4, w=97.4, h=69.9                 */
+/* All * 0.8451 for display pixels:                         */
+.reel-overlay {
+  position: absolute;
+  top:  108px;
+  width: 82px;
+  height: 59px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom,
+    transparent 0%, black 20%, black 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom,
+    transparent 0%, black 20%, black 80%, transparent 100%);
+}
+#reel-0 { left: 150px; }
+#reel-1 { left: 234px; }
+#reel-2 { left: 317px; }
+
+.reel-strip {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+.reel-item {
+  height: 59px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 5px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #6a001a;
+  letter-spacing: 0.4px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Result text in the lower body panel (SVG y≈229-297 → display y≈193-251) */
+#result-overlay {
+  position: absolute;
+  left: 145px;
+  top: 208px;
+  width: 260px;
+  text-align: center;
+  pointer-events: none;
+}
+#result-text {
+  font-size: 10.5px;
+  font-weight: 300;
+  color: rgba(255,180,180,0.45);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  line-height: 1.5;
+  transition: all 0.35s;
+}
+#result-text.revealed {
+  color: #ffd100;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 14px rgba(255,209,0,0.45);
+}
+
+/* Crank section below the machine */
+#crank-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -5px;
+}
+.crank-mount {
+  width: 58px; height: 15px;
+  background: linear-gradient(to bottom, #4a4040, #252020);
+  border: 2px solid #181010;
+  border-radius: 3px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+#crank-wrap {
+  cursor: pointer;
+  margin-top: 3px;
+  width: 84px; height: 84px;
+}
+#crank-wrap svg { width: 84px; height: 84px; transition: filter .2s; }
+#crank-wrap:hover svg { filter: drop-shadow(0 0 8px rgba(255,209,0,0.4)); }
+
+#crank-inner { transform-origin: 42px 42px; }
+#crank-wrap.cranking #crank-inner {
+  animation: spin-full 0.55s cubic-bezier(0.22,1,0.36,1);
+}
+@keyframes spin-full { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+.spin-hint {
+  margin-top: 7px;
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: #6a2020;
+  text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<div id="machine-wrap">
+
+  <!-- Your SVG embedded inline (text + lever hidden via CSS) -->
+  <svg version="1.1" id="svg1" width="639" height="432" viewBox="0 0 639 432"
+     xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lg59"><stop style="stop-color:#9e1219;stop-opacity:1" offset="0"/><stop style="stop-color:#9e1219;stop-opacity:1" offset="1"/></linearGradient>
+    <linearGradient id="lg57"><stop style="stop-color:#ff2323;stop-opacity:1" offset="0"/><stop style="stop-color:#dc0000;stop-opacity:1" offset="1"/></linearGradient>
+    <linearGradient xlink:href="#lg57" id="lg58" x1="524" y1="237.7" x2="565" y2="237.7" gradientUnits="userSpaceOnUse"/>
+    <linearGradient xlink:href="#lg59" id="lg60" x1="308" y1="287.5" x2="310" y2="404.8" gradientUnits="userSpaceOnUse"/>
+  </defs>
+  <!-- base shadow layers -->
+  <path style="fill:#4f4f4f;stroke:#382020;stroke-width:6.3;stroke-linejoin:round" d="m 156.96,319.44 -37.47,93.14 c 0,0 -2.24,4.16 5.85,4.12 8.09,-0.05 400.67,0 400.67,0 0,0 9.98,0.38 7.71,-5.68 -2.27,-6.06 -13.06,-48.73 -13.06,-48.73 z"/>
+  <!-- side lever — hidden by #g9 { display:none } -->
+  <g id="g9" transform="rotate(8.35,563.46,294.59)">
+    <path style="fill:#fff;fill-opacity:0.4;stroke:#6b0c11;stroke-width:6.3" d="M 540.4,245.71 440.57,389.44"/>
+    <ellipse style="fill:url(#lg58);stroke:#6b0c11;stroke-width:6.3" cx="544.68" cy="237.68" rx="17.4" ry="17.13"/>
+  </g>
+  <path style="fill:#4f4f4f;stroke:#382020;stroke-width:6.3;stroke-linejoin:round" d="m 155.02,307.29 -37.47,93.14 c 0,0 -2.24,4.16 5.85,4.12 8.09,-0.05 400.67,0 400.67,0 0,0 9.98,0.38 7.71,-5.68 -2.27,-6.06 -13.06,-48.73 -13.06,-48.73 z"/>
+  <!-- main red body -->
+  <path style="fill:#ce1720;stroke:#6b0c11;stroke-width:6.3;stroke-linejoin:round" d="m 501.92,93.5 c 0,0 -21.58,-77.6 -178.29,-76.84 -156.71,0.76 -173.74,77.6 -173.74,77.6 l 1.14,133.24 -33.31,71.16 c 0,0 6.81,96.15 9.08,96.52 2.27,0.38 397.45,0.38 397.45,0.38 l 15.52,-97.66 -37.85,-70.78 z"/>
+  <!-- window panel -->
+  <rect style="fill:#bd0012;stroke:#9d000f;stroke-width:10.71;stroke-linejoin:round" width="315.71" height="90.08" x="167.02" y="116.56"/>
+  <!-- three windows -->
+  <rect style="fill:#f5e0ff;stroke:#9d000f;stroke-width:5.24;stroke-linejoin:round" id="rect4" width="97.42" height="69.85" x="177.59" y="127.4"/>
+  <rect style="fill:#f5e0ff;stroke:#9d000f;stroke-width:5.24;stroke-linejoin:round" id="rect5" width="97.42" height="69.85" x="277.16" y="127.4"/>
+  <rect style="fill:#f5e0ff;stroke:#9d000f;stroke-width:5.24;stroke-linejoin:round" id="rect6" width="97.42" height="69.85" x="374.85" y="127.4"/>
+  <!-- flame decoration -->
+  <g transform="translate(-0.76,-9.08)">
+    <path style="fill:#b90000" d="m 157.38,100.91 166.48,0.8 -141.59,-31.85 c 0,0 -24.09,22.75 -24.89,31.05 z"/>
+    <path style="fill:#eb6000" d="M 183.61,69.06 324.94,100.91 231,-0.44 c 0,0 -42.02,14.72 -47.39,26.5 z" transform="translate(0,42)"/>
+    <path style="fill:#eb6000" d="M 183.61,69.06 324.94,100.91 230.99,42.56 c 0,0 -42.02,14.72 -47.38,26.5 z"/>
+    <path style="fill:#b90000" d="M 325.47,101.17 232.86,42.56 c 0,0 40.95,-13.38 58.08,-11.24 0,0 34.26,69.86 34.53,69.86 z"/>
+    <path style="fill:#eb6000" d="m 290.68,28.91 35.06,73.07 16.59,-72.8 z"/>
+    <path style="fill:#b90000" d="M 326.54,103.05 409.52,38.54 342.87,27.84 Z"/>
+    <path style="fill:#eb6000" d="M 326.01,101.44 460.64,61.56 406.57,38.81 Z"/>
+    <path style="fill:#b90000" d="M 326.01,102.51 460.1,61.03 484.73,81.64 Z"/>
+    <path style="fill:#eb6000" d="M 326.01,102.51 483.66,81.1 496.77,102.25 Z"/>
+  </g>
+  <!-- lower gradient fill -->
+  <path style="fill:url(#lg60)" d="m 121.13,299.04 7.95,92.74 391.4,0.38 15.9,-94.25 z"/>
+  <path style="fill:#bf161e" d="m 120.76,297.12 32.65,-67.99 345.28,-2.68 38.01,71.2 z"/>
+  <!-- outlines -->
+  <path style="fill:none;stroke:#864d4d;stroke-width:6.3" d="M 156.14,226.36 153.41,95.03 c 0,0 19.27,-73.61 167.55,-75.75 148.28,-2.14 176.65,72.8 176.65,72.8 L 496.55,225.38 Z"/>
+  <path style="fill:none;stroke:#864d4d;stroke-width:6.3" d="m 151.81,95.3 346.35,-0.54"/>
+  <!-- legs -->
+  <path style="fill:#4f4f4f;stroke:#382020;stroke-width:6.3" d="m 117.3,401.28 1.94,13.06"/>
+  <path style="fill:#4f4f4f;stroke:#382020;stroke-width:6.3" d="m 532.11,400.15 1.99,12.59"/>
+  <!-- horizontal dividers -->
+  <path style="fill:#6b0c11;stroke:#6b0c11;stroke-width:3.65" d="m 117.55,298.19 420.22,-1.07"/>
+  <path style="fill:#6b0c11;stroke:#6b0c11;stroke-width:3.65" d="m 152.61,229.4 348.18,-2.28"/>
+  <!-- window trim bars -->
+  <path style="fill:#9d000f" d="m 179.99,194.75 h 289.57 l -0.09,4.35 H 179.64 Z"/>
+  <path style="fill:#9d000f" d="m 179.99,125.48 h 289.57 l -0.09,4.35 H 179.64 Z"/>
+  <!-- vertical dividers between windows -->
+  <path style="fill:#cd0014" d="m 377.58,194.47 -0.13,-64.91 c 0,0 3.61,16.19 3.08,36.54 -0.54,20.34 -2.95,28.37 -2.95,28.37 z"/>
+  <path style="fill:#f5e0ff" d="m 469.56,194.47 -0.13,-64.91 c 0,0 3.61,16.19 3.08,36.54 -0.54,20.34 -2.95,28.37 -2.95,28.37 z"/>
+  <path style="fill:#cd0014" d="m 272.58,194.47 0.13,-64.91 c 0,0 -3.61,16.19 -3.08,36.54 0.54,20.34 2.94,28.37 2.94,28.37 z"/>
+  <path style="fill:#f5e0ff" d="m 180.24,194.47 0.13,-64.91 c 0,0 -3.61,16.19 -3.08,36.54 0.54,20.34 2.94,28.37 2.94,28.37 z"/>
+  <path style="fill:#f5e0ff" d="m 279.79,194.47 0.13,-64.91 c 0,0 -2.14,16.33 -1.61,36.67 0.54,20.34 1.47,28.24 1.47,28.24 z"/>
+  <path style="fill:#f5e0ff" d="m 371.67,194.47 -0.13,-64.91 c 0,0 2.14,16.33 1.61,36.67 -0.54,20.34 -1.47,28.24 -1.47,28.24 z"/>
+  <!-- arch detail -->
+  <path style="fill:#ffac72" d="m 254.05,94.5 c 0,0 65.04,-47.91 142.93,-0.8"/>
+  <!-- coin slot arch -->
+  <path style="fill:#4a080c;stroke:#6b0c11;stroke-width:3.65" d="m 273.98,395.78 c 0,0 -1.87,-40.15 50.59,-40.68 52.46,-0.54 55.67,40.68 55.67,40.68 z"/>
+  <path style="fill:#46080b" d="m 279.35,380.13 c 0,0 7.67,-23 43.91,-23.09 36.24,-0.09 44.48,13.06 49.87,23.56 0,-0.19 -93.78,-0.47 -93.78,-0.47 z"/>
+  </svg>
+
+  <!-- Reel overlays on top of the 3 SVG windows -->
+  <div class="reel-overlay" id="reel-0"><div class="reel-strip" id="strip-0"></div></div>
+  <div class="reel-overlay" id="reel-1"><div class="reel-strip" id="strip-1"></div></div>
+  <div class="reel-overlay" id="reel-2"><div class="reel-strip" id="strip-2"></div></div>
+
+  <!-- Result in lower body panel -->
+  <div id="result-overlay">
+    <div id="result-text">pull the lever</div>
+  </div>
+</div>
+
+<!-- Crank below -->
+<div id="crank-section">
+  <div class="crank-mount"></div>
+  <div id="crank-wrap" onclick="doSpin()" title="Spin!">
+    <svg viewBox="0 0 84 84" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="42" cy="42" r="40" fill="#241010" stroke="#3a1818" stroke-width="3"/>
+      <circle cx="42" cy="42" r="33" fill="#160808" stroke="#2a1010" stroke-width="1.5"/>
+      <circle cx="42" cy="5"  r="3" fill="#3e1818"/>
+      <circle cx="79" cy="42" r="3" fill="#3e1818"/>
+      <circle cx="42" cy="79" r="3" fill="#3e1818"/>
+      <circle cx="5"  cy="42" r="3" fill="#3e1818"/>
+      <g id="crank-inner">
+        <line x1="42" y1="42" x2="42" y2="9" stroke="#8e0c14" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="42" cy="7" r="8" fill="#ce1720" stroke="#55080d" stroke-width="2"/>
+        <circle cx="42" cy="7" r="4" fill="#ff3333"/>
+      </g>
+      <circle cx="42" cy="42" r="9" fill="#2e1818" stroke="#3e2020" stroke-width="2"/>
+      <circle cx="42" cy="42" r="4.5" fill="#8e0c14"/>
+    </svg>
+  </div>
+  <div class="spin-hint">Spin</div>
+</div>
+
+<script>
+const STYLES = [
+  'Retro Terminal','Cyberpunk','Vaporwave','Dark Academia','Brutalist',
+  'Neon Noir','Minimal Zen','Art Deco','Cottagecore','Memphis',
+  'Glassmorphism','Neumorphism','Bauhaus','Psychedelic','Lo-Fi Pixel',
+  'Swiss Grid','Bento Grid','Y2K Throwback','Solarpunk','Maximalist',
+  'Monochrome Ink','Aurora','Industrial Grit','Kawaii Soft','Steampunk',
+  'Futuristic Flat','Organic Blob','Bold Type','Comic Book','Deep Space',
+  'Earthy Muted','High Contrast','Glitch Art','Corp. Memphis','Fantasy Map',
+  'Isometric 3D','Hand-Drawn','Blueprint','Luxury Black','Paper Cut',
+  'Neon Pastel','Retro Future','Analog Noise','Wabi-Sabi','Cybernetic',
+  'Ocean Depth','Desert Sand','Nordic Frost','Tokyo Pop','Rainforest'
+];
+const TYPES = [
+  'Dashboard','Portfolio','Social App','Dev Tool','Game',
+  'Productivity','Marketplace','Data Viz','Landing Page','Note-Taking',
+  'Music Player','Weather App','Habit Tracker','Chat UI','Code Editor'
+];
+const VIBES = [
+  'Dark & Moody','Bright & Fun','Glitchy','Elegant','Chaotic',
+  'Calm & Clean','Bold & Loud','Mysterious','Futuristic','Nostalgic',
+  'Warm & Cozy','Cold & Sharp'
+];
+
+const ALL = [STYLES, TYPES, VIBES];
+const ITEM_H = 59;
+let spinning = false;
+
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [b[i],b[j]]=[b[j],b[i]];
+  }
+  return b;
+}
+
+function initReels() {
+  ALL.forEach((items, i) => {
+    const strip = document.getElementById('strip-'+i);
+    strip.innerHTML = '';
+    shuffle(items).slice(0,5).forEach(t => {
+      const d = document.createElement('div');
+      d.className = 'reel-item'; d.textContent = t;
+      strip.appendChild(d);
+    });
+    strip.style.transition = 'none';
+    strip.style.transform = 'translateY(0)';
+  });
+}
+
+function spinReel(i, finalItem, delay, dur) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const strip = document.getElementById('strip-'+i);
+      const pool = [];
+      for (let p = 0; p < 4; p++) pool.push(...shuffle(ALL[i]));
+      pool.push(finalItem);
+
+      strip.innerHTML = '';
+      pool.forEach(t => {
+        const d = document.createElement('div');
+        d.className = 'reel-item'; d.textContent = t;
+        strip.appendChild(d);
+      });
+
+      const startIdx = Math.floor(ALL[i].length * 1.5);
+      strip.style.transition = 'none';
+      strip.style.transform = `translateY(-${startIdx * ITEM_H}px)`;
+
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        strip.style.transition = `transform ${dur}ms cubic-bezier(0.1,0.8,0.2,1)`;
+        strip.style.transform = `translateY(-${(pool.length-1)*ITEM_H}px)`;
+        setTimeout(resolve, dur + 60);
+      }));
+    }, delay);
+  });
+}
+
+async function doSpin() {
+  if (spinning) return;
+  spinning = true;
+
+  const crank = document.getElementById('crank-wrap');
+  crank.classList.add('cranking');
+  setTimeout(() => crank.classList.remove('cranking'), 580);
+
+  const rt = document.getElementById('result-text');
+  rt.className = ''; rt.textContent = '···';
+
+  const picks = ALL.map(arr => arr[Math.floor(Math.random()*arr.length)]);
+
+  await Promise.all([
+    spinReel(0, picks[0],   0, 1100),
+    spinReel(1, picks[1], 160, 1400),
+    spinReel(2, picks[2], 320, 1700),
+  ]);
+
+  rt.textContent = picks.join(' × ');
+  rt.className = 'revealed';
+  spinning = false;
+}
+
+initReels();
+</script>
+</body>
+</html>

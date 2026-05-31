@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waveform Sculptor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --ph: #00ff41;
+  --ph-dim: rgba(0,255,65,0.18);
+  --ph-glow: rgba(0,255,65,0.12);
+  --ph-muted: #2a6b3a;
+  --bg: #040604;
+  --surface: #080d08;
+  --border: #131a13;
+  --grid: rgba(0,255,65,0.06);
+  --grid-mid: rgba(0,255,65,0.14);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ph);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 24px 32px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── HEADER ── */
+header {
+  width: 100%;
+  max-width: 920px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+  margin-bottom: 22px;
+}
+.h-title { font-size: 18px; letter-spacing: 5px; }
+.h-sub { font-size: 10px; color: var(--ph-muted); letter-spacing: 2px; }
+.h-meta { font-size: 10px; color: var(--ph-muted); letter-spacing: 1.5px; text-align: right; line-height: 1.7; }
+
+/* ── SCOPE ── */
+.scope-wrap { width: 100%; max-width: 920px; position: relative; margin-bottom: 18px; }
+
+.scope-frame {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  position: relative;
+}
+
+/* scanlines overlay */
+.scope-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.09) 3px, rgba(0,0,0,0.09) 4px);
+  pointer-events: none;
+  z-index: 5;
+}
+
+canvas#scope {
+  display: block;
+  width: 100%;
+  border-radius: 3px;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* corner labels */
+.corner { position: absolute; font-size: 9px; letter-spacing: 1.5px; color: var(--ph-muted); z-index: 6; }
+.c-tl { top: 18px; left: 18px; }
+.c-tr { top: 18px; right: 18px; text-align: right; }
+.c-bl { bottom: 18px; left: 18px; }
+.c-br { bottom: 18px; right: 18px; text-align: right; }
+
+/* ── PRESETS ── */
+.presets {
+  width: 100%;
+  max-width: 920px;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.preset-label { font-size: 10px; color: var(--ph-muted); letter-spacing: 1.5px; align-self: center; margin-right: 4px; }
+.btn-preset {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  padding: 5px 13px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ph-muted);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.12s;
+}
+.btn-preset:hover { border-color: var(--ph-muted); color: var(--ph); }
+
+/* ── CONTROLS ── */
+.controls {
+  width: 100%;
+  max-width: 920px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.ctrl-group { display: flex; flex-direction: column; gap: 7px; }
+.ctrl-label { font-size: 10px; letter-spacing: 2px; color: var(--ph-muted); }
+.ctrl-row { display: flex; align-items: center; gap: 10px; }
+.ctrl-val { font-size: 13px; min-width: 68px; text-align: right; color: var(--ph); }
+
+input[type=range] {
+  -webkit-appearance: none;
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 11px; height: 11px;
+  background: var(--ph);
+  cursor: pointer;
+  border-radius: 0;
+  box-shadow: 0 0 8px var(--ph);
+}
+input[type=range]::-moz-range-thumb {
+  width: 11px; height: 11px;
+  background: var(--ph);
+  cursor: pointer;
+  border-radius: 0; border: none;
+  box-shadow: 0 0 8px var(--ph);
+}
+
+.btn {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid var(--ph-muted);
+  color: var(--ph-muted);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--ph); color: var(--ph); box-shadow: 0 0 10px var(--ph-glow), inset 0 0 10px var(--ph-glow); }
+.btn.lit { border-color: var(--ph); color: var(--ph); background: rgba(0,255,65,0.07); box-shadow: 0 0 14px var(--ph-glow); }
+.btn.red { border-color: #2d1010; color: #4a2020; }
+.btn.red:hover { border-color: #ff4444; color: #ff6666; box-shadow: 0 0 10px rgba(255,68,68,0.15); }
+
+/* ── STATUS ── */
+.statusbar {
+  width: 100%;
+  max-width: 920px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--ph-muted);
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  background: var(--ph-muted);
+  border-radius: 50%;
+  margin-right: 7px;
+  vertical-align: middle;
+}
+.dot.live { background: var(--ph); box-shadow: 0 0 6px var(--ph); animation: blink 0.9s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="h-title">WAVEFORM SCULPTOR</div>
+    <div class="h-sub">WEB AUDIO SYNTHESIZER</div>
+  </div>
+  <div class="h-meta">
+    <div>44100 HZ · 16-BIT · MONO</div>
+    <div id="hzReadout">220 HZ</div>
+  </div>
+</header>
+
+<div class="scope-wrap">
+  <div class="scope-frame">
+    <canvas id="scope" height="300"></canvas>
+    <div class="corner c-tl" id="cornerTL">1 CYCLE</div>
+    <div class="corner c-tr" id="cornerTR">CH1</div>
+    <div class="corner c-bl">0.5V/DIV</div>
+    <div class="corner c-br" id="cornerBR">IDLE</div>
+  </div>
+</div>
+
+<div class="presets">
+  <span class="preset-label">PRESET:</span>
+  <button class="btn-preset" data-shape="sine">SINE</button>
+  <button class="btn-preset" data-shape="square">SQUARE</button>
+  <button class="btn-preset" data-shape="sawtooth">SAW</button>
+  <button class="btn-preset" data-shape="triangle">TRIANGLE</button>
+  <button class="btn-preset" data-shape="noise">NOISE</button>
+</div>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <div class="ctrl-label">FREQUENCY</div>
+    <div class="ctrl-row">
+      <input type="range" id="freqSlider" min="20" max="2000" value="220" step="1">
+      <span class="ctrl-val" id="freqVal">220 HZ</span>
+    </div>
+  </div>
+  <div class="ctrl-group">
+    <div class="ctrl-label">AMPLITUDE</div>
+    <div class="ctrl-row">
+      <input type="range" id="gainSlider" min="0" max="100" value="70" step="1">
+      <span class="ctrl-val" id="gainVal">70%</span>
+    </div>
+  </div>
+  <button class="btn" id="playBtn">▶ PLAY</button>
+  <button class="btn red" id="clearBtn">✕ CLEAR</button>
+  <button class="btn" id="exportBtn">⬇ WAV</button>
+</div>
+
+<div class="statusbar">
+  <span><span class="dot" id="dot"></span><span id="statusMsg">READY — DRAW ON THE SCOPE ABOVE</span></span>
+  <span id="statsRight">0 SAMPLES</span>
+</div>
+
+<script>
+const scope = document.getElementById('scope');
+const ctx = scope.getContext('2d');
+const SAMPLE_RATE = 44100;
+const CSS_H = 300;
+
+let pts = [];
+let drawing = false;
+let playing = false;
+let audioCtx = null;
+let srcNode = null;
+let rafId = null;
+let playT0 = 0;
+let cssW = 0;
+
+function dpr() { return window.devicePixelRatio || 1; }
+
+function initScope() {
+  const rect = scope.getBoundingClientRect();
+  cssW = rect.width;
+  scope.width = cssW * dpr();
+  scope.height = CSS_H * dpr();
+  scope.style.height = CSS_H + 'px';
+  ctx.scale(dpr(), dpr());
+  paint();
+}
+
+function paint() {
+  const W = cssW, H = CSS_H;
+
+  ctx.fillStyle = '#020802';
+  ctx.fillRect(0, 0, W, H);
+
+  // grid
+  const cols = 10, rows = 8;
+  for (let i = 0; i <= cols; i++) {
+    const x = (i / cols) * W;
+    ctx.strokeStyle = (i === 0 || i === cols) ? 'rgba(0,255,65,0.15)' : (i % 5 === 0 ? 'rgba(0,255,65,0.12)' : 'rgba(0,255,65,0.05)');
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let j = 0; j <= rows; j++) {
+    const y = (j / rows) * H;
+    ctx.strokeStyle = (j === 0 || j === rows) ? 'rgba(0,255,65,0.15)' : (j === rows / 2 ? 'rgba(0,255,65,0.2)' : 'rgba(0,255,65,0.05)');
+    ctx.lineWidth = j === rows / 2 ? 1 : 1;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // tick marks on center line
+  ctx.strokeStyle = 'rgba(0,255,65,0.25)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < cols * 5; i++) {
+    const x = (i / (cols * 5)) * W;
+    const th = i % 5 === 0 ? 5 : 2;
+    ctx.beginPath(); ctx.moveTo(x, H/2 - th); ctx.lineTo(x, H/2 + th); ctx.stroke();
+  }
+
+  // hint text when empty
+  if (pts.length < 2) {
+    ctx.fillStyle = 'rgba(0,255,65,0.08)';
+    ctx.font = '13px Share Tech Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('DRAW YOUR WAVEFORM HERE', W / 2, H / 2 - 16);
+    ctx.font = '10px Share Tech Mono, monospace';
+    ctx.fillText('click and drag left-to-right to sculpt one cycle', W / 2, H / 2 + 8);
+    ctx.textAlign = 'left';
+  }
+
+  // waveform
+  if (pts.length > 1) {
+    // wide glow
+    ctx.save();
+    ctx.shadowColor = '#00ff41';
+    ctx.shadowBlur = 16;
+    ctx.strokeStyle = 'rgba(0,255,65,0.25)';
+    ctx.lineWidth = 5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+    ctx.restore();
+
+    // crisp line
+    ctx.save();
+    ctx.shadowColor = '#00ff41';
+    ctx.shadowBlur = 5;
+    ctx.strokeStyle = '#00ff41';
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // playhead
+  if (playing && audioCtx) {
+    const freq = +document.getElementById('freqSlider').value;
+    const elapsed = audioCtx.currentTime - playT0;
+    const phase = (elapsed * freq) % 1;
+    const px = pts.length > 0
+      ? pts[0].x + phase * (pts[pts.length-1].x - pts[0].x)
+      : phase * W;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0,255,65,0.55)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// pointer events (CSS pixels)
+function epos(e) {
+  const r = scope.getBoundingClientRect();
+  const src = e.touches ? e.touches[0] : e;
+  return { x: src.clientX - r.left, y: src.clientY - r.top };
+}
+
+scope.addEventListener('mousedown', e => {
+  drawing = true;
+  pts = [];
+  const p = epos(e);
+  pts.push(p);
+  setStatus('DRAWING...', true);
+  paint();
+});
+
+scope.addEventListener('mousemove', e => {
+  if (!drawing) return;
+  const p = epos(e);
+  if (!pts.length || p.x > pts[pts.length-1].x + 0.5) {
+    pts.push({ x: p.x, y: Math.max(0, Math.min(CSS_H, p.y)) });
+    document.getElementById('statsRight').textContent = pts.length + ' SAMPLES';
+    paint();
+  }
+});
+
+scope.addEventListener('mouseup', endDraw);
+scope.addEventListener('mouseleave', endDraw);
+
+scope.addEventListener('touchstart', e => { e.preventDefault(); scope.dispatchEvent(new MouseEvent('mousedown', ptFromTouch(e))); }, {passive:false});
+scope.addEventListener('touchmove', e => { e.preventDefault(); scope.dispatchEvent(new MouseEvent('mousemove', ptFromTouch(e))); }, {passive:false});
+scope.addEventListener('touchend', e => { e.preventDefault(); endDraw(); }, {passive:false});
+
+function ptFromTouch(e) {
+  return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+}
+
+function endDraw() {
+  if (!drawing) return;
+  drawing = false;
+  if (pts.length > 2) {
+    setStatus('WAVEFORM SCULPTED — PRESS PLAY', false);
+    document.getElementById('cornerBR').textContent = 'READY';
+    document.getElementById('statsRight').textContent = pts.length + ' SAMPLES';
+  } else {
+    setStatus('READY — DRAW ON THE SCOPE ABOVE', false);
+  }
+  paint();
+}
+
+// ── BUILD SAMPLES ──
+function buildSamples(numSamples) {
+  if (pts.length < 2) return null;
+  const xMin = pts[0].x, xMax = pts[pts.length-1].x;
+  const xRange = xMax - xMin || 1;
+  const mid = CSS_H / 2;
+  const out = new Float32Array(numSamples);
+  for (let i = 0; i < numSamples; i++) {
+    const tx = xMin + (i / numSamples) * xRange;
+    let lo = 0, hi = pts.length - 1;
+    for (let j = 0; j < pts.length - 1; j++) {
+      if (pts[j].x <= tx && pts[j+1].x >= tx) { lo = j; hi = j+1; break; }
+    }
+    let y;
+    const seg = pts[hi].x - pts[lo].x;
+    y = seg > 0 ? pts[lo].y + (tx - pts[lo].x) / seg * (pts[hi].y - pts[lo].y) : pts[lo].y;
+    out[i] = -(y - mid) / mid;
+  }
+  return out;
+}
+
+function makeBuffer(duration) {
+  const freq = +document.getElementById('freqSlider').value;
+  const gain = +document.getElementById('gainSlider').value / 100;
+  const period = Math.max(1, Math.round(SAMPLE_RATE / freq));
+  const cycle = buildSamples(period);
+  if (!cycle) return null;
+  const total = Math.round(SAMPLE_RATE * duration);
+  const buf = audioCtx.createBuffer(1, total, SAMPLE_RATE);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < total; i++) d[i] = cycle[i % period] * gain;
+  return buf;
+}
+
+// ── PLAY / STOP ──
+document.getElementById('playBtn').addEventListener('click', () => {
+  if (pts.length < 3) { setStatus('DRAW A WAVEFORM FIRST', false); return; }
+  if (playing) { stopAudio(); return; }
+
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const buf = makeBuffer(4);
+  if (!buf) return;
+
+  srcNode = audioCtx.createBufferSource();
+  srcNode.buffer = buf;
+  srcNode.loop = true;
+  srcNode.connect(audioCtx.destination);
+  srcNode.start();
+
+  playing = true;
+  playT0 = audioCtx.currentTime;
+  document.getElementById('playBtn').textContent = '■ STOP';
+  document.getElementById('playBtn').classList.add('lit');
+  document.getElementById('cornerBR').textContent = 'PLAY';
+  setStatus('PLAYING — ' + document.getElementById('freqSlider').value + ' HZ', true);
+  rafLoop();
+});
+
+function rafLoop() {
+  paint();
+  if (playing) rafId = requestAnimationFrame(rafLoop);
+}
+
+function stopAudio() {
+  if (srcNode) { try { srcNode.stop(); } catch(e){} srcNode.disconnect(); srcNode = null; }
+  playing = false;
+  cancelAnimationFrame(rafId);
+  document.getElementById('playBtn').textContent = '▶ PLAY';
+  document.getElementById('playBtn').classList.remove('lit');
+  document.getElementById('cornerBR').textContent = pts.length > 2 ? 'READY' : 'IDLE';
+  setStatus(pts.length > 2 ? 'WAVEFORM READY — PRESS PLAY' : 'READY — DRAW ON THE SCOPE ABOVE', false);
+  paint();
+}
+
+// ── CLEAR ──
+document.getElementById('clearBtn').addEventListener('click', () => {
+  stopAudio();
+  pts = [];
+  document.getElementById('statsRight').textContent = '0 SAMPLES';
+  document.getElementById('cornerBR').textContent = 'IDLE';
+  setStatus('READY — DRAW ON THE SCOPE ABOVE', false);
+  paint();
+});
+
+// ── EXPORT WAV ──
+document.getElementById('exportBtn').addEventListener('click', () => {
+  if (pts.length < 3) { setStatus('DRAW A WAVEFORM FIRST', false); return; }
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+  const buf = makeBuffer(3);
+  if (!buf) return;
+  const wav = encodeWav(buf);
+  const blob = new Blob([wav], { type: 'audio/wav' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sculpted-' + document.getElementById('freqSlider').value + 'hz.wav';
+  a.click();
+  setStatus('EXPORTED: 3S · ' + document.getElementById('freqSlider').value + ' HZ', false);
+});
+
+function encodeWav(buffer) {
+  const data = buffer.getChannelData(0);
+  const n = data.length;
+  const ab = new ArrayBuffer(44 + n * 2);
+  const v = new DataView(ab);
+  const ws = (off, s) => { for(let i=0;i<s.length;i++) v.setUint8(off+i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); v.setUint32(4, 36 + n*2, true);
+  ws(8,'WAVE'); ws(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24, SAMPLE_RATE, true);
+  v.setUint32(28, SAMPLE_RATE * 2, true);
+  v.setUint16(32,2,true); v.setUint16(34,16,true);
+  ws(36,'data'); v.setUint32(40, n*2, true);
+  for (let i=0; i<n; i++) {
+    const s = Math.max(-1, Math.min(1, data[i]));
+    v.setInt16(44 + i*2, s < 0 ? s*0x8000 : s*0x7FFF, true);
+  }
+  return ab;
+}
+
+// ── SLIDERS ──
+document.getElementById('freqSlider').addEventListener('input', function() {
+  const hz = +this.value;
+  document.getElementById('freqVal').textContent = hz + ' HZ';
+  document.getElementById('hzReadout').textContent = hz + ' HZ';
+  if (playing) { stopAudio(); setTimeout(() => document.getElementById('playBtn').click(), 40); }
+});
+
+document.getElementById('gainSlider').addEventListener('input', function() {
+  document.getElementById('gainVal').textContent = this.value + '%';
+});
+
+// ── PRESETS ──
+document.querySelectorAll('.btn-preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (playing) stopAudio();
+    const shape = btn.dataset.shape;
+    const W = cssW, H = CSS_H;
+    const n = Math.round(W * 0.9);
+    const startX = W * 0.05;
+    const mid = H / 2;
+
+    pts = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const x = startX + t * (W * 0.9);
+      let y;
+      const angle = t * Math.PI * 2;
+      if (shape === 'sine') {
+        y = mid - Math.sin(angle) * (H * 0.38);
+      } else if (shape === 'square') {
+        y = t < 0.5 ? mid - H * 0.38 : mid + H * 0.38;
+      } else if (shape === 'sawtooth') {
+        const p = t % 1;
+        y = mid - (p * 2 - 1) * H * 0.38;
+      } else if (shape === 'triangle') {
+        const p = t % 1;
+        y = p < 0.25 ? mid - p * 4 * H * 0.38
+          : p < 0.75 ? mid - (1 - (p - 0.25) * 4) * H * 0.38
+          : mid + (p - 0.75) * 4 * H * 0.38;
+      } else if (shape === 'noise') {
+        if (i === 0) y = mid;
+        else y = Math.max(4, Math.min(H-4, pts[i-1].y + (Math.random()-0.5) * H * 0.3));
+      }
+      pts.push({ x, y });
+    }
+
+    document.getElementById('statsRight').textContent = pts.length + ' SAMPLES';
+    document.getElementById('cornerBR').textContent = 'PRESET';
+    setStatus(shape.toUpperCase() + ' PRESET LOADED — PRESS PLAY', false);
+    paint();
+  });
+});
+
+// ── STATUS ──
+function setStatus(msg, live) {
+  document.getElementById('statusMsg').textContent = msg;
+  document.getElementById('dot').className = 'dot' + (live ? ' live' : '');
+}
+
+// ── INIT ──
+window.addEventListener('resize', initScope);
+initScope();
+</script>
+</body>
+</html>
