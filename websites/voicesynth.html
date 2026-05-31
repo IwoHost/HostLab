@@ -1587,8 +1587,13 @@ async function doRenderVideo(text, ac) {
   const stream = canvas.captureStream(FPS);
   audioDest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
 
-  const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
-    ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+  const mime = [
+    'video/mp4;codecs=avc1,mp4a.40.2',
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm',
+  ].find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+  const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
   const recorder = new MediaRecorder(stream, { mimeType: mime });
   const chunks = [];
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
@@ -1621,7 +1626,7 @@ async function doRenderVideo(text, ac) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'voxsynth.webm';
+  a.download = 'voxsynth.' + ext;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
