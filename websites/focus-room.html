@@ -342,6 +342,7 @@ body{
       <div id="greeting">Good morning — <b id="greeting-name">ready to focus?</b></div>
       <div id="quote-inline"><span id="quote-ticker-text"></span> <span id="quote-ticker-author"></span></div>
     </div>
+    <div id="mak-indicator" style="display:none;padding:4px 12px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.1em;font-family:var(--fb);">MAK MODE</div>
     <button id="help-btn" onclick="document.getElementById('help-overlay').style.display='flex'">? How to use</button>
     <div id="clock-wrap">
       <div id="clock">--:--</div>
@@ -356,7 +357,8 @@ body{
       <div class="help-row"><span class="help-chip">25 min</span><div class="help-txt">Focus session — work on one thing, no distractions. Focus Guy runs and catches stars.</div></div>
       <div class="help-row"><span class="help-chip">5 min</span><div class="help-txt">Short break — step away, stretch, breathe. Focus Guy chills out.</div></div>
       <div class="help-row"><span class="help-chip">15 min</span><div class="help-txt">Long break — after a few sessions, take a longer rest.</div></div>
-      <div class="help-row"><span class="help-chip">Ctrl+Alt+0</span><div class="help-txt">Show keyboard cheat sheet.</div></div>
+      <div class="help-row"><span class="help-chip">SPACE</span><div class="help-txt">Star burst — stars rain down fast. 30 second cooldown.</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+0</span><div class="help-txt">Toggle Mak Mode — removes the burst cooldown entirely.</div></div>
       <div class="help-row"><span class="help-chip">Sessions</span><div class="help-txt">Complete pomodoros to unlock upgrades for Focus Guy — hat, cape, auto-pilot and more.</div></div>
       <button id="help-close">Got it, let's focus</button>
     </div>
@@ -366,7 +368,8 @@ body{
   <div id="cheat-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:none;align-items:center;justify-content:center;animation:fadeIn .2s ease;">
     <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:28px 32px;max-width:420px;width:90%;position:relative;">
       <h2 style="font-family:var(--ff);font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text);">Keyboard Shortcuts</h2>
-      <div class="help-row"><span class="help-chip">Ctrl+Alt+0</span><div class="help-txt">Show / hide this cheat sheet</div></div>
+      <div class="help-row"><span class="help-chip">Space</span><div class="help-txt">Star burst — limited to once every 30 seconds</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+0</span><div class="help-txt">Toggle <b>Mak Mode</b> — removes the space burst cooldown</div></div>
       <div class="help-row"><span class="help-chip">Ctrl+Alt+1</span><div class="help-txt">Start or pause the timer</div></div>
       <div class="help-row"><span class="help-chip">Ctrl+Alt+2</span><div class="help-txt">Reset the timer</div></div>
       <div class="help-row"><span class="help-chip">Ctrl+Alt+3</span><div class="help-txt">Switch to Focus mode (25 min)</div></div>
@@ -960,11 +963,12 @@ document.getElementById('notes-export').addEventListener('click', () => {
   let xp    = parseInt(localStorage.getItem('fr-game-xp'))    || 0;
 
   function updateStarDisplay() {
-    const lvlIdx = Math.min(Math.floor(xp / XP_PER_LEVEL), LEVELS.length - 1);
+    const lvlIdx = Math.floor(xp / XP_PER_LEVEL);
     const lvlXp  = xp % XP_PER_LEVEL;
     const mult   = rebirthMult();
+    const lvlName = LEVELS[lvlIdx] || LEVELS[LEVELS.length - 1];
     document.getElementById('game-score').textContent = xp + ' ★' + (rebirths > 0 ? '  ×' + mult.toFixed(2) : '');
-    document.getElementById('game-level-lbl').textContent = `Lvl ${lvlIdx + 1} — ${LEVELS[lvlIdx]}`;
+    document.getElementById('game-level-lbl').textContent = `Lvl ${lvlIdx + 1} — ${lvlName}`;
     document.getElementById('game-xp-lbl').textContent = `${lvlXp} / ${XP_PER_LEVEL} xp`;
     document.getElementById('xp-bar').style.width = (lvlXp / XP_PER_LEVEL * 100) + '%';
     const btn = document.getElementById('rebirth-btn');
@@ -1011,7 +1015,19 @@ document.getElementById('notes-export').addEventListener('click', () => {
     }
   }
 
-  // Space does nothing (cheat sheet is Ctrl+Alt+0)
+  // Spacebar star burst — limited unless Mak Mode is on
+  let lastBurst = 0;
+  const BURST_COOLDOWN = 30000; // 30 seconds
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') {
+      e.preventDefault();
+      const now = Date.now();
+      if (!makMode && now - lastBurst < BURST_COOLDOWN) return;
+      lastBurst = now;
+      frenzy = 120;
+      for (let i = 0; i < 6; i++) spawnStar(true);
+    }
+  });
 
   function drawGuy(x, y, dir, state, frame) {
     cx.save();
@@ -1253,6 +1269,14 @@ document.getElementById('notes-export').addEventListener('click', () => {
   loop();
 })();
 
+// ── MAK MODE ────────────────────────────────────────────────────────────────
+let makMode = false;
+function setMakMode(on) {
+  makMode = on;
+  const ind = document.getElementById('mak-indicator');
+  if (ind) ind.style.display = on ? 'block' : 'none';
+}
+
 // ── KEYBOARD SHORTCUTS (Ctrl+Alt+Number) ────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (!e.ctrlKey || !e.altKey) return;
@@ -1260,8 +1284,7 @@ document.addEventListener('keydown', e => {
   if (!['0','1','2','3','4','5','6'].includes(k)) return;
   e.preventDefault();
   if (k === '0') {
-    const o = document.getElementById('cheat-overlay');
-    o.style.display = o.style.display === 'flex' ? 'none' : 'flex';
+    setMakMode(!makMode);
     return;
   }
   if (k === '1') { startTimer(); return; }
