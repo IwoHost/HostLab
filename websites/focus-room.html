@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Focus Guy</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../other/backbutton.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -57,11 +58,11 @@ body{
 #date{font-size:11px;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-top:1px;}
 
 #quote-inline{
-  margin-top:4px;font-size:11px;color:var(--muted);
-  font-family:var(--ff);font-style:italic;
+  margin-top:6px;font-size:12.5px;color:var(--text-secondary, var(--muted));
+  font-family:var(--ff);font-style:italic;line-height:1.5;
 }
 #quote-ticker-text{transition:opacity .5s ease;}
-#quote-ticker-author{opacity:.7;}
+#quote-ticker-author{opacity:.55;font-size:11px;}
 
 /* ── MAIN ── */
 #main{
@@ -311,6 +312,11 @@ body{
 }
 #help-btn:hover{color:var(--text);border-color:var(--muted);}
 
+/* ── RADIO WAVEFORM ── */
+@keyframes snrWave{from{transform:scaleY(.4)}to{transform:scaleY(1)}}
+.snr-bar{width:2px;background:var(--accent);border-radius:1px;opacity:.5;animation:snrWave var(--spd) ease-in-out infinite alternate;}
+#radio-waveform{display:flex;align-items:center;gap:2px;height:14px;margin-top:4px;}
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -382,14 +388,20 @@ body{
 
         <div class="divider"></div>
 
-        <div class="section-title">Ambience</div>
-        <div class="amb-grid">
-          <button class="amb-btn" data-amb="off">Off</button>
-          <button class="amb-btn" data-amb="rain">Rain</button>
-          <button class="amb-btn" data-amb="cafe">Café</button>
-          <button class="amb-btn" data-amb="forest">Forest</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div class="section-title" style="margin-bottom:0;">Lo-Fi Radio</div>
+          <span id="radio-on-air" style="font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:var(--muted2);">off</span>
         </div>
-        <input type="range" class="amb-vol" id="amb-vol" min="0" max="100" value="40" style="margin-top:8px;">
+        <div id="radio-track-name" style="font-family:var(--ff);font-size:11px;font-style:italic;color:var(--muted);margin-bottom:6px;min-height:15px;transition:opacity .4s;"></div>
+        <div id="radio-waveform" style="margin-bottom:10px;"></div>
+        <div id="radio-tpls" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;"></div>
+        <button id="radio-play" class="tbtn primary" style="width:100%;margin-bottom:10px;">▶ Play</button>
+        <div style="display:grid;grid-template-columns:30px 1fr;align-items:center;gap:5px 8px;">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;">VOL</span>
+          <input type="range" id="r-vol" min="0" max="100" value="75" style="width:100%;accent-color:var(--accent);cursor:pointer;">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;">RAIN</span>
+          <input type="range" id="r-rain" min="0" max="100" value="0" style="width:100%;accent-color:var(--accent);cursor:pointer;">
+        </div>
 
         <div class="divider"></div>
 
@@ -454,6 +466,21 @@ body{
         </div>
         <div id="upgrades-list"></div>
 
+        <div class="divider" style="margin-top:16px;"></div>
+        <div class="section-title" style="margin-top:12px;">Rebirth</div>
+        <div id="rebirth-count" style="font-size:11px;color:var(--muted);margin-bottom:10px;">No rebirths yet</div>
+        <button id="rebirth-btn" style="
+          width:100%;padding:9px 12px;border-radius:8px;
+          border:1px solid var(--border2);background:transparent;
+          color:var(--muted);font-family:var(--fb);font-size:11px;
+          letter-spacing:0.04em;cursor:default;opacity:0.35;
+          transition:all .15s;text-align:center;">
+          ⟳ Rebirth  (200★ → ×1.10)
+        </button>
+        <div style="font-size:10px;color:var(--muted2);margin-top:6px;line-height:1.5;">
+          Resets stars &amp; upgrades. Multiplies all future star gains permanently.
+        </div>
+
       </div>
     </div>
 
@@ -504,7 +531,16 @@ function showTicker(animate) {
 }
 
 showTicker(false);
-setInterval(() => { quoteIdx++; showTicker(true); }, 12000);
+setInterval(() => {
+  quoteIdx++;
+  if (Math.random() < 0.25) showTicker(true);
+  else {
+    const textEl = document.getElementById('quote-ticker-text');
+    const authEl = document.getElementById('quote-ticker-author');
+    textEl.style.opacity = '0';
+    setTimeout(() => { textEl.textContent = ''; authEl.textContent = ''; }, 500);
+  }
+}, 20000);
 
 // ── HELP POPUP ───────────────────────────────────────────────────────────────
 document.getElementById('help-close').addEventListener('click', () => {
@@ -818,13 +854,18 @@ document.getElementById('notes-export').addEventListener('click', () => {
 
   // ── UPGRADES ────────────────────────────────────────────────────────────────
   const UPGRADES = [
-    { id:'spawn',  stars:5,   name:'Star Magnet',  desc:'Stars spawn more often',       icon:'✦' },
-    { id:'speed',  stars:15,  name:'Hustle Boots', desc:'Guy runs noticeably faster',    icon:'▶' },
-    { id:'hat',    stars:30,  name:'Focus Hat',    desc:'Guy gets a hat (cosmetic)',     icon:'◈' },
-    { id:'radius', stars:60,  name:'Wide Catch',   desc:'Catch radius doubled',          icon:'◎' },
-    { id:'cape',   stars:100, name:'Work Cape',    desc:'Guy gets a cape',               icon:'◇' },
-    { id:'storm',  stars:150, name:'Star Storm',   desc:'Stars rain constantly',         icon:'★' },
-    { id:'gold',   stars:400, name:'Gold Stars',   desc:'Stars worth 2x',                icon:'✧' },
+    { id:'spawn',   stars:5,   name:'Star Magnet',    desc:'Stars spawn more often',              icon:'✦' },
+    { id:'speed',   stars:15,  name:'Hustle Boots',   desc:'Guy runs noticeably faster',           icon:'▶' },
+    { id:'glasses', stars:25,  name:'Cool Glasses',   desc:'Guy gets sunglasses. That\'s it.',     icon:'◉' },
+    { id:'hat',     stars:30,  name:'Focus Hat',      desc:'Guy gets a hat',                       icon:'◈' },
+    { id:'radius',  stars:60,  name:'Wide Catch',     desc:'Catch radius doubled',                 icon:'◎' },
+    { id:'bounce',  stars:80,  name:'Star Bounce',    desc:'Stars bounce off the ground once',     icon:'⤴' },
+    { id:'cape',    stars:100, name:'Work Cape',      desc:'Guy gets a cape',                      icon:'◇' },
+    { id:'double',  stars:130, name:'Twin Spawn',     desc:'Stars sometimes spawn in pairs',       icon:'⋮' },
+    { id:'storm',   stars:150, name:'Star Storm',     desc:'Stars rain constantly',                icon:'★' },
+    { id:'trail',   stars:220, name:'Speed Trail',    desc:'Guy leaves a sparkle trail',           icon:'✧' },
+    { id:'magnet',  stars:320, name:'Ground Magnet',  desc:'Stars near the ground are auto-caught',icon:'⊕' },
+    { id:'gold',    stars:400, name:'Gold Stars',     desc:'Stars worth 2x',                       icon:'✶' },
   ];
 
   // purchased is the source of truth for what's active
@@ -894,6 +935,11 @@ document.getElementById('notes-export').addEventListener('click', () => {
   ];
   const XP_PER_LEVEL = 30;
 
+  // ── REBIRTH ─────────────────────────────────────────────────────────────────
+  let rebirths = parseInt(localStorage.getItem('fr-rebirths') || '0');
+  function rebirthMult() { return Math.pow(1.1, rebirths); }
+  function rebirthCost() { return Math.round(200 * Math.pow(1.5, rebirths)); }
+
   // ── STARS / DISPLAY ─────────────────────────────────────────────────────────
   let score = parseInt(localStorage.getItem('fr-game-score')) || 0;
   let xp    = parseInt(localStorage.getItem('fr-game-xp'))    || 0;
@@ -901,33 +947,53 @@ document.getElementById('notes-export').addEventListener('click', () => {
   function updateStarDisplay() {
     const lvlIdx = Math.min(Math.floor(xp / XP_PER_LEVEL), LEVELS.length - 1);
     const lvlXp  = xp % XP_PER_LEVEL;
-    document.getElementById('game-score').textContent = xp + ' ★';
+    const mult   = rebirthMult();
+    document.getElementById('game-score').textContent = xp + ' ★' + (rebirths > 0 ? '  ×' + mult.toFixed(2) : '');
     document.getElementById('game-level-lbl').textContent = `Lvl ${lvlIdx + 1} — ${LEVELS[lvlIdx]}`;
     document.getElementById('game-xp-lbl').textContent = `${lvlXp} / ${XP_PER_LEVEL} xp`;
     document.getElementById('xp-bar').style.width = (lvlXp / XP_PER_LEVEL * 100) + '%';
+    const btn = document.getElementById('rebirth-btn');
+    if (btn) {
+      const cost = rebirthCost();
+      const canRebirth = xp >= cost;
+      btn.textContent = `⟳ Rebirth  (${cost}★ → ×${(mult * 1.1).toFixed(2)})`;
+      btn.style.opacity = canRebirth ? '1' : '0.35';
+      btn.style.cursor  = canRebirth ? 'pointer' : 'default';
+      btn.style.borderColor = canRebirth ? 'var(--accent)' : 'var(--border2)';
+      btn.style.color = canRebirth ? 'var(--accent)' : 'var(--muted)';
+      document.getElementById('rebirth-count').textContent =
+        rebirths > 0 ? `Reborn ${rebirths}× — ×${mult.toFixed(2)} stars` : 'No rebirths yet';
+    }
   }
 
   function addXP(n) {
-    xp += n * (has('gold') ? 2 : 1);
+    const gained = Math.floor(n * (has('gold') ? 2 : 1) * rebirthMult());
+    xp += gained;
     score += n;
     localStorage.setItem('fr-game-xp', xp);
     localStorage.setItem('fr-game-score', score);
     updateStarDisplay();
     renderUpgrades();
   }
-  let guy = { x: W/2, y: GROUND, dir: 1, state: 'walk', stateTimer: 0, walkFrame: 0, frameT: 0, speed: 1.4 };
+
+  let guy   = { x: W/2, y: GROUND, dir: 1, state: 'walk', stateTimer: 0, walkFrame: 0, frameT: 0, speed: 1.4 };
   let stars = [];
+  let trail = [];
   let particles = [];
   let starTimer = 0;
   let frenzy = 0;
 
-  function baseSpawnInterval() { return has('storm') ? 15 : has('spawn') ? 45 : 90; }
+  function baseSpawnInterval() { return has('storm') ? 40 : has('spawn') ? 100 : 180; }
   function catchRadius() { return has('radius') ? 28 : 14; }
-  function baseSpeed() { return has('speed') ? 2.2 : 1.4; }
+  function baseSpeed() { return has('speed') ? 1.3 : 0.8; }
 
   function spawnStar(fast) {
-    const vy = (fast ? 2.5 : 0.6) + Math.random() * (fast ? 2 : 0.8);
-    stars.push({ x: 20 + Math.random() * (W-40), y: -8, vy, r: 4 + Math.random()*3 });
+    const vy = (fast ? 1.2 : 0.25) + Math.random() * (fast ? 0.8 : 0.3);
+    stars.push({ x: 20 + Math.random() * (W-40), y: -8, vy, r: 4 + Math.random()*3, bounced: false });
+    if (has('double') && Math.random() < 0.4) {
+      const vy2 = (fast ? 1.2 : 0.25) + Math.random() * (fast ? 0.8 : 0.3);
+      stars.push({ x: 20 + Math.random() * (W-40), y: -8, vy: vy2, r: 4 + Math.random()*3, bounced: false });
+    }
   }
 
   document.addEventListener('keydown', e => {
@@ -973,6 +1039,15 @@ document.getElementById('notes-export').addEventListener('click', () => {
     // eyes
     cx.fillStyle = '#2a1f14';
     cx.fillRect(1, -25, 2, 2);
+
+    // glasses
+    if (has('glasses')) {
+      cx.strokeStyle = '#1a1a1a'; cx.lineWidth = 1;
+      cx.fillStyle = 'rgba(0,0,0,0.55)';
+      cx.fillRect(-5, -27, 4, 3); cx.strokeRect(-5, -27, 4, 3);
+      cx.fillRect(1,  -27, 4, 3); cx.strokeRect(1,  -27, 4, 3);
+      cx.beginPath(); cx.moveTo(-1,-26); cx.lineTo(1,-26); cx.stroke();
+    }
 
     // legs
     cx.fillStyle = '#5a4030';
@@ -1058,11 +1133,35 @@ document.getElementById('notes-export').addEventListener('click', () => {
       }
     }
 
+    // trail tracking
+    if (has('trail') && guy.state === 'walk') {
+      trail.push({ x: guy.x, y: guy.y, life: 18 });
+      if (trail.length > 40) trail.shift();
+    }
+    for (let i = trail.length - 1; i >= 0; i--) {
+      trail[i].life--;
+      if (trail[i].life <= 0) trail.splice(i, 1);
+    }
+
     for (let i = stars.length - 1; i >= 0; i--) {
       const s = stars[i];
       s.y += s.vy;
+
+      // ground magnet — auto-catch near ground
+      if (has('magnet') && s.y >= GROUND - 12) {
+        addXP(1);
+        particles.push({ x: s.x, y: s.y, life: 20, text: '+1' });
+        stars.splice(i, 1);
+        continue;
+      }
+
+      // bounce off ground
+      if (has('bounce') && !s.bounced && s.y >= GROUND) {
+        s.y = GROUND; s.vy = -s.vy * 0.55; s.bounced = true;
+        continue;
+      }
+
       if (Math.abs(s.x - guy.x) < catchRadius() && Math.abs(s.y - guy.y) < 22) {
-        score++;
         addXP(1);
         particles.push({ x: s.x, y: s.y, life: 20, text: has('gold') ? '+2' : '+1' });
         stars.splice(i, 1);
@@ -1085,6 +1184,14 @@ document.getElementById('notes-export').addEventListener('click', () => {
     cx.strokeStyle = MUTED; cx.lineWidth = 1;
     cx.beginPath(); cx.moveTo(0, GROUND + 3); cx.lineTo(W, GROUND + 3); cx.stroke();
 
+    // trail
+    trail.forEach((t, i) => {
+      cx.globalAlpha = (t.life / 18) * 0.4;
+      cx.fillStyle = ACCENT;
+      cx.beginPath(); cx.arc(t.x, t.y - 10, 3 * (t.life / 18), 0, Math.PI * 2); cx.fill();
+    });
+    cx.globalAlpha = 1;
+
     // stars
     stars.forEach(drawStar);
 
@@ -1105,6 +1212,18 @@ document.getElementById('notes-export').addEventListener('click', () => {
   updateStarDisplay();
   renderUpgrades();
 
+  document.getElementById('rebirth-btn').addEventListener('click', () => {
+    if (xp < rebirthCost()) return;
+    if (!confirm(`Rebirth? You'll lose all stars and upgrades but gain ×${(rebirthMult() * 1.1).toFixed(2)} stars forever.`)) return;
+    xp = 0; score = 0; purchased = new Set(); rebirths++;
+    localStorage.setItem('fr-rebirths', rebirths);
+    localStorage.setItem('fr-game-xp', 0);
+    localStorage.setItem('fr-game-score', 0);
+    localStorage.setItem('fr-purchased', '[]');
+    updateStarDisplay();
+    renderUpgrades();
+  });
+
   document.getElementById('game-reset-btn').addEventListener('click', () => {
     if (!confirm('Reset Focus Guy? This clears all stars, levels and upgrades.')) return;
     xp = 0; score = 0; purchased = new Set();
@@ -1118,7 +1237,7 @@ document.getElementById('notes-export').addEventListener('click', () => {
   function scheduleSpawn() {
     const base = baseSpawnInterval();
     const ms = frenzy > 0 ? 80 + Math.random()*120 : base * 16 * (0.7 + Math.random()*0.6);
-    setTimeout(() => { if (timerRunning) spawnStar(frenzy > 0); scheduleSpawn(); }, ms);
+    setTimeout(() => { if (timerRunning && timerLabel === 'FOCUS') spawnStar(frenzy > 0); scheduleSpawn(); }, ms);
   }
   scheduleSpawn();
 
@@ -1126,107 +1245,268 @@ document.getElementById('notes-export').addEventListener('click', () => {
   loop();
 })();
 
-// ── AMBIENCE ─────────────────────────────────────────────────────────────────
-let audioCtx = null;
-let ambNodes = [];
-let ambGain = null;
-let currentAmb = 'off';
-
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
-}
-
-function stopAmb() {
-  ambNodes.forEach(n => { try { n.stop(); } catch(e) {} });
-  ambNodes = [];
-  if (ambGain) { ambGain.disconnect(); ambGain = null; }
-}
-
-function makePinkNoise(ctx) {
-  const bufLen = ctx.sampleRate * 3;
-  const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
-  for (let i = 0; i < bufLen; i++) {
-    const w = Math.random() * 2 - 1;
-    b0 = 0.99886*b0 + w*0.0555179; b1 = 0.99332*b1 + w*0.0750759;
-    b2 = 0.96900*b2 + w*0.1538520; b3 = 0.86650*b3 + w*0.3104856;
-    b4 = 0.55000*b4 + w*0.5329522; b5 = -0.7616*b5 - w*0.0168980;
-    d[i] = (b0+b1+b2+b3+b4+b5+b6+w*0.5362) * 0.11; b6 = w * 0.115926;
+// ── FULL RESET ───────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.altKey && e.key === '6') {
+    e.preventDefault();
+    if (!confirm('Clear ALL Focus Room data? (tasks, notes, timer, stars, upgrades, streaks)')) return;
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('fr-'))
+      .forEach(k => localStorage.removeItem(k));
+    location.reload();
   }
-  const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; return src;
-}
+});
 
-function makeBrownNoise(ctx) {
-  const bufLen = ctx.sampleRate * 3;
-  const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  let last = 0;
-  for (let i = 0; i < bufLen; i++) {
-    const w = Math.random() * 2 - 1;
-    last = (last + 0.02 * w) / 1.02;
-    d[i] = last * 3.5;
+// ── LO-FI RADIO (ported from Signal/Noise Radio) ─────────────────────────────
+(function() {
+  const TMPLS = {
+    latenight: { bpmMin:70,  bpmMax:78,  moodBias:-.2, reverbSize:2.0, hissAmt:0.010, crackleRate:2500, rainDefault:0,    lpFreq:4000, melodyDensity:.65, label:'Late Night' },
+    rainy:     { bpmMin:56,  bpmMax:64,  moodBias:-.8, reverbSize:3.2, hissAmt:0.022, crackleRate:1000, rainDefault:.90,  lpFreq:2600, melodyDensity:.38, label:'Rainy' },
+    cafe:      { bpmMin:90,  bpmMax:102, moodBias: .7, reverbSize:0.7, hissAmt:0.004, crackleRate:6000, rainDefault:0,    lpFreq:7000, melodyDensity:.92, label:'Café' },
+    basement:  { bpmMin:58,  bpmMax:66,  moodBias:-.6, reverbSize:1.1, hissAmt:0.045, crackleRate:300,  rainDefault:.05,  lpFreq:1800, melodyDensity:.32, label:'Basement' },
+    am3:       { bpmMin:46,  bpmMax:54,  moodBias:-.9, reverbSize:5.5, hissAmt:0.006, crackleRate:7000, rainDefault:.18,  lpFreq:3400, melodyDensity:.18, label:'3 AM' },
+  };
+
+  const midiToHz = n => 440 * Math.pow(2,(n-69)/12);
+  const CHORD_INTERVALS = { M:[0,4,7,11], m:[0,3,7,10] };
+  const PROG_MINOR = [[[0,'m'],[10,'M'],[8,'M'],[10,'M']],[[0,'m'],[5,'m'],[10,'M'],[3,'M']],[[0,'m'],[8,'M'],[3,'M'],[10,'M']],[[0,'m'],[5,'m'],[7,'M'],[10,'M']]];
+  const PROG_MAJOR = [[[0,'M'],[5,'M'],[9,'m'],[7,'M']],[[0,'M'],[9,'m'],[5,'M'],[7,'M']],[[2,'m'],[7,'M'],[0,'M'],[9,'m']],[[0,'M'],[7,'M'],[9,'m'],[5,'M']]];
+
+  const ADJ  = ['shallow','slow','pale','distant','soft','hollow','faded','late','quiet','still','dim','hazy','worn','grey','blue'];
+  const NOUN = ['water','signal','static','tape','neon','rooftop','window','station','fog','current','wire','street','radio','light','rain'];
+  const TIME = ['3am','2am','past midnight','at dusk','before dawn','at closing','in winter','at 4am'];
+  const genTrack = () => `${ADJ[Math.random()*ADJ.length|0]} ${NOUN[Math.random()*NOUN.length|0]}, ${TIME[Math.random()*TIME.length|0]}`;
+
+  let playing = false, ctx, masterGain, masterFilter, moodFilter, reverbNode, reverbGain, rainGain, hissGain, bassGain;
+  let stopFns = [], trackInterval, schedulerTimer;
+  let tplKey = 'latenight', tpl = TMPLS.latenight;
+  let chordNotes = [], root = 60;
+  let nextBass = 0, nextMel = 0, lastMel = null, melPhase = true;
+  const K = { mood:0, texture:0.4, rain:0, space:0.5, vol:0.75, bpm:0.5, melody:0.65, bass:0.5, filter:0.6 };
+
+  const bpm  = () => 40 + K.bpm * 80;
+  const lpHz = () => Math.exp(Math.log(300) + K.filter * (Math.log(14000) - Math.log(300)));
+
+  function createReverb(size) {
+    const c = ctx.createConvolver(), len = ctx.sampleRate * size, buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch=0;ch<2;ch++) { const d=buf.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2); }
+    c.buffer = buf; return c;
   }
-  const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; return src;
-}
 
-function startAmb(type) {
-  stopAmb();
-  if (type === 'off') return;
-  const ctx = getAudioCtx();
-  if (ctx.state === 'suspended') ctx.resume();
-  ambGain = ctx.createGain();
-  ambGain.gain.value = document.getElementById('amb-vol').value / 100 * 0.7;
-  ambGain.connect(ctx.destination);
-
-  if (type === 'rain') {
-    const noise = makePinkNoise(ctx);
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass'; filter.frequency.value = 600; filter.Q.value = 0.4;
-    const filter2 = ctx.createBiquadFilter();
-    filter2.type = 'lowpass'; filter2.frequency.value = 2000;
-    noise.connect(filter); filter.connect(filter2); filter2.connect(ambGain);
-    noise.start(); ambNodes.push(noise);
-  } else if (type === 'cafe') {
-    const noise = makeBrownNoise(ctx);
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass'; filter.frequency.value = 300; filter.Q.value = 0.6;
-    noise.connect(filter); filter.connect(ambGain);
-    noise.start(); ambNodes.push(noise);
-    // subtle chatter layer
-    const noise2 = makePinkNoise(ctx);
-    const f2 = ctx.createBiquadFilter();
-    f2.type = 'bandpass'; f2.frequency.value = 1200; f2.Q.value = 2;
-    const g2 = ctx.createGain(); g2.gain.value = 0.3;
-    noise2.connect(f2); f2.connect(g2); g2.connect(ambGain);
-    noise2.start(); ambNodes.push(noise2);
-  } else if (type === 'forest') {
-    const noise = makePinkNoise(ctx);
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'highpass'; filter.frequency.value = 800;
-    const filter2 = ctx.createBiquadFilter();
-    filter2.type = 'lowpass'; filter2.frequency.value = 4000;
-    noise.connect(filter); filter.connect(filter2); filter2.connect(ambGain);
-    noise.start(); ambNodes.push(noise);
+  function applyK() {
+    if (!ctx || !playing) return;
+    if (hissGain)   hissGain.gain.setTargetAtTime(tpl.hissAmt*(0.3+K.texture*1.4), ctx.currentTime, 0.02);
+    if (rainGain)   rainGain.gain.setTargetAtTime(Math.max(K.rain, tpl.rainDefault)*0.18, ctx.currentTime, 0.02);
+    if (reverbGain) reverbGain.gain.setTargetAtTime(0.1+K.space*0.55, ctx.currentTime, 0.02);
+    if (masterFilter) masterFilter.frequency.setTargetAtTime(lpHz(), ctx.currentTime, 0.02);
+    if (masterGain)   masterGain.gain.setTargetAtTime(K.vol, ctx.currentTime, 0.02);
+    if (bassGain)     bassGain.gain.setTargetAtTime(K.bass*0.4, ctx.currentTime, 0.02);
+    if (moodFilter)   moodFilter.gain.setTargetAtTime(K.mood*7, ctx.currentTime, 0.05);
   }
-}
 
-document.querySelectorAll('.amb-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.amb-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentAmb = btn.dataset.amb;
-    startAmb(currentAmb);
+  function chordFor(rootMidi, type) { return CHORD_INTERVALS[type].map(i => rootMidi+i); }
+
+  function pickProg() {
+    const mood = K.mood + tpl.moodBias;
+    const pool = Math.random() > 0.5+mood*0.4 ? PROG_MINOR : PROG_MAJOR;
+    return pool[Math.random()*pool.length|0];
+  }
+
+  function playPad(notes, dur) {
+    notes.forEach(n => {
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='triangle'; o.frequency.value=midiToHz(n); o.detune.value=(Math.random()-.5)*14;
+      g.gain.setValueAtTime(0,ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0.045,ctx.currentTime+1.4);
+      g.gain.linearRampToValueAtTime(0.032,ctx.currentTime+dur-1);
+      g.gain.linearRampToValueAtTime(0,ctx.currentTime+dur);
+      o.connect(g); g.connect(reverbNode); g.connect(masterGain);
+      o.start(); o.stop(ctx.currentTime+dur+0.1);
+    });
+  }
+
+  function schedBass(when, beat) {
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='sine'; o.frequency.value=midiToHz(root-24);
+    g.gain.setValueAtTime(0.4,when); g.gain.exponentialRampToValueAtTime(0.001,when+beat*1.9);
+    o.connect(g); g.connect(bassGain); o.start(when); o.stop(when+beat*2+0.05);
+  }
+
+  function schedMel(when, dur) {
+    const avail = chordNotes.length ? chordNotes : [60,63,67,70];
+    let pool = [];
+    if (!lastMel) { pool = avail; } else {
+      avail.forEach(n => { const d=Math.abs(n-lastMel); const w=d<=2?6:d<=4?3:1; for(let i=0;i<w;i++) pool.push(n); });
+    }
+    const mel = pool[Math.random()*pool.length|0] + (Math.random()<0.15?12:0);
+    lastMel = mel;
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='sine'; o.frequency.value=midiToHz(mel);
+    g.gain.setValueAtTime(0,when); g.gain.linearRampToValueAtTime(0.13,when+0.03);
+    g.gain.exponentialRampToValueAtTime(0.001,when+dur*0.9);
+    o.connect(g); g.connect(reverbNode); g.connect(masterGain);
+    o.start(when); o.stop(when+dur+0.02);
+  }
+
+  function startScheduler() {
+    nextBass=ctx.currentTime+0.05; nextMel=ctx.currentTime+0.05; lastMel=null; melPhase=true;
+    function tick() {
+      if (!ctx) return;
+      const now=ctx.currentTime, beat=60/bpm(), swing=0.61;
+      while (nextBass < now+0.12) { schedBass(nextBass,beat); nextBass+=beat*2+(Math.random()-.5)*0.07; }
+      while (nextMel  < now+0.12) {
+        const swung=melPhase; melPhase=!melPhase;
+        const dur=swung?beat*swing:beat*(1-swing+0.5);
+        if (Math.random()<=K.melody) schedMel(nextMel,dur);
+        nextMel+=dur;
+      }
+    }
+    schedulerTimer=setInterval(tick,25);
+    stopFns.push(()=>{clearInterval(schedulerTimer);schedulerTimer=null;});
+  }
+
+  function startProg() {
+    let stopped=false; const BAR=3.5, BPC=2;
+    function run() {
+      if (stopped) return;
+      const prog=pickProg(), rootNote=48+(Math.random()*5|0);
+      let ci=0, rep=0; const reps=Math.random()<0.4?2:1;
+      function next() {
+        if (stopped) return;
+        if (ci>=prog.length) { rep++; if(rep<reps){ci=0;next();return;} setTimeout(run,Math.random()<0.15?1500:0); return; }
+        const [deg,type]=prog[ci]; const cr=rootNote+deg;
+        root=cr; chordNotes=[...chordFor(cr+12,type),...chordFor(cr+24,type)];
+        playPad(chordFor(cr+12,type),BAR*BPC*1.15); ci++;
+        setTimeout(next,BAR*BPC*1000);
+      }
+      next();
+    }
+    run(); stopFns.push(()=>{stopped=true;});
+  }
+
+  function startCrackle() {
+    let stopped=false;
+    function pop() {
+      if (stopped) return;
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='sawtooth'; o.frequency.value=600+Math.random()*5000;
+      const v=(0.03+K.texture*0.07)*Math.random();
+      g.gain.setValueAtTime(v,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.018);
+      o.connect(g); g.connect(masterFilter); o.start(); o.stop(ctx.currentTime+0.02);
+      setTimeout(pop, tpl.crackleRate*(0.5+Math.random())*(1+(1-K.texture)*2));
+    }
+    pop(); stopFns.push(()=>{stopped=true;});
+  }
+
+  function startEngine() {
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
+    masterGain=ctx.createGain(); masterGain.gain.value=0;
+    moodFilter=ctx.createBiquadFilter(); moodFilter.type='highshelf'; moodFilter.frequency.value=3200; moodFilter.gain.value=K.mood*7;
+    masterFilter=ctx.createBiquadFilter(); masterFilter.type='lowpass'; masterFilter.frequency.value=lpHz(); masterFilter.Q.value=0.4;
+    reverbNode=createReverb(tpl.reverbSize);
+    reverbGain=ctx.createGain(); reverbGain.gain.value=0.1+K.space*0.55;
+    reverbNode.connect(reverbGain); reverbGain.connect(moodFilter);
+    masterGain.connect(moodFilter); moodFilter.connect(masterFilter); masterFilter.connect(ctx.destination);
+    bassGain=ctx.createGain(); bassGain.gain.value=K.bass*0.4; bassGain.connect(masterGain);
+
+    const hBuf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate); const hd=hBuf.getChannelData(0);
+    for(let i=0;i<hd.length;i++) hd[i]=Math.random()*2-1;
+    const hSrc=ctx.createBufferSource(); hSrc.buffer=hBuf; hSrc.loop=true;
+    const hFilt=ctx.createBiquadFilter(); hFilt.type='highpass'; hFilt.frequency.value=5500;
+    hissGain=ctx.createGain(); hissGain.gain.value=tpl.hissAmt;
+    hSrc.connect(hFilt); hFilt.connect(hissGain); hissGain.connect(masterFilter); hSrc.start();
+    stopFns.push(()=>hSrc.stop());
+
+    const rBuf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate); const rd=rBuf.getChannelData(0);
+    for(let i=0;i<rd.length;i++) rd[i]=Math.random()*2-1;
+    const rSrc=ctx.createBufferSource(); rSrc.buffer=rBuf; rSrc.loop=true;
+    const rFilt=ctx.createBiquadFilter(); rFilt.type='bandpass'; rFilt.frequency.value=1800; rFilt.Q.value=0.4;
+    rainGain=ctx.createGain(); rainGain.gain.value=Math.max(K.rain,tpl.rainDefault)*0.18;
+    rSrc.connect(rFilt); rFilt.connect(rainGain); rainGain.connect(masterFilter); rSrc.start();
+    stopFns.push(()=>rSrc.stop());
+
+    masterGain.gain.setTargetAtTime(K.vol,ctx.currentTime,0.2);
+    startProg(); startScheduler(); startCrackle();
+  }
+
+  function stopEngine() {
+    stopFns.forEach(f=>{try{f();}catch(e){}});
+    stopFns=[];
+    if (ctx) { ctx.close(); ctx=null; }
+    clearInterval(trackInterval);
+  }
+
+  function setTpl(key) {
+    tplKey=key; tpl=TMPLS[key];
+    document.querySelectorAll('#radio-tpls .tmode').forEach(b=>{
+      b.classList.toggle('active', b.dataset.tpl===key);
+    });
+    const logMin=Math.log(300),logMax=Math.log(14000);
+    K.bpm    = Math.max(0,Math.min(1,((tpl.bpmMin+tpl.bpmMax)/2-40)/80));
+    K.melody = tpl.melodyDensity;
+    K.filter = Math.max(0,Math.min(1,(Math.log(tpl.lpFreq)-logMin)/(logMax-logMin)));
+    K.rain   = tpl.rainDefault;
+    document.getElementById('r-rain').value = Math.round(K.rain*100);
+    if (playing) { if(masterGain&&ctx) masterGain.gain.setTargetAtTime(0,ctx.currentTime,0.12); setTimeout(()=>{stopEngine();startEngine();applyK();},380); }
+  }
+
+  // Waveform bars
+  const wfEl = document.getElementById('radio-waveform');
+  for (let i=0;i<16;i++) {
+    const b=document.createElement('div'); b.className='snr-bar';
+    b.style.setProperty('--h',(4+Math.random()*12)+'px');
+    b.style.setProperty('--spd',(0.4+Math.random()*0.7)+'s');
+    b.style.animationDelay=(Math.random()*0.6)+'s';
+    wfEl.appendChild(b);
+  }
+
+  function pulseWaveform() {
+    if (!playing) return;
+    wfEl.querySelectorAll('.snr-bar').forEach(b => {
+      b.style.setProperty('--h',(4+Math.random()*14)+'px');
+    });
+  }
+
+  function updateTrack() {
+    const el=document.getElementById('radio-track-name'); if(!el) return;
+    el.style.opacity='0'; setTimeout(()=>{el.textContent=genTrack();el.style.opacity='1';},400);
+  }
+
+  function startRadio() {
+    playing=true;
+    const btn=document.getElementById('radio-play');
+    btn.textContent='⏸ Pause';
+    document.getElementById('radio-on-air').textContent='● live';
+    document.getElementById('radio-on-air').style.color='var(--green2)';
+    wfEl.style.opacity='1';
+    startEngine(); applyK(); updateTrack();
+    trackInterval=setInterval(updateTrack,22000+Math.random()*18000);
+  }
+
+  function stopRadio() {
+    playing=false;
+    document.getElementById('radio-play').textContent='▶ Play';
+    document.getElementById('radio-on-air').textContent='off';
+    document.getElementById('radio-on-air').style.color='var(--muted2)';
+    wfEl.style.opacity='0.35';
+    document.getElementById('radio-track-name').textContent='';
+    stopEngine();
+  }
+
+  // Build template buttons using focus room tmode style
+  Object.entries(TMPLS).forEach(([key,t]) => {
+    const btn=document.createElement('button');
+    btn.className='tmode'; btn.dataset.tpl=key;
+    btn.textContent=t.label;
+    btn.addEventListener('click',()=>setTpl(key));
+    document.getElementById('radio-tpls').appendChild(btn);
   });
-});
+  setTpl('latenight');
 
-document.getElementById('amb-vol').addEventListener('input', e => {
-  if (ambGain) ambGain.gain.value = e.target.value / 100 * 0.7;
-});
-
-// activate "Off" by default visually
-document.querySelector('[data-amb="off"]').classList.add('active');
+  document.getElementById('radio-play').addEventListener('click',()=>playing?stopRadio():startRadio());
+  document.getElementById('r-vol').addEventListener('input', e=>{K.vol=e.target.value/100; applyK();});
+  document.getElementById('r-rain').addEventListener('input',e=>{K.rain=e.target.value/100; applyK();});
+})();
 </script>
 </body>
 </html>
