@@ -356,9 +356,24 @@ body{
       <div class="help-row"><span class="help-chip">25 min</span><div class="help-txt">Focus session — work on one thing, no distractions. Focus Guy runs and catches stars.</div></div>
       <div class="help-row"><span class="help-chip">5 min</span><div class="help-txt">Short break — step away, stretch, breathe. Focus Guy chills out.</div></div>
       <div class="help-row"><span class="help-chip">15 min</span><div class="help-txt">Long break — after a few sessions, take a longer rest.</div></div>
-      <div class="help-row"><span class="help-chip">SPACE</span><div class="help-txt">Triggers a star burst — stars fall faster and more of them for a few seconds.</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+0</span><div class="help-txt">Show keyboard cheat sheet.</div></div>
       <div class="help-row"><span class="help-chip">Sessions</span><div class="help-txt">Complete pomodoros to unlock upgrades for Focus Guy — hat, cape, auto-pilot and more.</div></div>
       <button id="help-close">Got it, let's focus</button>
+    </div>
+  </div>
+
+  <!-- CHEAT SHEET OVERLAY -->
+  <div id="cheat-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:none;align-items:center;justify-content:center;animation:fadeIn .2s ease;">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:28px 32px;max-width:420px;width:90%;position:relative;">
+      <h2 style="font-family:var(--ff);font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text);">Keyboard Shortcuts</h2>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+0</span><div class="help-txt">Show / hide this cheat sheet</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+1</span><div class="help-txt">Start or pause the timer</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+2</span><div class="help-txt">Reset the timer</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+3</span><div class="help-txt">Switch to Focus mode (25 min)</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+4</span><div class="help-txt">Switch to Short Break (5 min)</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+5</span><div class="help-txt">Switch to Long Break (15 min)</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+6</span><div class="help-txt">Clear all Focus Room data (with confirmation)</div></div>
+      <button onclick="document.getElementById('cheat-overlay').style.display='none'" style="width:100%;margin-top:20px;padding:10px;border-radius:8px;border:1.5px solid var(--accent);background:var(--accent);color:#fff;font-family:var(--fb);font-size:14px;font-weight:500;cursor:pointer;">Got it</button>
     </div>
   </div>
 
@@ -996,13 +1011,7 @@ document.getElementById('notes-export').addEventListener('click', () => {
     }
   }
 
-  document.addEventListener('keydown', e => {
-    if (e.code === 'Space' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') {
-      e.preventDefault();
-      frenzy = 120;
-      for (let i = 0; i < 6; i++) spawnStar(true);
-    }
-  });
+  // Space does nothing (cheat sheet is Ctrl+Alt+0)
 
   function drawGuy(x, y, dir, state, frame) {
     cx.save();
@@ -1215,13 +1224,12 @@ document.getElementById('notes-export').addEventListener('click', () => {
   document.getElementById('rebirth-btn').addEventListener('click', () => {
     if (xp < rebirthCost()) return;
     if (!confirm(`Rebirth? You'll lose all stars and upgrades but gain ×${(rebirthMult() * 1.1).toFixed(2)} stars forever.`)) return;
-    xp = 0; score = 0; purchased = new Set(); rebirths++;
+    rebirths++;
     localStorage.setItem('fr-rebirths', rebirths);
-    localStorage.setItem('fr-game-xp', 0);
-    localStorage.setItem('fr-game-score', 0);
+    localStorage.setItem('fr-game-xp', '0');
+    localStorage.setItem('fr-game-score', '0');
     localStorage.setItem('fr-purchased', '[]');
-    updateStarDisplay();
-    renderUpgrades();
+    location.reload();
   });
 
   document.getElementById('game-reset-btn').addEventListener('click', () => {
@@ -1245,16 +1253,38 @@ document.getElementById('notes-export').addEventListener('click', () => {
   loop();
 })();
 
-// ── FULL RESET ───────────────────────────────────────────────────────────────
+// ── KEYBOARD SHORTCUTS (Ctrl+Alt+Number) ────────────────────────────────────
 document.addEventListener('keydown', e => {
-  if (e.ctrlKey && e.altKey && e.key === '6') {
-    e.preventDefault();
+  if (!e.ctrlKey || !e.altKey) return;
+  const k = e.key;
+  if (!['0','1','2','3','4','5','6'].includes(k)) return;
+  e.preventDefault();
+  if (k === '0') {
+    const o = document.getElementById('cheat-overlay');
+    o.style.display = o.style.display === 'flex' ? 'none' : 'flex';
+    return;
+  }
+  if (k === '1') { startTimer(); return; }
+  if (k === '2') { resetTimer(); return; }
+  if (k === '3' || k === '4' || k === '5') {
+    const modes = document.querySelectorAll('.tmode');
+    const idx = k === '3' ? 0 : k === '4' ? 1 : 2;
+    modes[idx] && modes[idx].click();
+    return;
+  }
+  if (k === '6') {
     if (!confirm('Clear ALL Focus Room data? (tasks, notes, timer, stars, upgrades, streaks)')) return;
     Object.keys(localStorage)
       .filter(k => k.startsWith('fr-'))
       .forEach(k => localStorage.removeItem(k));
     location.reload();
   }
+});
+
+// close cheat sheet on backdrop click
+document.getElementById('cheat-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('cheat-overlay'))
+    document.getElementById('cheat-overlay').style.display = 'none';
 });
 
 // ── LO-FI RADIO (ported from Signal/Noise Radio) ─────────────────────────────
