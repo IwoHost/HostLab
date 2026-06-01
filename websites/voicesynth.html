@@ -1598,10 +1598,13 @@ async function doRenderVideo(text, ac) {
   const chunks = [];
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
-  await new Promise((resolve, reject) => {
-    recorder.onstop = resolve;
-    recorder.onerror = e => reject(new Error('Recorder error: ' + e));
-    recorder.start(100); // collect data every 100ms
+  await new Promise((resolve) => {
+    let settled = false;
+    const settle = () => { if (!settled) { settled = true; resolve(); } };
+
+    recorder.onstop  = settle;
+    recorder.onerror = settle; // don't reject — continue with whatever chunks we have
+    recorder.start(100);
 
     const startMs = Date.now();
     audioSrc.start(ac.currentTime + 0.05);
@@ -1613,8 +1616,10 @@ async function doRenderVideo(text, ac) {
       setExportProgress(20 + Math.round(Math.min(elapsed / totalDuration, 1) * 75), 'RECORDING…');
       if (elapsed >= totalDuration + 0.3) {
         clearInterval(interval);
-        setExportProgress(98, 'FINISHING…');
-        recorder.stop();
+        setExportProgress(95, 'FINISHING…');
+        try { recorder.stop(); } catch {}
+        // Safety: if onstop never fires, continue after 3 s
+        setTimeout(settle, 3000);
       }
     }, 1000 / FPS);
   });
