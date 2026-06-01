@@ -448,7 +448,10 @@ body{
 
         <div class="divider"></div>
 
-        <div class="section-title" style="margin-top:12px;">Upgrades</div>
+        <div class="section-title" style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;">
+          Upgrades
+          <button id="game-reset-btn" style="font-size:10px;color:var(--muted2);background:none;border:none;cursor:pointer;font-family:var(--fb);letter-spacing:0.04em;padding:0;" title="Reset Focus Guy progress">↺ reset</button>
+        </div>
         <div id="upgrades-list"></div>
 
       </div>
@@ -541,6 +544,34 @@ let sessionCount = parseInt(localStorage.getItem('fr-sessions') || '0');
 let totalTasksDone = parseInt(localStorage.getItem('fr-tasks') || '0');
 let totalFocusMins = parseInt(localStorage.getItem('fr-mins') || '0');
 
+// restore timer state from before page was closed
+(function restoreTimer() {
+  const savedEnd   = parseInt(localStorage.getItem('fr-timer-end') || '0');
+  const savedTotal = parseInt(localStorage.getItem('fr-timer-total') || '0');
+  const savedLabel = localStorage.getItem('fr-timer-label');
+  if (!savedEnd || !savedTotal || !savedLabel) return;
+  const remaining = Math.round((savedEnd - Date.now()) / 1000);
+  timerLabel = savedLabel;
+  timerTotal = savedTotal;
+  // sync mode button UI
+  document.querySelectorAll('.tmode').forEach(b => {
+    b.classList.toggle('active', b.dataset.label === savedLabel);
+  });
+  if (remaining > 0) {
+    timerLeft = remaining;
+  } else {
+    // completed while away
+    if (savedLabel === 'FOCUS') {
+      sessionCount++;
+      totalFocusMins += Math.round(savedTotal / 60);
+      localStorage.setItem('fr-sessions', sessionCount);
+      localStorage.setItem('fr-mins', totalFocusMins);
+    }
+    localStorage.removeItem('fr-timer-end');
+    timerLeft = 0;
+  }
+})();
+
 // ── STREAK ──────────────────────────────────────────────────────────────────
 function getTodayStr() {
   const d = new Date();
@@ -588,11 +619,15 @@ function startTimer() {
   if (timerRunning) {
     clearInterval(timerInterval);
     timerRunning = false;
+    localStorage.removeItem('fr-timer-end');
     document.getElementById('timer-start').textContent = '▶ Resume';
     document.getElementById('timer-start').className = 'tbtn primary';
     return;
   }
   timerRunning = true;
+  localStorage.setItem('fr-timer-end',   Date.now() + timerLeft * 1000);
+  localStorage.setItem('fr-timer-total', timerTotal);
+  localStorage.setItem('fr-timer-label', timerLabel);
   document.getElementById('timer-start').textContent = '⏸ Pause';
   document.getElementById('timer-start').className = 'tbtn primary';
   timerInterval = setInterval(() => {
@@ -631,6 +666,7 @@ function resetTimer() {
   clearInterval(timerInterval);
   timerRunning = false;
   timerLeft = timerTotal;
+  localStorage.removeItem('fr-timer-end');
   document.getElementById('timer-start').textContent = '▶ Start';
   renderTimer();
 }
@@ -782,59 +818,102 @@ document.getElementById('notes-export').addEventListener('click', () => {
 
   // ── UPGRADES ────────────────────────────────────────────────────────────────
   const UPGRADES = [
-    { id:'spawn',   session:1,  name:'Star Magnet',   desc:'Stars spawn more often',        icon:'✦' },
-    { id:'speed',   session:2,  name:'Hustle Boots',  desc:'Guy runs noticeably faster',     icon:'▶' },
-    { id:'hat',     session:3,  name:'Focus Hat',     desc:'Guy gets a hat (cosmetic)',      icon:'◈' },
-    { id:'radius',  session:5,  name:'Wide Catch',    desc:'Catch radius doubled',           icon:'◎' },
-    { id:'cape',    session:7,  name:'Work Cape',     desc:'Guy gets a cape',                icon:'◇' },
-    { id:'storm',   session:10, name:'Star Storm',    desc:'Stars rain constantly',          icon:'★' },
-    { id:'auto',    session:15, name:'Auto-pilot',    desc:'Guy steers toward stars',        icon:'◉' },
-    { id:'gold',    session:20, name:'Gold Stars',    desc:'Stars worth 2x',                 icon:'✧' },
+    { id:'spawn',  stars:5,   name:'Star Magnet',  desc:'Stars spawn more often',       icon:'✦' },
+    { id:'speed',  stars:15,  name:'Hustle Boots', desc:'Guy runs noticeably faster',    icon:'▶' },
+    { id:'hat',    stars:30,  name:'Focus Hat',    desc:'Guy gets a hat (cosmetic)',     icon:'◈' },
+    { id:'radius', stars:60,  name:'Wide Catch',   desc:'Catch radius doubled',          icon:'◎' },
+    { id:'cape',   stars:100, name:'Work Cape',    desc:'Guy gets a cape',               icon:'◇' },
+    { id:'storm',  stars:150, name:'Star Storm',   desc:'Stars rain constantly',         icon:'★' },
+    { id:'gold',   stars:400, name:'Gold Stars',   desc:'Stars worth 2x',                icon:'✧' },
   ];
 
-  function getUnlocked() {
-    return UPGRADES.filter(u => sessionCount >= u.session);
-  }
-  function has(id) { return sessionCount >= (UPGRADES.find(u => u.id === id)?.session || 999); }
+  // purchased is the source of truth for what's active
+  let purchased = new Set(JSON.parse(localStorage.getItem('fr-purchased') || '[]'));
+  function has(id) { return purchased.has(id); }
 
   function renderUpgrades() {
     const el = document.getElementById('upgrades-list');
     if (!el) return;
     el.innerHTML = '';
     UPGRADES.forEach(u => {
-      const unlocked = sessionCount >= u.session;
+      const owned    = purchased.has(u.id);
+      const canAfford = xp >= u.stars;
       const div = document.createElement('div');
-      div.className = 'upgrade-item ' + (unlocked ? 'unlocked' : 'locked');
+      div.className = 'upgrade-item ' + (owned ? 'unlocked' : 'locked');
       div.innerHTML = `
         <div class="upg-icon">${u.icon}</div>
         <div class="upg-info">
           <div class="upg-name">${u.name}</div>
           <div class="upg-desc">${u.desc}</div>
-          <div class="upg-req">${unlocked ? '✓ Active' : 'Unlocks at session ' + u.session}</div>
+          ${owned
+            ? `<div class="upg-req">✓ Active</div>`
+            : `<button class="upg-buy" data-id="${u.id}" style="
+                margin-top:4px;padding:3px 10px;border-radius:999px;
+                border:1px solid ${canAfford ? 'var(--accent)' : 'var(--border2)'};
+                background:${canAfford ? 'rgba(200,120,74,0.12)' : 'transparent'};
+                color:${canAfford ? 'var(--accent)' : 'var(--muted2)'};
+                font-size:10px;cursor:${canAfford ? 'pointer' : 'default'};
+                font-family:var(--fb);letter-spacing:0.04em;">
+                ${u.stars} ★
+              </button>`
+          }
         </div>`;
       el.appendChild(div);
     });
+    el.querySelectorAll('.upg-buy').forEach(btn => {
+      btn.addEventListener('click', () => buyUpgrade(btn.dataset.id));
+    });
   }
-  renderUpgrades();
 
-  // ── XP / LEVEL ──────────────────────────────────────────────────────────────
+  function buyUpgrade(id) {
+    const u = UPGRADES.find(u => u.id === id);
+    if (!u || purchased.has(id) || xp < u.stars) return;
+    xp -= u.stars;
+    purchased.add(id);
+    localStorage.setItem('fr-purchased', JSON.stringify([...purchased]));
+    localStorage.setItem('fr-game-xp', xp);
+    updateStarDisplay();
+    renderUpgrades();
+  }
+
+  // ── LEVELS ──────────────────────────────────────────────────────────────────
   const LEVELS = [
-    {name:'Newcomer'},{name:'Focused'},{name:'On a Roll'},{name:'Flow State'},
-    {name:'Deep Work'},{name:'Unstoppable'},{name:'Legend'},{name:'Ascended'},
+    'Newcomer',        'Still Awake',       'Tab Opener',        'Getting Somewhere',
+    'Actually Focused','On a Roll',         'Flow State',        'Deep Work',
+    'Locked In',       'No Distractions',   'Hyperfocused',      'Time Blindness',
+    'Forgot to Eat',   'One More Task',     'Just Five Minutes', 'Deadline Survivor',
+    'Caffeine Dependent','Red Bull Wings',  'Brain on Fire',     'The Zone',
+    'All Nighter',     '3AM Productivity',  'Sleep is Optional', 'Unstoppable',
+    'Ascended',        'Star Hoarder',      'Productivity God',  'Touch Grass Please',
+    'No Life (Respect)','Monk Mode',        'Skill Issue Resolved','NPC Escaped',
+    'Final Boss Mode', 'True Grindset',     'Enlightened',       'Omnifocused',
+    'The Algorithm',   'Maximum Overdrive', 'Beyond Human',      'Legendary',
+    'Transcendent',    'Time Lord',         'Stars Are Real',    'Void Walker',
+    'Ancient One',     'Heat Death Survivor','The Grind Never Ends','Infinite Focus',
+    'Post-Human',      'Maximum Guy',
   ];
+  const XP_PER_LEVEL = 30;
+
+  // ── STARS / DISPLAY ─────────────────────────────────────────────────────────
   let score = parseInt(localStorage.getItem('fr-game-score')) || 0;
-  let xp = parseInt(localStorage.getItem('fr-game-xp')) || 0;
+  let xp    = parseInt(localStorage.getItem('fr-game-xp'))    || 0;
+
+  function updateStarDisplay() {
+    const lvlIdx = Math.min(Math.floor(xp / XP_PER_LEVEL), LEVELS.length - 1);
+    const lvlXp  = xp % XP_PER_LEVEL;
+    document.getElementById('game-score').textContent = xp + ' ★';
+    document.getElementById('game-level-lbl').textContent = `Lvl ${lvlIdx + 1} — ${LEVELS[lvlIdx]}`;
+    document.getElementById('game-xp-lbl').textContent = `${lvlXp} / ${XP_PER_LEVEL} xp`;
+    document.getElementById('xp-bar').style.width = (lvlXp / XP_PER_LEVEL * 100) + '%';
+  }
 
   function addXP(n) {
     xp += n * (has('gold') ? 2 : 1);
+    score += n;
     localStorage.setItem('fr-game-xp', xp);
     localStorage.setItem('fr-game-score', score);
-    const lvl = Math.min(Math.floor(xp / 20), LEVELS.length - 1);
-    const lvlXp = xp % 20;
-    document.getElementById('game-score').textContent = xp + ' ★';
-    document.getElementById('game-level-lbl').textContent = `Lvl ${lvl+1} — ${LEVELS[lvl].name}`;
-    document.getElementById('game-xp-lbl').textContent = `${lvlXp} / 20 xp`;
-    document.getElementById('xp-bar').style.width = (lvlXp * 5) + '%';
+    updateStarDisplay();
+    renderUpgrades();
   }
   let guy = { x: W/2, y: GROUND, dir: 1, state: 'walk', stateTimer: 0, walkFrame: 0, frameT: 0, speed: 1.4 };
   let stars = [];
@@ -942,21 +1021,8 @@ document.getElementById('notes-export').addEventListener('click', () => {
     if (!timerRunning) {
       guy.state = 'sleep';
     } else if (timerLabel !== 'FOCUS') {
-      // break: gentle stroll back and forth
-      guy.stateTimer--;
-      if (guy.stateTimer <= 0) {
-        guy.state = 'walk';
-        guy.dir = Math.random() < 0.5 ? 1 : -1;
-        guy.speed = 0.7;
-        guy.stateTimer = 80 + Math.random() * 60;
-      }
-      if (guy.state === 'walk') {
-        guy.x += guy.dir * guy.speed;
-        guy.frameT++;
-        if (guy.x > W - 14) { guy.x = W - 14; guy.dir = -1; }
-        if (guy.x < 14)      { guy.x = 14;     guy.dir =  1; }
-        guy.walkFrame = guy.frameT;
-      }
+      // break: just chill
+      guy.state = 'sleep';
     } else {
       guy.stateTimer--;
       if (guy.stateTimer <= 0) {
@@ -1036,7 +1102,18 @@ document.getElementById('notes-export').addEventListener('click', () => {
   }
 
   // Star spawning runs on its own interval, never throttled by rAF
-  addXP(0); // restore display from saved values
+  updateStarDisplay();
+  renderUpgrades();
+
+  document.getElementById('game-reset-btn').addEventListener('click', () => {
+    if (!confirm('Reset Focus Guy? This clears all stars, levels and upgrades.')) return;
+    xp = 0; score = 0; purchased = new Set();
+    localStorage.removeItem('fr-game-xp');
+    localStorage.removeItem('fr-game-score');
+    localStorage.removeItem('fr-purchased');
+    updateStarDisplay();
+    renderUpgrades();
+  });
 
   function scheduleSpawn() {
     const base = baseSpawnInterval();

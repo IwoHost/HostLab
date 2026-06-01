@@ -420,6 +420,12 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 </section>
 
 <div class="grid-header">
+  <span class="grid-label">Sections</span>
+</div>
+
+<div class="grid" id="sections-grid"></div>
+
+<div class="grid-header" style="margin-top:16px;">
   <span class="grid-label">All projects</span>
   <span class="count-badge" id="count-badge">0</span>
 </div>
@@ -442,7 +448,7 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
      image → other/p_{file}.png
      desc  → other/d_{file}.txt
    ════════════════════════════════════════════ */
-const PROJECTS = [
+const SECTIONS = [
   {
     href:  'pages/games.html',
     file:  'games.html',
@@ -457,6 +463,9 @@ const PROJECTS = [
     title: 'Archives',
     desc:  'Projects that never made it. Killed by scope creep, lost motivation, bad timing, or the classic "I\'ll finish it later."'
   },
+];
+
+const PROJECTS = [
   {
     file:  'dither-lab.html',
     icon:  'other/logo/Dither.png',
@@ -552,13 +561,14 @@ const PROJECTS = [
 /* ════════════════════════════════════════════ */
 
 const grid = document.getElementById('grid');
+const sectionsGrid = document.getElementById('sections-grid');
 const countBadge = document.getElementById('count-badge');
 const siteCount  = document.getElementById('site-count');
 
 document.getElementById('footer-date').textContent =
   new Date().toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' }).toUpperCase();
 
-const projectCount = PROJECTS.length - 2;
+const projectCount = PROJECTS.length;
 countBadge.textContent = projectCount;
 siteCount.textContent  = projectCount + ' PROJECT' + (projectCount !== 1 ? 'S' : '');
 
@@ -632,6 +642,10 @@ function buildCard(project, index) {
 }
 
 function init() {
+  SECTIONS.forEach((project, i) => {
+    const card = buildCard(project, i);
+    sectionsGrid.appendChild(card);
+  });
   PROJECTS.forEach((project, i) => {
     const card = buildCard(project, i);
     grid.appendChild(card);
