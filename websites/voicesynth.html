@@ -1621,8 +1621,10 @@ async function doRenderVideo(text, ac) {
 
   document.body.removeChild(canvas);
 
-  setExportProgress(100, 'DONE');
+  setExportProgress(99, 'PACKAGING…');
   const blob = new Blob(chunks, { type: mime });
+  setExportProgress(100, 'DONE');
+  await new Promise(r => setTimeout(r, 600));
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

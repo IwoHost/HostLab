@@ -951,7 +951,12 @@ document.getElementById('notes-export').addEventListener('click', () => {
     'Ancient One',     'Heat Death Survivor','The Grind Never Ends','Infinite Focus',
     'Post-Human',      'Maximum Guy',
   ];
-  const XP_PER_LEVEL = 30;
+  // XP needed to go from level n to n+1 (0-indexed): 30, 60, 90, 120 ...
+  function xpForLevel(n) { return 30 * (n + 1); }
+  // Total XP to reach level n: 0, 30, 90, 180, 300 ...
+  function totalXpToLevel(n) { return 15 * n * (n + 1); }
+  // Current level index from total XP
+  function levelFromXp(x) { return Math.floor((-1 + Math.sqrt(1 + 4 * x / 15)) / 2); }
 
   // ── REBIRTH ─────────────────────────────────────────────────────────────────
   let rebirths = parseInt(localStorage.getItem('fr-rebirths') || '0');
@@ -963,14 +968,16 @@ document.getElementById('notes-export').addEventListener('click', () => {
   let xp    = parseInt(localStorage.getItem('fr-game-xp'))    || 0;
 
   function updateStarDisplay() {
-    const lvlIdx = Math.floor(xp / XP_PER_LEVEL);
-    const lvlXp  = xp % XP_PER_LEVEL;
-    const mult   = rebirthMult();
-    const lvlName = LEVELS[lvlIdx] || LEVELS[LEVELS.length - 1];
+    const lvlIdx   = levelFromXp(xp);
+    const lvlStart = totalXpToLevel(lvlIdx);
+    const lvlNeed  = xpForLevel(lvlIdx);
+    const lvlXp    = xp - lvlStart;
+    const mult     = rebirthMult();
+    const lvlName  = LEVELS[lvlIdx] || LEVELS[LEVELS.length - 1];
     document.getElementById('game-score').textContent = xp + ' ★' + (rebirths > 0 ? '  ×' + mult.toFixed(2) : '');
     document.getElementById('game-level-lbl').textContent = `Lvl ${lvlIdx + 1} — ${lvlName}`;
-    document.getElementById('game-xp-lbl').textContent = `${lvlXp} / ${XP_PER_LEVEL} xp`;
-    document.getElementById('xp-bar').style.width = (lvlXp / XP_PER_LEVEL * 100) + '%';
+    document.getElementById('game-xp-lbl').textContent = `${lvlXp} / ${lvlNeed} xp`;
+    document.getElementById('xp-bar').style.width = (lvlXp / lvlNeed * 100) + '%';
     const btn = document.getElementById('rebirth-btn');
     if (btn) {
       const cost = rebirthCost();
