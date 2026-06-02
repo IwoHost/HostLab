@@ -669,6 +669,524 @@ const QUESTIONS = [
       ok: "Gdy typ portu to TCP/IP — drukarkę dodaje się podając jej adres IP (lub hostname).",
       not: ["USB — port lokalny, nie TCP/IP","Bluetooth — inny protokół","UNC (\\\\serwer\\drukarka) — port SMB, nie TCP/IP"]
     }
+  },
+  // ── SPRZĘT I KOMPONENTY ──
+  {
+    q: "Jaki element kabla koncentrycznego stanowi wewnętrzny przewodnik (rdzeń)? Jaki wtyk się na niego zarabia?",
+    opts: ["Aluminiowa folia ekranująca — wtyk RJ45","Miedziany oplot — wtyk BNC","Jednodrutowa żyła miedziana — kompresyjny wtyk F","Dielektryk — wtyk F nakręcany"],
+    ans: 2,
+    cat: "sprz",
+    exp: {
+      ok: "Kabel koncentryczny satelitarny: rdzeń = jednodrutowa żyła miedziana. Wtyk = kompresyjny typ F.",
+      not: ["Folia to ekran, nie rdzeń","Oplot to ekran zewnętrzny","Dielektryk to izolacja między rdzeniem a ekranem"]
+    }
+  },
+  {
+    q: "Błąd montażowy kabla koncentrycznego powodujący zwarcie i brak sygnału?",
+    opts: ["Zbytnie skrócenie zewnętrznej powłoki PVC","Pozostawienie drucików oplotu (ekranu) stykających się z miedzianą żyłą główną","Mocne dokręcenie wtyku do gniazda","Użycie białego dielektryka"],
+    ans: 1,
+    cat: "sprz",
+    exp: {
+      ok: "Gdy druciki oplotu (ekranu) dotykają rdzenia — powoduje zwarcie i brak sygnału.",
+      not: ["Skrócenie powłoki — nie powoduje zwarcia","Dokręcenie — prawidłowa czynność","Kolor dielektryka — nie ma znaczenia dla sygnału"]
+    }
+  },
+  {
+    q: "Wtyki F z zielonym paskiem i gładką tuleją — jaka metoda montażu?",
+    opts: ["Nakręcana","Lutowana","Zaciskowa / Kompresyjna","Szybkozłączna"],
+    ans: 2,
+    cat: "sprz",
+    exp: {
+      ok: "Zielony pasek + gładka tuleja = wtyk kompresyjny (zaciskowy) — montaż narzędziem zaciskowym.",
+      not: ["Nakręcana — ma gwint","Lutowana — wymaga cyny","Szybkozłączna — inny typ"]
+    }
+  },
+  {
+    q: "Do czego służyły okrągłe złącza Mini-DIN (PS/2) w kolorze zielonym i fioletowym?",
+    opts: ["Do podłączania monitorów kineskopowych","Do przesyłania cyfrowego audio","Do podłączania klawiatury i myszy","Do łączenia komputerów w sieć LAN"],
+    ans: 2,
+    cat: "sprz",
+    exp: {
+      ok: "PS/2: fioletowy = klawiatura, zielony = mysz.",
+      not: ["Monitory — VGA/DVI/HDMI","Audio cyfrowe — SPDIF/optyczne","LAN — RJ-45"]
+    }
+  },
+  {
+    q: "Minimalna liczba dysków do zbudowania macierzy RAID 6?",
+    opts: ["2","3","4","5"],
+    ans: 2,
+    cat: "sprz",
+    exp: {
+      ok: "RAID 6 = podwójna parzystość. Minimum 4 dyski — 2 dane + 2 parzystość. Odporność na awarię 2 dysków jednocześnie.",
+      not: ["2 — to RAID 1","3 — to RAID 5","5 — nadmiarowe, nie minimalnie wymagane"]
+    }
+  },
+  {
+    q: "Sygnał na oscyloskopie w postaci pochylonych 'igieł' / skośnych zębów — co to?",
+    opts: ["Sygnał sinusoidalny","Sygnał prostokątny","Sygnał piłokształtny (piłowy)","Sygnał impulsowy"],
+    ans: 2,
+    cat: "sprz",
+    exp: {
+      ok: "Charakterystyczne skośne 'igły' = sygnał piłokształtny. Liniowy wzrost + gwałtowny spadek.",
+      not: ["Sinusoida — łagodna fala","Prostokątny — pionowe krawędzie i płaskie wierzchołki","Impulsowy — krótkie wąskie piki"]
+    }
+  },
+  {
+    q: "Jakim programem sprawdzić parametry S.M.A.R.T. dysku twardego?",
+    opts: ["CrystalDiskMark","HDTune","CPU-Z","HWiNFO"],
+    ans: 1,
+    cat: "sprz",
+    exp: {
+      ok: "HDTune to standardowa odpowiedź na egzaminie CKE — wyświetla parametry S.M.A.R.T.",
+      not: ["CrystalDiskMark — benchmark prędkości dysku","CPU-Z — parametry procesora, RAM","HWiNFO — ogólny monitoring sprzętu"]
+    }
+  },
+  {
+    q: "Program CPU-Z — zakładka SPD. Co możesz tam odczytać?",
+    opts: ["Aktualną temperaturę procesora","System plików dysku twardego","Ile modułów RAM zainstalowano i jaki jest ich rozmiar","Adres IP karty sieciowej"],
+    ans: 2,
+    cat: "sprz",
+    exp: {
+      ok: "SPD (Serial Presence Detect) — odczytuje informacje z modułów RAM: typ, rozmiar, taktowanie, producent.",
+      not: ["Temperatura CPU — zakładka CPU lub monitoring","Dysk — nie jest w SPD","IP — narzędzia sieciowe"]
+    }
+  },
+  {
+    q: "Jak sprawdzić, czy pamięć RAM jest kompatybilna z płytą główną?",
+    opts: ["Sprawdzić kolor slotów RAM","Sprawdzić specyfikację płyty głównej (typ DDR, częstotliwość, max pojemność) i porównać z parametrami modułu RAM","Zainstalować RAM i uruchomić komputer — jeśli działa, to kompatybilna","Sprawdzić tylko czy RAM fizycznie pasuje do slotu"],
+    ans: 1,
+    cat: "sprz",
+    exp: {
+      ok: "Należy sprawdzić: typ (DDR4/DDR5), częstotliwość (MHz), max pojemność — wszystko w specyfikacji płyty.",
+      not: ["Kolor slotów — oznacza kanały dual-channel, nie kompatybilność","Metodą prób — ryzyko uszkodzenia","Fizyczne pasowanie — DDR4 i DDR5 mają inne wycięcia, ale to nie wystarczy"]
+    }
+  },
+  // ── SYSTEMY OPERACYJNE ──
+  {
+    q: "Co robi funkcja Fast Boot w BIOS-ie?",
+    opts: ["Przyspiesza działanie dysku SSD","Pomija pewne sprawdzenia sprzętowe (testy POST), aby system uruchomił się szybciej","Automatycznie nadpisuje dane na dysku","Blokuje bootowanie z USB"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "Fast Boot = pomijanie części testów POST. Efekt: szybszy start, ale mniejsza kontrola nad sprzętem.",
+      not: ["SSD — ma własne optymalizacje (TRIM)","Nadpisywanie — nie istnieje taka funkcja","Blokowanie USB — Secure Boot lub ustawienia kolejności bootowania"]
+    }
+  },
+  {
+    q: "Bootowanie z opcji 'NIC' w BIOS-ie. Co to oznacza?",
+    opts: ["Uruchamianie z dysku NVMe","Boot z karty graficznej","Uruchamianie systemu przez sieć (PXE / karta sieciowa)","Brak urządzenia startowego"],
+    ans: 2,
+    cat: "system",
+    exp: {
+      ok: "NIC (Network Interface Card) = boot przez sieć za pomocą protokołu PXE. Używane np. do wdrażania systemów bez nośnika.",
+      not: ["NVMe — pojawia się jako M.2 lub NVMe Drive","Karta graficzna — nie bootuje systemu","Brak urządzenia — wtedy BIOS wyświetla błąd"]
+    }
+  },
+  {
+    q: "Jakie rozszerzenie mają skrypty powłoki w systemie Linux?",
+    opts: [".bat",".sh",".exe",".ps1"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: ".sh to standardowe rozszerzenie skryptów bash/sh w systemie Linux.",
+      not: [".bat — skrypty wsadowe Windows CMD",".exe — plik wykonywalny Windows",".ps1 — skrypty PowerShell"]
+    }
+  },
+  {
+    q: "Jakie rozszerzenie posiada standardowy plik projektu Cisco Packet Tracer?",
+    opts: [".pkt",".pka",".pkz",".cisco"],
+    ans: 0,
+    cat: "system",
+    exp: {
+      ok: ".pkt to format pliku projektu Cisco Packet Tracer.",
+      not: [".pka — plik aktywności (zadanie z oceną)",".pkz — spakowana wersja",".cisco — nie istnieje"]
+    }
+  },
+  {
+    q: "Jak nazywa się oprogramowanie wbudowane na stałe w pamięć ROM układu scalonego?",
+    opts: ["Freeware","Shareware","Firmware","Malware"],
+    ans: 2,
+    cat: "system",
+    exp: {
+      ok: "Firmware = oprogramowanie wbudowane w sprzęt (np. BIOS płyty, oprogramowanie routera, dysku).",
+      not: ["Freeware — darmowe oprogramowanie","Shareware — oprogramowanie z ograniczonym trybem demo","Malware — złośliwe oprogramowanie"]
+    }
+  },
+  {
+    q: "Czym jest Comarch ERP (np. Optima)?",
+    opts: ["Programem antywirusowym","Środowiskiem programistycznym","Zintegrowanym systemem informatycznym do zarządzania firmą","Narzędziem do partycjonowania dysków"],
+    ans: 2,
+    cat: "system",
+    exp: {
+      ok: "ERP (Enterprise Resource Planning) = system do zarządzania zasobami firmy (księgowość, magazyn, kadry, sprzedaż).",
+      not: ["Antywirus — Kaspersky, ESET itp.","IDE — Visual Studio, Eclipse","Partycjonowanie — diskpart, GParted"]
+    }
+  },
+  {
+    q: "Filmik z VirtualBoxem — bardzo wolno poruszający się kursor myszy w maszynie wirtualnej. Przyczyna?",
+    opts: ["Za mało RAMu przydzielonego maszynie","Nie zainstalowano VirtualBox Guest Additions","Zła rozdzielczość ekranu","Błędna konfiguracja sieci"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "Guest Additions instaluje sterownik myszy — bez niego kursor jest 'przechwytywany' i laguje.",
+      not: ["RAM — wpływa na ogólną wydajność, nie na mysz","Rozdzielczość — też wymaga Guest Additions","Sieć — nie ma wpływu na mysz"]
+    }
+  },
+  {
+    q: "Jaki dodatek instalowany w maszynie wirtualnej VirtualBox włącza integrację myszy, schowka i skalowanie ekranu?",
+    opts: ["VirtualBox Bootloader","VirtualBox Core Expansion","VirtualBox Guest Additions","VirtualBox Hypervisor Tools"],
+    ans: 2,
+    cat: "system",
+    exp: {
+      ok: "VirtualBox Guest Additions — instalowane wewnątrz gościa, dodają sterowniki myszy, ekranu, schowka.",
+      not: ["Bootloader — zarządza uruchamianiem systemu","Core Expansion — nie istnieje","Hypervisor Tools — nie istnieje w VirtualBox"]
+    }
+  },
+  {
+    q: "Który tryb sieciowy w VirtualBox sprawia, że maszyna dostaje IP z tej samej podsieci co host i jest widoczna w LAN?",
+    opts: ["NAT","Karta mostkowana (Bridged Adapter)","Sieć wewnętrzna (Internal Network)","Host-only Adapter"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "Bridged Adapter = maszyna wirtualna podłączona bezpośrednio do fizycznej sieci — jak osobny komputer w LAN.",
+      not: ["NAT — maszyna ma dostęp do netu, ale jest za NATem, niewidoczna w LAN","Internal Network — tylko między VM","Host-only — tylko komunikacja z hostem"]
+    }
+  },
+  {
+    q: "Jakie szkolenie jest obowiązkowe dla nowego pracownika przed przystąpieniem do pracy?",
+    opts: ["Szkolenie z obsługi programów biurowych","Szkolenie BHP (bezpieczeństwo i higiena pracy)","Szkolenie z języka obcego","Szkolenie z zarządzania projektami"],
+    ans: 1,
+    cat: "inne",
+    exp: {
+      ok: "Pracodawca ma obowiązek przeszkolenia pracownika z BHP przed dopuszczeniem do pracy (Kodeks pracy art. 237).",
+      not: ["Programy biurowe — zalecane, nie wymagane prawnie","Język obcy — nie wymagany","Zarządzanie projektami — nie wymagane"]
+    }
+  },
+  // ── SIECI ──
+  {
+    q: "Które urządzenie dzieli sieć na osobne domeny kolizyjne per port, ale pozostaje w jednej domenie rozgłoszeniowej?",
+    opts: ["Hub","Switch","Router","Repeater"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "Switch = osobna domena kolizyjna na każdy port, ale cały switch to jedna domena rozgłoszeniowa.",
+      not: ["Hub — jedna wielka domena kolizyjna","Router — dzieli też domeny rozgłoszeniowe","Repeater — warstwa 1, wzmacnia sygnał"]
+    }
+  },
+  {
+    q: "Ile domen kolizyjnych i rozgłoszeniowych tworzy router z 3 aktywnymi interfejsami LAN?",
+    opts: ["1 kolizyjna i 3 rozgłoszeniowe","3 kolizyjne i 1 rozgłoszeniowa","3 kolizyjne i 3 rozgłoszeniowe","0 kolizyjnych i 3 rozgłoszeniowe"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "Każdy interfejs routera = osobna domena kolizyjna I rozgłoszeniowa. 3 interfejsy = 3+3.",
+      not: ["Hub ma 1 kolizyjną","Switch ma 1 rozgłoszeniową","Router jest właśnie po to żeby dzielić obie"]
+    }
+  },
+  {
+    q: "Ikonka routera na schematach CKE/Packet Tracer ma kształt:",
+    opts: ["Niebieskiego prostopadłościanu z dwiema strzałkami","Zielonego kwadratu z symbolem pioruna","Płaskiego walca (krążka) z czterema strzałkami rozchodzącymi się na zewnątrz","Trójkąta z napisem WAN"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "Router = płaski walec z 4 strzałkami. Komputer = kwadrat. Switch = prostokąt z wieloma liniami.",
+      not: ["Prostopadłościan z strzałkami — serwer","Kwadrat z piorunem — urządzenie elektryczne","Trójkąt — nie istnieje taka ikonka"]
+    }
+  },
+  {
+    q: "Dwa switche połączone kablem w VLANach. Jak nazywa się to połączenie?",
+    opts: ["Access","Trunk","Bridge","Uplink"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "Trunk = port przenoszący ruch wielu VLANów (tagowany 802.1Q). Łączy switche między sobą.",
+      not: ["Access — port dla jednego VLAN (np. do komputera)","Bridge — łączenie segmentów na warstwie 2","Uplink — ogólna nazwa połączenia w górę, nie termin Cisco"]
+    }
+  },
+  {
+    q: "Które urządzenia w Cisco Packet Tracer łączy się najczęściej kablem szeregowym (Serial)?",
+    opts: ["Komputer ze switchem","Switch z routerem","Router z drugim routerem (połączenie WAN)","Serwer z hubem"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "Kabel szeregowy (Serial DCE/DTE) = połączenie WAN między dwoma routerami.",
+      not: ["Komputer–Switch — UTP straight-through","Switch–Router — UTP straight-through lub crossover","Serwer–Hub — UTP"]
+    }
+  },
+  {
+    q: "Jaki port komputera to port szeregowy, a jaki równoległy?",
+    opts: ["COM to równoległy, LPT to USB","COM to szeregowy (Serial), LPT to równoległy (Parallel)","Zarówno COM jak i LPT to szeregowe","LPT to szeregowy, COM to zasilanie"],
+    ans: 1,
+    cat: "sprz",
+    exp: {
+      ok: "COM (RS-232) = port szeregowy. LPT = port równoległy (drukarki starego typu).",
+      not: ["COM nigdy nie był równoległy","USB to osobny standard","LPT to właśnie równoległy"]
+    }
+  },
+  {
+    q: "Co oznacza MIMO 3x3 w specyfikacji punktu dostępowego Wi-Fi?",
+    opts: ["Obsługuje max 3 użytkowników jednocześnie","Sygnał nadawany na 3 różnych częstotliwościach","3 anteny nadawcze i 3 anteny odbiorcze do jednoczesnej transmisji wielu strumieni","Automatycznie przełącza między 3 poziomami szyfrowania"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "MIMO = Multiple Input Multiple Output. 3x3 = 3 anteny TX + 3 anteny RX. Pozwala na równoległą transmisję wielu strumieni danych.",
+      not: ["Użytkownicy — nie ma związku z liczbą anten","Częstotliwości — to dual-band/tri-band","Szyfrowanie — WPA/WPA2/WPA3, nie MIMO"]
+    }
+  },
+  {
+    q: "W Cisco IOS, który znak zachęty oznacza tryb uprzywilejowany EXEC?",
+    opts: ["Router>","Router#","Router(config)#","Router(config-if)#"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "Router# = tryb uprzywilejowany (enable). Router> = tryb użytkownika. Router(config)# = konfiguracja globalna.",
+      not: ["Router> — tryb użytkownika (ograniczone polecenia)","Router(config)# — konfiguracja globalna","Router(config-if)# — konfiguracja interfejsu"]
+    }
+  },
+  {
+    q: "Jak nazywa się główny punkt rozdzielczy okablowania strukturalnego (kampus)?",
+    opts: ["IDF (Intermediate Distribution Frame)","MDF (Main Distribution Frame)","HCC (Horizontal Cross-Connect)","POP (Point of Presence)"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "MDF = Main Distribution Frame — główny punkt dystrybucji okablowania strukturalnego budynku/kampusu.",
+      not: ["IDF — pośredni punkt rozdzielczy (piętro)","HCC — poziome połączenie krzyżowe","POP — punkt obecności dostawcy internetu"]
+    }
+  },
+  {
+    q: "Strona WP.pl nie odpowiada, a internet (ping do 8.8.8.8) działa. Najprawdopodobniejsza przyczyna?",
+    opts: ["Awaria karty sieciowej","Błędnie skonfigurowany lub niedostępny serwer DNS","Brak adresu IP (DHCP nie przydzielił)","Uszkodzony kabel sieciowy"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "Ping do IP (8.8.8.8) działa = internet jest. Strona po nazwie nie działa = problem z DNS (tłumaczenie nazwy na IP).",
+      not: ["Karta — gdyby była uszkodzona, ping też by nie działał","DHCP — gdyby nie przydzielił, nie byłoby internetu","Kabel — to samo co karta"]
+    }
+  },
+  // ── POLECENIA ──
+  {
+    q: "W jakim celu używa się komendy ipconfig /flushdns?",
+    opts: ["Aby pobrać nowy adres IP z DHCP","Aby zresetować fizyczny interfejs karty sieciowej","Aby wyczyścić lokalną pamięć podręczną (cache) DNS","Aby sprawdzić opóźnienia pakietów ICMP"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "ipconfig /flushdns czyści lokalny cache DNS — przydatne gdy strona zwraca stary adres IP.",
+      not: ["Nowe IP z DHCP — ipconfig /renew","Reset interfejsu — netsh / wyłącz-włącz kartę","Ping — sprawdza RTT"]
+    }
+  },
+  {
+    q: "Komenda w Linuksie do utworzenia katalogu i pustego pliku:",
+    opts: ["cp oraz mv","mkdir oraz touch","rm oraz nano","chmod oraz chown"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "mkdir tworzy katalog, touch tworzy pusty plik (lub aktualizuje datę modyfikacji istniejącego).",
+      not: ["cp/mv — kopiowanie i przenoszenie","rm/nano — usuwanie i edytor tekstu","chmod/chown — uprawnienia i właściciel"]
+    }
+  },
+  // ── ADRESACJA ──
+  {
+    q: "Ile bitów sieciowych posiada maska 255.255.255.224?",
+    opts: ["/25","/26","/27","/28"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "224 = 11100000 w binarnym = 3 jedynki. /24 + 3 = /27.",
+      not: ["/25 = 128 = 10000000","/26 = 192 = 11000000","/28 = 240 = 11110000"]
+    }
+  },
+  {
+    q: "Administrator podzielił sieć 172.16.0.0/26 na 4 równe podsieci. Jaka będzie nowa maska?",
+    opts: ["/24","/27","/28","/30"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "/26 = 64 adresy. Podzielona na 4 = 16 adresów per podsieć = /28.",
+      not: ["/24 — większa niż /26",""/27 — dałoby 2 podsieci z /26","/30 — dałoby 16 podsieci z /26"]
+    }
+  },
+  {
+    q: "Zmiana maski z /24 na /25 — o ile zmienia się liczba dostępnych hostów?",
+    opts: ["Zmniejsza się 4 razy (z 254 do 62)","Zmniejsza się 2 razy (z 254 do 126)","Zwiększa się 2 razy","Nie zmienia się"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "/24 = 254 hosty. /25 = 126 hostów. Każdy dodatkowy bit maski dzieli liczbę hostów przez 2.",
+      not: ["4 razy — to byłoby /26","Zwiększa — maska dłuższa = mniej hostów","Nie zmienia — każdy bit maski ma wpływ"]
+    }
+  },
+  {
+    q: "Wyznacz ostatni adres hosta (ostatni możliwy do przydzielenia) w sieci 192.168.10.0/27:",
+    opts: ["192.168.10.30","192.168.10.31","192.168.10.32","192.168.10.62"],
+    ans: 0,
+    cat: "siec",
+    exp: {
+      ok: "/27 = 32 adresy (.0–.31). Sieć = .0, broadcast = .31. Ostatni host = broadcast - 1 = .30.",
+      not: [".31 — to adres broadcast",".32 — to adres sieci następnej podsieci",".62 — to ostatni host /26"]
+    }
+  },
+  // ── LOGIKA CYFROWA ──
+  {
+    q: "Wynik operacji XOR: 10101010 XOR 11110000 = ?",
+    opts: ["01010101","01011010","11111010","10100000"],
+    ans: 1,
+    cat: "inne",
+    exp: {
+      ok: "XOR: bity różne = 1, bity identyczne = 0. Kolumna po kolumnie: 01011010.",
+      not: ["01010101 — to negacja 10101010","11111010 — błędne","10100000 — błędne"]
+    }
+  },
+  {
+    q: "Odejmowanie binarne: 1101 - 0110 = ?",
+    opts: ["0101","1001","0111","0011"],
+    ans: 2,
+    cat: "inne",
+    exp: {
+      ok: "1101(13) - 0110(6) = 0111(7). Sprawdź: 13-6=7=0111₂.",
+      not: ["0101 = 5 — błąd","1001 = 9 — błąd","0011 = 3 — błąd"]
+    }
+  },
+  // ── BEZPIECZEŃSTWO ──
+  {
+    q: "Programy szpiegujące zbierające dane bez wiedzy użytkownika to:",
+    opts: ["Ransomware","Adware","Spyware","Rootkity"],
+    ans: 2,
+    cat: "inne",
+    exp: {
+      ok: "Spyware = oprogramowanie szpiegujące. Zbiera dane (hasła, historię, dane osobowe) bez wiedzy użytkownika.",
+      not: ["Ransomware — szyfruje dane i żąda okupu","Adware — wyświetla niechciane reklamy","Rootkity — ukrywają złośliwe procesy w systemie"]
+    }
+  },
+  {
+    q: "Celowe publikowanie napastliwych wiadomości w celu sprowokowania kłótni to:",
+    opts: ["Cyberbumping","Trolling (trollowanie)","Phishing","Spoofing"],
+    ans: 1,
+    cat: "inne",
+    exp: {
+      ok: "Trolling = celowe prowokowanie reakcji emocjonalnych przez napastliwe lub absurdalne wiadomości.",
+      not: ["Cyberbumping — nie jest standardowym terminem","Phishing — wyłudzanie danych przez fałszywe strony/e-maile","Spoofing — podszywanie się pod inne urządzenie/adres"]
+    }
+  },
+  {
+    q: "Który akt prawny w Polsce/UE reguluje ochronę danych osobowych?",
+    opts: ["Ustawa o prawie autorskim","RODO (Ogólne rozporządzenie o ochronie danych)","Ustawa o usługach elektronicznych","Kodeks Pracy"],
+    ans: 1,
+    cat: "inne",
+    exp: {
+      ok: "RODO (GDPR) = Rozporządzenie UE 2016/679 o ochronie danych osobowych, obowiązuje od 25.05.2018.",
+      not: ["Prawo autorskie — chroni twórczość","Usługi elektroniczne — e-commerce","Kodeks Pracy — prawa pracownika"]
+    }
+  },
+  {
+    q: "Który organ państwowy w Polsce kontroluje przestrzeganie przepisów o ochronie danych osobowych?",
+    opts: ["UOKiK","UODO (Urząd Ochrony Danych Osobowych)","UKE","KNF"],
+    ans: 1,
+    cat: "inne",
+    exp: {
+      ok: "UODO = Urząd Ochrony Danych Osobowych — polski organ nadzorczy ds. RODO.",
+      not: ["UOKiK — ochrona konkurencji i konsumentów","UKE — regulacje telekomunikacyjne","KNF — nadzór finansowy"]
+    }
+  },
+  {
+    q: "W jakim akcie prawnym zawarte są podstawowe zasady ochrony środowiska w Polsce?",
+    opts: ["Kodeks pracy","Ustawa Prawo ochrony środowiska (oraz Konstytucja RP art. 74)","Ustawa o ochronie danych osobowych","Kodeks cywilny"],
+    ans: 1,
+    cat: "inne",
+    exp: {
+      ok: "Konstytucja RP art. 74 = obowiązek władz do ochrony środowiska. Szczegóły: Ustawa Prawo ochrony środowiska.",
+      not: ["Kodeks pracy — BHP, nie środowisko","RODO — dane osobowe","Kodeks cywilny — prawo majątkowe"]
+    }
+  },
+  {
+    q: "Co to jest ZSEE i gdzie należy oddawać zużyty sprzęt elektroniczny?",
+    opts: ["Złom stalowy — oddajemy do huty","Zużyty sprzęt elektryczny i elektroniczny — oddajemy do PSZOK lub sklepów przy zakupie nowego sprzętu","Wyrzucamy do śmietnika jako odpad komunalny","Zakopujemy — szybko się rozkłada"],
+    ans: 1,
+    cat: "inne",
+    exp: {
+      ok: "ZSEE (dyrektywa WEEE) — komputery, drukarki itp. podlegają selektywnej zbiórce: PSZOK lub sklep przy zakupie nowego.",
+      not: ["Huta — nie przyjmuje elektroniki","Śmietnik — nielegalne, zawiera toksyczne substancje","Zakopanie — bardzo szkodliwe dla środowiska"]
+    }
+  },
+  // ── ZAAWANSOWANE ──
+  {
+    q: "Na czym polega funkcja DHCP Failover w Windows Server?",
+    opts: ["Na automatycznym szyfrowaniu bazy dzierżaw adresów IP","Na zapewnieniu wysokiej dostępności poprzez współpracę dwóch serwerów DHCP obsługujących tę samą podsieć","Na blokowaniu nieautoryzowanych urządzeń w sieci LAN","Na konwersji adresów IPv4 do formatu IPv6"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "DHCP Failover = dwa serwery DHCP synchronizują bazę dzierżaw. Gdy jeden padnie, drugi przejmuje obsługę.",
+      not: ["Szyfrowanie — nie jest to funkcja DHCP Failover","Blokowanie — NAC/802.1X","Konwersja IPv4/IPv6 — NAT64/DNS64"]
+    }
+  },
+  {
+    q: "Jak zabezpieczyć się przed oprogramowaniem szpiegującym (spyware) na komputerze?",
+    opts: ["Zainstalować dodatkowy system operacyjny","Zainstalować program antyspyware i regularnie go aktualizować","Wyłączać komputer gdy nie jest używany","Zmienić hasło do systemu"],
+    ans: 1,
+    cat: "inne",
+    exp: {
+      ok: "Aktualna ochrona antyspyware wykrywa i usuwa znane zagrożenia. Regularne aktualizacje = nowe sygnatury.",
+      not: ["Drugi system — nie chroni","Wyłączanie — spyware działa gdy komputer jest włączony","Hasło — nie chroni przed zainstalowanym spyware"]
+    }
+  },
+  {
+    q: "Na czym wykonać kopię zapasową systemu operacyjnego?",
+    opts: ["Na tym samym dysku w innej partycji","Na zewnętrznym nośniku (dysk zewnętrzny, NAS, taśma, chmura)","W folderze Moje dokumenty","Na pendrivie USB 2.0"],
+    ans: 1,
+    cat: "inne",
+    exp: {
+      ok: "Kopia zapasowa MUSI być na osobnym fizycznym nośniku — awaria dysku głównego nie może zniszczyć kopii.",
+      not: ["Inna partycja — ta sama fizyczna talerz, awaria dysku = utrata obu","Moje dokumenty — na tym samym dysku","Pendrive USB 2.0 — za wolny, za mały, zawodny"]
+    }
+  },
+  {
+    q: "Co to jest Hyper-V?",
+    opts: ["Program do edycji wideo od Microsoftu","Hipernadzorca (hypervisor) wbudowany w Windows Server/Windows 10-11 do tworzenia maszyn wirtualnych","Protokół zdalnego dostępu","System plików dla dysków SSD"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "Hyper-V = wbudowany w Windows hypervisor (warstwa 1 — bare metal). Alternatywa dla VirtualBox/VMware.",
+      not: ["Edycja wideo — Windows Movie Maker, DaVinci","Zdalny dostęp — RDP, VPN","System plików SSD — NTFS, exFAT"]
+    }
+  },
+  {
+    q: "Pytanie z Excela — formuła do mnożenia komórek A1 i B1:",
+    opts: ["=A1+B1","=A1*B1","=MNOZ(A1;B1)","=A1xB1"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "W Excelu mnożenie = gwiazdka (*). =A1*B1 lub =ILOCZYN(A1;B1).",
+      not: ["=A1+B1 — dodawanie","=MNOZ — nie istnieje taka funkcja (polska: ILOCZYN)","=A1xB1 — 'x' nie jest operatorem w Excelu"]
+    }
+  },
+  {
+    q: "Polecenie do zwolnienia dzierżawy adresu IP z serwera DHCP (Windows):",
+    opts: ["ipconfig /release","ipconfig /renew","netsh dhcp server delete lease","ipconfig /flushdns"],
+    ans: 0,
+    cat: "siec",
+    exp: {
+      ok: "ipconfig /release = zwolnienie dzierżawy (klient odsyła adres do puli DHCP).",
+      not: ["ipconfig /renew — odnowienie (pobranie nowego IP)","netsh — zaawansowane, nie standardowe","flushdns — czyści cache DNS, nie dzierżawę IP"]
+    }
+  },
+  {
+    q: "Przeliczanie jednostek pamięci: 1 GiB = ile KiB?",
+    opts: ["1000 KiB","1024 KiB","1 048 576 KiB","1 024 KiB"],
+    ans: 2,
+    cat: "inne",
+    exp: {
+      ok: "1 GiB = 1024 MiB = 1024 × 1024 KiB = 1 048 576 KiB.",
+      not: ["1000 — to jednostki SI (GB, MB, KB)","1024 — to 1 MiB, nie GiB","1024 (opcja D) — identyczna z B, myląca"]
+    }
+  },
+  {
+    q: "Budowa kabla sieciowego — ile par przewodów zawiera skrętka Ethernet kat. 5e/6 (RJ-45)?",
+    opts: ["2 pary (4 żyły)","4 pary (8 żył)","3 pary (6 żył)","6 par (12 żył)"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "Standardowy kabel Ethernet RJ-45 = 4 pary = 8 żył. 100 Mbit używa 2 par (1,2,3,6). Gigabit = wszystkie 4.",
+      not: ["2 pary — starsze instalacje telefoniczne","3 pary — nie istnieje taki standard Ethernet","6 par — kable specjalne, nie Ethernet"]
+    }
   }
 ];
 
