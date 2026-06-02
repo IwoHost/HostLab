@@ -1248,6 +1248,25 @@ document.getElementById('notes-export').addEventListener('click', () => {
       cx.fillText(p.text, p.x, p.y);
     });
     cx.globalAlpha = 1;
+
+    // ── HUD overlay (always drawn; visible in PiP) ──────────────────────────
+    const pipOpen = !!document.pictureInPictureElement;
+    // draw hud when pip is open OR always (subtle on main canvas too)
+    cx.save();
+    // top-left: star count
+    cx.font = 'bold 11px "DM Sans", sans-serif';
+    cx.textAlign = 'left';
+    cx.shadowColor = 'rgba(0,0,0,0.7)'; cx.shadowBlur = 4;
+    cx.fillStyle = STAR_CLR;
+    cx.fillText(xp + ' ★', 8, 14);
+    // top-right: timer
+    const tm = Math.floor(timerLeft / 60), ts = timerLeft % 60;
+    const timerStr = String(tm).padStart(2,'0') + ':' + String(ts).padStart(2,'0');
+    cx.font = 'bold 11px "DM Sans", sans-serif';
+    cx.textAlign = 'right';
+    cx.fillStyle = timerLabel !== 'FOCUS' ? '#6aaa7a' : (timerLeft < 60 ? ACCENT : '#e8e0d4');
+    cx.fillText(timerStr, W - 8, 14);
+    cx.restore();
   }
 
   // Star spawning runs on its own interval, never throttled by rAF
