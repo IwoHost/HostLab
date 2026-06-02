@@ -472,8 +472,17 @@ body{
     <div class="panel">
       <div class="panel-inner">
 
-        <div class="section-title">Focus Guy <span id="game-score" style="color:var(--accent);float:right;">0 ★</span></div>
-        <canvas id="game-canvas" width="236" height="130" id="game-canvas-big" style="width:100%;border-radius:8px;background:var(--bg);border:1px solid var(--border);display:block;"></canvas>
+        <div class="section-title" style="display:flex;align-items:center;gap:6px;">
+          <span style="flex:1;">Focus Guy</span>
+          <button id="pip-btn" title="Pop out as floating window" style="
+            padding:3px 9px;border-radius:6px;border:1px solid var(--border2);
+            background:var(--surface2);color:var(--muted);font-family:var(--fb);
+            font-size:10px;cursor:pointer;letter-spacing:0.04em;transition:all .15s;
+            white-space:nowrap;">⤢ Pop out</button>
+          <span id="game-score" style="color:var(--accent);">0 ★</span>
+        </div>
+        <canvas id="game-canvas" width="236" height="130" style="width:100%;border-radius:8px;background:var(--bg);border:1px solid var(--border);display:block;"></canvas>
+        <video id="pip-video" style="display:none;" muted autoplay playsinline></video>
         <div id="xp-bar-wrap"><div id="xp-bar"></div></div>
         <div id="game-level-row"><span id="game-level-lbl">Lvl 1 — Newcomer</span><span id="game-xp-lbl">0 / 10 xp</span></div>
 
@@ -1273,8 +1282,35 @@ document.getElementById('notes-export').addEventListener('click', () => {
   }
   scheduleSpawn();
 
-  function loop() { tick(); draw(); requestAnimationFrame(loop); }
-  loop();
+  setInterval(() => { tick(); draw(); }, 16);
+
+  // ── PIP ────────────────────────────────────────────────────────────────────
+  const pipBtn   = document.getElementById('pip-btn');
+  const pipVideo = document.getElementById('pip-video');
+
+  pipBtn.addEventListener('mouseenter', () => { pipBtn.style.borderColor='var(--accent)'; pipBtn.style.color='var(--accent)'; });
+  pipBtn.addEventListener('mouseleave', () => { pipBtn.style.borderColor='var(--border2)'; pipBtn.style.color='var(--muted)'; });
+
+  pipBtn.addEventListener('click', async () => {
+    if (document.pictureInPictureElement) {
+      document.exitPictureInPicture();
+      return;
+    }
+    try {
+      const stream = cv.captureStream(30);
+      pipVideo.srcObject = stream;
+      await pipVideo.play();
+      await pipVideo.requestPictureInPicture();
+      pipBtn.textContent = '✕ Close PiP';
+    } catch(e) {
+      pipBtn.textContent = '⤢ Pop out';
+      console.warn('PiP not available:', e);
+    }
+  });
+
+  document.addEventListener('leavepictureinpicture', () => {
+    pipBtn.textContent = '⤢ Pop out';
+  });
 })();
 
 // ── MAK MODE ────────────────────────────────────────────────────────────────
