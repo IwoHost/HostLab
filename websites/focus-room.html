@@ -473,7 +473,7 @@ body{
       <div class="panel-inner">
 
         <div class="section-title" style="display:flex;align-items:center;gap:6px;">
-          <span style="flex:1;">Focus Guy</span>
+          <span style="flex:1;">Kevin</span>
           <button id="pip-btn" title="Pop out as floating window" style="
             padding:3px 9px;border-radius:6px;border:1px solid var(--border2);
             background:var(--surface2);color:var(--muted);font-family:var(--fb);
@@ -1012,6 +1012,42 @@ document.getElementById('notes-export').addEventListener('click', () => {
     renderUpgrades();
   }
 
+  const QUIPS = [
+    "my knees hurt",
+    "star caught. noted.",
+    "i do this for free",
+    "nobody's watching",
+    "one more star",
+    "...",
+    "i am so tired",
+    "this is fine",
+    "please close some tabs",
+    "bro go touch grass",
+    "just five more minutes",
+    "i should've been a triangle",
+    "stars? again??",
+    "what is even a deadline",
+    "i am speed",
+    "send snacks",
+    "running is my passion (lie)",
+    "zoning out ngl",
+    "caught that one easy",
+    "we are SO back",
+    "focus. FOCUS.",
+    "another day another star",
+    "i have no thoughts",
+    "my arms hurt too",
+    "not paid enough for this",
+    "what are we even doing",
+    "ok ok ok ok ok",
+    "that star was mine",
+    "don't look at me",
+    "hired. fired. rehired.",
+  ];
+
+  let bubble = null; // { text, life, maxLife }
+  let bubbleTimer = 0;
+
   let guy   = { x: W/2, y: GROUND, dir: 1, state: 'walk', stateTimer: 0, walkFrame: 0, frameT: 0, speed: 1.4 };
   let stars = [];
   let trail = [];
@@ -1217,6 +1253,18 @@ document.getElementById('notes-export').addEventListener('click', () => {
       particles[i].y -= 1; particles[i].life--;
       if (particles[i].life <= 0) particles.splice(i, 1);
     }
+
+    // bubble timer
+    bubbleTimer--;
+    if (bubbleTimer <= 0) {
+      const text = QUIPS[Math.floor(Math.random() * QUIPS.length)];
+      bubble = { text, life: 220, maxLife: 220 };
+      bubbleTimer = 380 + Math.floor(Math.random() * 500);
+    }
+    if (bubble) {
+      bubble.life--;
+      if (bubble.life <= 0) bubble = null;
+    }
   }
 
   function draw() {
@@ -1239,6 +1287,33 @@ document.getElementById('notes-export').addEventListener('click', () => {
 
     // guy
     drawGuy(guy.x, guy.y, guy.dir, guy.state, guy.walkFrame);
+
+    // dialog bar at bottom
+    if (bubble && bubble.life > 0) {
+      const fade = Math.min(1, bubble.life / 25, (bubble.maxLife - bubble.life) / 18);
+      cx.save();
+      cx.globalAlpha = fade;
+      const barH = 22;
+      const barY = H - barH;
+      // bg strip
+      cx.fillStyle = 'rgba(26,22,18,0.88)';
+      cx.fillRect(0, barY, W, barH);
+      // top border line
+      cx.strokeStyle = '#3d3528';
+      cx.lineWidth = 1;
+      cx.beginPath(); cx.moveTo(0, barY); cx.lineTo(W, barY); cx.stroke();
+      // "Kevin:" label
+      cx.font = 'bold 9px "DM Sans", sans-serif';
+      cx.textAlign = 'left';
+      cx.fillStyle = ACCENT;
+      cx.fillText('Kevin:', 8, barY + 14);
+      // quote text
+      const nameW = cx.measureText('Kevin:').width;
+      cx.font = '9px "DM Sans", sans-serif';
+      cx.fillStyle = '#e8e0d4';
+      cx.fillText(bubble.text, 8 + nameW + 5, barY + 14);
+      cx.restore();
+    }
 
     // particles
     cx.font = 'bold 10px sans-serif'; cx.textAlign = 'center';
