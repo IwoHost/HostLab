@@ -586,6 +586,11 @@ body{
         <div class="section-title" style="margin-top:12px;margin-bottom:8px;">Kevin's Looks</div>
         <div id="skins-list" class="skin-grid"></div>
 
+        <div class="divider" style="margin-top:12px;"></div>
+        <div class="section-title" style="margin-top:12px;margin-bottom:8px;">Accessories</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Persist through rebirth. Equip &amp; unequip freely.</div>
+        <div id="accessories-list"></div>
+
         <div class="divider" style="margin-top:16px;"></div>
         <div class="section-title" style="margin-top:12px;">Rebirth</div>
         <div id="rebirth-count" style="font-size:11px;color:var(--muted);margin-bottom:10px;">No rebirths yet</div>
@@ -1008,19 +1013,80 @@ document.getElementById('notes-export').addEventListener('click', () => {
 
   // ── UPGRADES ────────────────────────────────────────────────────────────────
   const UPGRADES = [
-    { id:'spawn',   stars:5,   name:'Star Magnet',    desc:'Stars spawn more often',              icon:'✦' },
-    { id:'speed',   stars:15,  name:'Hustle Boots',   desc:'Guy runs noticeably faster',           icon:'▶' },
-    { id:'glasses', stars:25,  name:'Cool Glasses',   desc:'Guy gets sunglasses. That\'s it.',     icon:'◉' },
-    { id:'hat',     stars:30,  name:'Focus Hat',      desc:'Guy gets a hat',                       icon:'◈' },
-    { id:'radius',  stars:60,  name:'Wide Catch',     desc:'Catch radius doubled',                 icon:'◎' },
-    { id:'bounce',  stars:80,  name:'Star Bounce',    desc:'Stars bounce off the ground once',     icon:'⤴' },
-    { id:'cape',    stars:100, name:'Work Cape',      desc:'Guy gets a cape',                      icon:'◇' },
-    { id:'double',  stars:130, name:'Twin Spawn',     desc:'Stars sometimes spawn in pairs',       icon:'⋮' },
-    { id:'storm',   stars:150, name:'Star Storm',     desc:'Stars rain constantly',                icon:'★' },
-    { id:'trail',   stars:220, name:'Speed Trail',    desc:'Guy leaves a sparkle trail',           icon:'✧' },
-    { id:'magnet',  stars:320, name:'Ground Magnet',  desc:'Stars near the ground are auto-caught',icon:'⊕' },
-    { id:'gold',    stars:400, name:'Gold Stars',     desc:'Stars worth 2x',                       icon:'✶' },
+    { id:'spawn',   stars:5,   name:'Star Magnet',    desc:'Stars spawn more often',               icon:'✦' },
+    { id:'speed',   stars:15,  name:'Hustle Boots',   desc:'Guy runs noticeably faster',            icon:'▶' },
+    { id:'radius',  stars:60,  name:'Wide Catch',     desc:'Catch radius doubled',                  icon:'◎' },
+    { id:'bounce',  stars:80,  name:'Star Bounce',    desc:'Stars bounce off the ground once',      icon:'⤴' },
+    { id:'double',  stars:130, name:'Twin Spawn',     desc:'Stars sometimes spawn in pairs',        icon:'⋮' },
+    { id:'storm',   stars:150, name:'Star Storm',     desc:'Stars rain constantly',                 icon:'★' },
+    { id:'trail',   stars:220, name:'Speed Trail',    desc:'Guy leaves a sparkle trail',            icon:'✧' },
+    { id:'magnet',  stars:320, name:'Ground Magnet',  desc:'Stars near the ground are auto-caught', icon:'⊕' },
+    { id:'gold',    stars:400, name:'Gold Stars',     desc:'Stars worth 2x',                        icon:'✶' },
   ];
+
+  // Accessories — cosmetic only, persist through rebirth, equip/unequip freely
+  const ACCESSORIES = [
+    { id:'hat',     name:'Focus Hat',     desc:'A distinguished hat',            cost:300  },
+    { id:'glasses', name:'Cool Glasses',  desc:'Shades. That\'s it.',            cost:550  },
+    { id:'cape',    name:'Work Cape',     desc:'Flowing cape of productivity',   cost:1800 },
+    { id:'crown',   name:'Crown',         desc:'For the truly elite Kevin',      cost:6000 },
+  ];
+
+  let ownedAccessories    = new Set(JSON.parse(localStorage.getItem('fr-acc-owned')    || '[]'));
+  let equippedAccessories = new Set(JSON.parse(localStorage.getItem('fr-acc-equipped') || '[]'));
+
+  function saveAccessories() {
+    localStorage.setItem('fr-acc-owned',    JSON.stringify([...ownedAccessories]));
+    localStorage.setItem('fr-acc-equipped', JSON.stringify([...equippedAccessories]));
+  }
+
+  function renderAccessories() {
+    const el = document.getElementById('accessories-list');
+    if (!el) return;
+    el.innerHTML = '';
+    ACCESSORIES.forEach(a => {
+      const owned    = ownedAccessories.has(a.id);
+      const equipped = equippedAccessories.has(a.id);
+      const canAfford = xp >= a.cost;
+      const div = document.createElement('div');
+      div.className = 'shop-item ' + (equipped ? 'owned' : owned ? 'affordable' : canAfford ? 'affordable' : 'locked');
+      div.innerHTML = `
+        <div class="shop-info">
+          <div class="shop-name">${a.name}</div>
+          <div class="shop-desc">${a.desc}</div>
+        </div>
+        <div class="shop-action">
+          ${owned
+            ? `<button class="shop-buy can acc-toggle" data-id="${a.id}">${equipped ? 'unequip' : 'equip'}</button>`
+            : `<button class="shop-buy ${canAfford ? 'can' : ''} acc-buy" data-id="${a.id}">${a.cost} ★</button>`
+          }
+        </div>`;
+      el.appendChild(div);
+    });
+    el.querySelectorAll('.acc-buy').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const a = ACCESSORIES.find(x => x.id === btn.dataset.id);
+        if (!a || ownedAccessories.has(a.id) || xp < a.cost) return;
+        xp -= a.cost;
+        ownedAccessories.add(a.id);
+        equippedAccessories.add(a.id);
+        localStorage.setItem('fr-game-xp', xp);
+        saveAccessories();
+        updateStarDisplay();
+        renderAccessories();
+        if (typeof window._kevinSayRaw === 'function') window._kevinSayRaw(`new ${a.name.toLowerCase()}!! looking good`);
+      });
+    });
+    el.querySelectorAll('.acc-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if (equippedAccessories.has(id)) equippedAccessories.delete(id);
+        else equippedAccessories.add(id);
+        saveAccessories();
+        renderAccessories();
+      });
+    });
+  }
 
   const SKINS = [
     { id:'default',  name:'Default',   desc:'Classic Kevin',       cost:0,   body:'#c8784a', leg:'#5a4030', shoe:'#221510' },
@@ -1056,7 +1122,7 @@ document.getElementById('notes-export').addEventListener('click', () => {
           selectedSkin = s.id;
           localStorage.setItem('fr-skin', selectedSkin);
           renderSkins();
-        } else if (canAfford) {
+        } else if (xp >= s.cost) {
           xp -= s.cost;
           ownedSkins.add(s.id);
           selectedSkin = s.id;
@@ -1072,9 +1138,8 @@ document.getElementById('notes-export').addEventListener('click', () => {
     });
   }
 
-  // purchased is the source of truth for what's active
   let purchased = new Set(JSON.parse(localStorage.getItem('fr-purchased') || '[]'));
-  function has(id) { return purchased.has(id); }
+  function has(id) { return purchased.has(id) || equippedAccessories.has(id); }
 
   function renderUpgrades() {
     const el = document.getElementById('upgrades-list');
@@ -1188,6 +1253,8 @@ document.getElementById('notes-export').addEventListener('click', () => {
     localStorage.setItem('fr-game-score', score);
     updateStarDisplay();
     renderUpgrades();
+    renderSkins();
+    renderAccessories();
     // star achievements (score = lifetime total caught)
     if (typeof window.unlockAchievement === 'function') {
       if (score >= 1)    window.unlockAchievement('first_star');
@@ -1540,10 +1607,34 @@ document.getElementById('notes-export').addEventListener('click', () => {
     // ── HAT ───────────────────────────────────────────────────────────────────
     if (has('hat')) {
       cx.fillStyle = '#1e1510';
-      rr(-10, -39, 20, 4, 1); cx.fill();   // brim
-      rr( -6, -50, 12, 12, 3); cx.fill();  // crown
+      rr(-10, -39, 20, 4, 1); cx.fill();
+      rr( -6, -50, 12, 12, 3); cx.fill();
       cx.fillStyle = ACCENT;
-      cx.fillRect(-6, -39, 12, 2);          // band
+      cx.fillRect(-6, -39, 12, 2);
+    }
+
+    // ── CROWN ─────────────────────────────────────────────────────────────────
+    if (has('crown')) {
+      const crownY = has('hat') ? -52 : -39;
+      cx.fillStyle = '#c8a020';
+      cx.beginPath();
+      cx.moveTo(-8, crownY);
+      cx.lineTo(-8, crownY - 7);
+      cx.lineTo(-4, crownY - 4);
+      cx.lineTo( 0, crownY - 9);
+      cx.lineTo( 4, crownY - 4);
+      cx.lineTo( 8, crownY - 7);
+      cx.lineTo( 8, crownY);
+      cx.closePath(); cx.fill();
+      // outline
+      cx.strokeStyle = '#a07010'; cx.lineWidth = 0.8;
+      cx.stroke();
+      // gems
+      cx.fillStyle = '#e03030';
+      cx.beginPath(); cx.arc(0, crownY - 8, 1.5, 0, Math.PI * 2); cx.fill();
+      cx.fillStyle = '#3060e0';
+      cx.beginPath(); cx.arc(-5.5, crownY - 5, 1, 0, Math.PI * 2); cx.fill();
+      cx.beginPath(); cx.arc( 5.5, crownY - 5, 1, 0, Math.PI * 2); cx.fill();
     }
 
     // ── GLASSES ───────────────────────────────────────────────────────────────
@@ -1792,6 +1883,7 @@ document.getElementById('notes-export').addEventListener('click', () => {
   updateStarDisplay();
   renderUpgrades();
   renderSkins();
+  renderAccessories();
 
   document.getElementById('rebirth-btn').addEventListener('click', () => {
     if (xp < rebirthCost()) return;
