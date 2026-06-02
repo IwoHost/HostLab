@@ -368,14 +368,15 @@ body{
   <!-- CHEAT SHEET OVERLAY -->
   <div id="cheat-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:none;align-items:center;justify-content:center;animation:fadeIn .2s ease;">
     <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:28px 32px;max-width:420px;width:90%;position:relative;">
-      <h2 style="font-family:var(--ff);font-size:20px;font-weight:700;margin-bottom:18px;color:var(--text);">Keyboard Shortcuts</h2>
-      <div class="help-row"><span class="help-chip">Space</span><div class="help-txt">Star burst — limited to once every 30 seconds</div></div>
-      <div class="help-row"><span class="help-chip">Ctrl+Alt+0</span><div class="help-txt">Toggle <b>Mak Mode</b> — removes the space burst cooldown</div></div>
-      <div class="help-row"><span class="help-chip">Ctrl+Alt+1</span><div class="help-txt">Start or pause the timer</div></div>
-      <div class="help-row"><span class="help-chip">Ctrl+Alt+2</span><div class="help-txt">Reset the timer</div></div>
-      <div class="help-row"><span class="help-chip">Ctrl+Alt+3</span><div class="help-txt">Switch to Focus mode (25 min)</div></div>
-      <div class="help-row"><span class="help-chip">Ctrl+Alt+4</span><div class="help-txt">Switch to Short Break (5 min)</div></div>
-      <div class="help-row"><span class="help-chip">Ctrl+Alt+5</span><div class="help-txt">Switch to Long Break (15 min)</div></div>
+      <h2 style="font-family:var(--ff);font-size:20px;font-weight:700;margin-bottom:4px;color:var(--text);">Kevin Cheats</h2>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:16px;font-style:italic;">don't tell Kevin you're cheating. he'll find out.</p>
+      <div class="help-row"><span class="help-chip">Space</span><div class="help-txt">Star burst — once every 30 seconds</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+0</span><div class="help-txt">Toggle <b>Mak Mode</b> — removes burst cooldown</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+1</span><div class="help-txt">⭐ <b>Star Rain</b> — drop 30 stars at once</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+2</span><div class="help-txt">💰 <b>Free Stars</b> — add +100 ★ to your count</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+3</span><div class="help-txt">⚡ <b>Turbo Kevin</b> — Kevin runs at 5× speed for 12 seconds</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+4</span><div class="help-txt">🔓 <b>Free Upgrade</b> — unlock the next locked upgrade for free</div></div>
+      <div class="help-row"><span class="help-chip">Ctrl+Alt+5</span><div class="help-txt">🌪️ <b>Kevin Goes Wild</b> — 60-second mega frenzy</div></div>
       <div class="help-row"><span class="help-chip">Ctrl+Alt+6</span><div class="help-txt">Clear all Focus Room data (with confirmation)</div></div>
       <button onclick="document.getElementById('cheat-overlay').style.display='none'" style="width:100%;margin-top:20px;padding:10px;border-radius:8px;border:1.5px solid var(--accent);background:var(--accent);color:#fff;font-family:var(--fb);font-size:14px;font-weight:500;cursor:pointer;">Got it</button>
     </div>
@@ -709,6 +710,7 @@ function startTimer() {
         if (typeof renderUpgrades === 'function') renderUpgrades();
         currentStreak = updateStreak();
         document.getElementById('stat-streak').textContent = currentStreak;
+        if (typeof window.kevinSay === 'function') window.kevinSay('timerDone');
         // notify
         if (Notification.permission === 'granted') {
           new Notification('Focus session done! 🎉', {body:'Take a break.'});
@@ -808,6 +810,7 @@ function renderTasks() {
         totalTasksDone++;
         localStorage.setItem('fr-tasks', totalTasksDone);
         updateStats();
+        if (typeof window.kevinSay === 'function') window.kevinSay('taskDone');
       }
       saveTasks(); renderTasks();
     });
@@ -874,7 +877,11 @@ document.getElementById('notes-export').addEventListener('click', () => {
 (function(){
   const cv = document.getElementById('game-canvas');
   const cx = cv.getContext('2d');
-  const W = cv.width, H = cv.height;
+  const W = 236, H = 130;
+  const dpr = Math.max(window.devicePixelRatio || 1, 2);
+  cv.width  = W * dpr;
+  cv.height = H * dpr;
+  cx.scale(dpr, dpr);
   const GROUND = H - 14;
   const ACCENT = '#c8784a';
   const STAR_CLR = '#e0c060';
@@ -1012,41 +1019,171 @@ document.getElementById('notes-export').addEventListener('click', () => {
     renderUpgrades();
   }
 
-  const QUIPS = [
-    "you're doing amazing, keep going",
-    "i'm so glad you're here with me",
-    "we make a great team, you and i",
-    "i believe in you. genuinely.",
-    "thank you for showing up today",
-    "you got this. i promise.",
-    "catching stars, just like you catch wins",
-    "i run so you stay motivated",
-    "seriously, you should be proud",
-    "one task at a time. that's all.",
-    "i'm rooting for you so hard rn",
-    "you came back. that means everything.",
-    "proud of you for starting",
-    "hey. you're doing great.",
-    "this is our session. let's make it count.",
-    "even small progress is progress",
-    "i'll keep running if you keep going",
-    "we're in this together, okay?",
-    "you sat down and tried. that's huge.",
-    "don't be too hard on yourself",
-    "i see you working. it's paying off.",
-    "the stars are for you, not me",
-    "thank you for not closing the tab",
-    "you make this worth it for me",
-    "whatever you're building — keep building",
-    "rest is part of the work too",
-    "i'm just happy you're here",
-    "a little focus goes a long way",
-    "you've got more in you than you think",
-    "still here. still proud of you.",
-  ];
+  const QUIPS = {
+    focus: [
+      "you're doing amazing, keep going",
+      "i believe in you. genuinely.",
+      "thank you for showing up today",
+      "we make a great team, you and i",
+      "i'm rooting for you so hard rn",
+      "one task at a time. that's all.",
+      "you got this. i promise.",
+      "still here. still proud of you.",
+      "whatever you're building — keep building",
+      "you've got more in you than you think",
+      "i see you working. it's paying off.",
+      "the stars are for you, really",
+      "you came back. that means everything.",
+      "even small progress is progress",
+      "we're in this together, okay?",
+      "i'll keep running if you keep going",
+      "don't be too hard on yourself",
+      "proud of you for starting",
+    ],
+    idle: [
+      "no rush. i'll be here.",
+      "come back whenever you're ready",
+      "just chilling here for you",
+      "take your time. seriously.",
+      "i'm not going anywhere",
+      "resting up. ready when you are.",
+    ],
+    break: [
+      "you earned this break, enjoy it",
+      "breathe. seriously, breathe.",
+      "step away. i'll hold it down.",
+      "this break is part of the work",
+      "good. rest. you deserve it.",
+      "don't skip this break, okay?",
+      "i'll be running when you're back",
+    ],
+    morning: [
+      "good morning!! fresh start today",
+      "morning energy — let's use it",
+      "early bird. i respect that.",
+      "a new day, a new chance. let's go.",
+    ],
+    afternoon: [
+      "afternoon grind, let's go",
+      "still going strong. love it.",
+      "the day's not done yet. neither are you.",
+    ],
+    night: [
+      "late night session? i respect it",
+      "the quiet hours hit different",
+      "night owl energy. i see you.",
+      "still here with you, even at this hour",
+      "the world's asleep. we're not.",
+      "you didn't have to stay up. but here we are.",
+    ],
+    cheat: [
+      "wait... are you cheating??",
+      "i won't tell anyone. promise.",
+      "oh we're doing THIS now",
+      "CHEAT CODE ACTIVATED",
+      "okay that's fair honestly",
+      "you didn't see that",
+      "i mean... i'm not complaining",
+      "this feels wrong but also good",
+      "bro really said no thanks to grinding",
+      "kevin.exe has been corrupted",
+    ],
+    catchReact: [
+      "GOT IT!!",
+      "mine!!",
+      "yes!! caught it!",
+      "that one was for you",
+      "i'm fast actually",
+      "boom!!",
+      "another one!!",
+    ],
+    timerDone: [
+      "SESSION DONE!! you did that!!",
+      "that's a full block. so proud of you.",
+      "done!! take a breath. you earned it.",
+      "look at you go!! amazing.",
+      "we finished. together. :)",
+      "full session!! Kevin is so happy rn",
+    ],
+    taskDone: [
+      "yes!! that's the one.",
+      "crossed off. love to see it.",
+      "you did that!! let's go!!",
+      "task done. Kevin approves.",
+      "one down!! keep that energy.",
+      "incredible. genuinely.",
+    ],
+  };
+
+  function pickQuip() {
+    const hour = new Date().getHours();
+    let pool;
+    if (!timerRunning) {
+      pool = QUIPS.idle;
+    } else if (timerLabel !== 'FOCUS') {
+      pool = QUIPS.break;
+    } else {
+      pool = [...QUIPS.focus];
+      if (hour >= 5 && hour < 12 && Math.random() < 0.35)        pool = [...pool, ...QUIPS.morning];
+      else if (hour >= 12 && hour < 21 && Math.random() < 0.25)  pool = [...pool, ...QUIPS.afternoon];
+      else if ((hour >= 21 || hour < 5) && Math.random() < 0.45) pool = [...pool, ...QUIPS.night];
+    }
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function showBubble(text, duration) {
+    const life = duration || 280;
+    bubble = { text, life, maxLife: life };
+  }
+
+  let turboTimer = 0; // frames remaining of turbo mode
+
+  // ── CHEATS ─────────────────────────────────────────────────────────────────
+  window._kevinCheats = {
+    starRain() {
+      frenzy = 60;
+      for (let i = 0; i < 30; i++) setTimeout(() => spawnStar(true), i * 60);
+      window.kevinSay('cheat');
+    },
+    freeStars() {
+      addXP(100);
+      window.kevinSay('cheat');
+    },
+    turboKevin() {
+      turboTimer = 60 * 12; // 12 seconds at 60fps
+      guy.state = 'walk';
+      window.kevinSay('cheat');
+    },
+    freeUpgrade() {
+      const next = UPGRADES.find(u => !purchased.has(u.id));
+      if (!next) return;
+      purchased.add(next.id);
+      localStorage.setItem('fr-purchased', JSON.stringify([...purchased]));
+      renderUpgrades();
+      window.kevinSay('cheat');
+    },
+    goWild() {
+      frenzy = 60 * 60; // 60 seconds
+      for (let i = 0; i < 12; i++) setTimeout(() => spawnStar(true), i * 80);
+      window.kevinSay('cheat');
+    },
+  };
+
+  // exposed so timer + task systems can trigger Kevin
+  window.kevinSay = function(type) {
+    if (bubble && bubble.life > 100) return;
+    const pool = QUIPS[type] || QUIPS.focus;
+    showBubble(pool[Math.floor(Math.random() * pool.length)], 320);
+    bubbleTimer = 1200 + Math.floor(Math.random() * 800);
+  };
+  // say a specific raw string
+  window._kevinSayRaw = function(text) {
+    showBubble(text, 320);
+    bubbleTimer = 1200 + Math.floor(Math.random() * 800);
+  };
 
   let bubble = null; // { text, life, maxLife }
-  let bubbleTimer = 0;
+  let bubbleTimer = 800 + Math.floor(Math.random() * 600); // ~15s head start before first line
 
   let guy   = { x: W/2, y: GROUND, dir: 1, state: 'walk', stateTimer: 0, walkFrame: 0, frameT: 0, speed: 1.4 };
   let stars = [];
@@ -1082,70 +1219,149 @@ document.getElementById('notes-export').addEventListener('click', () => {
     }
   });
 
+  // rounded rect helper (cross-browser)
+  function rr(rx, ry, rw, rh, rad) {
+    const r = Math.min(rad, rw / 2, rh / 2);
+    cx.beginPath();
+    cx.moveTo(rx + r, ry);
+    cx.lineTo(rx + rw - r, ry);
+    cx.arcTo(rx + rw, ry,     rx + rw, ry + r,    r);
+    cx.lineTo(rx + rw, ry + rh - r);
+    cx.arcTo(rx + rw, ry + rh, rx + rw - r, ry + rh, r);
+    cx.lineTo(rx + r, ry + rh);
+    cx.arcTo(rx, ry + rh, rx, ry + rh - r, r);
+    cx.lineTo(rx, ry + r);
+    cx.arcTo(rx, ry,     rx + r, ry,      r);
+    cx.closePath();
+  }
+
   function drawGuy(x, y, dir, state, frame) {
     cx.save();
     cx.translate(x, y);
-    if (dir < 0) { cx.scale(-1, 1); }
+    if (dir < 0) cx.scale(-1, 1);
+
+    const skinColor = '#f2d5aa';
+    const bodyColor = has('speed') ? '#b05030' : '#c8784a';
+    const legColor  = '#5a4030';
+    const shoeColor = '#221510';
+    const swing     = Math.sin(frame * 0.22) * 6;
 
     // shadow
     cx.fillStyle = 'rgba(0,0,0,0.18)';
-    cx.beginPath(); cx.ellipse(0, 2, 8, 3, 0, 0, Math.PI*2); cx.fill();
+    cx.beginPath(); cx.ellipse(0, 1, 10, 3, 0, 0, Math.PI * 2); cx.fill();
 
-    // cape
+    // cape (behind body)
     if (has('cape')) {
-      cx.fillStyle = '#7a3a8a';
+      const cs = state === 'walk' ? Math.sin(frame * 0.18) * 5 : 0;
+      cx.fillStyle = '#8b3faa';
       cx.beginPath();
-      cx.moveTo(-5, -20); cx.lineTo(-12, -8 + Math.sin(frame*0.18)*3); cx.lineTo(-5, -8); cx.closePath();
-      cx.fill();
+      cx.moveTo(-5, -21);
+      cx.quadraticCurveTo(-17, -8 + cs, -10, -2);
+      cx.lineTo(-5, -7);
+      cx.closePath(); cx.fill();
     }
 
-    // body
-    cx.fillStyle = has('speed') ? '#a04828' : ACCENT;
-    cx.fillRect(-5, -20, 10, 12);
-
-    // head
-    cx.fillStyle = '#e8c8a0';
-    cx.beginPath(); cx.arc(0, -24, 6, 0, Math.PI*2); cx.fill();
-
-    // hat
-    if (has('hat')) {
-      cx.fillStyle = '#2a1f14';
-      cx.fillRect(-6, -31, 12, 4);
-      cx.fillRect(-4, -38, 8, 8);
-    }
-
-    // eyes
-    cx.fillStyle = '#2a1f14';
-    cx.fillRect(1, -25, 2, 2);
-
-    // glasses
-    if (has('glasses')) {
-      cx.strokeStyle = '#1a1a1a'; cx.lineWidth = 1;
-      cx.fillStyle = 'rgba(0,0,0,0.55)';
-      cx.fillRect(-5, -27, 4, 3); cx.strokeRect(-5, -27, 4, 3);
-      cx.fillRect(1,  -27, 4, 3); cx.strokeRect(1,  -27, 4, 3);
-      cx.beginPath(); cx.moveTo(-1,-26); cx.lineTo(1,-26); cx.stroke();
-    }
-
-    // legs
-    cx.fillStyle = '#5a4030';
+    // ── LEGS ──────────────────────────────────────────────────────────────────
     if (state === 'walk') {
-      const a = Math.sin(frame * 0.25) * 6;
-      cx.fillRect(-4, -8, 3, 8 + a); cx.fillRect(1, -8, 3, 8 - a);
-    } else if (state === 'idle') {
-      cx.fillRect(-4, -8, 3, 8); cx.fillRect(1, -8, 3, 8);
-    } else if (state === 'sleep') {
-      cx.fillRect(-5, -6, 4, 6); cx.fillRect(1, -6, 4, 6);
-      cx.fillStyle = MUTED; cx.font = '8px sans-serif'; cx.fillText('z', 7, -28);
-      cx.font = '6px sans-serif'; cx.fillText('z', 10, -33);
+      const lLenL = 8 + swing * 0.5, lLenR = 8 - swing * 0.5;
+      cx.fillStyle = legColor;
+      rr(-5, -7, 4, lLenL, 2); cx.fill();
+      rr( 1, -7, 4, lLenR, 2); cx.fill();
+      cx.fillStyle = shoeColor;
+      cx.beginPath(); cx.ellipse(-3, -7 + lLenL + 1, 4, 2.2, 0, 0, Math.PI * 2); cx.fill();
+      cx.beginPath(); cx.ellipse( 3, -7 + lLenR + 1, 4, 2.2, 0, 0, Math.PI * 2); cx.fill();
+    } else {
+      cx.fillStyle = legColor;
+      rr(-5, -7, 4, 8, 2); cx.fill();
+      rr( 1, -7, 4, 8, 2); cx.fill();
+      cx.fillStyle = shoeColor;
+      cx.beginPath(); cx.ellipse(-3, 2.5, 4, 2.2, 0, 0, Math.PI * 2); cx.fill();
+      cx.beginPath(); cx.ellipse( 3, 2.5, 4, 2.2, 0, 0, Math.PI * 2); cx.fill();
     }
 
-    // arms
-    if (state !== 'sleep') {
-      cx.fillStyle = has('speed') ? '#a04828' : ACCENT;
-      const armSwing = state === 'walk' ? Math.sin(frame * 0.25) * 4 : 0;
-      cx.fillRect(-9, -18 + armSwing, 4, 3);
-      cx.fillRect(5,  -18 - armSwing, 4, 3);
+    // ── BODY ──────────────────────────────────────────────────────────────────
+    cx.fillStyle = bodyColor;
+    rr(-6, -21, 12, 14, 4); cx.fill();
+
+    // shirt collar / chest detail
+    cx.fillStyle = 'rgba(255,255,255,0.08)';
+    rr(-4, -21, 8, 4, 3); cx.fill();
+
+    // ── ARMS ──────────────────────────────────────────────────────────────────
+    if (state === 'sleep') {
+      cx.fillStyle = bodyColor;
+      rr(-11, -14, 6, 3, 2); cx.fill();
+      rr(  5, -14, 6, 3, 2); cx.fill();
+      cx.fillStyle = skinColor;
+      cx.beginPath(); cx.arc(-8, -12.5, 2.2, 0, Math.PI * 2); cx.fill();
+      cx.beginPath(); cx.arc( 8, -12.5, 2.2, 0, Math.PI * 2); cx.fill();
+    } else {
+      const as = state === 'walk' ? Math.sin(frame * 0.22) * 5 : 0;
+      cx.fillStyle = bodyColor;
+      rr(-12, -19 + as, 6, 3, 2); cx.fill();
+      rr(  6, -19 - as, 6, 3, 2); cx.fill();
+      cx.fillStyle = skinColor;
+      cx.beginPath(); cx.arc(-9, -17.5 + as, 2.2, 0, Math.PI * 2); cx.fill();
+      cx.beginPath(); cx.arc( 9, -17.5 - as, 2.2, 0, Math.PI * 2); cx.fill();
+    }
+
+    // ── NECK ──────────────────────────────────────────────────────────────────
+    cx.fillStyle = skinColor;
+    rr(-2, -23, 4, 4, 1); cx.fill();
+
+    // ── HEAD ──────────────────────────────────────────────────────────────────
+    cx.fillStyle = skinColor;
+    cx.beginPath(); cx.arc(0, -29, 8.5, 0, Math.PI * 2); cx.fill();
+
+    // ── HAT ───────────────────────────────────────────────────────────────────
+    if (has('hat')) {
+      cx.fillStyle = '#1e1510';
+      rr(-10, -39, 20, 4, 1); cx.fill();   // brim
+      rr( -6, -50, 12, 12, 3); cx.fill();  // crown
+      cx.fillStyle = ACCENT;
+      cx.fillRect(-6, -39, 12, 2);          // band
+    }
+
+    // ── GLASSES ───────────────────────────────────────────────────────────────
+    if (has('glasses')) {
+      cx.strokeStyle = '#1a1208'; cx.lineWidth = 1;
+      cx.fillStyle = 'rgba(120,200,255,0.2)';
+      rr(-8, -33, 6, 5, 2); cx.fill(); cx.stroke();
+      rr( 2, -33, 6, 5, 2); cx.fill(); cx.stroke();
+      cx.beginPath(); cx.moveTo(-2, -30.5); cx.lineTo(2, -30.5); cx.stroke();
+    }
+
+    // ── FACE ──────────────────────────────────────────────────────────────────
+    if (state === 'sleep') {
+      // squinted closed eyes
+      cx.strokeStyle = '#7a4828'; cx.lineWidth = 1.5; cx.lineCap = 'round';
+      cx.beginPath(); cx.arc(-3.5, -29.5, 2, Math.PI, 0); cx.stroke();
+      cx.beginPath(); cx.arc( 3.5, -29.5, 2, Math.PI, 0); cx.stroke();
+      // z z z
+      cx.fillStyle = MUTED; cx.textAlign = 'left';
+      cx.font = 'bold 7px sans-serif'; cx.fillText('z', 10, -34);
+      cx.font = '5px sans-serif';      cx.fillText('z', 13, -40);
+    } else {
+      // pupils — slightly smaller, rounder
+      cx.fillStyle = '#2a1808';
+      cx.beginPath(); cx.arc(-3.5, -30, 1.4, 0, Math.PI * 2); cx.fill();
+      cx.beginPath(); cx.arc( 3.5, -30, 1.4, 0, Math.PI * 2); cx.fill();
+      // softer shine
+      cx.fillStyle = 'rgba(255,255,255,0.6)';
+      cx.beginPath(); cx.arc(-2.9, -30.5, 0.6, 0, Math.PI * 2); cx.fill();
+      cx.beginPath(); cx.arc( 4.1, -30.5, 0.6, 0, Math.PI * 2); cx.fill();
+      // mouth — alternates I → D → I → D when talking (Mii style)
+      cx.strokeStyle = '#9a6040'; cx.lineWidth = 1.2; cx.lineCap = 'round';
+      const talking = bubble && bubble.life > 20;
+      const mouthOpen = talking && Math.floor(frame / 8) % 2 === 0;
+      if (mouthOpen) {
+        cx.fillStyle = '#5a2010';
+        cx.beginPath(); cx.arc(0, -26.5, 2.8, 0, Math.PI); cx.closePath(); cx.fill();
+        cx.strokeStyle = '#9a6040'; cx.lineWidth = 1;
+        cx.beginPath(); cx.arc(0, -26.5, 2.8, 0, Math.PI); cx.stroke();
+      } else {
+        cx.beginPath(); cx.moveTo(-2, -26.5); cx.lineTo(2, -26.5); cx.stroke();
+      }
     }
 
     cx.restore();
@@ -1202,6 +1418,12 @@ document.getElementById('notes-export').addEventListener('click', () => {
         guy.dir = nearest.x > guy.x ? 1 : -1;
       }
 
+      if (turboTimer > 0) {
+        turboTimer--;
+        guy.state = 'walk';
+        guy.speed = 7 + Math.random() * 3;
+      }
+
       if (guy.state === 'walk') {
         guy.x += guy.dir * guy.speed;
         guy.frameT++;
@@ -1243,6 +1465,11 @@ document.getElementById('notes-export').addEventListener('click', () => {
         addXP(1);
         particles.push({ x: s.x, y: s.y, life: 20, text: has('gold') ? '+2' : '+1' });
         stars.splice(i, 1);
+        // Kevin reacts to catching a star — only ~1 in 12 chance, and only if quiet
+        if (Math.random() < 0.085 && (!bubble || bubble.life < 40)) {
+          const p = QUIPS.catchReact;
+          showBubble(p[Math.floor(Math.random() * p.length)], 140);
+        }
         continue;
       }
       if (s.y > H + 10) stars.splice(i, 1);
@@ -1254,12 +1481,11 @@ document.getElementById('notes-export').addEventListener('click', () => {
       if (particles[i].life <= 0) particles.splice(i, 1);
     }
 
-    // bubble timer
+    // bubble timer — fires every ~20-40 seconds
     bubbleTimer--;
     if (bubbleTimer <= 0) {
-      const text = QUIPS[Math.floor(Math.random() * QUIPS.length)];
-      bubble = { text, life: 220, maxLife: 220 };
-      bubbleTimer = 380 + Math.floor(Math.random() * 500);
+      showBubble(pickQuip());
+      bubbleTimer = 1200 + Math.floor(Math.random() * 1200);
     }
     if (bubble) {
       bubble.life--;
@@ -1425,16 +1651,20 @@ document.addEventListener('keydown', e => {
   e.preventDefault();
   if (k === '0') {
     setMakMode(!makMode);
+    if (typeof window.kevinSay === 'function') {
+      const pool = makMode
+        ? ["bro really said no thanks to grinding", "mak mode. i see you.", "cooldown? what cooldown?", "okay we're going full send"]
+        : ["back to normal. i respect it.", "okay okay, keeping it fair", "mak mode off. still proud tho."];
+      const line = pool[Math.floor(Math.random() * pool.length)];
+      window._kevinSayRaw?.(line);
+    }
     return;
   }
-  if (k === '1') { startTimer(); return; }
-  if (k === '2') { resetTimer(); return; }
-  if (k === '3' || k === '4' || k === '5') {
-    const modes = document.querySelectorAll('.tmode');
-    const idx = k === '3' ? 0 : k === '4' ? 1 : 2;
-    modes[idx] && modes[idx].click();
-    return;
-  }
+  if (k === '1') { window._kevinCheats?.starRain();      return; }
+  if (k === '2') { window._kevinCheats?.freeStars();     return; }
+  if (k === '3') { window._kevinCheats?.turboKevin();    return; }
+  if (k === '4') { window._kevinCheats?.freeUpgrade();   return; }
+  if (k === '5') { window._kevinCheats?.goWild();        return; }
   if (k === '6') {
     if (!confirm('Clear ALL Focus Room data? (tasks, notes, timer, stars, upgrades, streaks)')) return;
     Object.keys(localStorage)
