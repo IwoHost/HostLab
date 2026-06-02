@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INF02 — nauka</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0d0d0d;
+  --surface:#111;
+  --surface2:#161616;
+  --border:#1e1e1e;
+  --border2:#2a2a2a;
+  --accent:#c8a96e;
+  --accent2:#d4b87a;
+  --text:#d4d0c8;
+  --muted:#555;
+  --muted2:#444;
+  --green:#3a7a3a;
+  --green-text:#6db86d;
+  --red:#7a3a3a;
+  --red-text:#c46a6a;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:14px;}
+
+/* ── LAYOUT ── */
+.app{max-width:680px;margin:0 auto;padding:32px 16px 80px;}
+
+/* ── HEADER ── */
+header{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:28px;}
+header h1{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:8px;color:var(--accent);}
+.subtitle{font-size:11px;color:var(--muted);letter-spacing:3px;margin-top:4px;text-transform:uppercase;}
+
+/* ── STATS BAR ── */
+.stats{display:flex;gap:0;margin-bottom:28px;border:1px solid var(--border);}
+.stat{flex:1;padding:12px 14px;border-right:1px solid var(--border);text-align:center;}
+.stat:last-child{border-right:none;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);display:block;}
+.stat-lbl{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+
+/* ── PROGRESS ── */
+.progress-bar{height:2px;background:var(--border);margin-bottom:28px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);transition:width .4s ease;width:0%;}
+
+/* ── CONTROLS ── */
+.controls{display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap;}
+.btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;padding:8px 14px;cursor:pointer;transition:all .15s;text-transform:uppercase;}
+.btn:hover{border-color:var(--border2);color:var(--text);}
+.btn.primary{border-color:var(--accent);color:var(--accent);}
+.btn.primary:hover{background:var(--accent);color:#0d0d0d;}
+.btn.active{background:var(--surface2);border-color:var(--border2);color:var(--text);}
+
+/* ── MODE INDICATOR ── */
+.mode-indicator{font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:20px;padding:8px 0;border-bottom:1px solid var(--border);}
+.mode-indicator span{color:var(--accent);}
+
+/* ── QUESTION CARD ── */
+.question-card{border:1px solid var(--border);background:var(--surface);margin-bottom:12px;}
+.q-header{padding:16px 18px 12px;border-bottom:1px solid var(--border);}
+.q-num{font-size:10px;color:var(--muted);letter-spacing:3px;margin-bottom:8px;}
+.q-text{color:var(--text);line-height:1.6;font-size:13px;}
+.q-tag{display:inline-block;font-size:9px;letter-spacing:2px;color:var(--muted);border:1px solid var(--border);padding:2px 7px;margin-top:8px;text-transform:uppercase;}
+
+.options{padding:12px 0 0;}
+.option{display:flex;align-items:flex-start;gap:12px;padding:11px 18px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;user-select:none;}
+.option:last-child{border-bottom:none;}
+.option:hover{background:var(--surface2);}
+.opt-key{min-width:20px;color:var(--muted);font-size:12px;padding-top:1px;}
+.opt-text{line-height:1.5;font-size:13px;color:var(--text);}
+
+/* ── OPTION STATES ── */
+.option.correct{background:#0a1a0a;border-left:3px solid var(--green-text);}
+.option.correct .opt-key{color:var(--green-text);}
+.option.correct .opt-text{color:var(--green-text);}
+.option.wrong{background:#1a0a0a;border-left:3px solid var(--red-text);}
+.option.wrong .opt-key{color:var(--red-text);}
+.option.wrong .opt-text{color:var(--red-text);}
+.option.reveal-correct{background:#0a1a0a;border-left:3px solid var(--green-text);opacity:.7;}
+.option.reveal-correct .opt-key,.option.reveal-correct .opt-text{color:var(--green-text);}
+
+/* ── EXPLANATION ── */
+.explanation{border-top:1px solid var(--border);padding:14px 18px;background:#0a0a0a;font-size:12px;color:var(--muted2);line-height:1.7;display:none;}
+.explanation.show{display:block;}
+.explanation strong{color:var(--text);}
+.explanation .why-ok{color:var(--green-text);display:block;margin-bottom:6px;}
+.explanation .why-not{color:var(--muted);display:block;margin-left:12px;margin-top:3px;}
+
+/* ── QUIZ MODE NAV ── */
+.quiz-nav{display:flex;gap:8px;justify-content:space-between;margin-top:24px;align-items:center;flex-wrap:wrap;}
+.quiz-counter{font-size:11px;color:var(--muted);letter-spacing:2px;}
+
+/* ── RESULT SCREEN ── */
+.result-screen{border:1px solid var(--border);background:var(--surface);padding:40px 24px;text-align:center;display:none;}
+.result-screen.show{display:block;}
+.result-big{font-family:'Bebas Neue',sans-serif;font-size:80px;color:var(--accent);line-height:1;}
+.result-label{font-size:11px;color:var(--muted);letter-spacing:4px;margin-top:8px;margin-bottom:24px;}
+.result-grade{font-size:13px;color:var(--text);margin-bottom:28px;letter-spacing:1px;}
+
+/* ── LIST MODE ── */
+#list-mode .question-card{margin-bottom:16px;}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+.filter-btn{font-size:10px;letter-spacing:2px;padding:6px 12px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;text-transform:uppercase;transition:all .15s;}
+.filter-btn.on{border-color:var(--accent);color:var(--accent);background:#1a1508;}
+.filter-btn:hover{border-color:var(--border2);color:var(--text);}
+
+/* ── KEYBOARD HINT ── */
+.kb-hint{font-size:10px;color:var(--muted2);letter-spacing:1px;margin-top:10px;}
+.kb-hint kbd{border:1px solid var(--border2);padding:1px 5px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);}
+
+@media(max-width:480px){
+  .app{padding:20px 12px 80px;}
+  header h1{font-size:24px;letter-spacing:6px;}
+  .stats{flex-wrap:wrap;}
+  .stat{min-width:50%;}
+  .result-big{font-size:60px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>INF.02</h1>
+    <div class="subtitle">Pytania z egzaminu — 2 czerwca 2026</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><span class="stat-val" id="s-total">0</span><span class="stat-lbl">Wszystkich</span></div>
+    <div class="stat"><span class="stat-val" id="s-done">0</span><span class="stat-lbl">Zrobionych</span></div>
+    <div class="stat"><span class="stat-val" id="s-ok">0</span><span class="stat-lbl">Poprawnych</span></div>
+    <div class="stat"><span class="stat-val" id="s-pct">—</span><span class="stat-lbl">Wynik</span></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+
+  <div class="controls">
+    <button class="btn primary" id="btn-quiz" onclick="setMode('quiz')">Quiz</button>
+    <button class="btn" id="btn-list" onclick="setMode('list')">Przeglądaj</button>
+    <button class="btn" id="btn-shuffle" onclick="shuffleQ()">Losuj kolejność</button>
+    <button class="btn" id="btn-reset" onclick="resetAll()">Reset</button>
+  </div>
+
+  <!-- QUIZ MODE -->
+  <div id="quiz-mode">
+    <div class="mode-indicator">TRYB QUIZ — pytanie <span id="qm-num">1</span> z <span id="qm-total">0</span></div>
+    <div id="quiz-card"></div>
+    <div class="quiz-nav">
+      <button class="btn" id="btn-prev" onclick="quizPrev()">&#8592; Poprzednie</button>
+      <span class="quiz-counter" id="quiz-counter"></span>
+      <button class="btn primary" id="btn-next" onclick="quizNext()">Następne &#8594;</button>
+    </div>
+    <div class="kb-hint">Klawiatura: <kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> — wybierz odpowiedź &nbsp;|&nbsp; <kbd>→</kbd> następne &nbsp;|&nbsp; <kbd>←</kbd> poprzednie</div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="result-screen" id="result-screen">
+    <div class="result-big" id="res-pct">—</div>
+    <div class="result-label">poprawnych odpowiedzi</div>
+    <div class="result-grade" id="res-grade"></div>
+    <button class="btn primary" onclick="resetQuiz()">Zacznij od nowa</button>
+  </div>
+
+  <!-- LIST MODE -->
+  <div id="list-mode" style="display:none;">
+    <div class="mode-indicator">TRYB PRZEGLĄDANIA — kliknij odpowiedź żeby sprawdzić</div>
+    <div class="filter-bar">
+      <button class="filter-btn on" data-cat="all" onclick="filterCat(this,'all')">Wszystkie</button>
+      <button class="filter-btn" data-cat="siec" onclick="filterCat(this,'siec')">Sieć</button>
+      <button class="filter-btn" data-cat="system" onclick="filterCat(this,'system')">System</button>
+      <button class="filter-btn" data-cat="sprz" onclick="filterCat(this,'sprz')">Sprzęt</button>
+      <button class="filter-btn" data-cat="inne" onclick="filterCat(this,'inne')">Inne</button>
+    </div>
+    <div id="list-container"></div>
+  </div>
+
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    q: "Które urządzenie działa głównie w warstwie sieciowej modelu OSI?",
+    opts: ["Switch","Hub","Router","Repeater"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "Router routuje pakiety na podstawie adresów IP — warstwa 3 (sieciowa).",
+      not: ["Switch — warstwa 2 (MAC, ramki)","Hub — warstwa 1, kopiuje sygnał na wszystkie porty","Repeater — warstwa 1, regeneruje sygnał"]
+    }
+  },
+  {
+    q: "Jakie rozszerzenie mają pliki wykonywalne w systemie Windows?",
+    opts: [".txt",".exe",".bat",".sys"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: ".exe to standardowy format pliku wykonywalnego w Windows.",
+      not: [".txt — plik tekstowy",".bat — skrypt wsadowy (też działa, ale to nie plik wykonywalny w klasycznym sensie)",".sys — sterownik systemowy"]
+    }
+  },
+  {
+    q: "Polecenie ipconfig w Windows służy do:",
+    opts: ["formatowania dysku","konfiguracji BIOS","wyświetlania konfiguracji sieciowej","usuwania użytkowników"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "ipconfig pokazuje aktualne ustawienia sieciowe (IP, maska, brama, DNS).",
+      not: ["format — do formatowania","BIOS konfiguruje się w menu startowym","net user — do zarządzania użytkownikami"]
+    }
+  },
+  {
+    q: "Który adres IP należy do klasy prywatnej?",
+    opts: ["8.8.8.8","172.16.1.1","193.168.1.1","11.0.0.1"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "172.16.0.0 – 172.31.255.255 to prywatny zakres klasy B.",
+      not: ["8.8.8.8 — publiczny (Google DNS)","193.168.1.1 — publiczny (193.x.x.x to nie jest 192.168.x.x)","11.0.0.1 — publiczny"]
+    }
+  },
+  {
+    q: "Które medium transmisyjne jest odporne na zakłócenia elektromagnetyczne (EMI)?",
+    opts: ["Skrętka UTP","Kabel koncentryczny","Światłowód","Skrętka FTP"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "Światłowód przesyła dane jako impulsy świetlne — prąd elektryczny nie płynie, więc EMI nie ma wpływu.",
+      not: ["UTP — nieekranowana, podatna na EMI","Koncentryczny — lepsza od UTP, ale wciąż miedziana","FTP — ekranowana, ale nadal miedziana"]
+    }
+  },
+  {
+    q: "Co oznacza skrót DHCP?",
+    opts: ["Dynamic Host Configuration Protocol","Data Host Communication Process","Direct Host Configuration Port","Dynamic Hardware Control Process"],
+    ans: 0,
+    cat: "siec",
+    exp: {
+      ok: "DHCP = Dynamic Host Configuration Protocol. Automatycznie przydziela adresy IP.",
+      not: ["Pozostałe to wymyślone rozwinięcia — nie istnieją."]
+    }
+  },
+  {
+    q: "Który port domyślnie wykorzystuje HTTP?",
+    opts: ["21","25","80","443"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "HTTP działa na porcie 80.",
+      not: ["21 — FTP","25 — SMTP (e-mail)","443 — HTTPS"]
+    }
+  },
+  {
+    q: "Jakie polecenie w Linuksie wyświetli zawartość katalogu?",
+    opts: ["dir","show","ls","netstat"],
+    ans: 2,
+    cat: "system",
+    exp: {
+      ok: "ls (list) — podstawowe polecenie do listowania plików i folderów.",
+      not: ["dir — odpowiednik w Windows/DOS","show — nie istnieje jako standardowe polecenie","netstat — wyświetla połączenia sieciowe"]
+    }
+  },
+  {
+    q: "Główną funkcją switcha jest:",
+    opts: ["wzmacnianie sygnału","przełączanie ramek w sieci LAN","filtrowanie wirusów","przydzielanie adresów IP"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "Switch pracuje w warstwie 2 i przełącza ramki na podstawie adresów MAC.",
+      not: ["Wzmacnianie — repeater","Filtrowanie wirusów — firewall / antywirus","Przydzielanie IP — serwer DHCP"]
+    }
+  },
+  {
+    q: "BIOS/UEFI odpowiada za:",
+    opts: ["edycję dokumentów","uruchamianie systemu operacyjnego (POST i bootloader)","zarządzanie drukarką","konfigurację domeny"],
+    ans: 1,
+    cat: "sprz",
+    exp: {
+      ok: "BIOS/UEFI inicjalizuje sprzęt (POST) i przekazuje sterowanie do bootloadera systemu operacyjnego.",
+      not: ["Dokumenty — aplikacje biurowe","Drukarki — sterowniki / menedżer druku","Domena — Active Directory / DNS"]
+    }
+  },
+  {
+    q: "Który system plików obsługuje uprawnienia i duże pliki w Windows?",
+    opts: ["FAT16","FAT32","NTFS","EXT4"],
+    ans: 2,
+    cat: "system",
+    exp: {
+      ok: "NTFS obsługuje uprawnienia (ACL), szyfrowanie (EFS), duże pliki i journaling.",
+      not: ["FAT16 / FAT32 — brak uprawnień, limit rozmiaru pliku (FAT32: 4 GB)","EXT4 — system plików Linuksa"]
+    }
+  },
+  {
+    q: "Polecenie ping służy do:",
+    opts: ["sprawdzania połączenia sieciowego","szyfrowania danych","instalacji sterowników","tworzenia użytkowników"],
+    ans: 0,
+    cat: "siec",
+    exp: {
+      ok: "ping wysyła pakiety ICMP Echo i sprawdza, czy host jest osiągalny + mierzy RTT.",
+      not: ["Szyfrowanie — SSL/TLS, BitLocker","Sterowniki — menedżer urządzeń","Użytkownicy — net user / useradd"]
+    }
+  },
+  {
+    q: "Jaka maska odpowiada sieci /24?",
+    opts: ["255.0.0.0","255.255.0.0","255.255.255.0","255.255.255.255"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "/24 = 24 jedynki = 255.255.255.0. Pozwala na 254 hosty.",
+      not: ["/8 = 255.0.0.0","/16 = 255.255.0.0","/32 = 255.255.255.255 (jeden host)"]
+    }
+  },
+  {
+    q: "Który protokół służy do bezpiecznego przesyłania plików?",
+    opts: ["FTP","TFTP","SFTP","HTTP"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "SFTP (SSH File Transfer Protocol) szyfruje połączenie.",
+      not: ["FTP — brak szyfrowania","TFTP — uproszczony FTP bez autoryzacji","HTTP — protokół webowy, nie plikowy"]
+    }
+  },
+  {
+    q: "Co oznacza RAID 1?",
+    opts: ["Striping","Mirroring","Parzystość","Backup offline"],
+    ans: 1,
+    cat: "sprz",
+    exp: {
+      ok: "RAID 1 = mirroring — dane są zapisywane identycznie na dwóch dyskach.",
+      not: ["Striping — RAID 0","Parzystość — RAID 5","Backup offline — nie jest poziomem RAID"]
+    }
+  },
+  {
+    q: "Które polecenie w Windows sprawdzi trasę pakietów?",
+    opts: ["ping","tracert","net user","diskpart"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "tracert (traceroute) pokazuje kolejne przeskoki (hopsy) pakietu do celu.",
+      not: ["ping — tylko sprawdza osiągalność","net user — zarządzanie użytkownikami","diskpart — zarządzanie dyskami"]
+    }
+  },
+  {
+    q: "DNS służy do:",
+    opts: ["przydzielania adresów MAC","tłumaczenia nazw domen na adresy IP","szyfrowania danych","konfiguracji switcha"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "DNS (Domain Name System) tłumaczy np. google.com → 142.250.x.x.",
+      not: ["MAC przydziela producent sprzętu","Szyfrowanie — TLS/SSL","Switch — zarządza się przez CLI lub web GUI"]
+    }
+  },
+  {
+    q: "Jaki kabel najczęściej stosuje się do połączenia komputera ze switchem?",
+    opts: ["crossover","prosty (straight-through)","koncentryczny","światłowód jednomodowy"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "Straight-through łączy urządzenia różnych typów (PC ↔ switch, switch ↔ router).",
+      not: ["Crossover — dwa urządzenia tego samego typu (PC ↔ PC)","Koncentryczny — starsze technologie (koaksjalny)","Jednomodowy — długie dystanse, drogie"]
+    }
+  },
+  {
+    q: "Który port jest domyślny dla HTTPS?",
+    opts: ["20","80","110","443"],
+    ans: 3,
+    cat: "siec",
+    exp: {
+      ok: "HTTPS = HTTP + TLS, domyślny port 443.",
+      not: ["20 — FTP dane","80 — HTTP","110 — POP3 (odbiór e-mail)"]
+    }
+  },
+  {
+    q: "Polecenie passwd w Linuksie służy do:",
+    opts: ["restartu systemu","zmiany hasła użytkownika","tworzenia folderu","sprawdzania RAM"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "passwd zmienia hasło — dla siebie lub (jako root) dla dowolnego użytkownika.",
+      not: ["Restart — reboot / shutdown -r","Folder — mkdir","RAM — free -h"]
+    }
+  },
+  {
+    q: "Które polecenie w Linuksie wyświetli aktywne interfejsy sieciowe wraz z adresami IP?",
+    opts: ["lsblk","ip a","passwd","chmod"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "ip a (ip address show) wyświetla wszystkie interfejsy sieciowe i ich adresy.",
+      not: ["lsblk — lista bloków urządzeń (dysków)","passwd — zmiana hasła","chmod — zmiana uprawnień pliku"]
+    }
+  },
+  {
+    q: "Administrator skonfigurował hostowi adres 192.168.10.77/27. Który zestaw zawiera poprawny adres sieci i broadcast?",
+    opts: ["192.168.10.64 oraz 192.168.10.95","192.168.10.32 oraz 192.168.10.63","192.168.10.64 oraz 192.168.10.127","192.168.10.77 oraz 192.168.10.95"],
+    ans: 0,
+    cat: "siec",
+    exp: {
+      ok: "/27 = bloki po 32. 77 mieści się w bloku 64–95. Sieć: .64, broadcast: .95.",
+      not: ["Blok .32–.63 — nie zawiera .77","/26 = bloki po 64, .64–.127 to za duży blok dla /27","Adres hosta (.77) nigdy nie jest adresem sieci"]
+    }
+  },
+  {
+    q: "Administrator chce znaleźć trasę pakietów do serwera w Windows. Użyje:",
+    opts: ["arp -a","pathping lub tracert","gpresult","diskpart"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "tracert / pathping śledzą ścieżkę pakietów przez sieć.",
+      not: ["arp -a — tabela ARP (MAC ↔ IP)","gpresult — wyniki zasad grupowych","diskpart — zarządzanie partycjami"]
+    }
+  },
+  {
+    q: "Które polecenie Linux wyświetli użycie miejsca na systemach plików?",
+    opts: ["free","df -h","fdisk -l","route"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "df -h (disk free, human-readable) pokazuje zajęte/wolne miejsce na każdym zamontowanym systemie plików.",
+      not: ["free — pamięć RAM","fdisk -l — lista partycji","route — tablica routingu"]
+    }
+  },
+  {
+    q: "Administrator chce sprawdzić, które porty są otwarte na lokalnym komputerze Windows i jaki proces ich używa. Najbardziej odpowiednie polecenie to:",
+    opts: ["ping -a","ipconfig /all","netstat -ano","hostname"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "netstat -ano pokazuje otwarte połączenia, porty i PID procesu.",
+      not: ["ping -a — odwrócony DNS","ipconfig /all — konfiguracja sieci, nie porty","hostname — wyświetla nazwę komputera"]
+    }
+  },
+  {
+    q: "Administrator podzielił sieć 192.168.50.0/24 na podsieci dla minimum 14 hostów każda. Jakiej maski powinien użyć?",
+    opts: ["/27","/28","/29","/26"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "/28 = 16 adresów, 14 użytecznych hostów. Idealne dopasowanie.",
+      not: ["/27 = 32 adresy, 30 hostów — za dużo, marnotrawstwo","/29 = 8 adresów, 6 hostów — za mało","/26 = 64 adresy — za dużo"]
+    }
+  },
+  {
+    q: "Administrator chce nadać użytkownikowi uprawnienie do usuwania i zmieniania kolejności dokumentów w kolejce drukowania wybranej drukarki sieciowej. Które uprawnienie przypisze?",
+    opts: ["Drukowanie (Print)","Zarządzanie dokumentami (Manage Documents)","Zarządzanie drukarką (Manage Printers)","Modyfikacja sterowników"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "Manage Documents pozwala zarządzać kolejką — usuwać, wstrzymywać, zmieniać kolejność dokumentów innych użytkowników.",
+      not: ["Print — tylko wysyłanie własnych dokumentów","Manage Printers — pełna kontrola nad drukarką (sterowniki, ustawienia)","Modify Drivers — nie istnieje jako standardowe uprawnienie drukarki"]
+    }
+  },
+  {
+    q: "Kopie listy kontaktów telefonu można odzyskać z pliku o rozszerzeniu:",
+    opts: [".cnf",".cms",".vcf",".vcs"],
+    ans: 2,
+    cat: "inne",
+    exp: {
+      ok: "VCF (vCard) to standardowy format pliku z kontaktami.",
+      not: [".cnf — plik konfiguracyjny (np. MySQL)",".cms — format podpisów kryptograficznych",".vcs — format kalendarza iCalendar (stary)"]
+    }
+  },
+  {
+    q: "Które porty transportowe są wykorzystywane przez protokół DHCP?",
+    opts: ["20 i 21 TCP","53 UDP","67 i 68 UDP","80 i 443 TCP"],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "DHCP używa UDP 67 (serwer) i UDP 68 (klient).",
+      not: ["20/21 TCP — FTP","53 UDP — DNS","80/443 — HTTP/HTTPS"]
+    }
+  },
+  {
+    q: "Co to jest przyrostowa kopia zapasowa?",
+    opts: [
+      "Kopia zawierająca wszystkie dane niezależnie od modyfikacji.",
+      "Kopia archiwizująca pliki zmienione od ostatniej pełnej kopii.",
+      "Kopia archiwizująca pliki zmienione od ostatniej kopii pełnej LUB przyrostowej.",
+      "Kopia zapisująca dane bezpośrednio w chmurze z pominięciem dysków."
+    ],
+    ans: 2,
+    cat: "inne",
+    exp: {
+      ok: "Kopia przyrostowa = tylko zmiany od ostatniej operacji (pełnej lub przyrostowej). Szybka, ale przywracanie wymaga wielu kopii.",
+      not: ["A — opis pełnej kopii","B — opis różnicowej kopii (od ostatniej pełnej)","D — opis kopia chmurowej, nie przyrostowej"]
+    }
+  },
+  {
+    q: "Planując pierwsze uruchomienie routera bezprzewodowego, należy w pierwszej kolejności:",
+    opts: [
+      "Włączyć filtrowanie adresów MAC.",
+      "Skonfigurować przekierowanie portów.",
+      "Zmienić domyślne hasło dostępu do panelu zarządzania.",
+      "Wyłączyć rozgłaszanie SSID."
+    ],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "Domyślne hasła są publicznie znane. Zmiana hasła to priorytet bezpieczeństwa.",
+      not: ["Filtrowanie MAC — dobra praktyka, ale nie pierwszy krok","Przekierowanie portów — konfiguracja usług, nie bezpieczeństwo","SSID — ukrycie SSID nie jest skuteczną ochroną"]
+    }
+  },
+  {
+    q: "Usługa RRAS serwera Windows Server jest przeznaczona do:",
+    opts: [
+      "Automatycznego przydzielania adresów IP stacjom roboczym.",
+      "Zarządzania obiektami sieciowymi i kontami użytkowników.",
+      "Zapewniania zdalnego dostępu oraz połączeń VPN.",
+      "Hostowania witryn internetowych oraz serwerów FTP."
+    ],
+    ans: 2,
+    cat: "system",
+    exp: {
+      ok: "RRAS (Routing and Remote Access Service) = routing + VPN + dial-up.",
+      not: ["Przydzielanie IP — DHCP","Obiekty i konta — Active Directory","Witryny i FTP — IIS"]
+    }
+  },
+  {
+    q: "Które urządzenie sieciowe rozbuduje sieć LAN o segment bezprzewodowy (WLAN)?",
+    opts: [
+      "Router bez funkcji Wi-Fi",
+      "Switch zarządzalny layer 2",
+      "Punkt dostępowy (Access Point)",
+      "Modem DSL"
+    ],
+    ans: 2,
+    cat: "siec",
+    exp: {
+      ok: "Access Point łączy urządzenia bezprzewodowe z istniejącą siecią przewodową — działa jak most.",
+      not: ["Router bez Wi-Fi — nie nadaje sygnału bezprzewodowego","Switch L2 — rozszerza sieć tylko o porty przewodowe","Modem DSL — łączy z ISP, nie rozbudowuje LAN"]
+    }
+  },
+  {
+    q: "Przedsiębiorca przekazujący odpady inne niż komunalne ma obowiązek prowadzić:",
+    opts: [
+      "Elektroniczną ewidencję odpadów w rejestrze BDO.",
+      "Papierową, uproszczoną ewidencję odpadów.",
+      "Ewidencję papierową kart zawierających źródło odpadów.",
+      "Dokumentację lokalizacji miejsc zbiórki."
+    ],
+    ans: 0,
+    cat: "inne",
+    exp: {
+      ok: "Od 1 stycznia 2020 r. obowiązuje cyfrowy system BDO dla wszystkich podmiotów wytwarzających odpady inne niż komunalne.",
+      not: ["Forma papierowa zniesiona","Karty przekazania odpadu są wyłącznie w BDO","Lokalizacja miejsc zbiórki to nie ewidencja odpadów"]
+    }
+  },
+  {
+    q: "Rozszerzenie plików instalacyjnych dla systemu Android to:",
+    opts: [".exe",".apk",".ipa",".deb"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "APK (Android Package Kit) to format paczek aplikacji na Android.",
+      not: [".exe — Windows",".ipa — iOS",".deb — Debian/Ubuntu Linux"]
+    }
+  },
+  {
+    q: "Przystawka MMC do zarządzania dyskami to:",
+    opts: ["compmgmt.msc","diskmgmt.msc","devmgmt.msc","services.msc"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "diskmgmt.msc otwiera Zarządzanie dyskami — partycje, woluminy, formatowanie.",
+      not: ["compmgmt.msc — Zarządzanie komputerem (ogólne)","devmgmt.msc — Menedżer urządzeń","services.msc — Usługi Windows"]
+    }
+  },
+  {
+    q: "Ile użytecznych podsieci powstanie z podziału 192.168.30.0/27 z sieci /24?",
+    opts: ["4","8","16","32"],
+    ans: 1,
+    cat: "siec",
+    exp: {
+      ok: "/24 → /27: pożyczamy 3 bity (27-24=3). 2³ = 8 podsieci.",
+      not: ["4 — to byłoby /26","16 — to byłoby /28","32 — to byłoby /29"]
+    }
+  },
+  {
+    q: "Jeżeli sieć 172.16.6.0/24 podzielisz na /25, co się NIE zmieni?",
+    opts: ["Adres sieci","Adres rozgłoszeniowy","Liczba dostępnych hostów","Maska podsieci"],
+    ans: 0,
+    cat: "siec",
+    exp: {
+      ok: "Pierwsza podsieć /25 to 172.16.6.0–.127, więc adres sieci 172.16.6.0 pozostaje taki sam.",
+      not: ["Broadcast zmienia się: z .255 na .127","Hostów: 254 → 126","Maska: 255.255.255.0 → 255.255.255.128"]
+    }
+  },
+  {
+    q: "Jak sprawdzić użycie CPU i zobaczyć, która aplikacja go zajmuje?",
+    opts: ["ipconfig","Menedżer zadań","Rejestr systemowy","msconfig"],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "Menedżer zadań (Ctrl+Shift+Esc) → zakładka Procesy — widać CPU per proces.",
+      not: ["ipconfig — sieć","Rejestr — konfiguracja systemu, nie monitoring","msconfig — zarządzanie uruchamianiem systemu"]
+    }
+  },
+  {
+    q: "Urządzenie z technologią ciekłokrystaliczną to:",
+    opts: ["CRT","LCD","Plasma","OLED"],
+    ans: 1,
+    cat: "sprz",
+    exp: {
+      ok: "LCD (Liquid Crystal Display) używa ciekłych kryształów do modulowania światła podświetlenia.",
+      not: ["CRT — kineskop (lampa elektronopromieniowa)","Plasma — komórki plazmowe","OLED — organiczne diody emitujące światło"]
+    }
+  },
+  {
+    q: "Co magazynuje energię elektryczną w komputerze?",
+    opts: ["Rezystor","Tranzystor","Kondensator","Cewka indukcyjna"],
+    ans: 2,
+    cat: "sprz",
+    exp: {
+      ok: "Kondensator gromadzi i oddaje energię elektryczną — używany w zasilaczach, płytach głównych itp.",
+      not: ["Rezystor — ogranicza prąd","Tranzystor — wzmacnia / przełącza","Cewka indukcyjna — magazynuje energię magnetyczną, nie elektryczną"]
+    }
+  },
+  {
+    q: "Która odpowiedź NIE zapewnia bezpieczeństwa w sieci?",
+    opts: [
+      "Używanie silnych, długich haseł ze znakami specjalnymi",
+      "Aktualizowanie oprogramowania i systemu",
+      "Krótkie hasło zawierające tylko litery i cyfry",
+      "Stosowanie uwierzytelniania dwuskładnikowego (2FA)"
+    ],
+    ans: 2,
+    cat: "inne",
+    exp: {
+      ok: "Krótkie hasło z samymi literami i cyframi jest podatne na ataki słownikowe i brute-force.",
+      not: ["Silne hasła — dobra praktyka","Aktualizacje — eliminują znane luki","2FA — dodatkowa warstwa ochrony"]
+    }
+  },
+  {
+    q: "Zrzut ekranu pokazuje interfejs maszyny wirtualnej. Co to za aplikacja?",
+    opts: ["VMware Workstation","VirtualBox","Hyper-V","QEMU"],
+    ans: 1,
+    cat: "sprz",
+    exp: {
+      ok: "Interfejs Oracle VirtualBox jest charakterystyczny — pomarańczowe logo i układ panelu.",
+      not: ["VMware — szary/niebieski interfejs","Hyper-V — wbudowany w Windows Server","QEMU — głównie konsolowy"]
+    }
+  },
+  {
+    q: "Jakie pytanie o BIOS ma odpowiedź: wymiana baterii CMOS?",
+    opts: [
+      "Co jest potrzebne do zresetowania ustawień BIOS do fabrycznych?",
+      "Co przechowuje ustawienia BIOS po wyłączeniu zasilania?",
+      "Jak zaktualizować BIOS?",
+      "Co robić gdy komputer się nie uruchamia?"
+    ],
+    ans: 1,
+    cat: "sprz",
+    exp: {
+      ok: "Bateria CMOS (CR2032) zasila układ RTC i pamięć CMOS przechowującą ustawienia BIOS gdy komputer jest wyłączony. Wyczerpana bateria = utrata ustawień (data, godzina, konfiguracja).",
+      not: ["Reset BIOS — jumper Clear CMOS lub wyjęcie baterii","Aktualizacja BIOS — flash z nośnika","Brak uruchamiania — wiele przyczyn"]
+    }
+  },
+  {
+    q: "Wybrana jest opcja TCP/IP w konfiguracji drukarki. Jak ją dodać?",
+    opts: [
+      "Przez port USB",
+      "Przez adres IP drukarki",
+      "Przez Bluetooth",
+      "Przez udział sieciowy (UNC)"
+    ],
+    ans: 1,
+    cat: "system",
+    exp: {
+      ok: "Gdy typ portu to TCP/IP — drukarkę dodaje się podając jej adres IP (lub hostname).",
+      not: ["USB — port lokalny, nie TCP/IP","Bluetooth — inny protokół","UNC (\\\\serwer\\drukarka) — port SMB, nie TCP/IP"]
+    }
+  }
+];
+
+// ── STATE ──
+let mode = 'quiz';
+let order = [...Array(QUESTIONS.length).keys()];
+let qIdx = 0;
+let answers = new Array(QUESTIONS.length).fill(null); // null | index
+let listAnswers = {};
+let currentCat = 'all';
+
+// ── INIT ──
+function init() {
+  updateStats();
+  setMode('quiz');
+}
+
+// ── STATS ──
+function updateStats() {
+  const total = QUESTIONS.length;
+  const done = answers.filter(a => a !== null).length;
+  const ok = answers.reduce((acc, a, i) => {
+    if (a === null) return acc;
+    return acc + (a === QUESTIONS[order[i]].ans ? 1 : 0);
+  }, 0);
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-done').textContent = done;
+  document.getElementById('s-ok').textContent = ok;
+  document.getElementById('s-pct').textContent = done > 0 ? Math.round(ok/done*100)+'%' : '—';
+  const pct = done / total * 100;
+  document.getElementById('prog-fill').style.width = pct + '%';
+}
+
+// ── MODE ──
+function setMode(m) {
+  mode = m;
+  document.getElementById('quiz-mode').style.display = m === 'quiz' ? 'block' : 'none';
+  document.getElementById('list-mode').style.display = m === 'list' ? 'block' : 'none';
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('btn-quiz').classList.toggle('primary', m === 'quiz');
+  document.getElementById('btn-list').classList.toggle('primary', m === 'list');
+  document.getElementById('btn-quiz').classList.toggle('active', m === 'quiz');
+  document.getElementById('btn-list').classList.toggle('active', m === 'list');
+  if (m === 'quiz') renderQuizCard();
+  if (m === 'list') renderList();
+}
+
+// ── QUIZ ──
+function renderQuizCard() {
+  const q = QUESTIONS[order[qIdx]];
+  const sel = answers[qIdx];
+  const revealed = sel !== null;
+  const total = order.length;
+
+  document.getElementById('qm-num').textContent = qIdx + 1;
+  document.getElementById('qm-total').textContent = total;
+  document.getElementById('quiz-counter').textContent = `${qIdx+1} / ${total}`;
+
+  let optsHTML = q.opts.map((o, i) => {
+    let cls = 'option';
+    if (revealed) {
+      if (i === q.ans) cls += ' correct';
+      else if (i === sel) cls += ' wrong';
+    }
+    const keys = ['A','B','C','D'];
+    return `<div class="${cls}" onclick="${revealed ? '' : 'pickAnswer('+i+')'}" data-i="${i}">
+      <span class="opt-key">${keys[i]}</span>
+      <span class="opt-text">${o}</span>
+    </div>`;
+  }).join('');
+
+  let expHTML = '';
+  if (revealed && q.exp) {
+    const notHTML = q.exp.not.map(n => `<span class="why-not">— ${n}</span>`).join('');
+    expHTML = `<div class="explanation show">
+      <span class="why-ok">✓ ${q.exp.ok}</span>
+      ${notHTML}
+    </div>`;
+  }
+
+  document.getElementById('quiz-card').innerHTML = `
+    <div class="question-card">
+      <div class="q-header">
+        <div class="q-num">PYTANIE ${qIdx+1} / ${total}</div>
+        <div class="q-text">${q.q}</div>
+        <span class="q-tag">${catLabel(q.cat)}</span>
+      </div>
+      <div class="options">${optsHTML}</div>
+      ${expHTML}
+    </div>`;
+}
+
+function pickAnswer(i) {
+  if (answers[qIdx] !== null) return;
+  answers[qIdx] = i;
+  updateStats();
+  renderQuizCard();
+}
+
+function quizNext() {
+  if (qIdx < order.length - 1) {
+    qIdx++;
+    renderQuizCard();
+  } else {
+    showResult();
+  }
+}
+
+function quizPrev() {
+  if (qIdx > 0) {
+    qIdx--;
+    renderQuizCard();
+  }
+}
+
+function showResult() {
+  document.getElementById('quiz-mode').style.display = 'none';
+  const rs = document.getElementById('result-screen');
+  rs.style.display = 'block';
+  const done = answers.filter(a => a !== null).length;
+  const ok = answers.reduce((acc, a, i) => acc + (a !== null && a === QUESTIONS[order[i]].ans ? 1 : 0), 0);
+  const pct = done > 0 ? Math.round(ok/done*100) : 0;
+  document.getElementById('res-pct').textContent = pct + '%';
+  let grade = '';
+  if (pct >= 90) grade = 'Świetnie! Zdasz bez problemu.';
+  else if (pct >= 75) grade = 'Dobrze! Jeszcze trochę powtarzania.';
+  else if (pct >= 50) grade = 'Połowa — powtórz słabsze tematy.';
+  else grade = 'Trzeba jeszcze poćwiczyć.';
+  document.getElementById('res-grade').textContent = `${ok} / ${done} poprawnych — ${grade}`;
+}
+
+function resetQuiz() {
+  answers = new Array(QUESTIONS.length).fill(null);
+  qIdx = 0;
+  updateStats();
+  setMode('quiz');
+}
+
+// ── LIST ──
+function renderList() {
+  const container = document.getElementById('list-container');
+  const filtered = QUESTIONS.filter(q => currentCat === 'all' || q.cat === currentCat);
+  container.innerHTML = filtered.map((q, fi) => {
+    const gi = QUESTIONS.indexOf(q);
+    const sel = listAnswers[gi];
+    const revealed = sel !== undefined;
+    const keys = ['A','B','C','D'];
+    const optsHTML = q.opts.map((o, i) => {
+      let cls = 'option';
+      if (revealed) {
+        if (i === q.ans) cls += i === sel ? ' correct' : ' reveal-correct';
+        else if (i === sel) cls += ' wrong';
+      }
+      return `<div class="${cls}" onclick="listPick(${gi},${i})">
+        <span class="opt-key">${keys[i]}</span>
+        <span class="opt-text">${o}</span>
+      </div>`;
+    }).join('');
+    let expHTML = '';
+    if (revealed && q.exp) {
+      const notHTML = q.exp.not.map(n => `<span class="why-not">— ${n}</span>`).join('');
+      expHTML = `<div class="explanation show"><span class="why-ok">✓ ${q.exp.ok}</span>${notHTML}</div>`;
+    }
+    return `<div class="question-card">
+      <div class="q-header">
+        <div class="q-num">PYTANIE ${fi+1}</div>
+        <div class="q-text">${q.q}</div>
+        <span class="q-tag">${catLabel(q.cat)}</span>
+      </div>
+      <div class="options">${optsHTML}</div>
+      ${expHTML}
+    </div>`;
+  }).join('');
+}
+
+function listPick(gi, i) {
+  if (listAnswers[gi] !== undefined) return;
+  listAnswers[gi] = i;
+  renderList();
+}
+
+function filterCat(el, cat) {
+  currentCat = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('on', b === el));
+  renderList();
+}
+
+function catLabel(c) {
+  return {siec:'Sieć',system:'System',sprz:'Sprzęt',inne:'Inne'}[c] || c;
+}
+
+// ── SHUFFLE ──
+function shuffleQ() {
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  answers = new Array(QUESTIONS.length).fill(null);
+  qIdx = 0;
+  updateStats();
+  if (mode === 'quiz') renderQuizCard();
+  else renderList();
+}
+
+// ── RESET ──
+function resetAll() {
+  answers = new Array(QUESTIONS.length).fill(null);
+  listAnswers = {};
+  qIdx = 0;
+  order = [...Array(QUESTIONS.length).keys()];
+  updateStats();
+  if (mode === 'quiz') renderQuizCard();
+  else renderList();
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+  if (mode !== 'quiz') return;
+  const map = {a:0, b:1, c:2, d:3, A:0, B:1, C:2, D:3};
+  if (e.key in map) pickAnswer(map[e.key]);
+  if (e.key === 'ArrowRight') quizNext();
+  if (e.key === 'ArrowLeft') quizPrev();
+});
+
+init();
+</script>
+</body>
+</html>
