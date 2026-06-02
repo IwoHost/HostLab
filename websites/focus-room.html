@@ -1013,36 +1013,36 @@ document.getElementById('notes-export').addEventListener('click', () => {
   }
 
   const QUIPS = [
-    "my knees hurt",
-    "star caught. noted.",
-    "i do this for free",
-    "nobody's watching",
-    "one more star",
-    "...",
-    "i am so tired",
-    "this is fine",
-    "please close some tabs",
-    "bro go touch grass",
-    "just five more minutes",
-    "i should've been a triangle",
-    "stars? again??",
-    "what is even a deadline",
-    "i am speed",
-    "send snacks",
-    "running is my passion (lie)",
-    "zoning out ngl",
-    "caught that one easy",
-    "we are SO back",
-    "focus. FOCUS.",
-    "another day another star",
-    "i have no thoughts",
-    "my arms hurt too",
-    "not paid enough for this",
-    "what are we even doing",
-    "ok ok ok ok ok",
-    "that star was mine",
-    "don't look at me",
-    "hired. fired. rehired.",
+    "you're doing amazing, keep going",
+    "i'm so glad you're here with me",
+    "we make a great team, you and i",
+    "i believe in you. genuinely.",
+    "thank you for showing up today",
+    "you got this. i promise.",
+    "catching stars, just like you catch wins",
+    "i run so you stay motivated",
+    "seriously, you should be proud",
+    "one task at a time. that's all.",
+    "i'm rooting for you so hard rn",
+    "you came back. that means everything.",
+    "proud of you for starting",
+    "hey. you're doing great.",
+    "this is our session. let's make it count.",
+    "even small progress is progress",
+    "i'll keep running if you keep going",
+    "we're in this together, okay?",
+    "you sat down and tried. that's huge.",
+    "don't be too hard on yourself",
+    "i see you working. it's paying off.",
+    "the stars are for you, not me",
+    "thank you for not closing the tab",
+    "you make this worth it for me",
+    "whatever you're building — keep building",
+    "rest is part of the work too",
+    "i'm just happy you're here",
+    "a little focus goes a long way",
+    "you've got more in you than you think",
+    "still here. still proud of you.",
   ];
 
   let bubble = null; // { text, life, maxLife }
@@ -1351,7 +1351,9 @@ document.getElementById('notes-export').addEventListener('click', () => {
   document.getElementById('rebirth-btn').addEventListener('click', () => {
     if (xp < rebirthCost()) return;
     if (!confirm(`Rebirth? You'll lose all stars and upgrades but gain ×${(rebirthMult() * 1.1).toFixed(2)} stars forever.`)) return;
+    clearInterval(gameLoop); // stop loop so no star catches overwrite the reset
     rebirths++;
+    xp = 0; score = 0;
     localStorage.setItem('fr-rebirths', rebirths);
     localStorage.setItem('fr-game-xp', '0');
     localStorage.setItem('fr-game-score', '0');
@@ -1376,7 +1378,7 @@ document.getElementById('notes-export').addEventListener('click', () => {
   }
   scheduleSpawn();
 
-  setInterval(() => { tick(); draw(); }, 16);
+  const gameLoop = setInterval(() => { tick(); draw(); }, 16);
 
   // ── PIP ────────────────────────────────────────────────────────────────────
   const pipBtn   = document.getElementById('pip-btn');
