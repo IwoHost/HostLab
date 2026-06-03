@@ -3,111 +3,125 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HostLab · Linux Bash</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&display=swap" rel="stylesheet">
+<title>BASH — Linux Terminal Kurs</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
+<link rel="stylesheet" href="../other/backbutton.css">
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
 :root{
-  --bg:#080d08;--surface:#0d120d;--surface2:#111811;
-  --border:#1a2a1a;--border2:#0f1f0f;
-  --green:#4ade80;--green-dim:#166534;--green-bright:#86efac;--green-muted:#0d200d;
-  --text:#cce8cc;--text-dim:#5a8a5a;--text-muted:#2a4a2a;
-  --warn:#fbbf24;--err:#f87171;
-  --font-term:'Syne Mono','Courier New',monospace;
-  --font-ui:'Syne',sans-serif;
+  --bg:#050905;--surface:#090e09;--surface2:#0d140d;
+  --border:#1a2e1a;--border2:rgba(0,255,65,0.06);
+  --green:#00ff41;--dim:#008822;--amber:#ffb300;
+  --text:#b8f0b8;--muted:#3a5a3a;--err:#ff2828;
+  --font:'Share Tech Mono',monospace;
 }
+
 html,body{height:100%;overflow:hidden}
-body{background:var(--bg);color:var(--text);font-family:var(--font-term);-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;animation:flicker 10s infinite}
 
-/* ── BOOT ── */
-#boot{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;z-index:100}
-#boot-art{color:#4ade80;font-size:clamp(7px,1.1vw,13px);line-height:1.25;text-align:center;white-space:pre}
-#boot-msg{color:#2a5a2a;font-size:11px;letter-spacing:.15em;margin-top:12px;min-height:16px}
-#boot-bar-wrap{width:200px;height:2px;background:#0f1f0f;margin-top:8px;border-radius:1px}
-#boot-bar{height:100%;width:0%;background:#166534;border-radius:1px;transition:width .25s ease}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.12) 3px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:200}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.5) 100%);pointer-events:none;z-index:199}
 
-/* ── APP ── */
+@keyframes flicker{0%,90%,100%{opacity:1}91%{opacity:.88}93%{opacity:1}95%{opacity:.92}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* BOOT */
+#boot{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;z-index:300}
+#boot-art{color:var(--green);font-size:clamp(6px,1vw,12px);line-height:1.25;text-align:center;white-space:pre;text-shadow:0 0 10px rgba(0,255,65,.4)}
+#boot-msg{color:var(--dim);font-size:11px;letter-spacing:.2em;margin-top:14px;min-height:16px;text-transform:uppercase}
+#boot-bar-wrap{width:220px;height:1px;background:var(--border);margin-top:10px}
+#boot-bar{height:100%;width:0%;background:var(--dim);transition:width .2s linear}
+
+/* APP */
 #app{display:none;height:100vh;overflow:hidden;flex-direction:row}
 
-/* ── SIDEBAR ── */
-.sidebar{width:260px;min-width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-.sb-head{padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
-.sb-title{font-size:10px;letter-spacing:.18em;color:var(--green);text-transform:uppercase;margin-bottom:3px}
-.sb-sub{font-size:9px;color:var(--text-muted);letter-spacing:.08em;margin-bottom:8px}
-.sb-prog-wrap{height:2px;background:var(--border2);border-radius:1px}
-.sb-prog-fill{height:100%;background:var(--green-dim);border-radius:1px;transition:width .4s ease;width:0%}
-.lesson-list{flex:1;overflow-y:auto;padding:6px 0}
-.lesson-list::-webkit-scrollbar{width:3px}
-.lesson-list::-webkit-scrollbar-thumb{background:var(--border)}
-.li{display:flex;align-items:center;gap:10px;padding:8px 18px;cursor:pointer;transition:background .12s;border-left:2px solid transparent;user-select:none}
-.li:hover{background:var(--surface2)}
-.li.active{background:var(--green-muted);border-left-color:var(--green)}
-.li-dot{width:7px;height:7px;border-radius:50%;border:1px solid var(--text-muted);flex-shrink:0;transition:background .2s,border-color .2s,box-shadow .2s}
-.li.done .li-dot{background:var(--green-dim);border-color:var(--green-dim)}
-.li.active .li-dot{background:var(--green);border-color:var(--green);box-shadow:0 0 5px var(--green)}
-.li-name{font-size:10px;color:var(--text-muted);letter-spacing:.04em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.li.active .li-name{color:var(--green-bright)}
-.li.done .li-name{color:var(--text-dim)}
-.li-tag{font-size:8px;color:var(--text-muted);background:var(--surface2);padding:2px 5px;border-radius:2px;border:1px solid var(--border);white-space:nowrap;flex-shrink:0}
-.li.active .li-tag{color:var(--green-dim);border-color:var(--green-dim)}
+/* SIDEBAR */
+.sidebar{width:252px;min-width:252px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sidebar::before{content:'';position:absolute;inset:4px;border:1px solid var(--border2);pointer-events:none;z-index:1}
+.sb-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;z-index:2}
+.sb-sys{font-size:8px;letter-spacing:.25em;color:var(--dim);text-transform:uppercase;margin-bottom:2px}
+.sb-title{font-size:13px;color:var(--green);letter-spacing:.08em;text-shadow:0 0 8px rgba(0,255,65,.3);margin-bottom:10px}
+.sb-prog-wrap{height:1px;background:var(--border)}
+.sb-prog-fill{height:100%;background:var(--dim);transition:width .4s ease;width:0%}
+.sb-counter{font-size:9px;color:var(--muted);letter-spacing:.1em;margin-top:6px}
 
-/* ── TERMINAL WRAP ── */
+.lesson-list{flex:1;overflow-y:auto;padding:4px 0;position:relative;z-index:2}
+.lesson-list::-webkit-scrollbar{width:2px}
+.lesson-list::-webkit-scrollbar-thumb{background:var(--dim)}
+
+.li{display:flex;align-items:center;gap:8px;padding:6px 16px;cursor:pointer;transition:all .12s;border-left:2px solid transparent}
+.li:hover{background:rgba(0,255,65,.03);color:var(--text)}
+.li.active{background:rgba(0,255,65,.05);border-left-color:var(--green)}
+.li-mark{font-size:9px;color:var(--muted);min-width:16px;flex-shrink:0}
+.li.done .li-mark{color:var(--dim)}
+.li.active .li-mark{color:var(--green)}
+.li-name{font-size:10px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.04em}
+.li.active .li-name{color:var(--green)}
+.li.done .li-name{color:var(--muted)}
+.li-cmd{font-size:8px;color:var(--muted);border:1px solid var(--border);padding:1px 5px;flex-shrink:0;letter-spacing:.06em}
+.li.active .li-cmd{color:var(--dim);border-color:var(--dim)}
+
+/* TERM WRAP */
 .term-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.term-topbar{padding:9px 18px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px}
-.term-dots{display:flex;gap:5px}
-.dot{width:10px;height:10px;border-radius:50%}
-.dot.r{background:#1a0a0a;border:1px solid #4a1515}
-.dot.y{background:#1a1500;border:1px solid #4a3800}
-.dot.g{background:var(--green-muted);border:1px solid var(--green-dim)}
-.term-title{font-size:9px;color:var(--text-muted);letter-spacing:.1em;flex:1;text-align:center}
-.term-badge{font-size:8px;color:var(--green-dim);background:var(--green-muted);padding:2px 7px;border-radius:2px;border:1px solid var(--green-dim);white-space:nowrap}
 
-/* ── LESSON PANEL ── */
-.lp{background:var(--surface2);border-bottom:1px solid var(--border);padding:12px 20px;flex-shrink:0;overflow-y:auto;max-height:210px}
-.lp::-webkit-scrollbar{width:3px}
-.lp::-webkit-scrollbar-thumb{background:var(--border)}
-.lp-label{font-size:8px;letter-spacing:.2em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
-.lp-title{font-size:13px;color:var(--green-bright);font-family:var(--font-ui);font-weight:700;margin-bottom:8px;letter-spacing:-.01em}
-.lp-theory{font-size:11px;color:var(--text-dim);line-height:1.6;margin-bottom:8px}
-.lp-ex{font-size:10px;color:var(--green);background:#06100a;border:1px solid var(--green-dim);padding:7px 10px;border-radius:3px;margin-bottom:8px;white-space:pre-line;letter-spacing:.02em}
-.lp-task{font-size:10px;color:var(--warn);background:#12100a;border:1px solid #3a2800;padding:7px 10px;border-radius:3px;line-height:1.5}
-.lp-task b{color:#fcd34d;font-weight:normal;display:block;font-size:8px;letter-spacing:.15em;margin-bottom:3px;text-transform:uppercase}
-.lp-hint{margin-top:6px;font-size:9px;color:var(--text-dim);padding:5px 8px;border:1px solid var(--border);border-radius:2px;background:var(--surface)}
+.term-topbar{height:34px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-dots{display:flex;gap:5px}
+.dot{width:9px;height:9px;border-radius:0;border:1px solid}
+.dot.r{background:#200a0a;border-color:#5a1515}
+.dot.y{background:#1a1400;border-color:#5a4200}
+.dot.g{background:#0a1a0a;border-color:var(--dim)}
+.topbar-title{font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase}
+.topbar-badge{font-size:8px;color:var(--dim);border:1px solid var(--border);padding:2px 8px;letter-spacing:.1em;text-transform:uppercase}
 
-/* ── OUTPUT ── */
-.term-out{flex:1;overflow-y:auto;padding:10px 20px;font-size:12px;line-height:1.65;letter-spacing:.02em}
-.term-out::-webkit-scrollbar{width:4px}
-.term-out::-webkit-scrollbar-thumb{background:var(--border)}
+/* LESSON PANEL */
+.lp{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 18px;flex-shrink:0;max-height:200px;overflow-y:auto;position:relative}
+.lp::before{content:'';position:absolute;inset:3px;border:1px solid var(--border2);pointer-events:none}
+.lp::-webkit-scrollbar{width:2px}
+.lp::-webkit-scrollbar-thumb{background:var(--dim)}
+.lp-num{font-size:8px;letter-spacing:.25em;color:var(--dim);text-transform:uppercase;margin-bottom:4px}
+.lp-title{font-size:12px;color:var(--green);letter-spacing:.1em;margin-bottom:6px;text-shadow:0 0 6px rgba(0,255,65,.25)}
+.lp-theory{font-size:10px;color:var(--muted);line-height:1.65;margin-bottom:8px;letter-spacing:.03em}
+.lp-ex{font-size:10px;color:var(--green);border:1px solid var(--dim);padding:6px 10px;margin-bottom:8px;white-space:pre-line;background:rgba(0,255,65,.02);letter-spacing:.03em}
+.lp-ex::before{content:'PRZYKŁAD ';font-size:7px;color:var(--dim);letter-spacing:.2em;display:block;margin-bottom:3px}
+.lp-task{font-size:10px;color:var(--amber);border:1px solid #3a2800;padding:6px 10px;line-height:1.5;background:rgba(255,179,0,.02)}
+.lp-task::before{content:'▶ ZADANIE ';font-size:7px;color:#885500;letter-spacing:.2em;display:block;margin-bottom:3px}
+.lp-hint{margin-top:6px;font-size:9px;color:var(--muted);padding:5px 8px;border:1px solid var(--border)}
+.lp-hint::before{content:'// ';color:var(--dim)}
+
+/* OUTPUT */
+.term-out{flex:1;overflow-y:auto;padding:10px 18px;font-size:12px;line-height:1.7;letter-spacing:.03em}
+.term-out::-webkit-scrollbar{width:2px}
+.term-out::-webkit-scrollbar-thumb{background:var(--dim)}
 .ol{white-space:pre-wrap;word-break:break-all}
-.ol.cmd{color:var(--green-bright)}
-.ol.out{color:var(--text-dim)}
+.ol.cmd{color:var(--green)}
+.ol.out{color:var(--text)}
 .ol.err{color:var(--err)}
-.ol.ok{color:#86efac;background:#07200a;padding:5px 9px;border-left:2px solid var(--green);margin:3px 0;font-size:11px}
-.ol.sys{color:var(--text-muted);font-size:10px}
+.ol.ok{color:var(--green);border-left:2px solid var(--dim);padding:4px 8px;margin:3px 0;background:rgba(0,255,65,.03);font-size:11px}
+.ol.sys{color:var(--dim);font-size:10px;letter-spacing:.05em}
 
-/* ── INPUT ── */
-.term-in-row{display:flex;align-items:center;padding:10px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:0}
-.term-prompt{color:var(--green);font-size:12px;white-space:nowrap;flex-shrink:0}
-.term-prompt .u{color:var(--green-bright)}
-.term-prompt .h{color:var(--green)}
-.term-prompt .d{color:var(--text-dim)}
-.term-prompt .dm{color:var(--text-muted)}
-.term-prompt .s{color:var(--green-bright);margin-right:7px}
-.term-input{flex:1;background:transparent;border:none;outline:none;color:var(--green-bright);font-family:var(--font-term);font-size:12px;caret-color:var(--green);letter-spacing:.02em}
+/* INPUT */
+.term-in-row{display:flex;align-items:center;padding:9px 18px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:0}
+.term-prompt{color:var(--green);font-size:12px;white-space:nowrap;flex-shrink:0;text-shadow:0 0 6px rgba(0,255,65,.3)}
+.term-prompt .u{color:var(--amber)}
+.term-prompt .d{color:var(--muted)}
+.term-prompt .s{color:var(--green);margin-right:6px}
+.term-input{flex:1;background:transparent;border:none;outline:none;color:var(--green);font-family:var(--font);font-size:12px;caret-color:var(--green);letter-spacing:.03em}
+.term-input::placeholder{color:var(--muted)}
 
-/* ── DONE SCREEN ── */
-#done-screen{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:90;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center}
-#done-screen pre{color:var(--green);font-size:clamp(7px,.9vw,11px);line-height:1.35}
-#done-screen p{color:var(--text-dim);font-size:12px;max-width:360px;line-height:1.6}
-#done-screen a{color:var(--green);font-size:10px;letter-spacing:.14em;border:1px solid var(--green-dim);padding:9px 18px;text-decoration:none;transition:background .2s}
-#done-screen a:hover{background:var(--green-muted)}
+/* DONE */
+#done-screen{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:90;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center}
+#done-screen pre{color:var(--green);font-size:clamp(6px,.85vw,11px);line-height:1.35;text-shadow:0 0 10px rgba(0,255,65,.3)}
+#done-screen .done-msg{color:var(--muted);font-size:11px;max-width:380px;line-height:1.6;letter-spacing:.04em}
+#done-screen a{color:var(--green);font-size:10px;letter-spacing:.18em;border:1px solid var(--dim);padding:8px 20px;text-decoration:none;text-transform:uppercase;transition:background .15s}
+#done-screen a:hover{background:rgba(0,255,65,.06)}
 
-/* ── BACK ── */
-.back{position:fixed;bottom:18px;right:18px;font-family:var(--font-term);font-size:9px;color:var(--text-muted);text-decoration:none;border:1px solid var(--border);padding:7px 13px;letter-spacing:.1em;transition:color .2s,border-color .2s;background:var(--surface);z-index:50}
-.back:hover{color:var(--green);border-color:var(--green-dim)}
+.back-home{z-index:250!important}
 
-@media(max-width:680px){.sidebar{display:none}.lp{padding:10px 14px}.term-out{padding:8px 14px}.term-in-row{padding:8px 14px}}
+@media(max-width:680px){.sidebar{display:none}.lp,.term-out,.term-in-row{padding-left:14px;padding-right:14px}}
 </style>
 </head>
 <body>
@@ -121,24 +135,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-term);-webkit
 <div id="app">
   <nav class="sidebar">
     <div class="sb-head">
-      <div class="sb-title">Linux Bash</div>
-      <div class="sb-sub">INF02 · <span id="done-cnt">0</span>/15 LEKCJI</div>
+      <div class="sb-sys">HostLab // INF02</div>
+      <div class="sb-title">LINUX BASH_</div>
       <div class="sb-prog-wrap"><div class="sb-prog-fill" id="sb-prog"></div></div>
+      <div class="sb-counter"><span id="done-cnt">0</span>/15 LEKCJI ZALICZONYCH</div>
     </div>
     <div class="lesson-list" id="lesson-list"></div>
   </nav>
 
   <div class="term-wrap">
     <div class="term-topbar">
-      <div class="term-dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
-      <div class="term-title">student@inf02 — bash</div>
-      <div class="term-badge" id="lbadge">LEKCJA 1/15</div>
+      <div class="topbar-left">
+        <div class="topbar-dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="topbar-title">student@inf02 — bash</div>
+      </div>
+      <div class="topbar-badge" id="lbadge">LEKCJA 01/15</div>
     </div>
     <div class="lp" id="lp"></div>
     <div class="term-out" id="term-out"></div>
     <div class="term-in-row">
       <span class="term-prompt">
-        <span class="u">student</span><span class="dm">@</span><span class="h">inf02</span><span class="dm">:</span><span class="d" id="pp">~</span><span class="s">$</span>
+        <span class="u">student</span><span class="d">@inf02:</span><span class="d" id="pp">~</span><span class="s">$</span>
       </span>
       <input class="term-input" id="ti" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
@@ -147,389 +164,229 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-term);-webkit
 
 <div id="done-screen">
   <pre id="done-art"></pre>
-  <p>Kurs ukończony! Podstawy Linuxa na egzamin INF02 — zaliczone.</p>
+  <div class="done-msg">KURS UKOŃCZONY. Podstawy Linuxa na egzamin INF02 — zaliczone.</div>
   <a href="../pages/study.html">← WRÓĆ DO STUDY</a>
 </div>
 
-<a href="../pages/study.html" class="back">← STUDY</a>
+<a href="../pages/study.html" class="back-home" title="Study">
+  <img src="../other/logo/HLab_Logo.png" alt="HostLab">
+</a>
 
 <script>
 // ── FILESYSTEM ──────────────────────────────
-const D = (ch={})=>({type:'dir',perms:'drwxr-xr-x',children:ch});
-const F = (c='',p='-rw-r--r--')=>({type:'file',perms:p,content:c});
-
-const FS = D({
-  home: D({ student: D({
-    dokumenty: D({
-      'notatki.txt': F('Nauka Linuxa jest spoko.\nINF02 zdamy na pewno!\n'),
-      'zadania.txt': F('zadanie 1: nauczyc sie ls\nzadanie 2: nauczyc sie cd\nzadanie 3: ???\nzadanie 4: profit\n'),
-      'hasla.txt': F('admin:qwerty123\nroot:tajne456\n','-rw-------'),
+const D=(ch={})=>({type:'dir',perms:'drwxr-xr-x',children:ch});
+const F=(c='',p='-rw-r--r--')=>({type:'file',perms:p,content:c});
+const FS=D({
+  home:D({student:D({
+    dokumenty:D({
+      'notatki.txt':F('Nauka Linuxa jest spoko.\nINF02 zdamy na pewno!\n'),
+      'zadania.txt':F('zadanie 1: nauczyc sie ls\nzadanie 2: nauczyc sie cd\nzadanie 3: ???\nzadanie 4: profit\n'),
+      'hasla.txt':F('admin:qwerty123\nroot:tajne456\n','-rw-------'),
     }),
-    skrypty: D(),
-    pobrane: D({ 'archiwum.tar': F('[dane binarne]') }),
-  })},
-  etc: D({
-    'hosts': F('127.0.0.1\tlocalhost\n::1\t\tlocalhost\n192.168.1.1\trouter\n'),
-    'passwd': F('root:x:0:0:root:/root:/bin/bash\nstudent:x:1000:1000::/home/student:/bin/bash\n'),
+    skrypty:D(),
+    pobrane:D({'archiwum.tar':F('[dane binarne]')}),
+  })}),
+  etc:D({
+    'hosts':F('127.0.0.1\tlocalhost\n::1\t\tlocalhost\n192.168.1.1\trouter\n'),
+    'passwd':F('root:x:0:0:root:/root:/bin/bash\nstudent:x:1000:1000::/home/student:/bin/bash\n'),
   }),
-  var: D({ log: D({ 'syslog': F('Jun  3 08:00:01 inf02 systemd: Started.\nJun  3 08:01:00 inf02 CRON: nauka linuxa w toku\n') }) }),
-  tmp: D(),
+  var:D({log:D({'syslog':F('Jun  3 08:00:01 inf02 systemd: Started.\nJun  3 08:01:00 inf02 CRON: nauka linuxa w toku\n')})}),
+  tmp:D(),
 });
 
-// ── STATE ────────────────────────────────────
-const S = {
-  cwd: '/home/student',
-  hist: [], hIdx: -1,
-  lidx: 0,
-  done: new Set(),
-  attempts: 0,
-};
-try {
-  const sv = JSON.parse(localStorage.getItem('hl-bash')||'{}');
-  if (sv.done) sv.done.forEach(i=>S.done.add(i));
-  if (typeof sv.lidx==='number') S.lidx=sv.lidx;
-} catch(e){}
-
+// ── STATE ──────────────────────────────────
+const S={cwd:'/home/student',hist:[],hIdx:-1,lidx:0,done:new Set(),attempts:0};
+try{const sv=JSON.parse(localStorage.getItem('hl-bash')||'{}');if(sv.done)sv.done.forEach(i=>S.done.add(i));if(typeof sv.lidx==='number')S.lidx=sv.lidx}catch(e){}
 function save(){localStorage.setItem('hl-bash',JSON.stringify({done:[...S.done],lidx:S.lidx}))}
 
-// ── PATH UTILS ───────────────────────────────
+// ── PATH UTILS ─────────────────────────────
 function resolve(p){
-  if(!p) return S.cwd;
-  if(p==='~') return '/home/student';
-  if(p.startsWith('~/')) p='/home/student'+p.slice(1);
-  if(!p.startsWith('/')) p=S.cwd+'/'+p;
+  if(!p)return S.cwd;if(p==='~')return'/home/student';
+  if(p.startsWith('~/'))p='/home/student'+p.slice(1);
+  if(!p.startsWith('/'))p=S.cwd+'/'+p;
   const pts=p.split('/').filter(Boolean),r=[];
-  for(const pt of pts){if(pt==='.')continue;if(pt==='..'){r.pop()}else r.push(pt)}
-  return '/'+r.join('/');
+  for(const pt of pts){if(pt==='.')continue;if(pt==='..')r.pop();else r.push(pt)}
+  return'/'+r.join('/');
 }
 function node(abs){
-  if(abs==='/') return FS;
-  const pts=abs.split('/').filter(Boolean);
-  let n=FS;
+  if(abs==='/')return FS;
+  const pts=abs.split('/').filter(Boolean);let n=FS;
   for(const pt of pts){if(!n.children||!n.children[pt])return null;n=n.children[pt]}
   return n;
 }
 function parent(abs){
-  const pts=abs.split('/').filter(Boolean);
-  if(!pts.length) return null;
-  const pPath='/'+pts.slice(0,-1).join('/');
-  return {n:node(pPath||'/'),name:pts[pts.length-1],path:pPath||'/'};
+  const pts=abs.split('/').filter(Boolean);if(!pts.length)return null;
+  const pp='/'+pts.slice(0,-1).join('/');
+  return{n:node(pp||'/'),name:pts[pts.length-1],path:pp||'/'};
 }
 function disp(abs){
-  if(abs==='/home/student') return '~';
-  if(abs.startsWith('/home/student/')) return '~'+abs.slice('/home/student'.length);
+  if(abs==='/home/student')return'~';
+  if(abs.startsWith('/home/student/'))return'~'+abs.slice('/home/student'.length);
   return abs;
 }
 
-// ── LESSONS ──────────────────────────────────
-const LL = [
+// ── LESSONS ───────────────────────────────
+const LL=[
   {id:1,cmd:'pwd',title:'Gdzie jestem?',
-   theory:'<b>pwd</b> (print working directory) pokazuje pełną ścieżkę katalogu, w którym się teraz znajdujesz. Zawsze zacznij od sprawdzenia gdzie jesteś.',
-   ex:'$ pwd\n/home/student',
-   task:'Sprawdź w jakim katalogu się teraz znajdujesz.',
-   hint:'Wpisz: pwd',
+   theory:'pwd (print working directory) pokazuje pełną ścieżkę katalogu, w którym się teraz znajdujesz. Zawsze zacznij od sprawdzenia gdzie jesteś.',
+   ex:'$ pwd\n/home/student',task:'Sprawdź w jakim katalogu się teraz znajdujesz.',hint:'Wpisz: pwd',
    check:({cmd})=>cmd==='pwd'},
   {id:2,cmd:'ls',title:'Co tu mamy?',
-   theory:'<b>ls</b> (list) wyświetla zawartość katalogu. Bez argumentu pokazuje bieżący katalog.',
-   ex:'$ ls\ndokumenty  pobrane  skrypty',
-   task:'Wylistuj zawartość bieżącego katalogu.',
-   hint:'Wpisz: ls',
+   theory:'ls (list) wyświetla zawartość katalogu. Bez argumentu pokazuje bieżący katalog.',
+   ex:'$ ls\ndokumenty  pobrane  skrypty',task:'Wylistuj zawartość bieżącego katalogu.',hint:'Wpisz: ls',
    check:({cmd})=>cmd==='ls'},
   {id:3,cmd:'ls -la',title:'Szczegółowa lista',
-   theory:'<b>ls -l</b> pokazuje szczegóły (uprawnienia, rozmiar, datę). <b>ls -a</b> pokazuje pliki ukryte (zaczyna się od .). Razem: <b>ls -la</b>.',
-   ex:'$ ls -la\ndrwxr-xr-x 3 student student 4096 Jun 3 dokumenty\n-rw-r--r-- 1 student student   42 Jun 3 notatki.txt',
-   task:'Wyświetl szczegółową listę z ukrytymi plikami.',
-   hint:'Wpisz: ls -la',
+   theory:'ls -l pokazuje szczegóły (uprawnienia, rozmiar). ls -a pokazuje ukryte pliki (zaczynają się od .). Razem: ls -la.',
+   ex:'$ ls -la\ndrwxr-xr-x 3 student student  Jun 3 dokumenty\n-rw-r--r-- 1 student student  Jun 3 notatki.txt',
+   task:'Wyświetl szczegółową listę z ukrytymi plikami.',hint:'Wpisz: ls -la',
    check:({cmd,args})=>{const f=args.join('');return cmd==='ls'&&(f.includes('la')||f.includes('al')||(f.includes('l')&&f.includes('a')))}},
   {id:4,cmd:'cd',title:'Zmień katalog',
-   theory:'<b>cd</b> (change directory) przechodzi do podanego katalogu. <b>cd ..</b> wraca poziom wyżej. <b>cd ~</b> wraca do katalogu domowego.',
-   ex:'$ cd dokumenty\n$ pwd\n/home/student/dokumenty',
-   task:'Przejdź do folderu dokumenty.',
-   hint:'Wpisz: cd dokumenty',
+   theory:'cd (change directory) przechodzi do podanego katalogu. cd .. wraca poziom wyżej. cd ~ wraca do katalogu domowego.',
+   ex:'$ cd dokumenty\n$ pwd\n/home/student/dokumenty',task:'Przejdź do folderu dokumenty.',hint:'Wpisz: cd dokumenty',
    check:({cmd})=>cmd==='cd'&&S.cwd.includes('dokumenty')},
   {id:5,cmd:'mkdir',title:'Utwórz folder',
-   theory:'<b>mkdir</b> (make directory) tworzy nowy katalog. <b>mkdir -p</b> tworzy całą ścieżkę naraz.',
+   theory:'mkdir (make directory) tworzy nowy katalog. mkdir -p tworzy całą ścieżkę naraz.',
    ex:'$ mkdir projekty\n$ ls\ndokumenty  pobrane  projekty  skrypty',
-   task:'Utwórz nowy folder o nazwie projekty.',
-   hint:'Wpisz: mkdir projekty',
+   task:'Utwórz nowy folder o nazwie projekty.',hint:'Wpisz: mkdir projekty',
    check:({cmd,args})=>{if(cmd!=='mkdir')return false;const n=args.find(a=>!a.startsWith('-'));return n&&node(resolve(n))!==null}},
   {id:6,cmd:'touch',title:'Utwórz plik',
-   theory:'<b>touch</b> tworzy pusty plik lub aktualizuje datę modyfikacji istniejącego. Najprostszy sposób na nowy plik.',
+   theory:'touch tworzy pusty plik lub aktualizuje datę modyfikacji istniejącego.',
    ex:'$ touch test.txt\n$ ls\nnotatki.txt  test.txt  zadania.txt',
-   task:'Utwórz pusty plik o nazwie test.txt.',
-   hint:'Wpisz: touch test.txt',
+   task:'Utwórz pusty plik o nazwie test.txt.',hint:'Wpisz: touch test.txt',
    check:({cmd,args})=>{if(cmd!=='touch')return false;const n=args[0];return n&&node(resolve(n))!==null}},
   {id:7,cmd:'cat',title:'Czytaj plik',
-   theory:'<b>cat</b> wyświetla zawartość pliku. Szybki podgląd bez otwierania edytora.',
+   theory:'cat wyświetla zawartość pliku. Szybki podgląd bez otwierania edytora.',
    ex:'$ cat notatki.txt\nNauka Linuxa jest spoko.\nINF02 zdamy na pewno!',
-   task:'Wyświetl zawartość dowolnego pliku komendą cat. (Spróbuj cat notatki.txt w folderze dokumenty)',
-   hint:'Wpisz: cat notatki.txt',
+   task:'Wyświetl zawartość dowolnego pliku (np. cat notatki.txt w folderze dokumenty).',hint:'Wpisz: cat notatki.txt',
    check:({cmd,args})=>{if(cmd!=='cat')return false;const n=args[0];return n&&node(resolve(n))?.type==='file'}},
   {id:8,cmd:'echo',title:'Wypisz tekst',
-   theory:'<b>echo</b> wypisuje tekst na ekran. W skryptach używany do wyświetlania komunikatów i wartości zmiennych.',
-   ex:'$ echo "Witaj INF02!"\nWitaj INF02!\n$ echo Hej\nHej',
-   task:'Wypisz dowolny tekst używając komendy echo.',
-   hint:'Wpisz: echo twoj_tekst',
+   theory:'echo wypisuje tekst na ekran. W skryptach używany do wyświetlania komunikatów i wartości zmiennych.',
+   ex:'$ echo "Witaj INF02!"\nWitaj INF02!',
+   task:'Wypisz dowolny tekst używając komendy echo.',hint:'Wpisz: echo TwojaWiadomosc',
    check:({cmd})=>cmd==='echo'},
   {id:9,cmd:'echo >',title:'Zapisz do pliku',
-   theory:'<b>></b> przekierowuje wyjście do pliku (nadpisuje). <b>>></b> dopisuje do pliku. To jeden z najważniejszych operatorów shellu.',
-   ex:'$ echo "moj tekst" > wynik.txt\n$ cat wynik.txt\nmoj tekst\n$ echo "linia 2" >> wynik.txt',
-   task:'Zapisz dowolny tekst do nowego pliku wynik.txt używając echo i >.',
-   hint:'Wpisz: echo "tekst" > wynik.txt',
+   theory:'> przekierowuje wyjście do pliku (nadpisuje). >> dopisuje na koniec. Jeden z najważniejszych operatorów shellu.',
+   ex:'$ echo "moj tekst" > wynik.txt\n$ cat wynik.txt\nmoj tekst',
+   task:'Zapisz dowolny tekst do nowego pliku wynik.txt używając echo i >.',hint:'Wpisz: echo "tekst" > wynik.txt',
    check:({cmd,raw})=>cmd==='echo'&&raw.includes('>')&&node(resolve('wynik.txt'))!==null},
   {id:10,cmd:'cp',title:'Kopiuj plik',
-   theory:'<b>cp</b> (copy) kopiuje pliki. <b>cp -r</b> kopiuje katalogi rekurencyjnie.',
+   theory:'cp (copy) kopiuje pliki. cp -r kopiuje katalogi rekurencyjnie.',
    ex:'$ cp notatki.txt kopia.txt\n$ ls\nkopia.txt  notatki.txt  zadania.txt',
-   task:'Skopiuj dowolny plik używając cp (np. cp notatki.txt kopia.txt).',
-   hint:'Wpisz: cp notatki.txt kopia.txt',
+   task:'Skopiuj dowolny plik używając cp.',hint:'Wpisz: cp notatki.txt kopia.txt',
    check:({cmd,args})=>{if(cmd!=='cp')return false;const pts=args.filter(a=>!a.startsWith('-'));return pts.length>=2&&node(resolve(pts[1]))!==null}},
   {id:11,cmd:'mv',title:'Przenieś / zmień nazwę',
-   theory:'<b>mv</b> (move) przenosi pliki lub zmienia ich nazwy. Jedyne polecenie do zmiany nazwy w Linuxie.',
-   ex:'$ mv kopia.txt backup.txt\n$ ls\nbackup.txt  notatki.txt  zadania.txt',
-   task:'Zmień nazwę dowolnego pliku używając mv.',
-   hint:'Wpisz: mv kopia.txt backup.txt',
+   theory:'mv (move) przenosi pliki lub zmienia ich nazwy. Jedyne polecenie do zmiany nazwy w Linuxie.',
+   ex:'$ mv kopia.txt backup.txt\n$ ls\nbackup.txt  notatki.txt',
+   task:'Zmień nazwę dowolnego pliku używając mv.',hint:'Wpisz: mv kopia.txt backup.txt',
    check:({cmd,args})=>{if(cmd!=='mv')return false;const pts=args.filter(a=>!a.startsWith('-'));return pts.length>=2&&node(resolve(pts[1]))!==null}},
   {id:12,cmd:'rm',title:'Usuń plik',
-   theory:'<b>rm</b> (remove) usuwa pliki. <b>rm -r</b> usuwa katalogi. UWAGA: Linux nie ma kosza — raz usunięte = znikło.',
+   theory:'rm (remove) usuwa pliki. rm -r usuwa katalogi. UWAGA: Linux nie ma kosza — raz usunięte = znikło.',
    ex:'$ rm backup.txt\n$ ls\nnotatki.txt  zadania.txt',
-   task:'Usuń dowolny plik komendą rm.',
-   hint:'Wpisz: rm backup.txt',
+   task:'Usuń dowolny plik komendą rm.',hint:'Wpisz: rm backup.txt',
    check:({cmd,args})=>{if(cmd!=='rm')return false;const n=args.find(a=>!a.startsWith('-'));return n&&node(resolve(n))===null}},
   {id:13,cmd:'grep',title:'Szukaj w plikach',
-   theory:'<b>grep</b> szuka wzorca w plikach. <b>grep -i</b> ignoruje wielkość liter. <b>grep -r</b> przeszukuje rekurencyjnie.',
-   ex:'$ grep "nauka" zadania.txt\nzadanie 1: nauczyc sie ls\n$ grep -r student /etc/passwd',
-   task:'Użyj grep, żeby znaleźć tekst w dowolnym pliku.',
-   hint:'Wpisz: grep nauka zadania.txt',
+   theory:'grep szuka wzorca w plikach. grep -i ignoruje wielkość liter. grep -r przeszukuje rekurencyjnie.',
+   ex:'$ grep "nauka" zadania.txt\nzadanie 1: nauczyc sie ls',
+   task:'Użyj grep żeby znaleźć tekst w dowolnym pliku.',hint:'Wpisz: grep nauka zadania.txt',
    check:({cmd,args})=>{if(cmd!=='grep')return false;const f=args.find(a=>!a.startsWith('-')&&args.indexOf(a)>0);return f!==undefined}},
   {id:14,cmd:'|',title:'Potoki (pipe)',
-   theory:'<b>|</b> (pipe) łączy komendy — wyjście pierwszej staje się wejściem drugiej. Niezbędne do filtrowania i przetwarzania tekstu.',
-   ex:'$ ls | grep .txt\nnotatki.txt\nzadania.txt\n$ cat /etc/passwd | grep student',
-   task:'Połącz dwie komendy operatorem | (np. ls | grep .txt).',
-   hint:'Wpisz: ls | grep .txt',
+   theory:'| (pipe) łączy komendy — wyjście pierwszej staje się wejściem drugiej. Niezbędne do filtrowania tekstu.',
+   ex:'$ ls | grep .txt\nnotatki.txt\nzadania.txt',
+   task:'Połącz dwie komendy operatorem | (np. ls | grep .txt).',hint:'Wpisz: ls | grep .txt',
    check:({raw})=>raw.includes('|')},
   {id:15,cmd:'chmod',title:'Uprawnienia pliku',
-   theory:'<b>chmod</b> zmienia uprawnienia. <b>chmod +x</b> dodaje prawo do wykonania. <b>chmod 755</b> = rwxr-xr-x. r=4, w=2, x=1.',
-   ex:'$ chmod +x skrypt.sh\n$ ls -l skrypt.sh\n-rwxr-xr-x 1 student student 0 Jun 3 skrypt.sh',
-   task:'Nadaj dowolnemu plikowi uprawnienia do wykonania używając chmod +x.',
-   hint:'Wpisz: chmod +x notatki.txt',
+   theory:'chmod zmienia uprawnienia. chmod +x dodaje prawo do wykonania. chmod 755 = rwxr-xr-x. r=4, w=2, x=1.',
+   ex:'$ chmod +x skrypt.sh\n$ ls -l\n-rwxr-xr-x 1 student student skrypt.sh',
+   task:'Nadaj dowolnemu plikowi uprawnienia do wykonania używając chmod +x.',hint:'Wpisz: chmod +x notatki.txt',
    check:({cmd})=>cmd==='chmod'},
 ];
 
-// ── COMMANDS ─────────────────────────────────
-const SNARKY=['Hm, nieznana komenda. Spróbuj "help".','Linux jest zszokowany. Wpisz "help".','Nie znam tego. Może literówka?','Komenda nieznana. To nie Windows.'];
+// ── COMMANDS ──────────────────────────────
+const SNARKY=['Komenda nieznana. Wpisz "help".','Hmm, nie znam tego. Może literówka?','Linux jest zszokowany. Spróbuj "help".'];
 const snark=()=>SNARKY[Math.floor(Math.random()*SNARKY.length)];
-
 function parseCmd(raw){const p=raw.trim().split(/\s+/);return{cmd:p[0]||'',args:p.slice(1)}}
 
 function runCmd(raw){
-  if(!raw.trim()) return[];
+  if(!raw.trim())return[];
   const lines=[];
   const emit=(t,c='out')=>lines.push({t,c});
-
-  // pipe
   if(raw.includes('|')){
-    const [l,...rp]=raw.split('|');
-    const leftLines=runCmd(l.trim());
-    const rp2=rp.join('|').trim();
-    const {cmd:rc,args:ra}=parseCmd(rp2);
-    if(rc==='grep'){
-      const pat=ra[0]||'';
-      if(!pat){emit('grep: brakuje wzorca','err');return lines}
-      const re=new RegExp(pat,'i');
-      return leftLines.filter(ln=>ln.t&&re.test(ln.t));
-    }
-    if(rc==='wc'){emit(leftLines.length+' lini(e)');return lines}
-    if(rc==='sort'){return leftLines.sort((a,b)=>a.t.localeCompare(b.t))}
-    if(rc==='head'){const n=parseInt(ra[0]||10);return leftLines.slice(0,n)}
-    if(rc==='tail'){const n=parseInt(ra[0]||10);return leftLines.slice(-n)}
+    const[l,...rp]=raw.split('|');const leftLines=runCmd(l.trim());
+    const rp2=rp.join('|').trim();const{cmd:rc,args:ra}=parseCmd(rp2);
+    if(rc==='grep'){const pat=ra[0]||'';if(!pat){emit('grep: brakuje wzorca','err');return lines}const re=new RegExp(pat,'i');return leftLines.filter(ln=>ln.t&&re.test(ln.t))}
+    if(rc==='wc')return[{t:leftLines.length+' lini(e)',c:'out'}];
+    if(rc==='sort')return leftLines.sort((a,b)=>a.t.localeCompare(b.t));
+    if(rc==='head')return leftLines.slice(0,parseInt(ra[0]||10));
+    if(rc==='tail')return leftLines.slice(-parseInt(ra[0]||10));
     return leftLines;
   }
-
-  // redirect
   let rfile=null,append=false,cmdLine=raw;
-  const am=raw.match(/^(.*?)>>(.*?)$/s);
-  const wm=raw.match(/^(.*?)(?<![>])>(.*?)$/s);
+  const am=raw.match(/^(.*?)>>(.*?)$/s);const wm=raw.match(/^(.*?)(?<![>])>(.*?)$/s);
   if(am){cmdLine=am[1].trim();rfile=am[2].trim();append=true}
   else if(wm){cmdLine=wm[1].trim();rfile=wm[2].trim()}
-
-  const {cmd,args}=parseCmd(cmdLine);
-  let cap='';
+  const{cmd,args}=parseCmd(cmdLine);let cap='';
   const cemit=(t)=>{if(rfile)cap+=t+'\n';else emit(t)};
-
   switch(cmd){
     case 'pwd':cemit(S.cwd);break;
     case 'ls':{
       const fl=args.filter(a=>a.startsWith('-')).join('');
       const showA=fl.includes('a'),long=fl.includes('l');
-      const pa=args.find(a=>!a.startsWith('-'));
-      const tgt=pa?resolve(pa):S.cwd;
+      const pa=args.find(a=>!a.startsWith('-'));const tgt=pa?resolve(pa):S.cwd;
       const nd=node(tgt);
       if(!nd){emit(`ls: ${pa}: Brak pliku lub katalogu`,'err');break}
       if(nd.type==='file'){cemit(tgt.split('/').pop());break}
       const ent=[];
-      if(showA) ent.push({nm:'.',t:'dir'},{nm:'..',t:'dir'});
-      for(const[nm,ch] of Object.entries(nd.children||{})){
-        if(!showA&&nm.startsWith('.'))continue;
-        ent.push({nm,t:ch.type,pr:ch.perms});
-      }
-      if(long){
-        if(showA)cemit(`total ${ent.length}`);
-        for(const e of ent){const pr=e.pr||(e.t==='dir'?'drwxr-xr-x':'-rw-r--r--');cemit(`${pr} 1 student student ${String(Math.floor(Math.random()*4096+256)).padStart(5)}  Jun  3 08:00 ${e.nm}`)}
-      } else{cemit(ent.map(e=>e.t==='dir'?e.nm+'/':e.nm).join('  '))}
+      if(showA)ent.push({nm:'.',t:'dir'},{nm:'..',t:'dir'});
+      for(const[nm,ch] of Object.entries(nd.children||{})){if(!showA&&nm.startsWith('.'))continue;ent.push({nm,t:ch.type,pr:ch.perms})}
+      if(long){if(showA)cemit(`total ${ent.length}`);for(const e of ent){const pr=e.pr||(e.t==='dir'?'drwxr-xr-x':'-rw-r--r--');cemit(`${pr} 1 student student ${String(Math.floor(Math.random()*4096+256)).padStart(5)}  Jun  3 08:00 ${e.nm}`)}}
+      else cemit(ent.map(e=>e.t==='dir'?e.nm+'/':e.nm).join('  '));
       break;
     }
-    case 'cd':{
-      const tgt=args[0]?resolve(args[0]):'/home/student';
-      const nd=node(tgt);
-      if(!nd){emit(`cd: ${args[0]}: Brak takiego katalogu`,'err');break}
-      if(nd.type!=='dir'){emit(`cd: ${args[0]}: To nie jest katalog`,'err');break}
-      S.cwd=tgt;break;
-    }
-    case 'mkdir':{
-      const nm=args.find(a=>!a.startsWith('-'));
-      if(!nm){emit('mkdir: brakuje nazwy','err');break}
-      const abs=resolve(nm),{n:par,name:dn}=parent(abs);
-      if(!par){emit(`mkdir: nie można utworzyć ${nm}`,'err');break}
-      if(par.children[dn]){emit(`mkdir: ${nm}: Już istnieje`,'err');break}
-      par.children[dn]=D();break;
-    }
-    case 'touch':{
-      const nm=args[0];
-      if(!nm){emit('touch: brakuje nazwy','err');break}
-      const abs=resolve(nm),{n:par,name:fn}=parent(abs);
-      if(!par){emit(`touch: nie można dotknąć '${nm}'`,'err');break}
-      if(!par.children[fn]) par.children[fn]=F('');
-      break;
-    }
-    case 'cat':{
-      const nm=args[0];
-      if(!nm){emit('cat: brakuje argumentu','err');break}
-      const abs=resolve(nm),nd=node(abs);
-      if(!nd){emit(`cat: ${nm}: Brak pliku`,'err');break}
-      if(nd.type==='dir'){emit(`cat: ${nm}: To jest katalog`,'err');break}
-      nd.content.split('\n').forEach(l=>cemit(l));break;
-    }
-    case 'echo':{
-      let t=args.join(' ');
-      if((t.startsWith('"')&&t.endsWith('"'))||(t.startsWith("'")&&t.endsWith("'")))t=t.slice(1,-1);
-      cemit(t);break;
-    }
-    case 'cp':{
-      const [s,d]=args.filter(a=>!a.startsWith('-'));
-      if(!s||!d){emit('cp: podaj źródło i cel','err');break}
-      const sn=node(resolve(s));
-      if(!sn){emit(`cp: ${s}: Brak pliku`,'err');break}
-      if(sn.type==='dir'&&!args.some(a=>a==='-r'||a==='-R'||a.includes('r'))){emit(`cp: ${s}: to katalog (użyj -r)`,'err');break}
-      const da=resolve(d),{n:dp,name:dn}=parent(da);
-      if(!dp){emit(`cp: nie można skopiować do ${d}`,'err');break}
-      dp.children[dn]=JSON.parse(JSON.stringify(sn));break;
-    }
-    case 'mv':{
-      const [s,d]=args.filter(a=>!a.startsWith('-'));
-      if(!s||!d){emit('mv: podaj źródło i cel','err');break}
-      const sa=resolve(s),sn=node(sa);
-      if(!sn){emit(`mv: ${s}: Brak pliku`,'err');break}
-      const{n:sp,name:sn2}=parent(sa),da=resolve(d),{n:dp,name:dn}=parent(da);
-      if(!dp){emit(`mv: nie można przenieść do ${d}`,'err');break}
-      dp.children[dn]=sn;delete sp.children[sn2];break;
-    }
-    case 'rm':{
-      const nm=args.find(a=>!a.startsWith('-'));
-      if(!nm){emit('rm: brakuje argumentu','err');break}
-      const abs=resolve(nm),nd=node(abs);
-      if(!nd){emit(`rm: '${nm}': Brak pliku`,'err');break}
-      const recur=args.some(a=>a.includes('r')||a.includes('R'));
-      if(nd.type==='dir'&&!recur){emit(`rm: '${nm}': to katalog (użyj -r)`,'err');break}
-      const{n:par,name:fn}=parent(abs);
-      delete par.children[fn];break;
-    }
-    case 'grep':{
-      const nf=args.filter(a=>!a.startsWith('-'));
-      const[pat,fn]=nf;
-      if(!pat){emit('grep: brakuje wzorca','err');break}
-      if(!fn){emit('grep: brakuje pliku (lub użyj pipe)','err');break}
-      const abs=resolve(fn),nd=node(abs);
-      if(!nd){emit(`grep: ${fn}: Brak pliku`,'err');break}
-      if(nd.type!=='file'){emit(`grep: ${fn}: To jest katalog`,'err');break}
-      const fl=args.filter(a=>a.startsWith('-')).join('');
-      const re=new RegExp(pat,fl.includes('i')?'i':'');
-      nd.content.split('\n').filter(l=>re.test(l)).forEach(l=>cemit(l));
-      break;
-    }
-    case 'chmod':{
-      const fn=args[args.length-1];
-      if(!fn||args.length<2){emit('chmod: podaj tryb i plik','err');break}
-      const abs=resolve(fn),nd=node(abs);
-      if(!nd){emit(`chmod: nie można zmienić '${fn}': Brak pliku`,'err');break}
-      if(args[0].includes('+x')) nd.perms=nd.perms.slice(0,3)+'x'+nd.perms.slice(4,6)+'x'+nd.perms.slice(7,9)+'x';
-      break;
-    }
-    case 'clear':case 'cls':
-      document.getElementById('term-out').innerHTML='';return[];
-    case 'help':
-      emit('Dostępne komendy:','sys');
-      emit('  pwd ls cd mkdir touch cat echo cp mv rm grep chmod','out');
-      emit('  clear — wyczyść ekran','out');
-      emit('  lekcja <n> — skocz do lekcji n','out');
-      emit('  postep — pokaż postęp','out');
-      break;
-    case 'lekcja':{
-      const n=parseInt(args[0]);
-      if(isNaN(n)||n<1||n>LL.length){emit(`lekcja: podaj numer 1-${LL.length}`,'err');break}
-      S.lidx=n-1;S.attempts=0;save();renderLesson();
-      emit(`Przełączono na lekcję ${n}: ${LL[n-1].title}`,'sys');break;
-    }
-    case 'postep':
-      emit(`Ukończone: ${S.done.size}/${LL.length}`,'sys');
-      LL.forEach((l,i)=>emit(`  ${String(i+1).padStart(2,'0')}. [${S.done.has(i)?'x':' '}] ${l.title} (${l.cmd})`,S.done.has(i)?'sys':'out'));
-      break;
-    case 'sudo':emit('sudo: Nie jesteś rootem. Przykro mi.','err');break;
-    case 'vim':emit('Wchodzisz do vim... jak wyjść? Wpisz :q! albo oderwij kabel.','sys');break;
-    case 'nano':emit('nano: narzędzie dla kultury. Tu nie działa.','sys');break;
-    case 'exit':emit('Nie wychodzisz stąd dopóki kursu nie skończysz.','err');break;
-    case 'python':case 'python3':
-      emit('Python 3.12.0 (inf02-edition)','sys');
-      emit('>>> type(egzamin)  # NameError: nie uczyłeś się','out');break;
-    case 'ls':break;
-    default:if(cmd)emit(`${cmd}: komenda nieznana. ${snark()}`,'err');
+    case 'cd':{const tgt=args[0]?resolve(args[0]):'/home/student';const nd=node(tgt);if(!nd){emit(`cd: ${args[0]}: Brak katalogu`,'err');break}if(nd.type!=='dir'){emit(`cd: ${args[0]}: To nie katalog`,'err');break}S.cwd=tgt;break}
+    case 'mkdir':{const nm=args.find(a=>!a.startsWith('-'));if(!nm){emit('mkdir: brakuje nazwy','err');break}const abs=resolve(nm);const{n:par,name:dn}=parent(abs)||{};if(!par){emit(`mkdir: nie można utworzyć ${nm}`,'err');break}if(par.children[dn]){emit(`mkdir: ${nm}: Już istnieje`,'err');break}par.children[dn]=D();break}
+    case 'touch':{const nm=args[0];if(!nm){emit('touch: brakuje nazwy','err');break}const abs=resolve(nm);const{n:par,name:fn}=parent(abs)||{};if(!par){emit(`touch: nie można dotknąć '${nm}'`,'err');break}if(!par.children[fn])par.children[fn]=F('');break}
+    case 'cat':{const nm=args[0];if(!nm){emit('cat: brakuje argumentu','err');break}const abs=resolve(nm);const nd=node(abs);if(!nd){emit(`cat: ${nm}: Brak pliku`,'err');break}if(nd.type==='dir'){emit(`cat: ${nm}: To jest katalog`,'err');break}nd.content.split('\n').forEach(l=>cemit(l));break}
+    case 'echo':{let t=args.join(' ');if((t.startsWith('"')&&t.endsWith('"'))||(t.startsWith("'")&&t.endsWith("'")))t=t.slice(1,-1);cemit(t);break}
+    case 'cp':{const[s,d]=args.filter(a=>!a.startsWith('-'));if(!s||!d){emit('cp: podaj źródło i cel','err');break}const sn=node(resolve(s));if(!sn){emit(`cp: ${s}: Brak pliku`,'err');break}if(sn.type==='dir'&&!args.some(a=>a.includes('r'))){emit(`cp: ${s}: to katalog (użyj -r)`,'err');break}const da=resolve(d);const{n:dp,name:dn}=parent(da)||{};if(!dp){emit(`cp: nie można skopiować do ${d}`,'err');break}dp.children[dn]=JSON.parse(JSON.stringify(sn));break}
+    case 'mv':{const[s,d]=args.filter(a=>!a.startsWith('-'));if(!s||!d){emit('mv: podaj źródło i cel','err');break}const sa=resolve(s);const sn=node(sa);if(!sn){emit(`mv: ${s}: Brak pliku`,'err');break}const{n:sp,name:sn2}=parent(sa)||{};const da=resolve(d);const{n:dp,name:dn}=parent(da)||{};if(!dp){emit(`mv: nie można przenieść do ${d}`,'err');break}dp.children[dn]=sn;delete sp.children[sn2];break}
+    case 'rm':{const nm=args.find(a=>!a.startsWith('-'));if(!nm){emit('rm: brakuje argumentu','err');break}const abs=resolve(nm);const nd=node(abs);if(!nd){emit(`rm: '${nm}': Brak pliku`,'err');break}const recur=args.some(a=>a.includes('r'));if(nd.type==='dir'&&!recur){emit(`rm: '${nm}': to katalog (użyj -r)`,'err');break}const{n:par,name:fn}=parent(abs)||{};delete par.children[fn];break}
+    case 'grep':{const nf=args.filter(a=>!a.startsWith('-'));const[pat,fn]=nf;if(!pat){emit('grep: brakuje wzorca','err');break}if(!fn){emit('grep: brakuje pliku','err');break}const abs=resolve(fn);const nd=node(abs);if(!nd){emit(`grep: ${fn}: Brak pliku`,'err');break}if(nd.type!=='file'){emit(`grep: ${fn}: To katalog`,'err');break}const fl=args.filter(a=>a.startsWith('-')).join('');const re=new RegExp(pat,fl.includes('i')?'i':'');nd.content.split('\n').filter(l=>re.test(l)).forEach(l=>cemit(l));break}
+    case 'chmod':{const fn=args[args.length-1];if(!fn||args.length<2){emit('chmod: podaj tryb i plik','err');break}const abs=resolve(fn);const nd=node(abs);if(!nd){emit(`chmod: '${fn}': Brak pliku`,'err');break}if(args[0].includes('+x'))nd.perms=nd.perms.slice(0,3)+'x'+nd.perms.slice(4,6)+'x'+nd.perms.slice(7,9)+'x';emit(`uprawnienia zmienione dla ${fn}`);break}
+    case 'clear':case 'cls':document.getElementById('term-out').innerHTML='';return[];
+    case 'help':emit('// DOSTĘPNE KOMENDY','sys');emit('   pwd ls cd mkdir touch cat echo cp mv rm grep chmod','out');emit('   lekcja <n>  — skocz do lekcji n','out');emit('   postep      — pokaż postęp','out');break;
+    case 'lekcja':{const n=parseInt(args[0]);if(isNaN(n)||n<1||n>LL.length){emit(`lekcja: podaj numer 1-${LL.length}`,'err');break}S.lidx=n-1;S.attempts=0;save();renderLesson();emit(`// lekcja ${n}: ${LL[n-1].title}`,'sys');break}
+    case 'postep':emit(`// ukończone: ${S.done.size}/${LL.length}`,'sys');LL.forEach((l,i)=>emit(`   [${S.done.has(i)?'x':' '}] ${String(i+1).padStart(2,'0')}. ${l.title}`,S.done.has(i)?'sys':'out'));break;
+    case 'sudo':emit('sudo: Permission denied. Nie jesteś rootem.','err');break;
+    case 'vim':emit('vim otworzony. Jak wyjść? Wpisz :q! lub zrestartuj Polskę.','sys');break;
+    case 'nano':emit('nano: narzędzie dla ludzi z klasą. Tu nie działa.','sys');break;
+    case 'exit':emit('exit: nie wychodzisz stąd dopóki kursu nie skończysz.','err');break;
+    case 'python':case 'python3':emit('Python 3.12.0 (inf02-edition)\n>>> type(egzamin)  # NameError','sys');break;
+    default:if(cmd)emit(`${cmd}: ${snark()}`,'err');
   }
-
-  if(rfile&&rfile.trim()){
-    const abs=resolve(rfile.trim()),{n:par,name:fn}=parent(abs);
-    if(par){
-      if(append&&par.children[fn]?.type==='file') par.children[fn].content+=cap;
-      else par.children[fn]=F(cap.replace(/\n$/,''));
-    }
-  }
+  if(rfile&&rfile.trim()){const abs=resolve(rfile.trim());const{n:par,name:fn}=parent(abs)||{};if(par){if(append&&par.children[fn]?.type==='file')par.children[fn].content+=cap;else par.children[fn]=F(cap.replace(/\n$/,''))}}
   return lines;
 }
 
-// ── UI ────────────────────────────────────────
+// ── UI ────────────────────────────────────
 const $out=document.getElementById('term-out');
 const $in=document.getElementById('ti');
 const $pp=document.getElementById('pp');
-
-function print(t,c='out'){
-  const d=document.createElement('div');
-  d.className='ol '+c;d.textContent=t;
-  $out.appendChild(d);$out.scrollTop=$out.scrollHeight;
-}
+function print(t,c='out'){const d=document.createElement('div');d.className='ol '+c;d.textContent=t;$out.appendChild(d);$out.scrollTop=$out.scrollHeight}
 function printLines(ls){ls.forEach(l=>print(l.t,l.c||'out'))}
 function updPrompt(){$pp.textContent=disp(S.cwd)}
 
 function renderLesson(){
   const l=LL[S.lidx];if(!l)return;
-  document.getElementById('lbadge').textContent=`LEKCJA ${S.lidx+1}/${LL.length}`;
+  document.getElementById('lbadge').textContent=`LEKCJA ${String(S.lidx+1).padStart(2,'0')}/${LL.length}`;
   document.getElementById('lp').innerHTML=`
-    <div class="lp-label">LEKCJA ${l.id} / ${LL.length} · ${l.cmd}</div>
+    <div class="lp-num">LEKCJA ${l.id} / ${LL.length} — ${l.cmd}</div>
     <div class="lp-title">${l.title}</div>
-    <div class="lp-theory">${l.theory.replace(/<b>/g,'').replace(/<\/b>/g,'')}</div>
+    <div class="lp-theory">${l.theory}</div>
     <div class="lp-ex">${l.ex}</div>
-    <div class="lp-task"><b>▶ ZADANIE</b>${l.task}</div>
-    ${S.attempts>=3?`<div class="lp-hint">💡 ${l.hint}</div>`:''}
+    <div class="lp-task">${l.task}</div>
+    ${S.attempts>=3?`<div class="lp-hint">${l.hint}</div>`:''}
   `;
-  const items=document.querySelectorAll('.li');
-  items.forEach((it,i)=>{
+  document.querySelectorAll('.li').forEach((it,i)=>{
     it.classList.remove('active','done');
     if(S.done.has(i))it.classList.add('done');
     if(i===S.lidx)it.classList.add('active');
@@ -540,35 +397,30 @@ function renderLesson(){
 }
 
 function buildSidebar(){
-  const list=document.getElementById('lesson-list');
-  list.innerHTML='';
+  const list=document.getElementById('lesson-list');list.innerHTML='';
   LL.forEach((l,i)=>{
-    const it=document.createElement('div');
-    it.className='li';
-    it.innerHTML=`<div class="li-dot"></div><span class="li-name">${l.id}. ${l.title}</span><span class="li-tag">${l.cmd}</span>`;
-    it.addEventListener('click',()=>{S.lidx=i;S.attempts=0;save();renderLesson();print(`--- Lekcja ${i+1}: ${l.title} ---`,'sys');$in.focus()});
+    const it=document.createElement('div');it.className='li';
+    it.innerHTML=`<span class="li-mark">[${S.done.has(i)?'x':' '}]</span><span class="li-name">${l.id}. ${l.title}</span><span class="li-cmd">${l.cmd}</span>`;
+    it.addEventListener('click',()=>{S.lidx=i;S.attempts=0;save();renderLesson();print(`// lekcja ${i+1}: ${l.title}`,'sys');$in.focus()});
     list.appendChild(it);
   });
 }
 
-const KUDOS=['Nieźle jak na kogoś kto dopiero zaczyna.','Mistrz terminala rośnie w siłę!','Egzamin nie będzie wiedział co go uderzyło.','Git! (to też komenda btw)','Root by pochwalił.','Czysto. Profesjonalnie. Jak prawdziwy sysadmin.'];
+const KUDOS=['Nieźle jak na kogoś kto dopiero zaczyna.','Mistrz terminala rośnie w siłę!','Egzamin nie będzie wiedział co go uderzyło.','Git! (to też komenda btw).','Root by pochwalił.'];
 function kudos(){return KUDOS[Math.floor(Math.random()*KUDOS.length)]}
 
 function checkLesson(raw,cmd,args){
   const l=LL[S.lidx];if(!l)return;
   if(l.check({cmd,args,raw,state:S})){
     S.done.add(S.lidx);S.attempts=0;save();
-    print('');print('✓ ZALICZONE! '+kudos(),'ok');
-    if(S.lidx+1<LL.length){
-      S.lidx++;
-      setTimeout(()=>{print('');print(`--- Lekcja ${S.lidx+1}: ${LL[S.lidx].title} ---`,'sys');renderLesson()},500);
-    } else {
-      setTimeout(showDone,900);
-    }
-  } else {
-    S.attempts++;
-    if(S.attempts>=3)renderLesson();
-  }
+    // update sidebar marks
+    document.querySelectorAll('.li').forEach((it,i)=>{
+      const mark=it.querySelector('.li-mark');if(mark&&S.done.has(i))mark.textContent='[x]';
+    });
+    print('');print('// ZALICZONE — '+kudos(),'ok');
+    if(S.lidx+1<LL.length){S.lidx++;setTimeout(()=>{print('');print(`// lekcja ${S.lidx+1}: ${LL[S.lidx].title}`,'sys');renderLesson()},500)}
+    else setTimeout(showDone,900);
+  } else {S.attempts++;if(S.attempts>=3)renderLesson()}
 }
 
 const DONE_ART=`
@@ -578,32 +430,22 @@ const DONE_ART=`
  ██║  ██║██║   ██║██║╚██╗██║██╔══╝
  ██████╔╝╚██████╔╝██║ ╚████║███████╗
  ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝`.trim();
+function showDone(){document.getElementById('done-art').textContent=DONE_ART;document.getElementById('done-screen').style.display='flex'}
 
-function showDone(){
-  document.getElementById('done-art').textContent=DONE_ART;
-  document.getElementById('done-screen').style.display='flex';
-}
-
-// ── INPUT ─────────────────────────────────────
 $in.addEventListener('keydown',e=>{
   if(e.key==='Enter'){
-    const raw=$in.value.trim();$in.value='';
-    if(!raw)return;
+    const raw=$in.value.trim();$in.value='';if(!raw)return;
     S.hist.unshift(raw);S.hIdx=-1;
     print(`student@inf02:${disp(S.cwd)}$ ${raw}`,'cmd');
     const cmdLine=raw.split('|')[0].split(/>>?/)[0].trim();
     const{cmd,args}=parseCmd(cmdLine);
-    printLines(runCmd(raw));
-    updPrompt();
-    checkLesson(raw,cmd,args);
+    printLines(runCmd(raw));updPrompt();checkLesson(raw,cmd,args);
     $out.scrollTop=$out.scrollHeight;
   }
   if(e.key==='ArrowUp'){e.preventDefault();S.hIdx=Math.min(S.hIdx+1,S.hist.length-1);if(S.hist[S.hIdx])$in.value=S.hist[S.hIdx]}
   if(e.key==='ArrowDown'){e.preventDefault();S.hIdx=Math.max(S.hIdx-1,-1);$in.value=S.hIdx>=0?S.hist[S.hIdx]:''}
   if(e.key==='Tab'){
-    e.preventDefault();
-    const val=$in.value,pts=val.split(' '),last=pts[pts.length-1];
-    if(!last)return;
+    e.preventDefault();const val=$in.value,pts=val.split(' '),last=pts[pts.length-1];if(!last)return;
     const nd=node(S.cwd);if(!nd?.children)return;
     const m=Object.keys(nd.children).filter(k=>k.startsWith(last));
     if(m.length===1){pts[pts.length-1]=m[0]+(node(resolve(m[0]))?.type==='dir'?'/':'');$in.value=pts.join(' ')}
@@ -612,40 +454,27 @@ $in.addEventListener('keydown',e=>{
 });
 document.querySelector('.term-wrap').addEventListener('click',()=>$in.focus());
 
-// ── BOOT ─────────────────────────────────────
 const BOOT_ART=`
- ██████╗  █████╗ ███████╗██╗  ██╗
- ██╔══██╗██╔══██╗██╔════╝██║  ██║
- ██████╔╝███████║███████╗███████║
- ██╔══██╗██╔══██║╚════██║██╔══██║
- ██████╔╝██║  ██║███████║██║  ██║
- ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
-   LINUX BASH · KURS INF02 v1.0`.trim();
+  ██╗     ██╗███╗   ██╗██╗   ██╗██╗  ██╗
+  ██║     ██║████╗  ██║██║   ██║╚██╗██╔╝
+  ██║     ██║██╔██╗ ██║██║   ██║ ╚███╔╝
+  ██║     ██║██║╚██╗██║██║   ██║ ██╔██╗
+  ███████╗██║██║ ╚████║╚██████╔╝██╔╝ ██╗
+  ╚══════╝╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝
+         B A S H   K U R S   I N F 0 2`.trim();
 
 async function boot(){
   document.getElementById('boot-art').textContent=BOOT_ART;
-  const msg=document.getElementById('boot-msg');
-  const bar=document.getElementById('boot-bar');
-  const steps=[
-    [10,'Inicjalizacja jądra...'],
-    [30,'Montowanie systemu plików...'],
-    [55,'Uruchamianie usług...'],
-    [80,'Logowanie jako student...'],
-    [100,'Witaj w terminalu INF02!'],
-  ];
-  for(const[pct,m] of steps){
-    msg.textContent=m;bar.style.width=pct+'%';
-    await new Promise(r=>setTimeout(r,280));
-  }
-  await new Promise(r=>setTimeout(r,180));
+  const msg=document.getElementById('boot-msg');const bar=document.getElementById('boot-bar');
+  const steps=[[12,'INICJALIZACJA JADRA...'],[30,'MONTOWANIE SYSTEMU PLIKOW...'],[55,'URUCHAMIANIE USLUG...'],[80,'LOGOWANIE JAKO STUDENT...'],[100,'SYSTEM GOTOWY']];
+  for(const[p,m]of steps){msg.textContent=m;bar.style.width=p+'%';await new Promise(r=>setTimeout(r,270))}
+  await new Promise(r=>setTimeout(r,160));
   document.getElementById('boot').style.display='none';
   document.getElementById('app').style.display='flex';
   buildSidebar();renderLesson();updPrompt();
-  print('Witaj w Linux Bash — kurs INF02','sys');
-  print(`${LL.length} lekcji załadowanych. Wpisz "help" po listę komend.`,'sys');
-  print(`Bieżący katalog: ${S.cwd}`,'sys');
-  print('');
-  print(`--- Lekcja 1: ${LL[S.lidx].title} ---`,'sys');
+  print('// Linux Bash — kurs INF02','sys');
+  print(`// ${LL.length} lekcji. Wpisz "help" po listę komend.`,'sys');print('');
+  print(`// lekcja 1: ${LL[S.lidx].title}`,'sys');
   $in.focus();
 }
 boot();
