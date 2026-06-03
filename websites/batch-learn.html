@@ -3,163 +3,232 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CMD — Pliki Wsadowe Kurs</title>
+<title>Pliki Wsadowe CMD — HostLab Study</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
 <link rel="stylesheet" href="../other/backbutton.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
 :root{
-  --bg:#0e0900;--surface:#130c00;--surface2:#1a1000;
-  --border:#2e1a00;--border2:rgba(255,160,0,.05);
-  --amber:#ffb300;--dim:#885500;--green:#00cc33;
-  --text:#f0d090;--muted:#5a3a00;--err:#ff4444;
+  --bg:#0e0900;--surface:#130e00;--surface2:#181100;
+  --border:#2e1e00;--border2:rgba(255,179,0,.06);
+  --amber:#ffb300;--dim:#885500;--green:#00ff41;
+  --text:#f0d890;--muted:#5a3a00;--err:#ff2828;
   --font:'Share Tech Mono',monospace;
 }
-
 html,body{height:100%;overflow:hidden}
-body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;animation:flicker 10s infinite}
-
-body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.13) 3px,rgba(0,0,0,.13) 4px);pointer-events:none;z-index:200}
-body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.55) 100%);pointer-events:none;z-index:199}
-
-@keyframes flicker{0%,90%,100%{opacity:1}91%{opacity:.87}93%{opacity:1}95%{opacity:.91}}
+body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;animation:flicker 10s infinite}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.12) 3px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:9000}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.5) 100%);pointer-events:none;z-index:8999}
+@keyframes flicker{0%,90%,100%{opacity:1}91%{opacity:.88}93%{opacity:1}95%{opacity:.92}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scanIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
-/* BOOT */
-#boot{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;z-index:300}
-#boot-art{color:var(--amber);font-size:clamp(6px,1vw,12px);line-height:1.25;text-align:center;white-space:pre;text-shadow:0 0 10px rgba(255,179,0,.4)}
-#boot-msg{color:var(--dim);font-size:11px;letter-spacing:.2em;margin-top:14px;min-height:16px;text-transform:uppercase}
-#boot-bar-wrap{width:220px;height:1px;background:var(--border);margin-top:10px}
-#boot-bar{height:100%;width:0%;background:var(--dim);transition:width .2s linear}
+/* ── TOPBAR ── */
+.topbar{
+  flex-shrink:0;padding:10px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+  background:var(--surface);position:relative;z-index:100;
+}
+.topbar-logo{font-size:10px;letter-spacing:.2em;color:var(--dim);margin-right:auto}
+.topbar-logo span{color:var(--amber)}
+.lesson-nav{display:flex;align-items:center;gap:10px}
+.nav-btn{
+  background:none;border:1px solid var(--border);color:var(--muted);
+  font-family:var(--font);font-size:11px;padding:5px 14px;
+  cursor:pointer;transition:all .15s;letter-spacing:.1em;
+}
+.nav-btn:hover:not(:disabled){border-color:var(--amber);color:var(--amber)}
+.nav-btn:disabled{opacity:.3;cursor:not-allowed}
+.lesson-counter{font-size:11px;color:var(--dim);letter-spacing:.12em;min-width:80px;text-align:center}
+.progress-wrap{width:120px;height:3px;background:var(--border)}
+.progress-fill{height:100%;background:var(--amber);transition:width .4s ease;box-shadow:0 0 6px rgba(255,179,0,.4)}
 
-/* APP */
-#app{display:none;height:100vh;overflow:hidden;flex-direction:row}
+/* ── LESSON BAR ── */
+.lesson-bar{
+  flex-shrink:0;padding:10px 20px;
+  border-bottom:1px solid var(--border);
+  background:var(--surface2);position:relative;z-index:50;
+}
+.lesson-title{font-size:11px;color:var(--amber);letter-spacing:.1em;margin-bottom:4px}
+.lesson-task{font-size:11px;color:var(--text);letter-spacing:.04em;line-height:1.55}
+.lesson-task code{color:var(--amber);background:rgba(255,179,0,.08);padding:1px 5px}
 
-/* SIDEBAR */
-.sidebar{width:252px;min-width:252px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative}
-.sidebar::before{content:'';position:absolute;inset:4px;border:1px solid var(--border2);pointer-events:none;z-index:1}
-.sb-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;z-index:2}
-.sb-sys{font-size:8px;letter-spacing:.25em;color:var(--dim);text-transform:uppercase;margin-bottom:2px}
-.sb-title{font-size:13px;color:var(--amber);letter-spacing:.08em;text-shadow:0 0 8px rgba(255,179,0,.3);margin-bottom:10px}
-.sb-prog-wrap{height:1px;background:var(--border)}
-.sb-prog-fill{height:100%;background:var(--dim);transition:width .4s ease;width:0%}
-.sb-counter{font-size:9px;color:var(--muted);letter-spacing:.1em;margin-top:6px}
-.lesson-list{flex:1;overflow-y:auto;padding:4px 0;position:relative;z-index:2}
-.lesson-list::-webkit-scrollbar{width:2px}
-.lesson-list::-webkit-scrollbar-thumb{background:var(--dim)}
-.li{display:flex;align-items:center;gap:8px;padding:6px 16px;cursor:pointer;transition:all .12s;border-left:2px solid transparent}
-.li:hover{background:rgba(255,179,0,.03);color:var(--text)}
-.li.active{background:rgba(255,179,0,.05);border-left-color:var(--amber)}
-.li-mark{font-size:9px;color:var(--muted);min-width:16px;flex-shrink:0}
-.li.done .li-mark{color:var(--dim)}
-.li.active .li-mark{color:var(--amber)}
-.li-name{font-size:10px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.04em}
-.li.active .li-name{color:var(--amber)}
-.li.done .li-name{color:var(--muted)}
-.li-cmd{font-size:8px;color:var(--muted);border:1px solid var(--border);padding:1px 5px;flex-shrink:0;letter-spacing:.06em}
-.li.active .li-cmd{color:var(--dim);border-color:var(--dim)}
+/* ── SPLIT ── */
+.split{flex:1;display:flex;overflow:hidden;position:relative;z-index:10}
 
-/* TERM WRAP */
-.term-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.term-topbar{height:34px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex-shrink:0}
-.topbar-left{display:flex;align-items:center;gap:10px}
-.topbar-dots{display:flex;gap:5px}
-.dot{width:9px;height:9px;border-radius:0;border:1px solid}
-.dot.r{background:#1a0a00;border-color:#5a2000}
-.dot.y{background:#1a1200;border-color:#5a4500}
-.dot.a{background:#1a0a00;border-color:var(--dim)}
-.topbar-title{font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase}
-.topbar-badge{font-size:8px;color:var(--dim);border:1px solid var(--border);padding:2px 8px;letter-spacing:.1em;text-transform:uppercase}
+/* ── EDITOR PANEL ── */
+.editor-panel{
+  width:46%;flex-shrink:0;
+  display:flex;flex-direction:column;
+  border-right:1px solid var(--border);background:var(--bg);
+}
+.panel-header{
+  padding:7px 14px;border-bottom:1px solid var(--border);
+  font-size:9px;letter-spacing:.25em;color:var(--muted);
+  text-transform:uppercase;display:flex;align-items:center;gap:8px;
+  background:var(--surface);flex-shrink:0;
+}
+.panel-dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.panel-dot.lit{background:var(--amber);box-shadow:0 0 4px rgba(255,179,0,.5)}
+.editor-body{flex:1;display:flex;overflow:hidden}
+.line-nums{
+  padding:12px 0;background:var(--surface);
+  border-right:1px solid var(--border);min-width:38px;
+  font-size:12px;color:var(--muted);line-height:1.6;
+  text-align:right;overflow:hidden;flex-shrink:0;user-select:none;
+}
+.line-nums div{padding:0 8px 0 4px}
+textarea#editor{
+  flex:1;background:var(--bg);color:var(--amber);
+  font-family:var(--font);font-size:12px;line-height:1.6;
+  padding:12px 14px;border:none;outline:none;resize:none;
+  caret-color:var(--amber);tab-size:2;overflow-y:auto;
+  white-space:pre;overflow-x:auto;
+}
+textarea#editor::selection{background:rgba(255,179,0,.15)}
 
-/* LESSON PANEL */
-.lp{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 18px;flex-shrink:0;max-height:200px;overflow-y:auto;position:relative}
-.lp::before{content:'';position:absolute;inset:3px;border:1px solid var(--border2);pointer-events:none}
-.lp::-webkit-scrollbar{width:2px}
-.lp::-webkit-scrollbar-thumb{background:var(--dim)}
-.lp-num{font-size:8px;letter-spacing:.25em;color:var(--dim);text-transform:uppercase;margin-bottom:4px}
-.lp-title{font-size:12px;color:var(--amber);letter-spacing:.1em;margin-bottom:6px;text-shadow:0 0 6px rgba(255,179,0,.25)}
-.lp-theory{font-size:10px;color:var(--muted);line-height:1.65;margin-bottom:8px;letter-spacing:.03em}
-.lp-ex{font-size:10px;color:var(--amber);border:1px solid var(--dim);padding:6px 10px;margin-bottom:8px;white-space:pre-line;background:rgba(255,179,0,.02);letter-spacing:.03em}
-.lp-ex::before{content:'PRZYKŁAD ';font-size:7px;color:var(--dim);letter-spacing:.2em;display:block;margin-bottom:3px}
-.lp-task{font-size:10px;color:var(--green);border:1px solid #004a00;padding:6px 10px;line-height:1.5;background:rgba(0,204,51,.02)}
-.lp-task::before{content:'▶ ZADANIE ';font-size:7px;color:#006600;letter-spacing:.2em;display:block;margin-bottom:3px}
-.lp-hint{margin-top:6px;font-size:9px;color:var(--muted);padding:5px 8px;border:1px solid var(--border)}
-.lp-hint::before{content:'REM ';color:var(--dim)}
+/* ── TERMINAL PANEL ── */
+.terminal-panel{flex:1;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;}
+#output{
+  flex:1;padding:14px 18px;font-size:12px;line-height:1.65;
+  overflow-y:auto;overflow-x:auto;white-space:pre-wrap;word-break:break-word;
+}
+.line-out{color:var(--text)}
+.line-err{color:var(--err)}
+.line-sys{color:var(--dim)}
+.line-ok{color:var(--amber)}
+.cursor-line::after{content:'_';animation:blink 1s infinite;color:var(--amber)}
 
-/* OUTPUT */
-.term-out{flex:1;overflow-y:auto;padding:10px 18px;font-size:12px;line-height:1.7;letter-spacing:.03em}
-.term-out::-webkit-scrollbar{width:2px}
-.term-out::-webkit-scrollbar-thumb{background:var(--dim)}
-.ol{white-space:pre-wrap;word-break:break-all}
-.ol.cmd{color:var(--amber)}
-.ol.out{color:var(--text)}
-.ol.err{color:var(--err)}
-.ol.ok{color:var(--green);border-left:2px solid #006600;padding:4px 8px;margin:3px 0;background:rgba(0,204,51,.03);font-size:11px}
-.ol.sys{color:var(--dim);font-size:10px;letter-spacing:.05em}
+/* ── BOTTOM BAR ── */
+.bottom-bar{
+  flex-shrink:0;padding:9px 20px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);position:relative;z-index:50;
+}
+.btn{
+  font-family:var(--font);font-size:11px;letter-spacing:.1em;
+  padding:7px 18px;border:1px solid var(--border);
+  background:none;color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.btn-run{border-color:var(--amber);color:var(--amber)}
+.btn-run:hover{background:var(--amber);color:var(--bg)}
+.btn:hover:not(.btn-run){border-color:var(--dim);color:var(--text)}
+.btn-sep{flex:1}
+.status-msg{font-size:10px;letter-spacing:.12em;color:var(--muted);transition:color .3s}
+.status-msg.ok{color:var(--amber)}
+.status-msg.err{color:var(--err)}
 
-/* INPUT */
-.term-in-row{display:flex;align-items:center;padding:9px 18px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:0}
-.term-prompt{color:var(--amber);font-size:12px;white-space:nowrap;flex-shrink:0;text-shadow:0 0 6px rgba(255,179,0,.3)}
-.term-prompt .s{color:var(--amber);margin-right:6px}
-.term-input{flex:1;background:transparent;border:none;outline:none;color:var(--amber);font-family:var(--font);font-size:12px;caret-color:var(--amber);letter-spacing:.03em}
+/* ── HINT ── */
+.hint-box{
+  position:absolute;bottom:64px;right:20px;max-width:310px;
+  background:var(--surface2);border:1px solid var(--border);
+  padding:14px 16px;font-size:11px;color:var(--text);line-height:1.65;
+  z-index:300;display:none;
+}
+.hint-box.show{display:block}
+.hint-box b{color:var(--amber)}
+.hint-close{position:absolute;top:6px;right:10px;cursor:pointer;color:var(--muted);font-size:13px}
+.hint-close:hover{color:var(--text)}
 
-/* DONE */
-#done-screen{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:90;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center}
-#done-screen pre{color:var(--amber);font-size:clamp(6px,.85vw,11px);line-height:1.35;text-shadow:0 0 10px rgba(255,179,0,.3)}
-#done-screen .done-msg{color:var(--muted);font-size:11px;max-width:380px;line-height:1.6;letter-spacing:.04em}
-#done-screen a{color:var(--amber);font-size:10px;letter-spacing:.18em;border:1px solid var(--dim);padding:8px 20px;text-decoration:none;text-transform:uppercase;transition:background .15s}
-#done-screen a:hover{background:rgba(255,179,0,.06)}
+/* ── SUCCESS ── */
+.success-overlay{
+  position:fixed;inset:0;background:rgba(14,9,0,.92);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  z-index:5000;
+}
+.success-overlay.show{display:flex}
+.success-box{
+  border:1px solid var(--amber);padding:40px 56px;
+  text-align:center;position:relative;background:var(--surface);
+}
+.success-box::before{content:'';position:absolute;inset:6px;border:1px solid var(--border2)}
+.success-title{font-size:32px;color:var(--amber);letter-spacing:.08em;text-shadow:0 0 20px rgba(255,179,0,.4);margin-bottom:12px}
+.success-msg{font-size:11px;color:var(--muted);letter-spacing:.04em;line-height:1.65;max-width:380px}
+.success-next{
+  margin-top:24px;font-size:11px;border:1px solid var(--amber);
+  color:var(--amber);padding:10px 28px;cursor:pointer;
+  background:none;font-family:var(--font);letter-spacing:.12em;transition:all .15s;
+}
+.success-next:hover{background:var(--amber);color:var(--bg)}
 
-.back-home{z-index:250!important}
-
-@media(max-width:680px){.sidebar{display:none}.lp,.term-out,.term-in-row{padding-left:14px;padding-right:14px}}
+@media(max-width:700px){
+  .split{flex-direction:column}
+  .editor-panel{width:100%;height:45%;border-right:none;border-bottom:1px solid var(--border)}
+  .progress-wrap{display:none}
+}
 </style>
 </head>
 <body>
 
-<div id="boot">
-  <pre id="boot-art"></pre>
-  <div id="boot-msg"></div>
-  <div id="boot-bar-wrap"><div id="boot-bar"></div></div>
-</div>
-
-<div id="app">
-  <nav class="sidebar">
-    <div class="sb-head">
-      <div class="sb-sys">HostLab // INF02</div>
-      <div class="sb-title">PLIKI WSADOWE_</div>
-      <div class="sb-prog-wrap"><div class="sb-prog-fill" id="sb-prog"></div></div>
-      <div class="sb-counter"><span id="done-cnt">0</span>/12 LEKCJI ZALICZONYCH</div>
-    </div>
-    <div class="lesson-list" id="lesson-list"></div>
-  </nav>
-
-  <div class="term-wrap">
-    <div class="term-topbar">
-      <div class="topbar-left">
-        <div class="topbar-dots"><div class="dot r"></div><div class="dot y"></div><div class="dot a"></div></div>
-        <div class="topbar-title">Wiersz poleceń — Windows CMD</div>
-      </div>
-      <div class="topbar-badge" id="lbadge">LEKCJA 01/12</div>
-    </div>
-    <div class="lp" id="lp"></div>
-    <div class="term-out" id="term-out"></div>
-    <div class="term-in-row">
-      <span class="term-prompt">
-        <span class="d" id="pp">C:\Users\Student</span><span class="s">&gt;</span>
-      </span>
-      <input class="term-input" id="ti" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-    </div>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">HOST<span>·</span>LAB // CMD</div>
+  <div class="lesson-nav">
+    <button class="nav-btn" id="btn-prev" onclick="goLesson(currentLesson-1)">&#8592; PREV</button>
+    <span class="lesson-counter" id="lesson-counter">1 / 10</span>
+    <button class="nav-btn" id="btn-next" onclick="goLesson(currentLesson+1)">NEXT &#8594;</button>
+    <div class="progress-wrap"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
   </div>
 </div>
 
-<div id="done-screen">
-  <pre id="done-art"></pre>
-  <div class="done-msg">KURS UKOŃCZONY. Pliki wsadowe i CMD na egzamin INF02 — opanowane.</div>
-  <a href="../pages/study.html">← WRÓĆ DO STUDY</a>
+<!-- LESSON BAR -->
+<div class="lesson-bar" id="lesson-bar">
+  <div class="lesson-title" id="lesson-title"></div>
+  <div class="lesson-task" id="lesson-task"></div>
+</div>
+
+<!-- SPLIT AREA -->
+<div class="split">
+
+  <!-- EDITOR -->
+  <div class="editor-panel">
+    <div class="panel-header">
+      <div class="panel-dot lit"></div>
+      <span>EDYTOR — skrypt.bat</span>
+    </div>
+    <div class="editor-body">
+      <div class="line-nums" id="line-nums"></div>
+      <textarea id="editor" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"></textarea>
+    </div>
+  </div>
+
+  <!-- TERMINAL -->
+  <div class="terminal-panel">
+    <div class="panel-header">
+      <div class="panel-dot"></div>
+      <span>WIERSZ POLECEŃ — WYJŚCIE</span>
+    </div>
+    <div id="output"><span class="line-sys">// Napisz skrypt i kliknij URUCHOM</span>
+<span class="cursor-line"></span></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <button class="btn btn-run" onclick="runScript()">&#9654; URUCHOM</button>
+  <button class="btn" onclick="resetEditor()">&#8635; RESETUJ</button>
+  <button class="btn" onclick="showHint()">? PODPOWIEDŹ</button>
+  <div class="btn-sep"></div>
+  <span class="status-msg" id="status-msg">GOTOWY</span>
+</div>
+
+<!-- HINT -->
+<div class="hint-box" id="hint-box">
+  <span class="hint-close" onclick="hideHint()">&#x2715;</span>
+  <span id="hint-text"></span>
+</div>
+
+<!-- SUCCESS -->
+<div class="success-overlay" id="success-overlay">
+  <div class="success-box">
+    <div class="success-title">ZALICZONE_</div>
+    <div class="success-msg" id="success-msg"></div>
+    <button class="success-next" id="success-next-btn">NASTĘPNA LEKCJA &#8594;</button>
+  </div>
 </div>
 
 <a href="../pages/study.html" class="back-home" title="Study">
@@ -167,349 +236,532 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 </a>
 
 <script>
-// ── FILESYSTEM ─────────────────────────────
-const D=(ch={})=>({type:'dir',children:ch});
-const F=(c='')=>({type:'file',content:c});
-const FS=D({
-  'Users':D({'Student':D({
-    'Pulpit':D({
-      'powitanie.bat':F('@echo off\necho Witaj!\npause'),
-      'notatki.txt':F('Do zrobienia:\n1. Nauczyc sie CMD\n2. Zdac INF02\n3. Profit\n'),
-    }),
-    'Dokumenty':D({
-      'lista.txt':F('jablko\ngruszka\nbanan\nwinogrono\n'),
-      'dane.txt':F('imie,nazwisko,wiek\nJan,Kowalski,20\nAnna,Nowak,22\n'),
-    }),
-  })}),
-  'Windows':D({'System32':D()}),
-  'Temp':D(),
-});
-
-// ── STATE ──────────────────────────────────
-const S={
-  cwd:'C:\\Users\\Student',hist:[],hIdx:-1,
-  lidx:0,done:new Set(),attempts:0,echoOn:true,
-  vars:{COMPUTERNAME:'INF02-PC',USERNAME:'Student',TEMP:'C:\\Temp',USERPROFILE:'C:\\Users\\Student'},
-};
-try{const sv=JSON.parse(localStorage.getItem('hl-batch')||'{}');if(sv.done)sv.done.forEach(i=>S.done.add(i));if(typeof sv.lidx==='number')S.lidx=sv.lidx}catch(e){}
-function save(){localStorage.setItem('hl-batch',JSON.stringify({done:[...S.done],lidx:S.lidx}))}
-
-// ── PATH UTILS ─────────────────────────────
-function resolve(p){
-  if(!p)return S.cwd;p=p.replace(/\//g,'\\');
-  if(p==='.')return S.cwd;if(p==='..')return S.cwd.includes('\\')?S.cwd.substring(0,S.cwd.lastIndexOf('\\'))||S.cwd:S.cwd;
-  if(/^[A-Za-z]:\\/.test(p)){}
-  else if(p.startsWith('\\')){p=S.cwd.match(/^[A-Za-z]:/)[0]+p}
-  else{p=S.cwd+(S.cwd.endsWith('\\')?'':'\\')+(p.startsWith('\\')?p.slice(1):p)}
-  const drv=p.match(/^[A-Za-z]:\\/)?p.slice(0,3):'';
-  const rest=p.slice(drv.length).split('\\').filter(Boolean);const out=[];
-  for(const r of rest){if(r==='..')out.pop();else if(r!=='.')out.push(r)}
-  return drv+out.join('\\');
-}
-function pathToNode(abs){
-  const p=abs.replace(/\\/g,'/').replace(/^[A-Za-z]:\//,'/');
-  if(p==='/'||p==='')return FS;
-  const pts=p.split('/').filter(Boolean);let n=FS;
-  for(const pt of pts){if(!n.children||!n.children[pt])return null;n=n.children[pt]}
-  return n;
-}
-function parentOf(abs){
-  const idx=abs.lastIndexOf('\\');if(idx<0)return null;
-  const pp=abs.substring(0,idx)||abs.substring(0,3);
-  return{n:pathToNode(pp),name:abs.substring(idx+1),path:pp};
-}
-
-// ── LESSONS ───────────────────────────────
-const LL=[
-  {id:1,cmd:'ECHO',title:'echo — wypisz tekst',
-   theory:'ECHO wypisuje tekst na ekran. Podstawowa komenda do wyświetlania komunikatów w skryptach .bat. Wpisz samą komendę echo żeby sprawdzić stan (ON/OFF).',
-   ex:'> echo Witaj Swiecie!\nWitaj Swiecie!\n> echo.\n(pusta linia)',
-   task:'Wypisz dowolny tekst używając komendy echo.',hint:'Wpisz: echo Witaj INF02',
-   check:({cmd})=>cmd==='echo'},
-  {id:2,cmd:'@ECHO OFF',title:'@echo off — tryb cichy',
-   theory:'@ECHO OFF wyłącza wyświetlanie komend podczas wykonywania skryptu. @ oznacza "nie pokazuj tej linii". Każdy porządny .bat zaczyna się od @echo off.',
-   ex:'> @echo off\n(nie pokazuje komendy, tryb cichy włączony)',
-   task:'Wpisz @echo off — standard każdego pliku .bat.',hint:'Wpisz: @echo off',
-   check:({raw})=>raw.toLowerCase().replace(/\s/g,'').startsWith('@echooff')},
-  {id:3,cmd:'DIR',title:'dir — lista plików',
-   theory:'DIR wyświetla zawartość katalogu. DIR /B pokazuje tylko nazwy. DIR /AD tylko katalogi. DIR /W tryb szeroki.',
-   ex:'> dir\n Katalog: C:\\Users\\Student\n\n<DIR> Pulpit\n<DIR> Dokumenty\n',
-   task:'Wylistuj zawartość bieżącego katalogu komendą dir.',hint:'Wpisz: dir',
-   check:({cmd})=>cmd==='dir'},
-  {id:4,cmd:'CD / MD',title:'cd i md — nawigacja',
-   theory:'CD zmienia katalog. MD (lub MKDIR) tworzy nowy katalog. CD .. wraca poziom wyżej. CD \\ wraca do katalogu głównego.',
-   ex:'> cd Pulpit\nC:\\Users\\Student\\Pulpit>\n> md nowy_folder\n> cd ..\nC:\\Users\\Student>',
-   task:'Utwórz nowy folder o nazwie projekty używając md.',hint:'Wpisz: md projekty',
-   check:({cmd,args})=>{if(cmd!=='md'&&cmd!=='mkdir')return false;const n=args[0];return n&&pathToNode(resolve(n))!==null}},
-  {id:5,cmd:'TYPE',title:'type — czytaj plik',
-   theory:'TYPE wyświetla zawartość pliku tekstowego — odpowiednik cat z Linuxa.',
-   ex:'> type notatki.txt\nDo zrobienia:\n1. Nauczyc sie CMD\n2. Zdac INF02',
-   task:'Wyświetl zawartość pliku notatki.txt (jest w folderze Pulpit).',hint:'Najpierw cd Pulpit, potem: type notatki.txt',
-   check:({cmd,args})=>{if(cmd!=='type')return false;const n=args[0];return n&&pathToNode(resolve(n))?.type==='file'}},
-  {id:6,cmd:'DEL / COPY',title:'del i copy — pliki',
-   theory:'DEL usuwa plik. COPY kopiuje plik. MOVE przenosi lub zmienia nazwę. Nie ma kosza — DEL kasuje na stałe.',
-   ex:'> copy notatki.txt kopia.txt\n        1 plik(i) skopiowano.\n> del kopia.txt',
-   task:'Skopiuj dowolny plik używając komendy COPY.',hint:'Wpisz: copy notatki.txt kopia.txt',
-   check:({cmd,args})=>{if(cmd!=='copy')return false;const[,d]=args.filter(a=>!a.startsWith('/'));return d&&pathToNode(resolve(d))!==null}},
-  {id:7,cmd:'SET',title:'set — zmienne',
-   theory:'SET ustawia zmienne środowiskowe. Wartość odczytuje się przez %NAZWA%. SET bez argumentów wyświetla wszystkie zmienne.',
-   ex:'> set IMIE=Jan\n> echo Czesc %IMIE%!\nCzesc Jan!\n> set IMIE\nIMIE=Jan',
-   task:'Utwórz zmienną IMIE z dowolną wartością używając set.',hint:'Wpisz: set IMIE=TwojeImie',
-   check:({cmd,raw})=>cmd==='set'&&raw.includes('=')},
-  {id:8,cmd:'IF',title:'if — warunki',
-   theory:'IF sprawdza warunek. IF EXIST sprawdza czy plik istnieje. IF "%VAR%"=="wartość" porównuje zmienne. Kluczowe w skryptach .bat.',
-   ex:'> if exist notatki.txt echo Plik istnieje!\nPlik istnieje!\n> if "%IMIE%"=="Jan" echo To Jan!',
-   task:'Sprawdź czy plik notatki.txt istnieje: if exist notatki.txt echo ...',hint:'Wpisz: if exist notatki.txt echo Plik istnieje',
-   check:({cmd,raw})=>cmd==='if'&&raw.toLowerCase().includes('exist')},
-  {id:9,cmd:'FOR',title:'for — pętle',
-   theory:'FOR wykonuje komendę dla każdego elementu. FOR %i IN (lista) DO komenda. W pliku .bat używamy %%i (podwójny procent).',
-   ex:'> for %i in (a b c) do echo %i\na\nb\nc',
-   task:'Wykonaj prostą pętlę: for %i in (1 2 3) do echo %i',hint:'Wpisz: for %i in (1 2 3) do echo %i',
-   check:({cmd})=>cmd==='for'},
-  {id:10,cmd:'CLS / PAUSE',title:'cls i pause',
-   theory:'CLS czyści ekran. PAUSE wyświetla "Naciśnij dowolny klawisz..." i czeka. Używane dla czytelności skryptów.',
-   ex:'> cls\n(ekran wyczyszczony)\n> pause\nNacisnij dowolny klawisz...',
-   task:'Wyczyść ekran używając komendy cls.',hint:'Wpisz: cls',
-   check:({cmd})=>cmd==='cls'},
-  {id:11,cmd:'REM',title:'rem — komentarze',
-   theory:'REM (remark) to komentarz w pliku .bat — linia jest ignorowana. Dobra praktyka opisywać co robi skrypt.',
-   ex:'@echo off\nrem Ten skrypt wypisuje powitanie\necho Witaj!\nrem Koniec skryptu\npause',
-   task:'Wpisz dowolny komentarz używając komendy rem.',hint:'Wpisz: rem To jest komentarz',
-   check:({cmd})=>cmd==='rem'},
-  {id:12,cmd:'.BAT',title:'Skrypt .bat — całość',
-   theory:'Plik .bat to zestaw komend CMD wykonywanych po kolei. Tworzymy go zapisując komendy do pliku. Uruchamiamy wpisując jego nazwę.',
-   ex:'> echo @echo off > skrypt.bat\n> echo echo Witaj %USERNAME%! >> skrypt.bat\n> echo pause >> skrypt.bat\n> skrypt.bat',
-   task:'Utwórz plik skrypt.bat zapisując do niego @echo off używając echo i >.',hint:'Wpisz: echo @echo off > skrypt.bat',
-   check:({cmd,raw})=>cmd==='echo'&&raw.includes('>')&&raw.toLowerCase().includes('.bat')&&pathToNode(resolve(raw.split(/>+/).pop().trim()))!==null},
+// ─── LESSONS ───────────────────────────────────────────────────────────
+const LESSONS = [
+  {
+    title: 'LEKCJA 1 — PIERWSZY SKRYPT .BAT',
+    task: 'Każdy skrypt .bat zaczyna się od <code>@echo off</code> — wyłącza pokazywanie komend. Użyj <code>echo</code> żeby wypisać <b>Witaj, świecie!</b>',
+    starter: '@echo off\necho Witaj, swiecie!\n',
+    hint: '<b>@echo off</b> — @ ukrywa tę linię, echo off wyłącza pokazywanie pozostałych poleceń\n<b>echo tekst</b> — wypisuje tekst\n<b>echo.</b> — wypisuje pustą linię\n\nBez @echo off CMD pokazywałby każdą komendę przed wykonaniem.',
+    check: (code, out) => out.toLowerCase().includes('witaj'),
+    ok: '@echo off to obowiązkowy nagłówek pliku .bat. Bez niego CMD wyświetla każdą linię kodu.'
+  },
+  {
+    title: 'LEKCJA 2 — ZMIENNE SET',
+    task: 'Utwórz zmienną <code>set imie=Jan</code> i wypisz ją przez <code>echo Cześć, %imie%!</code>. W CMD zmienne odczytujemy przez <code>%NAZWA%</code>.',
+    starter: '@echo off\nset imie=Jan\necho Czesc, %imie%!\n',
+    hint: '<b>set ZMIENNA=wartość</b> — przypisanie (bez spacji!)\n<b>%ZMIENNA%</b> — odczyt zmiennej\n\n⚠ Uważaj na spacje:\n<b>set x=5</b> ✓\n<b>set x = 5</b> ✗ (spacja wchodzi w wartość!)\n\n<b>set</b> (bez argumentów) — lista wszystkich zmiennych',
+    check: (code, out) => out.toLowerCase().includes('czesc') || out.toLowerCase().includes('cześć') || /jan/i.test(out),
+    ok: 'Zmienne CMD: set NAZWA=wartość (przypisanie), %NAZWA% (odczyt). Bez spacji wokół = !'
+  },
+  {
+    title: 'LEKCJA 3 — ZMIENNE LICZBOWE',
+    task: 'Utwórz zmienne <code>set /a wynik=10+5</code>. Flaga <code>/a</code> włącza tryb arytmetyczny. Wypisz wynik i oblicz kilka działań.',
+    starter: '@echo off\nset /a suma=10+5\nset /a iloczyn=4*3\nset /a reszta=17%%3\necho Suma: %suma%\necho Iloczyn: %iloczyn%\necho Reszta: %reszta%\n',
+    hint: '<b>set /a wynik=wyrażenie</b> — arytmetyka\nOperatory: + - * / %%\n\n⚠ W pliku .bat modulo to <b>%%</b> (podwójny %)\nW CMD (ręcznie) to tylko <b>%</b>\n\n<b>set /a x=x+1</b> — inkrementacja',
+    check: (code, out) => out.includes('Suma:') && out.includes('15'),
+    ok: 'set /a włącza arytmetykę. W plikach .bat modulo to %% (podwójny procent, bo % sam służy do zmiennych).'
+  },
+  {
+    title: 'LEKCJA 4 — WARUNEK IF',
+    task: 'Sprawdź czy plik istnieje używając <code>if exist</code>. Struktura:\n<code>if exist plik.txt (echo Istnieje) else (echo Brak)</code>\nLub sprawdź wartość zmiennej: <code>if %x%==5 echo Tak</code>',
+    starter: '@echo off\nset x=10\nif %x% gtr 5 (\n  echo Liczba wieksza od 5\n) else (\n  echo Liczba mniejsza lub rowna 5\n)\n',
+    hint: 'Operatory porównania:\n<b>equ</b> = | <b>neq</b> != | <b>lss</b> &lt; | <b>gtr</b> &gt; | <b>leq</b> &lt;= | <b>geq</b> &gt;=\n\nSprawdzanie pliku:\n<b>if exist plik.txt echo OK</b>\n\nSprawdzanie stringa:\n<b>if "%x%"=="tak" echo Tak</b>',
+    check: (code, out) => out.includes('wieksza') || out.includes('większa') || out.includes('mniejsza'),
+    ok: 'IF w CMD: operatory equ/neq/lss/gtr/leq/geq. Bloki wieloliniowe przez nawiasy ( ).'
+  },
+  {
+    title: 'LEKCJA 5 — PĘTLA FOR (LISTA)',
+    task: 'Wypisz kolory z listy używając pętli for:\n<code>for %%i in (czerwony zielony niebieski) do echo Kolor: %%i</code>\nW pliku .bat używamy <code>%%i</code>, w CMD ręcznie tylko <code>%i</code>.',
+    starter: '@echo off\nfor %%i in (czerwony zielony niebieski) do (\n  echo Kolor: %%i\n)\n',
+    hint: '<b>for %%i in (lista) do polecenie</b>\n\nW .bat: <b>%%i</b> (podwójny %)\nW CMD ręcznie: <b>%i</b> (pojedynczy %)\n\nWieloliniowy blok:\n<b>for %%i in (a b c) do (\n  echo %%i\n)</b>',
+    check: (code, out) => ['czerwony','zielony','niebieski'].every(c => out.toLowerCase().includes(c)),
+    ok: 'Pętla for w .bat: %%i (podwójny %), w CMD ręcznie %i. Zawsze pamiętaj o tej różnicy!'
+  },
+  {
+    title: 'LEKCJA 6 — PĘTLA FOR (ZAKRES)',
+    task: 'Wypisz liczby od 1 do 5 używając zakresu:\n<code>for /l %%i in (1,1,5) do echo Liczba: %%i</code>\nFormat: <code>(start, krok, koniec)</code>',
+    starter: '@echo off\nfor /l %%i in (1,1,5) do (\n  echo Liczba: %%i\n)\n',
+    hint: '<b>for /l %%i in (start,krok,koniec)</b>\n\nPrzykłady:\n<b>(1,1,10)</b> — od 1 do 10 co 1\n<b>(0,2,10)</b> — od 0 do 10 co 2\n<b>(10,-1,1)</b> — odliczanie od 10 do 1\n\n/l = loop (liczby)',
+    check: (code, out) => [1,2,3,4,5].every(n => out.includes('Liczba: '+n)),
+    ok: 'for /l to pętla liczbowa: (start, krok, koniec). Idealna do odliczania i iteracji N razy.'
+  },
+  {
+    title: 'LEKCJA 7 — ETYKIETY I GOTO',
+    task: 'Etykiety w .bat to <code>:nazwa</code>. Skaczemy do nich przez <code>goto nazwa</code>. Napisz pętlę odliczającą od 3 do 1 używając goto.',
+    starter: '@echo off\nset n=3\n:petla\nif %n% lss 1 goto koniec\necho Odliczanie: %n%\nset /a n=n-1\ngoto petla\n:koniec\necho START!\n',
+    hint: '<b>:etykieta</b> — definicja etykiety\n<b>goto etykieta</b> — skok bezwarunkowy\n<b>goto :eof</b> — koniec skryptu\n\nWarunkowy skok:\n<b>if %x%==0 goto koniec</b>\n\n⚠ Etykiety są ignorowane jako polecenia',
+    check: (code, out) => out.includes('START!') && out.includes('Odliczanie: 3'),
+    ok: 'Etykiety :nazwa i goto to podstawa kontroli przepływu w .bat. Ostrożnie z nieskończonymi pętlami!'
+  },
+  {
+    title: 'LEKCJA 8 — PODPROGRAMY CALL',
+    task: 'Użyj <code>call :podprogram</code> żeby wywołać podprogram. Zakończ go przez <code>exit /b</code>. Napisz podprogram który wypisuje separator.',
+    starter: '@echo off\necho Start skryptu\ncall :separator\necho Srodek skryptu\ncall :separator\necho Koniec skryptu\ngoto :eof\n\n:separator\necho ------------------\nexit /b\n',
+    hint: '<b>call :etykieta</b> — wywołanie podprogramu (wraca po exit /b)\n<b>exit /b</b> — powrót z podprogramu\n<b>goto :eof</b> — koniec głównego skryptu\n\nArgumenty podprogramu:\n<b>call :nazwa arg1 arg2</b>\nWewnątrz: <b>%1</b> to arg1, <b>%2</b> to arg2',
+    check: (code, out) => out.includes('Start') && out.includes('Koniec') && (out.match(/--+/g)||[]).length>=2,
+    ok: 'call :etykieta to podprogramy w .bat. exit /b wraca do miejsca wywołania. goto :eof kończy skrypt.'
+  },
+  {
+    title: 'LEKCJA 9 — ARGUMENTY SKRYPTU',
+    task: 'Skrypt .bat przyjmuje argumenty: <code>%1</code> to pierwszy, <code>%2</code> drugi, <code>%0</code> to nazwa skryptu. Wypisz je wszystkie.',
+    starter: '@echo off\necho Skrypt: %0\necho Pierwszy argument: %1\necho Drugi argument: %2\necho Trzeci argument: %3\n',
+    hint: '<b>%0</b> — nazwa skryptu\n<b>%1, %2... %9</b> — kolejne argumenty\n<b>%*</b> — wszystkie argumenty\n\nUruchomienie:\n<b>skrypt.bat Jan Kowalski 25</b>\nWtedy %1=Jan, %2=Kowalski, %3=25\n\n<b>shift</b> — przesuwa argumenty (%2→%1 etc.)',
+    check: (code, out) => out.includes('Skrypt:') || out.includes('Pierwszy argument:'),
+    ok: 'Argumenty .bat: %1..%9, %0 to nazwa skryptu, %* to wszystkie. Uruchamiasz: skrypt.bat arg1 arg2'
+  },
+  {
+    title: 'LEKCJA 10 — SKRYPT KOŃCOWY',
+    task: 'Napisz skrypt który: iteruje po liście owoców pętlą for, używa podprogramu <code>:drukuj</code> do wypisania każdego owocu z numerem, używa zmiennej licznika.',
+    starter: '@echo off\nset licznik=0\nfor %%o in (jablko gruszka banan kiwi) do (\n  set /a licznik=licznik+1\n  call :drukuj %%o\n)\necho.\necho Razem: %licznik% owocow\ngoto :eof\n\n:drukuj\necho  - %1\nexit /b\n',
+    hint: '<b>set /a licznik=licznik+1</b> — inkrementacja w pętli\n<b>call :drukuj %%o</b> — wywołanie podprogramu z argumentem\n<b>echo.</b> — pusta linia\n\n⚠ W bloku ( ) po for/if zmienne są obliczane raz — jeśli licznik nie rośnie, użyj setlocal enabledelayedexpansion i <b>!licznik!</b>',
+    check: (code, out) => (out.includes('jablko') || out.includes('jabłko')) && (out.includes('gruszka') || out.includes('kiwi')),
+    ok: 'Brawo! Pętle, podprogramy, zmienne, call z argumentami — to kompletny zestaw do egzaminu INF02!'
+  }
 ];
 
-// ── COMMANDS ──────────────────────────────
-function parseCmd(raw){const t=raw.trim().replace(/^@/,'');const p=t.split(/\s+/);return{cmd:p[0]?.toLowerCase()||'',args:p.slice(1),raw:t}}
+// ─── STATE ─────────────────────────────────────────────────────────────
+let currentLesson = 0;
+let progress = JSON.parse(localStorage.getItem('hl-batch2') || '[]');
 
-function runCmd(raw){
-  if(!raw.trim())return[];
-  const lines=[];const emit=(t,c='out')=>lines.push({t,c});
-  let rfile=null,append=false,cmdLine=raw;
-  const am=raw.match(/^(.*?)>>(.*?)$/s);const wm=raw.match(/^(.*?)(?<![>])>(.*?)$/s);
-  if(am){cmdLine=am[1].trim();rfile=am[2].trim();append=true}
-  else if(wm){cmdLine=wm[1].trim();rfile=wm[2].trim()}
-  const{cmd,args}=parseCmd(cmdLine);let cap='';
-  const cemit=(t)=>{if(rfile)cap+=t+'\r\n';else emit(t)};
-  switch(cmd){
-    case 'echo':{
-      const rest=cmdLine.replace(/^@?echo\s*/i,'');
-      if(rest.toLowerCase()==='off'){S.echoOn=false;break}
-      if(rest.toLowerCase()==='on'){S.echoOn=true;break}
-      if(rest==='.'||!rest.trim()){cemit('');break}
-      let t=rest;
-      if((t.startsWith('"')&&t.endsWith('"'))||(t.startsWith("'")&&t.endsWith("'")))t=t.slice(1,-1);
-      t=t.replace(/%(\w+)%/g,(_,v)=>S.vars[v.toUpperCase()]||'');
-      cemit(t);break;
+// ─── BATCH INTERPRETER ─────────────────────────────────────────────────
+function runBatch(code) {
+  const output = [];
+  const env = {};
+  let echoOn = true;
+
+  function emit(text, cls) { output.push({text:String(text), cls:cls||'line-out'}); }
+  function emitErr(t) { emit(t,'line-err'); }
+
+  function expandVars(s) {
+    s = String(s);
+    // %VAR%
+    s = s.replace(/%([^%]+)%/g, (_, v) => env[v.toUpperCase()] !== undefined ? env[v.toUpperCase()] : '%'+v+'%');
+    return s;
+  }
+
+  function setVar(name, value) { env[name.toUpperCase()] = String(value); }
+  function getVar(name) { return env[name.toUpperCase()] || ''; }
+
+  // Evaluate arithmetic expression with variable substitution
+  function evalArith(expr) {
+    try {
+      const e = expr.replace(/([a-zA-Z_]\w*)/g, v => {
+        const n = Number(env[v.toUpperCase()]);
+        return isNaN(n) ? '0' : String(n);
+      }).replace(/%%/g,'%').replace(/%/g,'%');
+      return Math.floor(Function('"use strict";return ('+e+')')());
+    } catch(ex) { return 0; }
+  }
+
+  function evalCond(parts) {
+    // parts: array of tokens after "if"
+    // Handle: exist, not exist, ==, equ/neq/lss/gtr/leq/geq
+    const str = parts.join(' ');
+    // exist
+    if (/^exist\s/i.test(str)) return true; // no filesystem, assume exists for education
+    // not exist
+    if (/^not exist\s/i.test(str)) return false;
+    // VAR op VAL (numeric)
+    const numOp = str.match(/^(.+?)\s+(equ|neq|lss|gtr|leq|geq)\s+(.+)$/i);
+    if (numOp) {
+      const a = Number(expandVars(numOp[1].trim())), b = Number(expandVars(numOp[3].trim())), op=numOp[2].toLowerCase();
+      return op==='equ'?a===b:op==='neq'?a!==b:op==='lss'?a<b:op==='gtr'?a>b:op==='leq'?a<=b:a>=b;
     }
-    case 'dir':{
-      const pa=args.find(a=>!a.startsWith('/'));const tgt=pa?resolve(pa):S.cwd;
-      const nd=pathToNode(tgt);
-      if(!nd){emit(`Nie można odnaleźć ścieżki: ${tgt}`,'err');break}
-      if(nd.type==='file'){emit(tgt.split('\\').pop());break}
-      emit(` Wolumin: INF02  Numer seryjny: INF0-2025`);emit('');
-      emit(` Katalog: ${tgt}`);emit('');
-      emit(`03.06.2025  08:00    <DIR>          .`);
-      emit(`03.06.2025  08:00    <DIR>          ..`);
-      let fc=0,dc=0;
-      for(const[nm,ch] of Object.entries(nd.children||{})){
-        if(ch.type==='dir'){emit(`03.06.2025  08:00    <DIR>          ${nm}`);dc++}
-        else{emit(`03.06.2025  08:00 ${String(ch.content?.length||0).padStart(14)} ${nm}`);fc++}
+    // VAR==VAL (string or number)
+    const eqOp = str.match(/^(.+?)==(.+)$/);
+    if (eqOp) {
+      const a=expandVars(eqOp[1].trim()).replace(/^"|"$/g,'');
+      const b=expandVars(eqOp[2].trim()).replace(/^"|"$/g,'');
+      return a===b;
+    }
+    return false;
+  }
+
+  // Parse script into labeled sections
+  function buildLabelMap(lines) {
+    const map = {};
+    lines.forEach((l,idx) => {
+      const t=l.trim();
+      if(t.startsWith(':')) map[t.slice(1).toLowerCase()] = idx;
+    });
+    return map;
+  }
+
+  function execLines(lines, startIdx, maxDepth) {
+    const labelMap = buildLabelMap(lines);
+    let i = startIdx;
+    let depth = 0;
+
+    while (i < lines.length) {
+      const raw = lines[i];
+      const t = raw.trim();
+
+      // skip empty / comments
+      if(!t || /^rem\s/i.test(t) || t.startsWith('::')) { i++; continue; }
+      // label — just skip
+      if(t.startsWith(':')) { i++; continue; }
+
+      // @echo off / @echo on
+      if(/^@?echo\s+off$/i.test(t)) { echoOn=false; i++; continue; }
+      if(/^@?echo\s+on$/i.test(t)) { echoOn=true; i++; continue; }
+
+      // echo
+      if(/^@?echo$/i.test(t)) { emit(''); i++; continue; }
+      if(/^@?echo\./i.test(t)) { emit(''); i++; continue; }
+      if(/^@?echo\s+/i.test(t)) {
+        const lead = t.match(/^@?echo\s+/i)[0];
+        const msg = expandVars(t.slice(lead.length));
+        emit(msg); i++; continue;
       }
-      emit('');emit(`               ${fc} plik(i)         ${fc*512} bajtów`);emit(`               ${dc} katalog(i)    1 073 741 824 bajtów wolnych`);
-      break;
+
+      // set
+      if(/^set\s+/i.test(t)) {
+        const rest = t.slice(4).trim();
+        // set /a
+        if(/^\/a\s+/i.test(rest)) {
+          const expr=rest.slice(3).trim();
+          // handle varName=expr
+          const m=expr.match(/^([a-zA-Z_]\w*)\s*=\s*(.+)$/);
+          if(m) { setVar(m[1], evalArith(m[2])); }
+          i++; continue;
+        }
+        // set /p (simulate input)
+        if(/^\/p\s+/i.test(rest)) { i++; continue; }
+        // normal set
+        const eqIdx=rest.indexOf('=');
+        if(eqIdx>-1) { setVar(rest.slice(0,eqIdx), rest.slice(eqIdx+1)); }
+        i++; continue;
+      }
+
+      // goto
+      if(/^goto\s+/i.test(t)) {
+        const label=t.slice(5).trim().toLowerCase().replace(/^:/,'');
+        if(label===':eof'||label==='eof'||label===':EOF') { break; }
+        const target=labelMap[label];
+        if(target!==undefined){i=target+1;continue;}
+        i++;continue;
+      }
+
+      // exit /b or exit
+      if(/^exit(\s+\/b)?$/i.test(t)) { break; }
+
+      // call :label (subroutine)
+      if(/^call\s+:/i.test(t)) {
+        const parts=t.slice(5).trim().split(/\s+/);
+        const label=parts[0].slice(1).toLowerCase();
+        const args=parts.slice(1).map(a=>expandVars(a));
+        const savedArgs={};
+        args.forEach((a,idx)=>{savedArgs[idx+1]=env[String(idx+1)];env[String(idx+1)]=a;});
+        const target=labelMap[label];
+        if(target!==undefined) execLines(lines, target+1, maxDepth+1);
+        args.forEach((_,idx)=>{
+          if(savedArgs[idx+1]!==undefined)env[String(idx+1)]=savedArgs[idx+1];
+          else delete env[String(idx+1)];
+        });
+        i++;continue;
+      }
+
+      // if block
+      if(/^if\s+/i.test(t)) {
+        const rest = t.slice(3).trim();
+        // Extract condition and action
+        // Handle multiline: if ... (\n  commands\n) else (\n  commands\n)
+        if(rest.includes('(') && !rest.includes(')')) {
+          // multiline if — collect lines
+          const ifResult = handleIfBlock(lines, i, labelMap);
+          i = ifResult;
+          continue;
+        }
+        // single-line if
+        const parenMatch = rest.match(/^(.+?)\s+\((.+)\)(?:\s+else\s+\((.+)\))?$/);
+        if(parenMatch) {
+          const cond=parenMatch[1].trim();
+          const thenCmd=parenMatch[2].trim();
+          const elseCmd=parenMatch[3]?parenMatch[3].trim():null;
+          if(evalCond(cond.split(/\s+/))) execSingleCmd(thenCmd);
+          else if(elseCmd) execSingleCmd(elseCmd);
+          i++;continue;
+        }
+        // if VAR op VAL command
+        const simpleMatch = rest.match(/^(.+?)\s+(equ|neq|lss|gtr|leq|geq|==.+?)\s+(.+)$/i);
+        if(simpleMatch) {
+          const condStr=simpleMatch[1]+' '+simpleMatch[2]+' '+simpleMatch[3];
+          const spaceCmd = condStr.lastIndexOf(' echo ');
+          if(spaceCmd>-1) {
+            // try to eval as "cond command"
+            const condTokens=rest.split(/\s+/);
+            // find where condition ends (3 tokens: a op b)
+            let condParts=condTokens.slice(0,3), cmd=condTokens.slice(3).join(' ');
+            if(evalCond(condParts)) execSingleCmd(expandVars(cmd));
+          }
+          i++;continue;
+        }
+        i++;continue;
+      }
+
+      // for /l
+      if(/^for\s+\/l\s+/i.test(t)) {
+        const m=t.match(/for\s+\/l\s+%%(\w)\s+in\s+\((\d+),(-?\d+),(\d+)\)\s+do\s+(.*)/i);
+        if(m) {
+          const varN=m[1], from=parseInt(m[2]), step=parseInt(m[3]), to=parseInt(m[4]);
+          let body=m[5].trim();
+          // multiline?
+          if(body.startsWith('(') && !body.endsWith(')')) {
+            const fr=handleForBlock(lines, i, varN, 'range', {from,step,to});
+            i=fr;continue;
+          }
+          body=body.startsWith('(')?body.slice(1,-1).trim():body;
+          for(let n=step>0?from:from;step>0?n<=to:n>=to;n+=step){
+            env[varN]=String(n);
+            execSingleCmd(expandVars(body));
+          }
+        }
+        i++;continue;
+      }
+
+      // for %%i in (list) do
+      if(/^for\s+%%/i.test(t)) {
+        const m=t.match(/for\s+%%(\w)\s+in\s+\(([^)]+)\)\s+do\s+(.*)/i);
+        if(m) {
+          const varN=m[1];
+          const items=m[2].trim().split(/\s+/);
+          let body=m[3].trim();
+          if(body.startsWith('(') && !body.endsWith(')')) {
+            const fr=handleForBlock(lines, i, varN, 'list', {items});
+            i=fr;continue;
+          }
+          body=body.startsWith('(')?body.slice(1,-1).trim():body;
+          for(const item of items){
+            env[varN]=item;
+            execSingleCmd(expandVars(body));
+          }
+        }
+        i++;continue;
+      }
+
+      // cls — clear output
+      if(/^cls$/i.test(t)) { output.length=0; i++; continue; }
+      // pause — simulate
+      if(/^pause$/i.test(t)) { emit('Naciśnij dowolny klawisz aby kontynuować...','line-sys'); i++; continue; }
+      // title — skip
+      if(/^title\s/i.test(t)) { i++; continue; }
+
+      i++;
     }
-    case 'cd':case 'chdir':{
-      if(!args[0]){emit(S.cwd);break}
-      const tgt=resolve(args[0]);const nd=pathToNode(tgt);
-      if(!nd){emit(`Nie można odnaleźć ścieżki.`,'err');break}
-      if(nd.type!=='dir'){emit(`Parametr jest nieprawidłowy.`,'err');break}
-      S.cwd=tgt;break;
-    }
-    case 'md':case 'mkdir':{
-      const nm=args[0];if(!nm){emit('Niepoprawna składnia.','err');break}
-      const abs=resolve(nm);const{n:par,name:dn}=parentOf(abs)||{};
-      if(!par){emit(`Nie można odnaleźć ścieżki.`,'err');break}
-      if(par.children[dn]){emit(`Podkatalog lub plik ${nm} już istnieje.`,'err');break}
-      par.children[dn]=D();break;
-    }
-    case 'rd':case 'rmdir':{
-      const nm=args.find(a=>!a.startsWith('/'));if(!nm){emit('Niepoprawna składnia.','err');break}
-      const abs=resolve(nm);const nd=pathToNode(abs);
-      if(!nd){emit(`Nie można odnaleźć ścieżki.`,'err');break}
-      if(Object.keys(nd.children||{}).length&&!args.some(a=>a.toLowerCase()==='/s')){emit(`Katalog nie jest pusty.`,'err');break}
-      const{n:par,name:fn}=parentOf(abs)||{};if(par)delete par.children[fn];break;
-    }
-    case 'del':case 'erase':{
-      const nm=args.find(a=>!a.startsWith('/'));if(!nm){emit('Niepoprawna składnia.','err');break}
-      const abs=resolve(nm);const nd=pathToNode(abs);
-      if(!nd){emit(`Nie można odnaleźć określonego pliku.`,'err');break}
-      const{n:par,name:fn}=parentOf(abs)||{};if(par)delete par.children[fn];break;
-    }
-    case 'copy':{
-      const[s,d]=args.filter(a=>!a.startsWith('/'));
-      if(!s||!d){emit('Niepoprawna składnia.','err');break}
-      const sn=pathToNode(resolve(s));if(!sn){emit(`Nie można odnaleźć określonego pliku.`,'err');break}
-      const da=resolve(d);const{n:dp,name:dn}=parentOf(da)||{};
-      if(!dp){emit(`Nie można odnaleźć ścieżki.`,'err');break}
-      dp.children[dn]=JSON.parse(JSON.stringify(sn));emit(`        1 plik(i) skopiowano.`);break;
-    }
-    case 'move':{
-      const[s,d]=args.filter(a=>!a.startsWith('/'));
-      if(!s||!d){emit('Niepoprawna składnia.','err');break}
-      const sa=resolve(s);const sn=pathToNode(sa);if(!sn){emit(`Nie można odnaleźć pliku.`,'err');break}
-      const{n:sp,name:sn2}=parentOf(sa)||{};const da=resolve(d);const{n:dp,name:dn}=parentOf(da)||{};
-      if(!dp){emit(`Nie można odnaleźć ścieżki.`,'err');break}
-      dp.children[dn]=sn;delete sp.children[sn2];emit(`        1 plik(i) przeniesiono.`);break;
-    }
-    case 'type':{
-      const nm=args[0];if(!nm){emit('Niepoprawna składnia.','err');break}
-      const nd=pathToNode(resolve(nm));
-      if(!nd){emit(`Nie można odnaleźć określonego pliku.`,'err');break}
-      if(nd.type==='dir'){emit(`Odmowa dostępu.`,'err');break}
-      nd.content.split('\n').forEach(l=>cemit(l));break;
-    }
-    case 'set':{
-      if(!args[0]){Object.entries(S.vars).forEach(([k,v])=>emit(`${k}=${v}`));break}
-      const joined=args.join(' ');const eq=joined.indexOf('=');
-      if(eq<0){const v=S.vars[args[0].toUpperCase()];v?emit(`${args[0].toUpperCase()}=${v}`):emit(`Zmienna ${args[0]} nie jest zdefiniowana.`,'err');break}
-      const k=joined.slice(0,eq).toUpperCase().trim(),v=joined.slice(eq+1).trim();
-      S.vars[k]=v;break;
-    }
-    case 'if':{
-      const rest=args.join(' ');
-      const existM=rest.match(/^exist\s+(\S+)\s+(.+)$/i);
-      const eqM=rest.match(/^"([^"]*)"=="([^"]*)"(.*)$/i);
-      if(existM){const[,fn,thenCmd]=existM;if(pathToNode(resolve(fn))!==null)printLines(runCmd(thenCmd.trim()))}
-      else if(eqM){let[,a,b,thenCmd]=eqM;a=a.replace(/%(\w+)%/g,(_,v)=>S.vars[v.toUpperCase()]||'');b=b.replace(/%(\w+)%/g,(_,v)=>S.vars[v.toUpperCase()]||'');if(a===b&&thenCmd.trim())printLines(runCmd(thenCmd.trim()))}
-      else emit('Błędna składnia IF.','err');break;
-    }
-    case 'for':{
-      const m=args.join(' ').match(/^%(\w+)\s+in\s+\(([^)]+)\)\s+do\s+(.+)$/i);
-      if(!m){emit('Błędna składnia FOR.','err');break}
-      const[,v,list,doCmd]=m;const items=list.trim().split(/[\s,]+/).filter(Boolean);
-      for(const item of items){const cmd2=doCmd.replace(new RegExp('%'+v,'gi'),item);printLines(runCmd(cmd2))}
-      break;
-    }
-    case 'cls':document.getElementById('term-out').innerHTML='';return[];
-    case 'pause':emit('Nacisnij dowolny klawisz, aby kontynuowac . . .');break;
-    case 'rem':break;
-    case 'help':emit('REM DOSTĘPNE KOMENDY:','sys');emit('   ECHO @ECHO DIR CD MD RD DEL COPY MOVE TYPE','out');emit('   SET IF FOR CLS PAUSE REM','out');emit('   lekcja <n>  - skocz do lekcji n','out');break;
-    case 'lekcja':{const n=parseInt(args[0]);if(isNaN(n)||n<1||n>LL.length){emit(`lekcja: podaj numer 1-${LL.length}`,'err');break}S.lidx=n-1;S.attempts=0;save();renderLesson();emit(`REM lekcja ${n}: ${LL[n-1].title}`,'sys');break}
-    case 'postep':emit(`REM ukończone: ${S.done.size}/${LL.length}`,'sys');LL.forEach((l,i)=>emit(`   [${S.done.has(i)?'x':' '}] ${String(i+1).padStart(2,'0')}. ${l.title}`,S.done.has(i)?'sys':'out'));break;
-    case 'ver':emit(`\nMicrosoft Windows [Wersja INF02-2025]\n(c) HostLab. Wszelkie prawa zastrzeżone.\n`);break;
-    case 'exit':emit('EXIT: nie tym razem.','err');break;
-    case 'format':emit(`format: Przerażony. Odmawiam.`,'err');break;
-    default:if(cmd)emit(`'${cmd}' nie jest rozpoznawana jako polecenie wewnętrzne\nani zewnętrzne, plik wykonywalny lub plik wsadowy.`,'err');
   }
-  if(rfile&&rfile.trim()){const abs=resolve(rfile.trim());const{n:par,name:fn}=parentOf(abs)||{};if(par){if(append&&par.children[fn]?.type==='file')par.children[fn].content+=cap;else par.children[fn]=F(cap)}}
-  return lines;
-}
 
-// ── UI ────────────────────────────────────
-const $out=document.getElementById('term-out');
-const $in=document.getElementById('ti');
-const $pp=document.getElementById('pp');
-function print(t,c='out'){const d=document.createElement('div');d.className='ol '+c;d.textContent=t;$out.appendChild(d);$out.scrollTop=$out.scrollHeight}
-function printLines(ls){ls.forEach(l=>print(l.t,l.c||'out'))}
-function updPrompt(){$pp.textContent=S.cwd}
-
-function renderLesson(){
-  const l=LL[S.lidx];if(!l)return;
-  document.getElementById('lbadge').textContent=`LEKCJA ${String(S.lidx+1).padStart(2,'0')}/${LL.length}`;
-  document.getElementById('lp').innerHTML=`
-    <div class="lp-num">LEKCJA ${l.id} / ${LL.length} — ${l.cmd}</div>
-    <div class="lp-title">${l.title}</div>
-    <div class="lp-theory">${l.theory}</div>
-    <div class="lp-ex">${l.ex}</div>
-    <div class="lp-task">${l.task}</div>
-    ${S.attempts>=3?`<div class="lp-hint">${l.hint}</div>`:''}
-  `;
-  document.querySelectorAll('.li').forEach((it,i)=>{
-    it.classList.remove('active','done');
-    if(S.done.has(i))it.classList.add('done');
-    if(i===S.lidx)it.classList.add('active');
-  });
-  document.getElementById('sb-prog').style.width=(S.done.size/LL.length*100).toFixed(0)+'%';
-  document.getElementById('done-cnt').textContent=S.done.size;
-}
-
-function buildSidebar(){
-  const list=document.getElementById('lesson-list');list.innerHTML='';
-  LL.forEach((l,i)=>{
-    const it=document.createElement('div');it.className='li';
-    it.innerHTML=`<span class="li-mark">[${S.done.has(i)?'x':' '}]</span><span class="li-name">${l.id}. ${l.title}</span><span class="li-cmd">${l.cmd}</span>`;
-    it.addEventListener('click',()=>{S.lidx=i;S.attempts=0;save();renderLesson();print(`REM lekcja ${i+1}: ${l.title}`,'sys');$in.focus()});
-    list.appendChild(it);
-  });
-}
-
-const KUDOS=['Dobrze, rośnie z Ciebie sysadmin.','Egzaminator będzie prawie pod wrażeniem.','Tak trzymaj! Batmani na start.','Poprawnie. CMD jest z Ciebie dumny.','Klasyk. Prosto i skutecznie.'];
-function kudos(){return KUDOS[Math.floor(Math.random()*KUDOS.length)]}
-
-function checkLesson(raw,cmd,args){
-  const l=LL[S.lidx];if(!l)return;
-  if(l.check({cmd,args,raw})){
-    S.done.add(S.lidx);S.attempts=0;save();
-    document.querySelectorAll('.li').forEach((it,i)=>{const m=it.querySelector('.li-mark');if(m&&S.done.has(i))m.textContent='[x]'});
-    print('');print('REM ZALICZONE — '+kudos(),'ok');
-    if(S.lidx+1<LL.length){S.lidx++;setTimeout(()=>{print('');print(`REM lekcja ${S.lidx+1}: ${LL[S.lidx].title}`,'sys');renderLesson()},500)}
-    else setTimeout(showDone,900);
-  } else {S.attempts++;if(S.attempts>=3)renderLesson()}
-}
-
-const DONE_ART=`
-  ██████╗  ██████╗ ███╗   ██╗███████╗
- ██╔══██╗██╔═══██╗████╗  ██║██╔════╝
- ██║  ██║██║   ██║██╔██╗ ██║█████╗
- ██║  ██║██║   ██║██║╚██╗██║██╔══╝
- ██████╔╝╚██████╔╝██║ ╚████║███████╗
- ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝`.trim();
-function showDone(){document.getElementById('done-art').textContent=DONE_ART;document.getElementById('done-screen').style.display='flex'}
-
-$in.addEventListener('keydown',e=>{
-  if(e.key==='Enter'){
-    const raw=$in.value.trim();$in.value='';if(!raw)return;
-    S.hist.unshift(raw);S.hIdx=-1;
-    if(S.echoOn)print(`${S.cwd}> ${raw}`,'cmd');
-    const cmdLine=raw.replace(/^@/,'').split(/>>?/)[0].trim();
-    const{cmd,args}=parseCmd(cmdLine);
-    printLines(runCmd(raw));updPrompt();checkLesson(raw,cmd,args);
-    $out.scrollTop=$out.scrollHeight;
+  function execSingleCmd(cmd) {
+    cmd=cmd.trim();
+    if(/^echo\s*/i.test(cmd)) {
+      const rest=cmd.slice(4).trim();
+      if(rest==='.'||rest==='') {emit('');return;}
+      emit(expandVars(rest));
+    } else if(/^set\s+\/a\s+/i.test(cmd)){
+      const m=cmd.slice(7).trim().match(/^([a-zA-Z_]\w*)\s*=\s*(.+)$/);
+      if(m) setVar(m[1], evalArith(m[2]));
+    } else if(/^set\s+/i.test(cmd)){
+      const rest=cmd.slice(4).trim(), eqIdx=rest.indexOf('=');
+      if(eqIdx>-1) setVar(rest.slice(0,eqIdx), rest.slice(eqIdx+1));
+    }
   }
-  if(e.key==='ArrowUp'){e.preventDefault();S.hIdx=Math.min(S.hIdx+1,S.hist.length-1);if(S.hist[S.hIdx])$in.value=S.hist[S.hIdx]}
-  if(e.key==='ArrowDown'){e.preventDefault();S.hIdx=Math.max(S.hIdx-1,-1);$in.value=S.hIdx>=0?S.hist[S.hIdx]:''}
+
+  function handleIfBlock(lines, startIdx, labelMap) {
+    const ifLine=lines[startIdx].trim();
+    const condMatch=ifLine.match(/^if\s+(.+?)\s+\($/i);
+    const cond=condMatch?condMatch[1].trim():'';
+    const result=evalCond(cond.split(/\s+/));
+
+    let i=startIdx+1, depth=1;
+    const thenLines=[], elseLines=[];
+    let inElse=false;
+
+    while(i<lines.length) {
+      const t=lines[i].trim();
+      if(t==='(')depth++;
+      if(t===')'){
+        depth--;
+        if(depth===0){
+          // check for else
+          if(i+1<lines.length&&/^\)\s+else\s+\($/i.test(lines[i].trim()||'')){
+            // handled below
+          }
+          i++;
+          // look ahead for ) else (
+          if(i<lines.length&&/^else\s*\($/i.test(lines[i].trim())){
+            inElse=true;i++;depth=1;
+            while(i<lines.length){
+              const t2=lines[i].trim();
+              if(t2===')'){i++;break;}
+              elseLines.push(lines[i]);i++;
+            }
+          }
+          break;
+        }
+      }
+      if(t===') else ('){
+        inElse=true;i++;depth=1;
+        while(i<lines.length){
+          const t2=lines[i].trim();
+          if(t2===')'){i++;break;}
+          elseLines.push(lines[i]);i++;
+        }
+        break;
+      }
+      if(depth>0)(inElse?elseLines:thenLines).push(lines[i]);
+      i++;
+    }
+    if(result)execLines(thenLines,0);
+    else execLines(elseLines,0);
+    return i;
+  }
+
+  function handleForBlock(lines, startIdx, varN, type, opts) {
+    let i=startIdx+1, depth=1, body=[];
+    while(i<lines.length){
+      const t=lines[i].trim();
+      if(t==='(')depth++;
+      if(t===')'){depth--;if(depth===0){i++;break;}}
+      body.push(lines[i]);i++;
+    }
+    const items = type==='range'
+      ? (()=>{const r=[];for(let n=opts.from;opts.step>0?n<=opts.to:n>=opts.to;n+=opts.step)r.push(String(n));return r;})()
+      : opts.items;
+    for(const item of items){
+      env[varN]=item;
+      execLines(body,0);
+    }
+    return i;
+  }
+
+  const lines = code.split('\n');
+  // Default positional args to empty
+  for(let i=0;i<=9;i++) env[String(i)]='';
+  env['0']='skrypt.bat';
+
+  execLines(lines, 0);
+  return output;
+}
+
+// ─── UI ────────────────────────────────────────────────────────────────
+const editorEl = document.getElementById('editor');
+const outputEl = document.getElementById('output');
+const lineNumsEl = document.getElementById('line-nums');
+const progressFill = document.getElementById('progress-fill');
+const lessonCounter = document.getElementById('lesson-counter');
+const statusMsg = document.getElementById('status-msg');
+
+function updateLineNums() {
+  const n = editorEl.value.split('\n').length;
+  let html = '';
+  for(let i=1;i<=n;i++) html += `<div>${i}</div>`;
+  lineNumsEl.innerHTML = html;
+  lineNumsEl.scrollTop = editorEl.scrollTop;
+}
+
+editorEl.addEventListener('input', updateLineNums);
+editorEl.addEventListener('scroll', () => { lineNumsEl.scrollTop = editorEl.scrollTop; });
+editorEl.addEventListener('keydown', e => {
+  if(e.key==='Tab'){
+    e.preventDefault();
+    const s=editorEl.selectionStart, v=editorEl.value;
+    editorEl.value=v.slice(0,s)+'  '+v.slice(editorEl.selectionEnd);
+    editorEl.selectionStart=editorEl.selectionEnd=s+2;
+    updateLineNums();
+  }
 });
-document.querySelector('.term-wrap').addEventListener('click',()=>$in.focus());
 
-const BOOT_ART=`
-  ██████╗███╗   ███╗██████╗
- ██╔════╝████╗ ████║██╔══██╗
- ██║     ██╔████╔██║██║  ██║
- ██║     ██║╚██╔╝██║██║  ██║
- ╚██████╗██║ ╚═╝ ██║██████╔╝
-  ╚═════╝╚═╝     ╚═╝╚═════╝
-   PLIKI WSADOWE  ·  INF02`.trim();
-
-async function boot(){
-  document.getElementById('boot-art').textContent=BOOT_ART;
-  const msg=document.getElementById('boot-msg');const bar=document.getElementById('boot-bar');
-  const steps=[[15,'INICJALIZACJA WINDOWS...'],[40,'LADOWANIE REJESTRU...'],[65,'URUCHAMIANIE USLUG...'],[85,'LOGOWANIE JAKO STUDENT...'],[100,'GOTOWY']];
-  for(const[p,m]of steps){msg.textContent=m;bar.style.width=p+'%';await new Promise(r=>setTimeout(r,260))}
-  await new Promise(r=>setTimeout(r,160));
-  document.getElementById('boot').style.display='none';
-  document.getElementById('app').style.display='flex';
-  buildSidebar();renderLesson();updPrompt();
-  print('Microsoft Windows [Wersja INF02-2025]','sys');
-  print('(c) HostLab. Kurs pliki wsadowe.','sys');print('');
-  print(`REM lekcja 1: ${LL[S.lidx].title}`,'sys');
-  $in.focus();
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-boot();
+function setStatus(msg, cls) {
+  statusMsg.textContent=msg;
+  statusMsg.className='status-msg'+(cls?' '+cls:'');
+}
+function goLesson(n) {
+  if(n<0||n>=LESSONS.length)return;
+  currentLesson=n;loadLesson();
+}
+function loadLesson() {
+  const L=LESSONS[currentLesson];
+  document.getElementById('lesson-title').textContent=L.title;
+  document.getElementById('lesson-task').innerHTML=L.task;
+  editorEl.value=L.starter;
+  updateLineNums();
+  outputEl.innerHTML='<span class="line-sys">// Napisz skrypt i kliknij URUCHOM</span>\n<span class="cursor-line"></span>';
+  setStatus('GOTOWY');hideHint();
+  document.getElementById('btn-prev').disabled=currentLesson===0;
+  document.getElementById('btn-next').disabled=currentLesson===LESSONS.length-1;
+  lessonCounter.textContent=`${currentLesson+1} / ${LESSONS.length}`;
+  const done=progress.filter(Boolean).length;
+  progressFill.style.width=(done/LESSONS.length*100)+'%';
+}
+function runScript() {
+  const code=editorEl.value;
+  if(!code.trim()){setStatus('PUSTY SKRYPT','err');return;}
+  outputEl.innerHTML='<span class="line-sys">C:\\Users\\Student&gt; skrypt.bat</span>\n';
+  setStatus('URUCHAMIANIE...','');
+  setTimeout(()=>{
+    try{
+      const lines=runBatch(code);
+      let html='<span class="line-sys">C:\\Users\\Student&gt; skrypt.bat</span>\n';
+      if(lines.length===0){
+        html+='<span class="line-sys">// (brak wyjścia)</span>\n';
+      } else {
+        for(const {text,cls} of lines){
+          html+=`<span class="${cls}">${escHtml(text)}</span>\n`;
+        }
+      }
+      html+='<span class="cursor-line"></span>';
+      outputEl.innerHTML=html;
+      outputEl.scrollTop=outputEl.scrollHeight;
+      const outText=lines.map(l=>l.text).join('\n');
+      const L=LESSONS[currentLesson];
+      if(L.check(code,outText)){
+        setStatus('ZALICZONE!','ok');
+        progress[currentLesson]=true;
+        localStorage.setItem('hl-batch2',JSON.stringify(progress));
+        setTimeout(()=>showSuccess(L.ok),700);
+      } else {
+        setStatus('URUCHOMIONO — SPRAWDŹ WYJŚCIE','');
+      }
+    }catch(err){
+      outputEl.innerHTML+='<span class="line-err">BŁĄD: '+escHtml(err.message)+'</span>\n';
+      setStatus('BŁĄD','err');
+    }
+  },80);
+}
+function resetEditor(){
+  editorEl.value=LESSONS[currentLesson].starter;
+  updateLineNums();
+  outputEl.innerHTML='<span class="line-sys">// Skrypt zresetowany</span>\n<span class="cursor-line"></span>';
+  setStatus('ZRESETOWANO');
+}
+function showHint(){
+  document.getElementById('hint-text').innerHTML=LESSONS[currentLesson].hint;
+  document.getElementById('hint-box').classList.add('show');
+}
+function hideHint(){document.getElementById('hint-box').classList.remove('show');}
+function showSuccess(msg){
+  document.getElementById('success-msg').textContent=msg;
+  const ov=document.getElementById('success-overlay');
+  ov.classList.add('show');
+  const btn=document.getElementById('success-next-btn');
+  if(currentLesson>=LESSONS.length-1){
+    btn.textContent='KONIEC KURSU ✓';
+    btn.onclick=()=>ov.classList.remove('show');
+  } else {
+    btn.textContent='NASTĘPNA LEKCJA →';
+    btn.onclick=nextLesson;
+  }
+}
+function nextLesson(){
+  document.getElementById('success-overlay').classList.remove('show');
+  if(currentLesson<LESSONS.length-1)goLesson(currentLesson+1);
+}
+
+// INIT
+loadLesson();
 </script>
 </body>
 </html>

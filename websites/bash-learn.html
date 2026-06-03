@@ -3,169 +3,263 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BASH — Linux Terminal Kurs</title>
+<title>Linux Bash — HostLab Study</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
 <link rel="stylesheet" href="../other/backbutton.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
 :root{
   --bg:#050905;--surface:#090e09;--surface2:#0d140d;
-  --border:#1a2e1a;--border2:rgba(0,255,65,0.06);
+  --border:#1a2e1a;--border2:rgba(0,255,65,.06);
   --green:#00ff41;--dim:#008822;--amber:#ffb300;
   --text:#b8f0b8;--muted:#3a5a3a;--err:#ff2828;
   --font:'Share Tech Mono',monospace;
 }
-
 html,body{height:100%;overflow:hidden}
-body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;animation:flicker 10s infinite}
-
-body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.12) 3px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:200}
-body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.5) 100%);pointer-events:none;z-index:199}
-
+body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;animation:flicker 10s infinite}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.12) 3px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:9000}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.5) 100%);pointer-events:none;z-index:8999}
 @keyframes flicker{0%,90%,100%{opacity:1}91%{opacity:.88}93%{opacity:1}95%{opacity:.92}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scanIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
-/* BOOT */
-#boot{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;z-index:300}
-#boot-art{color:var(--green);font-size:clamp(6px,1vw,12px);line-height:1.25;text-align:center;white-space:pre;text-shadow:0 0 10px rgba(0,255,65,.4)}
-#boot-msg{color:var(--dim);font-size:11px;letter-spacing:.2em;margin-top:14px;min-height:16px;text-transform:uppercase}
-#boot-bar-wrap{width:220px;height:1px;background:var(--border);margin-top:10px}
-#boot-bar{height:100%;width:0%;background:var(--dim);transition:width .2s linear}
+/* ── TOPBAR ── */
+.topbar{
+  flex-shrink:0;
+  padding:10px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+  background:var(--surface);
+  position:relative;z-index:100;
+}
+.topbar-logo{font-size:10px;letter-spacing:.2em;color:var(--dim);margin-right:auto}
+.topbar-logo span{color:var(--green)}
+.lesson-nav{display:flex;align-items:center;gap:10px}
+.nav-btn{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:11px;padding:5px 14px;cursor:pointer;transition:all .15s;letter-spacing:.1em}
+.nav-btn:hover:not(:disabled){border-color:var(--green);color:var(--green)}
+.nav-btn:disabled{opacity:.3;cursor:not-allowed}
+.lesson-counter{font-size:11px;color:var(--dim);letter-spacing:.12em;min-width:80px;text-align:center}
+.progress-wrap{width:120px;height:3px;background:var(--border);position:relative}
+.progress-fill{height:100%;background:var(--green);transition:width .4s ease;box-shadow:0 0 6px rgba(0,255,65,.4)}
 
-/* APP */
-#app{display:none;height:100vh;overflow:hidden;flex-direction:row}
+/* ── LESSON INFO BAR ── */
+.lesson-bar{
+  flex-shrink:0;
+  padding:10px 20px;
+  border-bottom:1px solid var(--border);
+  background:var(--surface2);
+  position:relative;z-index:50;
+}
+.lesson-title{font-size:11px;color:var(--green);letter-spacing:.1em;margin-bottom:4px}
+.lesson-task{font-size:11px;color:var(--text);letter-spacing:.04em;line-height:1.55}
+.lesson-task code{color:var(--amber);background:rgba(255,179,0,.08);padding:1px 5px}
 
-/* SIDEBAR */
-.sidebar{width:252px;min-width:252px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative}
-.sidebar::before{content:'';position:absolute;inset:4px;border:1px solid var(--border2);pointer-events:none;z-index:1}
-.sb-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;z-index:2}
-.sb-sys{font-size:8px;letter-spacing:.25em;color:var(--dim);text-transform:uppercase;margin-bottom:2px}
-.sb-title{font-size:13px;color:var(--green);letter-spacing:.08em;text-shadow:0 0 8px rgba(0,255,65,.3);margin-bottom:10px}
-.sb-prog-wrap{height:1px;background:var(--border)}
-.sb-prog-fill{height:100%;background:var(--dim);transition:width .4s ease;width:0%}
-.sb-counter{font-size:9px;color:var(--muted);letter-spacing:.1em;margin-top:6px}
+/* ── SPLIT AREA ── */
+.split{flex:1;display:flex;overflow:hidden;position:relative;z-index:10}
 
-.lesson-list{flex:1;overflow-y:auto;padding:4px 0;position:relative;z-index:2}
-.lesson-list::-webkit-scrollbar{width:2px}
-.lesson-list::-webkit-scrollbar-thumb{background:var(--dim)}
+/* ── EDITOR PANEL ── */
+.editor-panel{
+  width:46%;flex-shrink:0;
+  display:flex;flex-direction:column;
+  border-right:1px solid var(--border);
+  background:var(--bg);
+}
+.panel-header{
+  padding:7px 14px;
+  border-bottom:1px solid var(--border);
+  font-size:9px;letter-spacing:.25em;color:var(--muted);
+  text-transform:uppercase;display:flex;align-items:center;gap:8px;
+  background:var(--surface);flex-shrink:0;
+}
+.panel-dot{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+.panel-dot.green{background:var(--green);box-shadow:0 0 4px rgba(0,255,65,.5)}
+.editor-body{flex:1;display:flex;overflow:hidden}
+.line-nums{
+  padding:12px 0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  min-width:38px;
+  font-size:12px;color:var(--muted);
+  line-height:1.6;
+  text-align:right;
+  overflow:hidden;
+  flex-shrink:0;
+  user-select:none;
+}
+.line-nums div{padding:0 8px 0 4px}
+textarea#editor{
+  flex:1;
+  background:var(--bg);
+  color:var(--green);
+  font-family:var(--font);
+  font-size:12px;
+  line-height:1.6;
+  padding:12px 14px;
+  border:none;outline:none;
+  resize:none;
+  caret-color:var(--green);
+  tab-size:2;
+  overflow-y:auto;
+  white-space:pre;
+  overflow-x:auto;
+}
+textarea#editor::selection{background:rgba(0,255,65,.15)}
 
-.li{display:flex;align-items:center;gap:8px;padding:6px 16px;cursor:pointer;transition:all .12s;border-left:2px solid transparent}
-.li:hover{background:rgba(0,255,65,.03);color:var(--text)}
-.li.active{background:rgba(0,255,65,.05);border-left-color:var(--green)}
-.li-mark{font-size:9px;color:var(--muted);min-width:16px;flex-shrink:0}
-.li.done .li-mark{color:var(--dim)}
-.li.active .li-mark{color:var(--green)}
-.li-name{font-size:10px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.04em}
-.li.active .li-name{color:var(--green)}
-.li.done .li-name{color:var(--muted)}
-.li-cmd{font-size:8px;color:var(--muted);border:1px solid var(--border);padding:1px 5px;flex-shrink:0;letter-spacing:.06em}
-.li.active .li-cmd{color:var(--dim);border-color:var(--dim)}
+/* ── TERMINAL PANEL ── */
+.terminal-panel{
+  flex:1;
+  display:flex;flex-direction:column;
+  background:var(--bg);
+  overflow:hidden;
+}
+#output{
+  flex:1;
+  padding:14px 18px;
+  font-size:12px;
+  line-height:1.65;
+  overflow-y:auto;
+  overflow-x:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.line-out{color:var(--text)}
+.line-err{color:var(--err)}
+.line-sys{color:var(--dim)}
+.line-ok{color:var(--green)}
+.cursor-line::after{content:'_';animation:blink 1s infinite;color:var(--green)}
 
-/* TERM WRAP */
-.term-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+/* ── BOTTOM BAR ── */
+.bottom-bar{
+  flex-shrink:0;
+  padding:9px 20px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);
+  position:relative;z-index:50;
+}
+.btn{
+  font-family:var(--font);font-size:11px;letter-spacing:.1em;
+  padding:7px 18px;border:1px solid var(--border);
+  background:none;color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.btn-run{border-color:var(--green);color:var(--green)}
+.btn-run:hover{background:var(--green);color:var(--bg)}
+.btn:hover:not(.btn-run){border-color:var(--dim);color:var(--text)}
+.btn-sep{flex:1}
+.status-msg{font-size:10px;letter-spacing:.12em;color:var(--muted);transition:color .3s}
+.status-msg.ok{color:var(--green)}
+.status-msg.err{color:var(--err)}
 
-.term-topbar{height:34px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex-shrink:0}
-.topbar-left{display:flex;align-items:center;gap:10px}
-.topbar-dots{display:flex;gap:5px}
-.dot{width:9px;height:9px;border-radius:0;border:1px solid}
-.dot.r{background:#200a0a;border-color:#5a1515}
-.dot.y{background:#1a1400;border-color:#5a4200}
-.dot.g{background:#0a1a0a;border-color:var(--dim)}
-.topbar-title{font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase}
-.topbar-badge{font-size:8px;color:var(--dim);border:1px solid var(--border);padding:2px 8px;letter-spacing:.1em;text-transform:uppercase}
+/* ── HINT BOX ── */
+.hint-box{
+  position:absolute;bottom:64px;right:20px;
+  max-width:310px;
+  background:var(--surface2);border:1px solid var(--border);
+  padding:14px 16px;font-size:11px;color:var(--text);line-height:1.65;
+  z-index:300;animation:scanIn .2s ease;display:none;
+}
+.hint-box.show{display:block}
+.hint-box b{color:var(--amber)}
+.hint-close{position:absolute;top:6px;right:10px;cursor:pointer;color:var(--muted);font-size:13px}
+.hint-close:hover{color:var(--text)}
 
-/* LESSON PANEL */
-.lp{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 18px;flex-shrink:0;max-height:200px;overflow-y:auto;position:relative}
-.lp::before{content:'';position:absolute;inset:3px;border:1px solid var(--border2);pointer-events:none}
-.lp::-webkit-scrollbar{width:2px}
-.lp::-webkit-scrollbar-thumb{background:var(--dim)}
-.lp-num{font-size:8px;letter-spacing:.25em;color:var(--dim);text-transform:uppercase;margin-bottom:4px}
-.lp-title{font-size:12px;color:var(--green);letter-spacing:.1em;margin-bottom:6px;text-shadow:0 0 6px rgba(0,255,65,.25)}
-.lp-theory{font-size:10px;color:var(--muted);line-height:1.65;margin-bottom:8px;letter-spacing:.03em}
-.lp-ex{font-size:10px;color:var(--green);border:1px solid var(--dim);padding:6px 10px;margin-bottom:8px;white-space:pre-line;background:rgba(0,255,65,.02);letter-spacing:.03em}
-.lp-ex::before{content:'PRZYKŁAD ';font-size:7px;color:var(--dim);letter-spacing:.2em;display:block;margin-bottom:3px}
-.lp-task{font-size:10px;color:var(--amber);border:1px solid #3a2800;padding:6px 10px;line-height:1.5;background:rgba(255,179,0,.02)}
-.lp-task::before{content:'▶ ZADANIE ';font-size:7px;color:#885500;letter-spacing:.2em;display:block;margin-bottom:3px}
-.lp-hint{margin-top:6px;font-size:9px;color:var(--muted);padding:5px 8px;border:1px solid var(--border)}
-.lp-hint::before{content:'// ';color:var(--dim)}
+/* ── SUCCESS OVERLAY ── */
+.success-overlay{
+  position:fixed;inset:0;background:rgba(0,5,0,.9);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  z-index:5000;
+}
+.success-overlay.show{display:flex}
+.success-box{
+  border:1px solid var(--green);padding:40px 56px;
+  text-align:center;position:relative;background:var(--surface);
+}
+.success-box::before{content:'';position:absolute;inset:6px;border:1px solid var(--border2)}
+.success-title{font-size:32px;color:var(--green);letter-spacing:.08em;text-shadow:0 0 20px rgba(0,255,65,.4);margin-bottom:12px}
+.success-msg{font-size:11px;color:var(--muted);letter-spacing:.04em;line-height:1.65;max-width:380px}
+.success-next{
+  margin-top:24px;font-size:11px;border:1px solid var(--green);
+  color:var(--green);padding:10px 28px;cursor:pointer;
+  background:none;font-family:var(--font);letter-spacing:.12em;transition:all .15s;
+}
+.success-next:hover{background:var(--green);color:var(--bg)}
 
-/* OUTPUT */
-.term-out{flex:1;overflow-y:auto;padding:10px 18px;font-size:12px;line-height:1.7;letter-spacing:.03em}
-.term-out::-webkit-scrollbar{width:2px}
-.term-out::-webkit-scrollbar-thumb{background:var(--dim)}
-.ol{white-space:pre-wrap;word-break:break-all}
-.ol.cmd{color:var(--green)}
-.ol.out{color:var(--text)}
-.ol.err{color:var(--err)}
-.ol.ok{color:var(--green);border-left:2px solid var(--dim);padding:4px 8px;margin:3px 0;background:rgba(0,255,65,.03);font-size:11px}
-.ol.sys{color:var(--dim);font-size:10px;letter-spacing:.05em}
-
-/* INPUT */
-.term-in-row{display:flex;align-items:center;padding:9px 18px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:0}
-.term-prompt{color:var(--green);font-size:12px;white-space:nowrap;flex-shrink:0;text-shadow:0 0 6px rgba(0,255,65,.3)}
-.term-prompt .u{color:var(--amber)}
-.term-prompt .d{color:var(--muted)}
-.term-prompt .s{color:var(--green);margin-right:6px}
-.term-input{flex:1;background:transparent;border:none;outline:none;color:var(--green);font-family:var(--font);font-size:12px;caret-color:var(--green);letter-spacing:.03em}
-.term-input::placeholder{color:var(--muted)}
-
-/* DONE */
-#done-screen{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:90;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center}
-#done-screen pre{color:var(--green);font-size:clamp(6px,.85vw,11px);line-height:1.35;text-shadow:0 0 10px rgba(0,255,65,.3)}
-#done-screen .done-msg{color:var(--muted);font-size:11px;max-width:380px;line-height:1.6;letter-spacing:.04em}
-#done-screen a{color:var(--green);font-size:10px;letter-spacing:.18em;border:1px solid var(--dim);padding:8px 20px;text-decoration:none;text-transform:uppercase;transition:background .15s}
-#done-screen a:hover{background:rgba(0,255,65,.06)}
-
-.back-home{z-index:250!important}
-
-@media(max-width:680px){.sidebar{display:none}.lp,.term-out,.term-in-row{padding-left:14px;padding-right:14px}}
+@media(max-width:700px){
+  .split{flex-direction:column}
+  .editor-panel{width:100%;height:45%;border-right:none;border-bottom:1px solid var(--border)}
+  .progress-wrap{display:none}
+}
 </style>
 </head>
 <body>
 
-<div id="boot">
-  <pre id="boot-art"></pre>
-  <div id="boot-msg"></div>
-  <div id="boot-bar-wrap"><div id="boot-bar"></div></div>
-</div>
-
-<div id="app">
-  <nav class="sidebar">
-    <div class="sb-head">
-      <div class="sb-sys">HostLab // INF02</div>
-      <div class="sb-title">LINUX BASH_</div>
-      <div class="sb-prog-wrap"><div class="sb-prog-fill" id="sb-prog"></div></div>
-      <div class="sb-counter"><span id="done-cnt">0</span>/15 LEKCJI ZALICZONYCH</div>
-    </div>
-    <div class="lesson-list" id="lesson-list"></div>
-  </nav>
-
-  <div class="term-wrap">
-    <div class="term-topbar">
-      <div class="topbar-left">
-        <div class="topbar-dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
-        <div class="topbar-title">student@inf02 — bash</div>
-      </div>
-      <div class="topbar-badge" id="lbadge">LEKCJA 01/15</div>
-    </div>
-    <div class="lp" id="lp"></div>
-    <div class="term-out" id="term-out"></div>
-    <div class="term-in-row">
-      <span class="term-prompt">
-        <span class="u">student</span><span class="d">@inf02:</span><span class="d" id="pp">~</span><span class="s">$</span>
-      </span>
-      <input class="term-input" id="ti" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-    </div>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">HOST<span>·</span>LAB // BASH</div>
+  <div class="lesson-nav">
+    <button class="nav-btn" id="btn-prev" onclick="goLesson(currentLesson-1)">&#8592; PREV</button>
+    <span class="lesson-counter" id="lesson-counter">1 / 10</span>
+    <button class="nav-btn" id="btn-next" onclick="goLesson(currentLesson+1)">NEXT &#8594;</button>
+    <div class="progress-wrap"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
   </div>
 </div>
 
-<div id="done-screen">
-  <pre id="done-art"></pre>
-  <div class="done-msg">KURS UKOŃCZONY. Podstawy Linuxa na egzamin INF02 — zaliczone.</div>
-  <a href="../pages/study.html">← WRÓĆ DO STUDY</a>
+<!-- LESSON BAR -->
+<div class="lesson-bar" id="lesson-bar">
+  <div class="lesson-title" id="lesson-title"></div>
+  <div class="lesson-task" id="lesson-task"></div>
+</div>
+
+<!-- SPLIT AREA -->
+<div class="split">
+
+  <!-- EDITOR -->
+  <div class="editor-panel">
+    <div class="panel-header">
+      <div class="panel-dot green"></div>
+      <span>EDYTOR — skrypt.sh</span>
+    </div>
+    <div class="editor-body">
+      <div class="line-nums" id="line-nums"></div>
+      <textarea id="editor" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"></textarea>
+    </div>
+  </div>
+
+  <!-- TERMINAL -->
+  <div class="terminal-panel">
+    <div class="panel-header">
+      <div class="panel-dot"></div>
+      <span>TERMINAL — WYJŚCIE</span>
+    </div>
+    <div id="output"><span class="line-sys">// Napisz skrypt i kliknij URUCHOM</span>
+<span class="cursor-line"></span></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <button class="btn btn-run" onclick="runScript()">&#9654; URUCHOM</button>
+  <button class="btn" onclick="resetEditor()">&#8635; RESETUJ</button>
+  <button class="btn" onclick="showHint()">? PODPOWIEDŹ</button>
+  <div class="btn-sep"></div>
+  <span class="status-msg" id="status-msg">GOTOWY</span>
+</div>
+
+<!-- HINT -->
+<div class="hint-box" id="hint-box">
+  <span class="hint-close" onclick="hideHint()">&#x2715;</span>
+  <span id="hint-text"></span>
+</div>
+
+<!-- SUCCESS -->
+<div class="success-overlay" id="success-overlay">
+  <div class="success-box">
+    <div class="success-title">ZALICZONE_</div>
+    <div class="success-msg" id="success-msg"></div>
+    <button class="success-next" id="success-next-btn">NASTĘPNA LEKCJA &#8594;</button>
+  </div>
 </div>
 
 <a href="../pages/study.html" class="back-home" title="Study">
@@ -173,311 +267,477 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 </a>
 
 <script>
-// ── FILESYSTEM ──────────────────────────────
-const D=(ch={})=>({type:'dir',perms:'drwxr-xr-x',children:ch});
-const F=(c='',p='-rw-r--r--')=>({type:'file',perms:p,content:c});
-const FS=D({
-  home:D({student:D({
-    dokumenty:D({
-      'notatki.txt':F('Nauka Linuxa jest spoko.\nINF02 zdamy na pewno!\n'),
-      'zadania.txt':F('zadanie 1: nauczyc sie ls\nzadanie 2: nauczyc sie cd\nzadanie 3: ???\nzadanie 4: profit\n'),
-      'hasla.txt':F('admin:qwerty123\nroot:tajne456\n','-rw-------'),
-    }),
-    skrypty:D(),
-    pobrane:D({'archiwum.tar':F('[dane binarne]')}),
-  })}),
-  etc:D({
-    'hosts':F('127.0.0.1\tlocalhost\n::1\t\tlocalhost\n192.168.1.1\trouter\n'),
-    'passwd':F('root:x:0:0:root:/root:/bin/bash\nstudent:x:1000:1000::/home/student:/bin/bash\n'),
-  }),
-  var:D({log:D({'syslog':F('Jun  3 08:00:01 inf02 systemd: Started.\nJun  3 08:01:00 inf02 CRON: nauka linuxa w toku\n')})}),
-  tmp:D(),
-});
-
-// ── STATE ──────────────────────────────────
-const S={cwd:'/home/student',hist:[],hIdx:-1,lidx:0,done:new Set(),attempts:0};
-try{const sv=JSON.parse(localStorage.getItem('hl-bash')||'{}');if(sv.done)sv.done.forEach(i=>S.done.add(i));if(typeof sv.lidx==='number')S.lidx=sv.lidx}catch(e){}
-function save(){localStorage.setItem('hl-bash',JSON.stringify({done:[...S.done],lidx:S.lidx}))}
-
-// ── PATH UTILS ─────────────────────────────
-function resolve(p){
-  if(!p)return S.cwd;if(p==='~')return'/home/student';
-  if(p.startsWith('~/'))p='/home/student'+p.slice(1);
-  if(!p.startsWith('/'))p=S.cwd+'/'+p;
-  const pts=p.split('/').filter(Boolean),r=[];
-  for(const pt of pts){if(pt==='.')continue;if(pt==='..')r.pop();else r.push(pt)}
-  return'/'+r.join('/');
-}
-function node(abs){
-  if(abs==='/')return FS;
-  const pts=abs.split('/').filter(Boolean);let n=FS;
-  for(const pt of pts){if(!n.children||!n.children[pt])return null;n=n.children[pt]}
-  return n;
-}
-function parent(abs){
-  const pts=abs.split('/').filter(Boolean);if(!pts.length)return null;
-  const pp='/'+pts.slice(0,-1).join('/');
-  return{n:node(pp||'/'),name:pts[pts.length-1],path:pp||'/'};
-}
-function disp(abs){
-  if(abs==='/home/student')return'~';
-  if(abs.startsWith('/home/student/'))return'~'+abs.slice('/home/student'.length);
-  return abs;
-}
-
-// ── LESSONS ───────────────────────────────
-const LL=[
-  {id:1,cmd:'pwd',title:'Gdzie jestem?',
-   theory:'pwd (print working directory) pokazuje pełną ścieżkę katalogu, w którym się teraz znajdujesz. Zawsze zacznij od sprawdzenia gdzie jesteś.',
-   ex:'$ pwd\n/home/student',task:'Sprawdź w jakim katalogu się teraz znajdujesz.',hint:'Wpisz: pwd',
-   check:({cmd})=>cmd==='pwd'},
-  {id:2,cmd:'ls',title:'Co tu mamy?',
-   theory:'ls (list) wyświetla zawartość katalogu. Bez argumentu pokazuje bieżący katalog.',
-   ex:'$ ls\ndokumenty  pobrane  skrypty',task:'Wylistuj zawartość bieżącego katalogu.',hint:'Wpisz: ls',
-   check:({cmd})=>cmd==='ls'},
-  {id:3,cmd:'ls -la',title:'Szczegółowa lista',
-   theory:'ls -l pokazuje szczegóły (uprawnienia, rozmiar). ls -a pokazuje ukryte pliki (zaczynają się od .). Razem: ls -la.',
-   ex:'$ ls -la\ndrwxr-xr-x 3 student student  Jun 3 dokumenty\n-rw-r--r-- 1 student student  Jun 3 notatki.txt',
-   task:'Wyświetl szczegółową listę z ukrytymi plikami.',hint:'Wpisz: ls -la',
-   check:({cmd,args})=>{const f=args.join('');return cmd==='ls'&&(f.includes('la')||f.includes('al')||(f.includes('l')&&f.includes('a')))}},
-  {id:4,cmd:'cd',title:'Zmień katalog',
-   theory:'cd (change directory) przechodzi do podanego katalogu. cd .. wraca poziom wyżej. cd ~ wraca do katalogu domowego.',
-   ex:'$ cd dokumenty\n$ pwd\n/home/student/dokumenty',task:'Przejdź do folderu dokumenty.',hint:'Wpisz: cd dokumenty',
-   check:({cmd})=>cmd==='cd'&&S.cwd.includes('dokumenty')},
-  {id:5,cmd:'mkdir',title:'Utwórz folder',
-   theory:'mkdir (make directory) tworzy nowy katalog. mkdir -p tworzy całą ścieżkę naraz.',
-   ex:'$ mkdir projekty\n$ ls\ndokumenty  pobrane  projekty  skrypty',
-   task:'Utwórz nowy folder o nazwie projekty.',hint:'Wpisz: mkdir projekty',
-   check:({cmd,args})=>{if(cmd!=='mkdir')return false;const n=args.find(a=>!a.startsWith('-'));return n&&node(resolve(n))!==null}},
-  {id:6,cmd:'touch',title:'Utwórz plik',
-   theory:'touch tworzy pusty plik lub aktualizuje datę modyfikacji istniejącego.',
-   ex:'$ touch test.txt\n$ ls\nnotatki.txt  test.txt  zadania.txt',
-   task:'Utwórz pusty plik o nazwie test.txt.',hint:'Wpisz: touch test.txt',
-   check:({cmd,args})=>{if(cmd!=='touch')return false;const n=args[0];return n&&node(resolve(n))!==null}},
-  {id:7,cmd:'cat',title:'Czytaj plik',
-   theory:'cat wyświetla zawartość pliku. Szybki podgląd bez otwierania edytora.',
-   ex:'$ cat notatki.txt\nNauka Linuxa jest spoko.\nINF02 zdamy na pewno!',
-   task:'Wyświetl zawartość dowolnego pliku (np. cat notatki.txt w folderze dokumenty).',hint:'Wpisz: cat notatki.txt',
-   check:({cmd,args})=>{if(cmd!=='cat')return false;const n=args[0];return n&&node(resolve(n))?.type==='file'}},
-  {id:8,cmd:'echo',title:'Wypisz tekst',
-   theory:'echo wypisuje tekst na ekran. W skryptach używany do wyświetlania komunikatów i wartości zmiennych.',
-   ex:'$ echo "Witaj INF02!"\nWitaj INF02!',
-   task:'Wypisz dowolny tekst używając komendy echo.',hint:'Wpisz: echo TwojaWiadomosc',
-   check:({cmd})=>cmd==='echo'},
-  {id:9,cmd:'echo >',title:'Zapisz do pliku',
-   theory:'> przekierowuje wyjście do pliku (nadpisuje). >> dopisuje na koniec. Jeden z najważniejszych operatorów shellu.',
-   ex:'$ echo "moj tekst" > wynik.txt\n$ cat wynik.txt\nmoj tekst',
-   task:'Zapisz dowolny tekst do nowego pliku wynik.txt używając echo i >.',hint:'Wpisz: echo "tekst" > wynik.txt',
-   check:({cmd,raw})=>cmd==='echo'&&raw.includes('>')&&node(resolve('wynik.txt'))!==null},
-  {id:10,cmd:'cp',title:'Kopiuj plik',
-   theory:'cp (copy) kopiuje pliki. cp -r kopiuje katalogi rekurencyjnie.',
-   ex:'$ cp notatki.txt kopia.txt\n$ ls\nkopia.txt  notatki.txt  zadania.txt',
-   task:'Skopiuj dowolny plik używając cp.',hint:'Wpisz: cp notatki.txt kopia.txt',
-   check:({cmd,args})=>{if(cmd!=='cp')return false;const pts=args.filter(a=>!a.startsWith('-'));return pts.length>=2&&node(resolve(pts[1]))!==null}},
-  {id:11,cmd:'mv',title:'Przenieś / zmień nazwę',
-   theory:'mv (move) przenosi pliki lub zmienia ich nazwy. Jedyne polecenie do zmiany nazwy w Linuxie.',
-   ex:'$ mv kopia.txt backup.txt\n$ ls\nbackup.txt  notatki.txt',
-   task:'Zmień nazwę dowolnego pliku używając mv.',hint:'Wpisz: mv kopia.txt backup.txt',
-   check:({cmd,args})=>{if(cmd!=='mv')return false;const pts=args.filter(a=>!a.startsWith('-'));return pts.length>=2&&node(resolve(pts[1]))!==null}},
-  {id:12,cmd:'rm',title:'Usuń plik',
-   theory:'rm (remove) usuwa pliki. rm -r usuwa katalogi. UWAGA: Linux nie ma kosza — raz usunięte = znikło.',
-   ex:'$ rm backup.txt\n$ ls\nnotatki.txt  zadania.txt',
-   task:'Usuń dowolny plik komendą rm.',hint:'Wpisz: rm backup.txt',
-   check:({cmd,args})=>{if(cmd!=='rm')return false;const n=args.find(a=>!a.startsWith('-'));return n&&node(resolve(n))===null}},
-  {id:13,cmd:'grep',title:'Szukaj w plikach',
-   theory:'grep szuka wzorca w plikach. grep -i ignoruje wielkość liter. grep -r przeszukuje rekurencyjnie.',
-   ex:'$ grep "nauka" zadania.txt\nzadanie 1: nauczyc sie ls',
-   task:'Użyj grep żeby znaleźć tekst w dowolnym pliku.',hint:'Wpisz: grep nauka zadania.txt',
-   check:({cmd,args})=>{if(cmd!=='grep')return false;const f=args.find(a=>!a.startsWith('-')&&args.indexOf(a)>0);return f!==undefined}},
-  {id:14,cmd:'|',title:'Potoki (pipe)',
-   theory:'| (pipe) łączy komendy — wyjście pierwszej staje się wejściem drugiej. Niezbędne do filtrowania tekstu.',
-   ex:'$ ls | grep .txt\nnotatki.txt\nzadania.txt',
-   task:'Połącz dwie komendy operatorem | (np. ls | grep .txt).',hint:'Wpisz: ls | grep .txt',
-   check:({raw})=>raw.includes('|')},
-  {id:15,cmd:'chmod',title:'Uprawnienia pliku',
-   theory:'chmod zmienia uprawnienia. chmod +x dodaje prawo do wykonania. chmod 755 = rwxr-xr-x. r=4, w=2, x=1.',
-   ex:'$ chmod +x skrypt.sh\n$ ls -l\n-rwxr-xr-x 1 student student skrypt.sh',
-   task:'Nadaj dowolnemu plikowi uprawnienia do wykonania używając chmod +x.',hint:'Wpisz: chmod +x notatki.txt',
-   check:({cmd})=>cmd==='chmod'},
+// ─── LESSONS ───────────────────────────────────────────────────────────
+const LESSONS = [
+  {
+    title: 'LEKCJA 1 — HELLO WORLD',
+    task: 'Napisz swój pierwszy skrypt Bash. Każdy skrypt zaczyna się od <code>#!/bin/bash</code> (shebang). Użyj <code>echo</code> żeby wypisać dokładnie: <b>Hello, World!</b>',
+    starter: '#!/bin/bash\n# Twój pierwszy skrypt Bash\n\n',
+    hint: '<b>#!/bin/bash</b> — shebang, mówi systemowi jaki interpreter użyć\n<b>echo "tekst"</b> — wypisuje tekst na ekran\n\nPrzykład:\n<b>echo "Hello, World!"</b>',
+    check: (code, out) => out.includes('Hello, World!'),
+    ok: 'echo wypisuje tekst. Shebang #!/bin/bash to obowiązkowy nagłówek każdego skryptu Bash.'
+  },
+  {
+    title: 'LEKCJA 2 — ZMIENNE',
+    task: 'Utwórz zmienną <code>imie="Jan"</code> i wypisz ją: <code>echo "Cześć, $imie!"</code>. Zmienne tworzymy bez spacji wokół znaku =.',
+    starter: '#!/bin/bash\n\nimie="Jan"\n\necho "Cześć, $imie!"\n',
+    hint: '<b>imie="Jan"</b> — przypisanie (bez spacji!)\n<b>$imie</b> lub <b>${imie}</b> — odczyt zmiennej\n\nW podwójnych cudzysłowach <b>" "</b> zmienne są rozwijane.\nW pojedynczych <b>\' \'</b> — nie są.',
+    check: (code, out) => /Cześć,\s*\S+/.test(out) || out.includes('Czesc'),
+    ok: 'Zmienne w Bash: przypisujesz przez VAR=wartość (bez spacji), odczytujesz przez $VAR.'
+  },
+  {
+    title: 'LEKCJA 3 — ARYTMETYKA',
+    task: 'Utwórz zmienne <code>a=10</code> i <code>b=3</code>. Wypisz wyniki:\n<code>echo "Suma: $((a + b))"</code>\n<code>echo "Reszta: $((a % b))"</code>',
+    starter: '#!/bin/bash\n\na=10\nb=3\n\necho "Suma: $((a + b))"\necho "Iloczyn: $((a * b))"\necho "Reszta: $((a % b))"\n',
+    hint: '<b>$(( wyrażenie ))</b> — obliczenia matematyczne\n\nOperatory: <b>+ - * / %</b>\n\nPrzykład:\n<b>echo "$((10 / 3))"</b>   # 3\n<b>echo "$((10 % 3))"</b>  # 1',
+    check: (code, out) => out.includes('Suma:') && out.includes('13'),
+    ok: 'Arytmetyka w Bash: $(( )). Działa z +, -, *, /, % (modulo). Wynik zawsze całkowity.'
+  },
+  {
+    title: 'LEKCJA 4 — WARUNEK IF',
+    task: 'Sprawdź czy liczba jest większa od 10. Struktura:\n<code>if [ $x -gt 10 ]; then</code>\n<code>  echo "..."</code>\n<code>else</code>\n<code>  echo "..."</code>\n<code>fi</code>',
+    starter: '#!/bin/bash\n\nx=15\n\nif [ $x -gt 10 ]; then\n  echo "Duża liczba"\nelse\n  echo "Mała liczba"\nfi\n',
+    hint: 'Operatory porównania liczb:\n<b>-gt</b> &gt; | <b>-lt</b> &lt; | <b>-eq</b> == | <b>-ne</b> !=\n<b>-ge</b> &gt;= | <b>-le</b> &lt;=\n\n⚠ Spacje wewnątrz [ ] są OBOWIĄZKOWE!\n[ $x -gt 10 ] ✓\n[$x -gt 10] ✗',
+    check: (code, out) => out.includes('Duża liczba') || out.includes('Mała liczba'),
+    ok: 'Warunek if: [ ] to test, spacje wewnątrz wymagane. Kończymy blokiem fi.'
+  },
+  {
+    title: 'LEKCJA 5 — PĘTLA FOR (LISTA)',
+    task: 'Wypisz owoce z listy używając pętli for:\n<code>for owoc in jabłko gruszka śliwka; do</code>\n<code>  echo "Owoc: $owoc"</code>\n<code>done</code>',
+    starter: '#!/bin/bash\n\nfor owoc in jablko gruszka sliwka; do\n  echo "Owoc: $owoc"\ndone\n',
+    hint: '<b>for zmienna in lista; do</b>\n  polecenia\n<b>done</b>\n\nKażdy element trafia do zmiennej po kolei.\n\n<b>for plik in *.txt; do\n  echo $plik\ndone</b>',
+    check: (code, out) => ['jablko','gruszka','sliwka'].every(c => out.includes(c)) || ['jabłko','gruszka','śliwka'].every(c => out.includes(c)),
+    ok: 'Pętla for iteruje po liście elementów. Każdy element trafia do zmiennej (tu: $owoc).'
+  },
+  {
+    title: 'LEKCJA 6 — PĘTLA FOR (ZAKRES)',
+    task: 'Wypisz liczby od 1 do 5 używając zakresu <code>{1..5}</code>. Format: <b>Liczba: N</b> dla każdej.',
+    starter: '#!/bin/bash\n\nfor i in {1..5}; do\n  echo "Liczba: $i"\ndone\n',
+    hint: '<b>{1..10}</b> — zakres od 1 do 10\n<b>{1..10..2}</b> — co 2 (1,3,5,7,9)\n<b>{a..z}</b> — zakres liter\n\nAlternatywnie:\n<b>for i in $(seq 1 5); do</b>',
+    check: (code, out) => [1,2,3,4,5].every(n => out.includes('Liczba: '+n)),
+    ok: '{1..N} to wygodny zakres numeryczny. Pętla for to jedno z najczęstszych narzędzi w Bash!'
+  },
+  {
+    title: 'LEKCJA 7 — PĘTLA WHILE',
+    task: 'Wypisz odliczanie od 5 do 1, a potem <b>START!</b>. Używaj <code>((n--))</code> do zmniejszania zmiennej.',
+    starter: '#!/bin/bash\n\nn=5\n\nwhile [ $n -gt 0 ]; do\n  echo "Odliczanie: $n"\n  ((n--))\ndone\n\necho "START!"\n',
+    hint: '<b>while [ warunek ]; do</b>\n  polecenia\n<b>done</b>\n\n<b>((n--))</b> zmniejsza n o 1\n<b>((n++))</b> zwiększa n o 1\n<b>((n+=5))</b> dodaje 5\n\n⚠ Pamiętaj o zmianie warunku!',
+    check: (code, out) => out.includes('START!') && out.includes('Odliczanie: 5') && out.includes('Odliczanie: 1'),
+    ok: 'Pętla while działa dopóki warunek jest true. Zawsze dbaj o zmianę warunku, żeby nie było pętli nieskończonej!'
+  },
+  {
+    title: 'LEKCJA 8 — FUNKCJE',
+    task: 'Napisz funkcję <code>powitanie()</code> która przyjmuje argument i wypisuje <b>Cześć, [argument]!</b>. Wywołaj ją dwukrotnie z różnymi imionami.',
+    starter: '#!/bin/bash\n\npowitanie() {\n  echo "Cześć, $1!"\n}\n\npowitanie "Anna"\npowitanie "Marek"\n',
+    hint: '<b>nazwa() {</b>\n  polecenia\n<b>}</b>\n\nParametry funkcji:\n<b>$1</b> — pierwszy argument\n<b>$2</b> — drugi argument\n<b>$@</b> — wszystkie argumenty\n\nWywołanie: <b>nazwa argument1 argument2</b>',
+    check: (code, out) => {
+      const lines = out.trim().split('\n').filter(l => l.includes('Cześć'));
+      return lines.length >= 2;
+    },
+    ok: 'Funkcje: definiujesz przez nazwa() { ... }, parametry to $1, $2... Wywołujesz podając nazwę i argumenty.'
+  },
+  {
+    title: 'LEKCJA 9 — ARGUMENTY SKRYPTU',
+    task: 'Skrypt przyjmuje argumenty z wiersza poleceń: <code>$1</code>, <code>$2</code>, <code>$#</code> (liczba), <code>$@</code> (wszystkie). Wypisz je wszystkie.',
+    starter: '#!/bin/bash\n\necho "Skrypt: $0"\necho "Liczba argumentów: $#"\necho "Pierwszy: $1"\necho "Drugi: $2"\necho "Wszystkie: $@"\n',
+    hint: '<b>$0</b> — nazwa skryptu\n<b>$1, $2...</b> — kolejne argumenty\n<b>$#</b> — liczba argumentów\n<b>$@</b> — wszystkie argumenty\n\nUruchomienie:\n<b>./skrypt.sh Jan Kowalski 25</b>\nWtedy $1=Jan, $2=Kowalski, $3=25',
+    check: (code, out) => out.includes('Skrypt:') || out.includes('Liczba argumentów:') || out.includes('Pierwszy:'),
+    ok: 'Argumenty pozycyjne $1..$N, $# to liczba argumentów, $@ to wszystkie. Podstawa elastycznych skryptów!'
+  },
+  {
+    title: 'LEKCJA 10 — SKRYPT KOŃCOWY',
+    task: 'Napisz skrypt z tablicą <code>owoce=("jabłko" "kiwi" "arbuz")</code>. Iteruj po tablicy i dla każdego owocu sprawdź czy jego długość jest większa niż 4 znaki. Wypisz odpowiedź.',
+    starter: '#!/bin/bash\n\nowoce=("jablko" "kiwi" "arbuz" "banan")\n\nfor owoc in "${owoce[@]}"; do\n  dlugosc=${#owoc}\n  if [ $dlugosc -gt 4 ]; then\n    echo "$owoc: długa ($dlugosc)"\n  else\n    echo "$owoc: krótka ($dlugosc)"\n  fi\ndone\n',
+    hint: '<b>tablica=("a" "b" "c")</b> — definicja tablicy\n<b>"${tablica[@]}"</b> — wszystkie elementy\n<b>${#zmienna}</b> — długość stringa\n<b>${#tablica[@]}</b> — liczba elementów\n\nUżywaj cudzysłowów przy "${tablica[@]}" żeby obsłużyć spacje w elementach!',
+    check: (code, out) => (out.includes('długa') || out.includes('krótka')) && (out.includes('jablko') || out.includes('jabłko') || out.includes('kiwi')),
+    ok: 'Brawo! Tablice, pętle, warunki, długość stringa — to solidna podstawa Bash. Jesteś gotowy na egzamin INF02!'
+  }
 ];
 
-// ── COMMANDS ──────────────────────────────
-const SNARKY=['Komenda nieznana. Wpisz "help".','Hmm, nie znam tego. Może literówka?','Linux jest zszokowany. Spróbuj "help".'];
-const snark=()=>SNARKY[Math.floor(Math.random()*SNARKY.length)];
-function parseCmd(raw){const p=raw.trim().split(/\s+/);return{cmd:p[0]||'',args:p.slice(1)}}
+// ─── STATE ─────────────────────────────────────────────────────────────
+let currentLesson = 0;
+let progress = JSON.parse(localStorage.getItem('hl-bash2') || '[]');
 
-function runCmd(raw){
-  if(!raw.trim())return[];
-  const lines=[];
-  const emit=(t,c='out')=>lines.push({t,c});
-  if(raw.includes('|')){
-    const[l,...rp]=raw.split('|');const leftLines=runCmd(l.trim());
-    const rp2=rp.join('|').trim();const{cmd:rc,args:ra}=parseCmd(rp2);
-    if(rc==='grep'){const pat=ra[0]||'';if(!pat){emit('grep: brakuje wzorca','err');return lines}const re=new RegExp(pat,'i');return leftLines.filter(ln=>ln.t&&re.test(ln.t))}
-    if(rc==='wc')return[{t:leftLines.length+' lini(e)',c:'out'}];
-    if(rc==='sort')return leftLines.sort((a,b)=>a.t.localeCompare(b.t));
-    if(rc==='head')return leftLines.slice(0,parseInt(ra[0]||10));
-    if(rc==='tail')return leftLines.slice(-parseInt(ra[0]||10));
-    return leftLines;
-  }
-  let rfile=null,append=false,cmdLine=raw;
-  const am=raw.match(/^(.*?)>>(.*?)$/s);const wm=raw.match(/^(.*?)(?<![>])>(.*?)$/s);
-  if(am){cmdLine=am[1].trim();rfile=am[2].trim();append=true}
-  else if(wm){cmdLine=wm[1].trim();rfile=wm[2].trim()}
-  const{cmd,args}=parseCmd(cmdLine);let cap='';
-  const cemit=(t)=>{if(rfile)cap+=t+'\n';else emit(t)};
-  switch(cmd){
-    case 'pwd':cemit(S.cwd);break;
-    case 'ls':{
-      const fl=args.filter(a=>a.startsWith('-')).join('');
-      const showA=fl.includes('a'),long=fl.includes('l');
-      const pa=args.find(a=>!a.startsWith('-'));const tgt=pa?resolve(pa):S.cwd;
-      const nd=node(tgt);
-      if(!nd){emit(`ls: ${pa}: Brak pliku lub katalogu`,'err');break}
-      if(nd.type==='file'){cemit(tgt.split('/').pop());break}
-      const ent=[];
-      if(showA)ent.push({nm:'.',t:'dir'},{nm:'..',t:'dir'});
-      for(const[nm,ch] of Object.entries(nd.children||{})){if(!showA&&nm.startsWith('.'))continue;ent.push({nm,t:ch.type,pr:ch.perms})}
-      if(long){if(showA)cemit(`total ${ent.length}`);for(const e of ent){const pr=e.pr||(e.t==='dir'?'drwxr-xr-x':'-rw-r--r--');cemit(`${pr} 1 student student ${String(Math.floor(Math.random()*4096+256)).padStart(5)}  Jun  3 08:00 ${e.nm}`)}}
-      else cemit(ent.map(e=>e.t==='dir'?e.nm+'/':e.nm).join('  '));
-      break;
-    }
-    case 'cd':{const tgt=args[0]?resolve(args[0]):'/home/student';const nd=node(tgt);if(!nd){emit(`cd: ${args[0]}: Brak katalogu`,'err');break}if(nd.type!=='dir'){emit(`cd: ${args[0]}: To nie katalog`,'err');break}S.cwd=tgt;break}
-    case 'mkdir':{const nm=args.find(a=>!a.startsWith('-'));if(!nm){emit('mkdir: brakuje nazwy','err');break}const abs=resolve(nm);const{n:par,name:dn}=parent(abs)||{};if(!par){emit(`mkdir: nie można utworzyć ${nm}`,'err');break}if(par.children[dn]){emit(`mkdir: ${nm}: Już istnieje`,'err');break}par.children[dn]=D();break}
-    case 'touch':{const nm=args[0];if(!nm){emit('touch: brakuje nazwy','err');break}const abs=resolve(nm);const{n:par,name:fn}=parent(abs)||{};if(!par){emit(`touch: nie można dotknąć '${nm}'`,'err');break}if(!par.children[fn])par.children[fn]=F('');break}
-    case 'cat':{const nm=args[0];if(!nm){emit('cat: brakuje argumentu','err');break}const abs=resolve(nm);const nd=node(abs);if(!nd){emit(`cat: ${nm}: Brak pliku`,'err');break}if(nd.type==='dir'){emit(`cat: ${nm}: To jest katalog`,'err');break}nd.content.split('\n').forEach(l=>cemit(l));break}
-    case 'echo':{let t=args.join(' ');if((t.startsWith('"')&&t.endsWith('"'))||(t.startsWith("'")&&t.endsWith("'")))t=t.slice(1,-1);cemit(t);break}
-    case 'cp':{const[s,d]=args.filter(a=>!a.startsWith('-'));if(!s||!d){emit('cp: podaj źródło i cel','err');break}const sn=node(resolve(s));if(!sn){emit(`cp: ${s}: Brak pliku`,'err');break}if(sn.type==='dir'&&!args.some(a=>a.includes('r'))){emit(`cp: ${s}: to katalog (użyj -r)`,'err');break}const da=resolve(d);const{n:dp,name:dn}=parent(da)||{};if(!dp){emit(`cp: nie można skopiować do ${d}`,'err');break}dp.children[dn]=JSON.parse(JSON.stringify(sn));break}
-    case 'mv':{const[s,d]=args.filter(a=>!a.startsWith('-'));if(!s||!d){emit('mv: podaj źródło i cel','err');break}const sa=resolve(s);const sn=node(sa);if(!sn){emit(`mv: ${s}: Brak pliku`,'err');break}const{n:sp,name:sn2}=parent(sa)||{};const da=resolve(d);const{n:dp,name:dn}=parent(da)||{};if(!dp){emit(`mv: nie można przenieść do ${d}`,'err');break}dp.children[dn]=sn;delete sp.children[sn2];break}
-    case 'rm':{const nm=args.find(a=>!a.startsWith('-'));if(!nm){emit('rm: brakuje argumentu','err');break}const abs=resolve(nm);const nd=node(abs);if(!nd){emit(`rm: '${nm}': Brak pliku`,'err');break}const recur=args.some(a=>a.includes('r'));if(nd.type==='dir'&&!recur){emit(`rm: '${nm}': to katalog (użyj -r)`,'err');break}const{n:par,name:fn}=parent(abs)||{};delete par.children[fn];break}
-    case 'grep':{const nf=args.filter(a=>!a.startsWith('-'));const[pat,fn]=nf;if(!pat){emit('grep: brakuje wzorca','err');break}if(!fn){emit('grep: brakuje pliku','err');break}const abs=resolve(fn);const nd=node(abs);if(!nd){emit(`grep: ${fn}: Brak pliku`,'err');break}if(nd.type!=='file'){emit(`grep: ${fn}: To katalog`,'err');break}const fl=args.filter(a=>a.startsWith('-')).join('');const re=new RegExp(pat,fl.includes('i')?'i':'');nd.content.split('\n').filter(l=>re.test(l)).forEach(l=>cemit(l));break}
-    case 'chmod':{const fn=args[args.length-1];if(!fn||args.length<2){emit('chmod: podaj tryb i plik','err');break}const abs=resolve(fn);const nd=node(abs);if(!nd){emit(`chmod: '${fn}': Brak pliku`,'err');break}if(args[0].includes('+x'))nd.perms=nd.perms.slice(0,3)+'x'+nd.perms.slice(4,6)+'x'+nd.perms.slice(7,9)+'x';emit(`uprawnienia zmienione dla ${fn}`);break}
-    case 'clear':case 'cls':document.getElementById('term-out').innerHTML='';return[];
-    case 'help':emit('// DOSTĘPNE KOMENDY','sys');emit('   pwd ls cd mkdir touch cat echo cp mv rm grep chmod','out');emit('   lekcja <n>  — skocz do lekcji n','out');emit('   postep      — pokaż postęp','out');break;
-    case 'lekcja':{const n=parseInt(args[0]);if(isNaN(n)||n<1||n>LL.length){emit(`lekcja: podaj numer 1-${LL.length}`,'err');break}S.lidx=n-1;S.attempts=0;save();renderLesson();emit(`// lekcja ${n}: ${LL[n-1].title}`,'sys');break}
-    case 'postep':emit(`// ukończone: ${S.done.size}/${LL.length}`,'sys');LL.forEach((l,i)=>emit(`   [${S.done.has(i)?'x':' '}] ${String(i+1).padStart(2,'0')}. ${l.title}`,S.done.has(i)?'sys':'out'));break;
-    case 'sudo':emit('sudo: Permission denied. Nie jesteś rootem.','err');break;
-    case 'vim':emit('vim otworzony. Jak wyjść? Wpisz :q! lub zrestartuj Polskę.','sys');break;
-    case 'nano':emit('nano: narzędzie dla ludzi z klasą. Tu nie działa.','sys');break;
-    case 'exit':emit('exit: nie wychodzisz stąd dopóki kursu nie skończysz.','err');break;
-    case 'python':case 'python3':emit('Python 3.12.0 (inf02-edition)\n>>> type(egzamin)  # NameError','sys');break;
-    default:if(cmd)emit(`${cmd}: ${snark()}`,'err');
-  }
-  if(rfile&&rfile.trim()){const abs=resolve(rfile.trim());const{n:par,name:fn}=parent(abs)||{};if(par){if(append&&par.children[fn]?.type==='file')par.children[fn].content+=cap;else par.children[fn]=F(cap.replace(/\n$/,''))}}
-  return lines;
-}
+// ─── BASH INTERPRETER ──────────────────────────────────────────────────
+function runBash(code) {
+  const output = [];
+  const env = {};
+  const arrays = {};
+  const funcs = {};
 
-// ── UI ────────────────────────────────────
-const $out=document.getElementById('term-out');
-const $in=document.getElementById('ti');
-const $pp=document.getElementById('pp');
-function print(t,c='out'){const d=document.createElement('div');d.className='ol '+c;d.textContent=t;$out.appendChild(d);$out.scrollTop=$out.scrollHeight}
-function printLines(ls){ls.forEach(l=>print(l.t,l.c||'out'))}
-function updPrompt(){$pp.textContent=disp(S.cwd)}
+  function emit(text, cls) { output.push({text: String(text), cls: cls||'line-out'}); }
+  function emitErr(t) { emit(t, 'line-err'); }
 
-function renderLesson(){
-  const l=LL[S.lidx];if(!l)return;
-  document.getElementById('lbadge').textContent=`LEKCJA ${String(S.lidx+1).padStart(2,'0')}/${LL.length}`;
-  document.getElementById('lp').innerHTML=`
-    <div class="lp-num">LEKCJA ${l.id} / ${LL.length} — ${l.cmd}</div>
-    <div class="lp-title">${l.title}</div>
-    <div class="lp-theory">${l.theory}</div>
-    <div class="lp-ex">${l.ex}</div>
-    <div class="lp-task">${l.task}</div>
-    ${S.attempts>=3?`<div class="lp-hint">${l.hint}</div>`:''}
-  `;
-  document.querySelectorAll('.li').forEach((it,i)=>{
-    it.classList.remove('active','done');
-    if(S.done.has(i))it.classList.add('done');
-    if(i===S.lidx)it.classList.add('active');
-  });
-  const pct=(S.done.size/LL.length*100).toFixed(0);
-  document.getElementById('sb-prog').style.width=pct+'%';
-  document.getElementById('done-cnt').textContent=S.done.size;
-}
-
-function buildSidebar(){
-  const list=document.getElementById('lesson-list');list.innerHTML='';
-  LL.forEach((l,i)=>{
-    const it=document.createElement('div');it.className='li';
-    it.innerHTML=`<span class="li-mark">[${S.done.has(i)?'x':' '}]</span><span class="li-name">${l.id}. ${l.title}</span><span class="li-cmd">${l.cmd}</span>`;
-    it.addEventListener('click',()=>{S.lidx=i;S.attempts=0;save();renderLesson();print(`// lekcja ${i+1}: ${l.title}`,'sys');$in.focus()});
-    list.appendChild(it);
-  });
-}
-
-const KUDOS=['Nieźle jak na kogoś kto dopiero zaczyna.','Mistrz terminala rośnie w siłę!','Egzamin nie będzie wiedział co go uderzyło.','Git! (to też komenda btw).','Root by pochwalił.'];
-function kudos(){return KUDOS[Math.floor(Math.random()*KUDOS.length)]}
-
-function checkLesson(raw,cmd,args){
-  const l=LL[S.lidx];if(!l)return;
-  if(l.check({cmd,args,raw,state:S})){
-    S.done.add(S.lidx);S.attempts=0;save();
-    // update sidebar marks
-    document.querySelectorAll('.li').forEach((it,i)=>{
-      const mark=it.querySelector('.li-mark');if(mark&&S.done.has(i))mark.textContent='[x]';
+  function expand(s) {
+    s = String(s);
+    // ${#var} length
+    s = s.replace(/\$\{#(\w+)\}/g, (_, v) => (env[v]||'').length);
+    // ${array[@]}
+    s = s.replace(/\$\{(\w+)\[@\]\}/g, (_, v) => (arrays[v]||[]).join(' '));
+    // ${#array[@]}
+    s = s.replace(/\$\{#(\w+)\[@\]\}/g, (_, v) => (arrays[v]||[]).length);
+    // $(( expr ))
+    s = s.replace(/\$\(\(([^)]+)\)\)/g, (_, expr) => {
+      try { return String(evalExpr(expr)); } catch(e){ return '0'; }
     });
-    print('');print('// ZALICZONE — '+kudos(),'ok');
-    if(S.lidx+1<LL.length){S.lidx++;setTimeout(()=>{print('');print(`// lekcja ${S.lidx+1}: ${LL[S.lidx].title}`,'sys');renderLesson()},500)}
-    else setTimeout(showDone,900);
-  } else {S.attempts++;if(S.attempts>=3)renderLesson()}
+    // $# $@ $0
+    s = s.replace(/\$#/g, env['#']||'0');
+    s = s.replace(/\$@/g, env['@']||'');
+    s = s.replace(/\$0/g, 'skrypt.sh');
+    // ${var}
+    s = s.replace(/\$\{(\w+)\}/g, (_, v) => env[v]!==undefined ? env[v] : '');
+    // $var (word chars only)
+    s = s.replace(/\$([a-zA-Z_]\w*|\d)/g, (_, v) => env[v]!==undefined ? env[v] : '');
+    return s;
+  }
+
+  function evalExpr(expr) {
+    const e = expr.replace(/([a-zA-Z_]\w*)/g, v => {
+      const n = Number(env[v]);
+      return isNaN(n) ? '0' : String(n);
+    });
+    return Function('"use strict";return ('+e+')')();
+  }
+
+  function stripQuotes(s) {
+    s = s.trim();
+    if ((s[0]==='"'&&s[s.length-1]==='"')||(s[0]==="'"&&s[s.length-1]==="'"))
+      return s.slice(1,-1);
+    return s;
+  }
+
+  function tokenize(line) {
+    const tokens = []; let cur='', inD=false, inS=false;
+    for (let c of line) {
+      if (c==='"' && !inS){inD=!inD;continue;}
+      if (c==="'" && !inD){inS=!inS;continue;}
+      if (c===' ' && !inD && !inS){if(cur){tokens.push(cur);cur='';} continue;}
+      cur+=c;
+    }
+    if(cur) tokens.push(cur);
+    return tokens;
+  }
+
+  function parseArrayLit(s) {
+    s = s.trim();
+    if(!s.startsWith('(')) return [];
+    const inner = s.slice(1, s.lastIndexOf(')'));
+    const items=[]; let cur='', inQ=false, qt='';
+    for(let c of inner) {
+      if((c==='"'||c==="'")&&!inQ){inQ=true;qt=c;continue;}
+      if(c===qt&&inQ){inQ=false;items.push(cur);cur='';continue;}
+      if(c===' '&&!inQ){if(cur){items.push(cur);cur='';} continue;}
+      cur+=c;
+    }
+    if(cur) items.push(cur);
+    return items;
+  }
+
+  function evalCond(s) {
+    s = s.trim();
+    if(s.startsWith('[')&&s.endsWith(']')) s=s.slice(1,-1).trim();
+    const numOp = s.match(/^(.+?)\s+(-gt|-lt|-eq|-ne|-ge|-le)\s+(.+)$/);
+    if(numOp) {
+      const a=Number(expand(numOp[1].trim())), b=Number(expand(numOp[3].trim())), op=numOp[2];
+      return op==='-gt'?a>b:op==='-lt'?a<b:op==='-eq'?a===b:op==='-ne'?a!==b:op==='-ge'?a>=b:a<=b;
+    }
+    const strOp = s.match(/^(.+?)\s+(==|!=)\s+(.+)$/);
+    if(strOp) {
+      const a=expand(stripQuotes(strOp[1].trim())), b=expand(stripQuotes(strOp[3].trim()));
+      return strOp[2]==='=='?a===b:a!==b;
+    }
+    if(s.startsWith('-z ')) return !expand(stripQuotes(s.slice(3).trim()));
+    if(s.startsWith('-n ')) return !!expand(stripQuotes(s.slice(3).trim()));
+    return false;
+  }
+
+  function evalArith(expr) {
+    const postInc=expr.match(/^(\w+)\+\+$/);
+    if(postInc){env[postInc[1]]=String(Number(env[postInc[1]]||0)+1);return;}
+    const postDec=expr.match(/^(\w+)--$/);
+    if(postDec){env[postDec[1]]=String(Number(env[postDec[1]]||0)-1);return;}
+    const comp=expr.match(/^(\w+)([+\-*\/])=(.+)$/);
+    if(comp){
+      const cur=Number(env[comp[1]]||0),rhs=Number(expand(comp[3]));
+      const op=comp[2];
+      env[comp[1]]=String(op==='+'?cur+rhs:op==='-'?cur-rhs:op==='*'?cur*rhs:Math.floor(cur/rhs));
+      return;
+    }
+    try{evalExpr(expr);}catch(e){}
+  }
+
+  function execBlock(lines, start, end) {
+    let i=start;
+    while(i<=end&&i<lines.length) {
+      const raw=lines[i], t=raw.trim();
+      if(!t||t.startsWith('#')||t==='#!/bin/bash'){i++;continue;}
+
+      if(t.startsWith('if ')||t==='if ['){
+        const r=handleIf(lines,i,end);i=r;continue;
+      }
+      if(t.startsWith('for ')){const r=handleFor(lines,i,end);i=r;continue;}
+      if(t.startsWith('while ')){const r=handleWhile(lines,i,end);i=r;continue;}
+      if(/^\w+\s*\(\)\s*\{?$/.test(t)||/^\w+\(\)\{$/.test(t)){const r=handleFuncDef(lines,i,end);i=r;continue;}
+      if(t==='done'||t==='fi'||t==='else'||t==='}'||t==='{'){i++;continue;}
+      if(t.startsWith('((')){
+        const inner=t.slice(2,t.length-2).trim();
+        evalArith(inner);i++;continue;
+      }
+      // assignment (including array)
+      const asgn=t.match(/^([a-zA-Z_]\w*)=(.*)$/);
+      if(asgn&&!t.startsWith('echo')){
+        const nm=asgn[1], rhs=asgn[2].trim();
+        if(rhs.startsWith('(')){
+          arrays[nm]=parseArrayLit(rhs);
+          env[nm]=arrays[nm].join(' ');
+        } else {
+          env[nm]=expand(stripQuotes(rhs));
+        }
+        i++;continue;
+      }
+      if(t.startsWith('echo')){
+        const rest=t.slice(4).trim();
+        // handle -n flag
+        const noNewline=rest.startsWith('-n ');
+        const txt=expand(stripQuotes(noNewline?rest.slice(3):rest));
+        emit(txt);i++;continue;
+      }
+      if(t.startsWith('printf ')){
+        emit(expand(stripQuotes(t.slice(7))).replace(/\\n/g,'\n'));i++;continue;
+      }
+      // function call
+      const parts=tokenize(t);
+      if(funcs[parts[0]]){
+        const args=parts.slice(1).map(a=>expand(stripQuotes(a)));
+        const saved={};
+        args.forEach((a,idx)=>{saved[idx+1]=env[idx+1];env[String(idx+1)]=a;});
+        saved['#']=env['#'];saved['@']=env['@'];
+        env['#']=String(args.length);env['@']=args.join(' ');
+        execBlock(funcs[parts[0]],0,funcs[parts[0]].length-1);
+        args.forEach((_,idx)=>{
+          if(saved[idx+1]!==undefined)env[String(idx+1)]=saved[idx+1];
+          else delete env[String(idx+1)];
+        });
+        if(saved['#']!==undefined)env['#']=saved['#'];
+        if(saved['@']!==undefined)env['@']=saved['@'];
+        i++;continue;
+      }
+      if(t.startsWith('read ')){const v=t.split(' ')[1];if(v)env[v]=env[v]||'(input)';i++;continue;}
+      // skip unknown
+      i++;
+    }
+  }
+
+  function handleFuncDef(lines, startIdx, endIdx) {
+    const h=lines[startIdx].trim();
+    const nm=h.match(/^(\w+)/)[1];
+    let body=[],depth=h.includes('{')?1:0,i=startIdx+(depth>0?1:0);
+    if(depth===0){i=startIdx+1;}
+    while(i<=endIdx){
+      const t2=lines[i].trim();
+      if(t2==='{'){depth++;i++;continue;}
+      if(t2==='}'){depth--;if(depth<=0){i++;break;}}
+      if(depth>0)body.push(lines[i]);
+      i++;
+    }
+    funcs[nm]=body;
+    return i;
+  }
+
+  function handleIf(lines, startIdx, endIdx) {
+    const ifLine=lines[startIdx].trim();
+    let cond=ifLine.replace(/^if\s+/,'').replace(/;\s*then$/,'').replace(/;$/,'').trim();
+    let thenL=[],elseL=[],inElse=false,depth=1,i=startIdx+1;
+    while(i<=endIdx){
+      const t=lines[i].trim();
+      if(t.startsWith('if '))depth++;
+      if(t==='fi'){depth--;if(depth===0){i++;break;}}
+      if(depth===1&&(t==='else'||t.startsWith('elif '))){inElse=true;i++;continue;}
+      (inElse?elseL:thenL).push(lines[i]);
+      i++;
+    }
+    evalCond(cond)?execBlock(thenL,0,thenL.length-1):execBlock(elseL,0,elseL.length-1);
+    return i;
+  }
+
+  function handleFor(lines, startIdx, endIdx) {
+    const fLine=lines[startIdx].trim();
+    const m=fLine.match(/^for\s+(\w+)\s+in\s+(.+?)(?:;\s*do)?$/);
+    if(!m)return startIdx+1;
+    const varN=m[1];let listStr=m[2].trim().replace(/;\s*do$/,'').trim();
+    let items=[];
+    const range=listStr.match(/^\{(\d+)\.\.(\d+)(?:\.\.(\d+))?\}$/);
+    if(range){
+      const from=parseInt(range[1]),to=parseInt(range[2]),step=range[3]?parseInt(range[3]):1;
+      for(let n=from;n<=to;n+=step)items.push(String(n));
+    } else if(listStr.includes('@]}')){
+      const an=listStr.match(/\$\{?(\w+)\[@\]\}?/)?.[1];
+      if(an&&arrays[an])items=[...arrays[an]];
+    } else {
+      items=expand(listStr).split(/\s+/).filter(Boolean).map(s=>stripQuotes(s));
+    }
+    let body=[],depth=1,i=startIdx+1;
+    while(i<=endIdx){
+      const t=lines[i].trim();
+      if(t.startsWith('for ')||t.startsWith('while '))depth++;
+      if(t==='done'){depth--;if(depth===0){i++;break;}}
+      body.push(lines[i]);i++;
+    }
+    for(const item of items){env[varN]=item;execBlock(body,0,body.length-1);}
+    return i;
+  }
+
+  function handleWhile(lines, startIdx, endIdx) {
+    const wLine=lines[startIdx].trim();
+    const m=wLine.match(/^while\s+(.+?)(?:;\s*do)?$/);
+    if(!m)return startIdx+1;
+    let cond=m[1].trim().replace(/;\s*do$/,'').trim();
+    let body=[],depth=1,i=startIdx+1;
+    while(i<=endIdx){
+      const t=lines[i].trim();
+      if(t.startsWith('while ')||t.startsWith('for '))depth++;
+      if(t==='done'){depth--;if(depth===0){i++;break;}}
+      body.push(lines[i]);i++;
+    }
+    let guard=0;
+    while(evalCond(cond)&&guard++<300){execBlock(body,0,body.length-1);}
+    return i;
+  }
+
+  const scriptLines=code.split('\n');
+  execBlock(scriptLines,0,scriptLines.length-1);
+  return output;
 }
 
-const DONE_ART=`
- ██████╗  ██████╗ ███╗   ██╗███████╗
- ██╔══██╗██╔═══██╗████╗  ██║██╔════╝
- ██║  ██║██║   ██║██╔██╗ ██║█████╗
- ██║  ██║██║   ██║██║╚██╗██║██╔══╝
- ██████╔╝╚██████╔╝██║ ╚████║███████╗
- ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝`.trim();
-function showDone(){document.getElementById('done-art').textContent=DONE_ART;document.getElementById('done-screen').style.display='flex'}
+// ─── UI ────────────────────────────────────────────────────────────────
+const editorEl = document.getElementById('editor');
+const outputEl = document.getElementById('output');
+const lineNumsEl = document.getElementById('line-nums');
+const progressFill = document.getElementById('progress-fill');
+const lessonCounter = document.getElementById('lesson-counter');
+const statusMsg = document.getElementById('status-msg');
 
-$in.addEventListener('keydown',e=>{
-  if(e.key==='Enter'){
-    const raw=$in.value.trim();$in.value='';if(!raw)return;
-    S.hist.unshift(raw);S.hIdx=-1;
-    print(`student@inf02:${disp(S.cwd)}$ ${raw}`,'cmd');
-    const cmdLine=raw.split('|')[0].split(/>>?/)[0].trim();
-    const{cmd,args}=parseCmd(cmdLine);
-    printLines(runCmd(raw));updPrompt();checkLesson(raw,cmd,args);
-    $out.scrollTop=$out.scrollHeight;
-  }
-  if(e.key==='ArrowUp'){e.preventDefault();S.hIdx=Math.min(S.hIdx+1,S.hist.length-1);if(S.hist[S.hIdx])$in.value=S.hist[S.hIdx]}
-  if(e.key==='ArrowDown'){e.preventDefault();S.hIdx=Math.max(S.hIdx-1,-1);$in.value=S.hIdx>=0?S.hist[S.hIdx]:''}
+function updateLineNums() {
+  const n = editorEl.value.split('\n').length;
+  let html = '';
+  for(let i=1;i<=n;i++) html += `<div>${i}</div>`;
+  lineNumsEl.innerHTML = html;
+  lineNumsEl.scrollTop = editorEl.scrollTop;
+}
+
+editorEl.addEventListener('input', updateLineNums);
+editorEl.addEventListener('scroll', () => { lineNumsEl.scrollTop = editorEl.scrollTop; });
+editorEl.addEventListener('keydown', e => {
   if(e.key==='Tab'){
-    e.preventDefault();const val=$in.value,pts=val.split(' '),last=pts[pts.length-1];if(!last)return;
-    const nd=node(S.cwd);if(!nd?.children)return;
-    const m=Object.keys(nd.children).filter(k=>k.startsWith(last));
-    if(m.length===1){pts[pts.length-1]=m[0]+(node(resolve(m[0]))?.type==='dir'?'/':'');$in.value=pts.join(' ')}
-    else if(m.length>1)print(m.join('  '),'sys');
+    e.preventDefault();
+    const s=editorEl.selectionStart, v=editorEl.value;
+    editorEl.value=v.slice(0,s)+'  '+v.slice(editorEl.selectionEnd);
+    editorEl.selectionStart=editorEl.selectionEnd=s+2;
+    updateLineNums();
   }
 });
-document.querySelector('.term-wrap').addEventListener('click',()=>$in.focus());
 
-const BOOT_ART=`
-  ██╗     ██╗███╗   ██╗██╗   ██╗██╗  ██╗
-  ██║     ██║████╗  ██║██║   ██║╚██╗██╔╝
-  ██║     ██║██╔██╗ ██║██║   ██║ ╚███╔╝
-  ██║     ██║██║╚██╗██║██║   ██║ ██╔██╗
-  ███████╗██║██║ ╚████║╚██████╔╝██╔╝ ██╗
-  ╚══════╝╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝
-         B A S H   K U R S   I N F 0 2`.trim();
-
-async function boot(){
-  document.getElementById('boot-art').textContent=BOOT_ART;
-  const msg=document.getElementById('boot-msg');const bar=document.getElementById('boot-bar');
-  const steps=[[12,'INICJALIZACJA JADRA...'],[30,'MONTOWANIE SYSTEMU PLIKOW...'],[55,'URUCHAMIANIE USLUG...'],[80,'LOGOWANIE JAKO STUDENT...'],[100,'SYSTEM GOTOWY']];
-  for(const[p,m]of steps){msg.textContent=m;bar.style.width=p+'%';await new Promise(r=>setTimeout(r,270))}
-  await new Promise(r=>setTimeout(r,160));
-  document.getElementById('boot').style.display='none';
-  document.getElementById('app').style.display='flex';
-  buildSidebar();renderLesson();updPrompt();
-  print('// Linux Bash — kurs INF02','sys');
-  print(`// ${LL.length} lekcji. Wpisz "help" po listę komend.`,'sys');print('');
-  print(`// lekcja 1: ${LL[S.lidx].title}`,'sys');
-  $in.focus();
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-boot();
+
+function setStatus(msg, cls) {
+  statusMsg.textContent = msg;
+  statusMsg.className = 'status-msg'+(cls?' '+cls:'');
+}
+
+function goLesson(n) {
+  if(n<0||n>=LESSONS.length) return;
+  currentLesson=n;
+  loadLesson();
+}
+
+function loadLesson() {
+  const L=LESSONS[currentLesson];
+  document.getElementById('lesson-title').textContent=L.title;
+  document.getElementById('lesson-task').innerHTML=L.task;
+  editorEl.value=L.starter;
+  updateLineNums();
+  outputEl.innerHTML='<span class="line-sys">// Napisz skrypt i kliknij URUCHOM</span>\n<span class="cursor-line"></span>';
+  setStatus('GOTOWY');
+  hideHint();
+  document.getElementById('btn-prev').disabled=currentLesson===0;
+  document.getElementById('btn-next').disabled=currentLesson===LESSONS.length-1;
+  lessonCounter.textContent=`${currentLesson+1} / ${LESSONS.length}`;
+  const done=progress.filter(Boolean).length;
+  progressFill.style.width=(done/LESSONS.length*100)+'%';
+}
+
+function runScript() {
+  const code=editorEl.value;
+  if(!code.trim()){setStatus('PUSTY SKRYPT','err');return;}
+  outputEl.innerHTML='<span class="line-sys">$ bash skrypt.sh</span>\n';
+  setStatus('URUCHAMIANIE...','');
+  setTimeout(()=>{
+    try{
+      const lines=runBash(code);
+      let html='<span class="line-sys">$ bash skrypt.sh</span>\n';
+      if(lines.length===0){
+        html+='<span class="line-sys">// (brak wyjścia)</span>\n';
+      } else {
+        for(const {text,cls} of lines){
+          html+=`<span class="${cls}">${escHtml(text)}</span>\n`;
+        }
+      }
+      html+='<span class="cursor-line"></span>';
+      outputEl.innerHTML=html;
+      outputEl.scrollTop=outputEl.scrollHeight;
+      const outText=lines.map(l=>l.text).join('\n');
+      const L=LESSONS[currentLesson];
+      if(L.check(code,outText)){
+        setStatus('ZALICZONE!','ok');
+        progress[currentLesson]=true;
+        localStorage.setItem('hl-bash2',JSON.stringify(progress));
+        setTimeout(()=>showSuccess(L.ok),700);
+      } else {
+        setStatus('URUCHOMIONO — SPRAWDŹ WYJŚCIE','');
+      }
+    }catch(err){
+      outputEl.innerHTML+='<span class="line-err">BŁĄD: '+escHtml(err.message)+'</span>\n';
+      setStatus('BŁĄD','err');
+    }
+  },80);
+}
+
+function resetEditor(){
+  editorEl.value=LESSONS[currentLesson].starter;
+  updateLineNums();
+  outputEl.innerHTML='<span class="line-sys">// Skrypt zresetowany</span>\n<span class="cursor-line"></span>';
+  setStatus('ZRESETOWANO');
+}
+
+function showHint(){
+  document.getElementById('hint-text').innerHTML=LESSONS[currentLesson].hint;
+  document.getElementById('hint-box').classList.add('show');
+}
+function hideHint(){document.getElementById('hint-box').classList.remove('show');}
+
+function showSuccess(msg){
+  document.getElementById('success-msg').textContent=msg;
+  const ov=document.getElementById('success-overlay');
+  ov.classList.add('show');
+  const btn=document.getElementById('success-next-btn');
+  if(currentLesson>=LESSONS.length-1){
+    btn.textContent='KONIEC KURSU ✓';
+    btn.onclick=()=>ov.classList.remove('show');
+  } else {
+    btn.textContent='NASTĘPNA LEKCJA →';
+    btn.onclick=nextLesson;
+  }
+}
+
+function nextLesson(){
+  document.getElementById('success-overlay').classList.remove('show');
+  if(currentLesson<LESSONS.length-1) goLesson(currentLesson+1);
+}
+
+// INIT
+loadLesson();
 </script>
 </body>
 </html>
