@@ -256,9 +256,24 @@ function doBurn(args) {
 // ══════════════════════════════════════════════════════════════════════════
 // DISPATCHER
 // ══════════════════════════════════════════════════════════════════════════
-const HELP = `
+function makeHelp(base) {
+  const u = s => `curl "${base}?cmd=${s}"`;
+  return `
 ${line()}
   HOSTLAB TERMINAL
+${line()}
+
+  ${u('help')}
+  ${u('ip+192.168.1.1%2F24')}
+  ${u('spin')}
+  ${u('spin+-c+fun')}
+  ${u('spin+-n+3')}
+  ${u('gap+Alice+1990-05-15+Bob+1985-03-20')}
+  ${u('burn+enc+your+message+here')}
+  ${u('burn+dec+TOKEN')}
+
+${line()}
+  commands
 ${line()}
 
   ip <CIDR>                     subnet visualizer
@@ -268,14 +283,14 @@ ${line()}
   gap <n1> <dob1> <n2> <dob2>  lifespan overlap  (YYYY-MM-DD)
   burn enc <message>            encode a note
   burn dec <token>              decode a note
-  help                          show this
 
 ${line()}
 `;
+}
 
-function dispatch(raw) {
+function dispatch(raw, base) {
   const parts = parseArgs(raw.trim());
-  if (!parts.length) return HELP;
+  if (!parts.length) return makeHelp(base);
   const cmd = parts[0].toLowerCase();
   const args = parts.slice(1);
 
@@ -283,7 +298,7 @@ function dispatch(raw) {
   if (cmd==='spin') return doSpin(args);
   if (cmd==='gap')  return doGap(args);
   if (cmd==='burn') return doBurn(args);
-  if (cmd==='help') return HELP;
+  if (cmd==='help') return makeHelp(base);
   return `✗  unknown command: ${cmd}\n   type 'help' to see commands\n`;
 }
 
@@ -324,20 +339,20 @@ export default {
       }
     }
 
+    const base = `${url.origin}/`;
     const ua = (request.headers.get('user-agent') || '').toLowerCase();
     const isLynx = ua.includes('lynx');
-    const isCurl = ua.includes('curl') || ua.includes('wget') || ua.includes('httpie');
 
     // Lynx: return minimal HTML with a form
     if (isLynx) {
-      const result = cmd ? dispatch(cmd) : '';
+      const result = cmd ? dispatch(cmd, base) : '';
       return new Response(lynxPage(result, cmd), {
         headers: { 'content-type': 'text/html; charset=utf-8' },
       });
     }
 
-    // curl / wget / everything else: plain text
-    const result = cmd ? dispatch(cmd) : HELP;
+    // curl / wget / browser / everything else: plain text
+    const result = cmd ? dispatch(cmd, base) : makeHelp(base);
     return new Response(result, {
       headers: { 'content-type': 'text/plain; charset=utf-8' },
     });

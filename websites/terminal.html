@@ -177,13 +177,28 @@ const LOGO = [
   '  ╚═╝  ╚═╝  ╚═════╝  ╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝ ╚═════╝',
 ];
 
+const WORKER = 'https://hostlab.hosttost.workers.dev';
+const INSTALL_CMD = 'pip install "git+https://github.com/iwohost/HostLab.git#subdirectory=terminal"';
+
 function boot() {
   blank();
   LOGO.forEach(row => ln(a(row)));
   blank();
-  ln('  ' + d('terminal edition · v1.0 · type ') + a('hostlab help') + d(' to list commands'));
+  ln('  ' + d('terminal edition · v1.0'));
   blank();
   rule();
+  blank();
+  ln('  ' + a('use this from your real terminal too'));
+  blank();
+  ln('  ' + d('① python') + '  ' + 'pip install "git+https://github.com/iwohost/HostLab.git#subdirectory=terminal"');
+  ln('  ' + d('           then just:') + '  ' + a('hostlab'));
+  blank();
+  ln('  ' + d('② curl') + '    ' + 'curl "' + a(esc(WORKER) + '/?cmd=spin') + '"');
+  ln('  ' + d('           no install needed · works on any machine'));
+  blank();
+  rule();
+  blank();
+  ln('  ' + d('type ') + a('hostlab help') + d(' to list commands'));
   blank();
 }
 
@@ -269,6 +284,7 @@ reg('help', () => {
     [a('hostlab burn dec') + ' ' + d('<token>'),                 'decode a token back to a message'],
     [a('hostlab clear'),                                          'clear the screen'],
     [a('hostlab about'),                                          'about this tool'],
+    [a('hostlab install'),                                        'how to use this from your real terminal'],
   ];
   rows.forEach(([cmd, desc]) => ln('  ' + cmd + '  '.repeat(Math.max(1, 32 - cmd.replace(/<[^>]+>/g,'').length)) + d(desc)));
   blank();
@@ -289,6 +305,34 @@ reg('about', () => {
   ln('  ' + d('Checklist persists via localStorage.'));
   blank();
   ln('  ' + d('github.com/iwohost/HostLab'));
+  blank();
+});
+
+reg('install', () => {
+  rule('USE FROM YOUR REAL TERMINAL');
+  blank();
+  ln('  ' + d('two ways — pick one:'));
+  blank();
+
+  ln('  ' + a('① Python CLI') + '  ' + d('(install once, works everywhere)'));
+  blank();
+  ln('  ' + d('  pip install "git+https://github.com/iwohost/HostLab.git#subdirectory=terminal"'));
+  blank();
+  ln('  ' + d('  then just type:  ') + a('hostlab'));
+  blank();
+
+  rule();
+  blank();
+
+  ln('  ' + a('② curl') + '  ' + d('(zero install, use the live API)'));
+  blank();
+  ln('  ' + d('  curl "') + a(esc(WORKER) + '/?cmd=help') + d('"'));
+  ln('  ' + d('  curl "') + a(esc(WORKER) + '/?cmd=spin') + d('"'));
+  ln('  ' + d('  curl "') + a(esc(WORKER) + '/?cmd=ip+192.168.1.1%2F24') + d('"'));
+  blank();
+  ln('  ' + d('  replace the cmd= value with any command from ') + a('hostlab help'));
+  blank();
+  rule();
   blank();
 });
 
