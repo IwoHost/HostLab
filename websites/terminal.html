@@ -112,7 +112,7 @@
 <div id="screen"></div>
 
 <div id="bar">
-  <span id="ps1">hostlab&gt;&nbsp;</span>
+  <span id="ps1">hostlab&nbsp;</span>
   <input id="cmd" type="text" autocomplete="off" spellcheck="false" autofocus>
 </div>
 
@@ -181,7 +181,7 @@ function boot() {
   blank();
   LOGO.forEach(row => ln(a(row)));
   blank();
-  ln('  ' + d('terminal edition · v1.0 · type ') + a('help') + d(' to list commands'));
+  ln('  ' + d('terminal edition · v1.0 · type ') + a('hostlab help') + d(' to list commands'));
   blank();
   rule();
   blank();
@@ -227,7 +227,7 @@ cmdIn.addEventListener('keydown', ev => {
     cmdIn.value = ''; histIdx = -1;
     if (!raw) { blank(); return; }
     hist.unshift(raw);
-    ln(a('hostlab&gt;') + ' ' + esc(raw));
+    ln(a('hostlab') + ' ' + esc(raw));
     blank();
     exec(raw);
     blank();
@@ -257,18 +257,18 @@ reg('help', () => {
   rule('HELP');
   blank();
   const rows = [
-    [a('ip') + ' ' + d('<IP/CIDR>'),                    'subnet visualizer — network, hosts, binary breakdown'],
-    [a('check'),                                          'list your tasks'],
-    [a('check add') + ' ' + d('<task>'),                 'add a task'],
-    [a('check done') + ' ' + d('<n>'),                   'toggle task n done/undone'],
-    [a('check rm') + ' ' + d('<n>'),                     'remove task n'],
-    [a('check clear'),                                    'remove all completed tasks'],
-    [a('spin'),                                           'random app idea  ·  -n 3  ·  -c visual'],
-    [a('gap') + ' ' + d('<n1> <dob1> <n2> <dob2>'),     'lifespan overlap (dates YYYY-MM-DD)'],
-    [a('burn enc') + ' ' + d('<message>'),               'encode a message into a shareable token'],
-    [a('burn dec') + ' ' + d('<token>'),                 'decode a token back to a message'],
-    [a('clear'),                                          'clear the screen'],
-    [a('about'),                                          'about this tool'],
+    [a('hostlab ip') + ' ' + d('<IP/CIDR>'),                    'subnet visualizer — network, hosts, binary breakdown'],
+    [a('hostlab check'),                                          'list your tasks'],
+    [a('hostlab check add') + ' ' + d('<task>'),                 'add a task'],
+    [a('hostlab check done') + ' ' + d('<n>'),                   'toggle task n done/undone'],
+    [a('hostlab check rm') + ' ' + d('<n>'),                     'remove task n'],
+    [a('hostlab check clear'),                                    'remove all completed tasks'],
+    [a('hostlab spin'),                                           'random app idea  ·  -n 3  ·  -c visual'],
+    [a('hostlab gap') + ' ' + d('<n1> <dob1> <n2> <dob2>'),     'lifespan overlap (dates YYYY-MM-DD)'],
+    [a('hostlab burn enc') + ' ' + d('<message>'),               'encode a message into a shareable token'],
+    [a('hostlab burn dec') + ' ' + d('<token>'),                 'decode a token back to a message'],
+    [a('hostlab clear'),                                          'clear the screen'],
+    [a('hostlab about'),                                          'about this tool'],
   ];
   rows.forEach(([cmd, desc]) => ln('  ' + cmd + '  '.repeat(Math.max(1, 32 - cmd.replace(/<[^>]+>/g,'').length)) + d(desc)));
   blank();
@@ -393,7 +393,7 @@ reg('check', args => {
     rule('CHECKLIST');
     blank();
     if (!items.length) {
-      ln('  ' + d('Empty. Add a task:  ') + a('check add "do the thing"'));
+      ln('  ' + d('Empty. Add a task:  ') + a('hostlab check add "do the thing"'));
     } else {
       items.forEach((item, idx) => {
         const icon  = item.done ? a('✓') : d('○');
@@ -546,7 +546,7 @@ reg('spin', args => {
     ln('  ' + d(esc(desc)));
   });
   blank();
-  ln('  ' + d('run again · -n 3 for more · -c visual/audio/fun/… to filter'));
+  ln('  ' + d('hostlab spin again · -n 3 for more · -c visual/audio/fun/… to filter'));
   blank();
 });
 
@@ -663,7 +663,7 @@ reg('burn', args => {
     blank();
     ln('  ' + a(esc(token)));
     blank();
-    ln('  ' + d('decode with:  ') + 'burn dec ' + esc(token.slice(0, 20)) + (token.length > 20 ? '…' : ''));
+    ln('  ' + d('decode with:  ') + a('hostlab burn dec ') + esc(token.slice(0, 20)) + (token.length > 20 ? d('…') : ''));
     blank();
     return;
   }
@@ -683,7 +683,7 @@ reg('burn', args => {
     return;
   }
 
-  ln(e('✗') + ' usage: ' + a('burn enc') + ' ' + d('<message>') + '  or  ' + a('burn dec') + ' ' + d('<token>'));
+  ln(e('✗') + ' usage: ' + a('hostlab burn enc') + ' ' + d('<message>') + '  or  ' + a('hostlab burn dec') + ' ' + d('<token>'));
 });
 
 // ── start ─────────────────────────────────────────────────────────────────
