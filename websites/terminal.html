@@ -184,13 +184,21 @@ function boot() {
   blank();
   LOGO.forEach(row => ln(a(row)));
   blank();
-  ln('  ' + d('terminal edition · v1.0 · type ') + a('hostlab help') + d(' to list commands'));
+  ln('  ' + d('terminal edition · v1.0'));
   blank();
   rule();
   blank();
-  ln('  ' + d('also works from your real terminal — type ') + a('hostlab install') + d(' to see how'));
+  ln('  ' + a('use this from your real terminal too'));
+  blank();
+  ln('  ' + d('① python') + '  ' + 'pip install "git+https://github.com/iwohost/HostLab.git#subdirectory=terminal"');
+  ln('  ' + d('           then just:') + '  ' + a('hostlab'));
+  blank();
+  ln('  ' + d('② curl') + '    ' + 'curl "' + a(esc(WORKER) + '/?cmd=spin') + '"');
+  ln('  ' + d('           no install needed · works on any machine'));
   blank();
   rule();
+  blank();
+  ln('  ' + d('type ') + a('hostlab help') + d(' to list commands'));
   blank();
 }
 
