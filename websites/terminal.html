@@ -63,6 +63,8 @@
       min-height: 1.65em;
     }
 
+    .qr { word-break: normal; overflow-x: auto; min-height: unset; line-height: 1.1; }
+
     /* ── text helpers (set via innerHTML) ──────────────────── */
     .a { color: var(--accent); text-shadow: var(--glow); }
     .d { color: var(--dim); }
@@ -701,16 +703,17 @@ reg('qr', args => {
 
     rule('QR FORGE');
     blank();
-    // Inverted render: dark module = '  ' (bg shows through), light = '██' (bright blocks)
-    // This produces a correct QR on dark terminal backgrounds
-    for (let r = -q; r < n + q; r++) {
-      let row = '  ';
+    // Half-block rendering: 2 QR rows per terminal row, 1 char per column
+    // Inverted (dark=bg, light=fg) so it scans correctly on dark terminals
+    for (let r = -q; r < n + q; r += 2) {
+      let row = ' ';
       for (let c = -q; c < n + q; c++) {
-        const inBounds = r >= 0 && r < n && c >= 0 && c < n;
-        const dark = inBounds ? qr.isDark(r, c) : false;
-        row += dark ? '  ' : '██';
+        const inC  = c >= 0 && c < n;
+        const topD = (r   >= 0 && r   < n && inC) ? qr.isDark(r,   c) : false;
+        const botD = (r+1 >= 0 && r+1 < n && inC) ? qr.isDark(r+1, c) : false;
+        row += topD && botD ? ' ' : topD ? '▄' : botD ? '▀' : '█';
       }
-      ln(row);
+      ln(row, 'qr');
     }
     blank();
     ln('  ' + d('encoded · ') + esc(text.length > 50 ? text.slice(0, 47) + '…' : text));
