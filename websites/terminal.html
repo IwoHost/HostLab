@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="../other/backbutton.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <style>
     :root {
       --bg:     #0b0b0b;
@@ -263,10 +264,12 @@ reg('help', () => {
     [a('hostlab check done') + ' ' + d('<n>'),                   'toggle task n done/undone'],
     [a('hostlab check rm') + ' ' + d('<n>'),                     'remove task n'],
     [a('hostlab check clear'),                                    'remove all completed tasks'],
-    [a('hostlab spin'),                                           'random app idea  ·  -n 3  ·  -c visual'],
+    [a('hostlab spin'),                                           'random app idea combo  ·  -n 3 for more'],
     [a('hostlab gap') + ' ' + d('<n1> <dob1> <n2> <dob2>'),     'lifespan overlap (dates YYYY-MM-DD)'],
     [a('hostlab burn enc') + ' ' + d('<message>'),               'encode a message into a shareable token'],
     [a('hostlab burn dec') + ' ' + d('<token>'),                 'decode a token back to a message'],
+    [a('hostlab qr') + ' ' + d('<url or text>'),                 'generate a scannable QR code'],
+    [a('hostlab img') + ' ' + d('<url> [cols]'),                 'convert image URL to ASCII art'],
     [a('hostlab clear'),                                          'clear the screen'],
     [a('hostlab about'),                                          'about this tool'],
   ];
@@ -457,96 +460,41 @@ reg('check', args => {
 // ═══════════════════════════════════════════════════════════════════════════
 // SPIN
 // ═══════════════════════════════════════════════════════════════════════════
-const IDEAS = {
-  visual: [
-    ['Pixel Sorter',            'Sort pixels by hue or brightness in real time'],
-    ['ASCII Cam',               'Turn a webcam feed into live ASCII art'],
-    ['Gradient Mesh Editor',    'Drag control points to sculpt smooth color gradients'],
-    ['Reaction Diffusion',      'Interactive Turing-pattern simulator on a canvas'],
-    ['Chromatic Aberration Lab','Apply lens-split RGB fringing to any uploaded image'],
-    ['Halftone Engine',         'Simulate newspaper halftone at variable screen angles'],
-    ['Voronoi Painter',         'Click to drop seeds and watch a Voronoi diagram grow'],
-    ['Perlin Terrain',          'Real-time 2D terrain generator with color biomes'],
-    ['SVG Morpher',             'Draw a path and morph it into another with easing'],
-    ['Glitch Generator',        'Apply datamoshing and compression artifacts to images'],
-  ],
-  audio: [
-    ['Chord Namer',             'Click piano keys and instantly see the chord name'],
-    ['Binaural Beat Gen',       'Set two slightly-offset tones for focus or sleep'],
-    ['Lo-fi Degrader',          'Apply vinyl crackle and tape hiss to any audio'],
-    ['Arpeggiator',             'Play a chord and loop through its notes in patterns'],
-    ['Spectral Freeze',         'Freeze a moment of sound and let it drone forever'],
-    ['Euclidean Drummer',       'Generative drum machine built on Euclidean rhythms'],
-    ['Pitch Visualizer',        'Real-time pitch detection displayed on a musical staff'],
-  ],
-  productivity: [
-    ['Habit Punch Card',        'Heatmap-style tracker for daily habit streaks'],
-    ['Timezone Overlap',        'Find meeting windows across multiple time zones'],
-    ['Meeting Cost Clock',      'Watch money drain as your meeting runs over'],
-    ['One-liner Journal',       'Date-stamped single lines — simple, searchable log'],
-    ['Markdown Flashcards',     'Write Q/A pairs in Markdown, quiz yourself later'],
-    ['Decision Matrix',         'Weighted criteria table that scores options fairly'],
-    ['Focus Sprint Timer',      'Pomodoro with adaptive break lengths and history'],
-  ],
-  utility: [
-    ['Regex Explainer',         'Match groups with human-readable step-by-step output'],
-    ['Color Blind Sim',         'Preview any image through 8 types of color vision'],
-    ['CSS Easing Playground',   'Drag bezier handles, copy the CSS value instantly'],
-    ['Password Entropy Meter',  'Crack-time estimate and actionable suggestions'],
-    ['Font Pairing Lab',        'Drag-and-drop font combos with live preview'],
-    ['Contrast Ratio Checker',  'Pick two colors, get WCAG pass/fail instantly'],
-    ['Base Converter',          'Type in any numeric base, all others update live'],
-  ],
-  data: [
-    ['Spending Heatmap',        'Paste a CSV bank export → calendar heatmap'],
-    ['Word Frequency Map',      'Paste text → word cloud sorted by count'],
-    ['Sort Algorithm Race',     'Watch bubble, merge, and quicksort compete live'],
-    ['Network Graph Builder',   'Type node-edge pairs, see a force-directed graph'],
-    ['Correlation Explorer',    'Upload two CSVs, find statistical correlations'],
-    ['Log Timeline',            'Paste any log file → visual event timeline'],
-  ],
-  fun: [
-    ['Vibe Checker',            '5 sliders → your totally unscientific vibe score'],
-    ['Excuse Generator',        '500 plausible excuses by situation and severity'],
-    ['Commit Message Oracle',   'Suspiciously accurate random commit messages'],
-    ['Error Message Glossary',  'Human-readable dictionary of confusing system errors'],
-    ['Fake Loading Screen',     'Convincing progress bar with dramatic log output'],
-    ['Which Framework Are You?','5 questions → get roasted by a JS framework'],
-    ['Keyboard Smash Analyzer', 'Rate the quality of your asdfghjkl moments'],
-  ],
-};
-const ALL_IDEAS = Object.entries(IDEAS).flatMap(([cat, items]) => items.map(([n, desc]) => [cat, n, desc]));
+const STYLES = [
+  'Retro Terminal','Cyberpunk','Vaporwave','Dark Academia','Brutalist',
+  'Neon Noir','Minimal Zen','Art Deco','Cottagecore','Memphis',
+  'Glassmorphism','Neumorphism','Bauhaus','Psychedelic','Lo-Fi Pixel',
+  'Swiss Grid','Bento Grid','Y2K Throwback','Solarpunk','Maximalist',
+  'Monochrome Ink','Aurora','Industrial Grit','Kawaii Soft','Steampunk',
+  'Futuristic Flat','Organic Blob','Bold Type','Comic Book','Deep Space',
+  'Earthy Muted','High Contrast','Glitch Art','Corp. Memphis','Fantasy Map',
+  'Isometric 3D','Hand-Drawn','Blueprint','Luxury Black','Paper Cut',
+  'Neon Pastel','Retro Future','Analog Noise','Wabi-Sabi','Cybernetic',
+  'Ocean Depth','Desert Sand','Nordic Frost','Tokyo Pop','Rainforest'
+];
+const TYPES = [
+  'Dashboard','Portfolio','Social App','Dev Tool','Game',
+  'Productivity','Marketplace','Data Viz','Landing Page','Note-Taking',
+  'Music Player','Weather App','Habit Tracker','Chat UI','Code Editor'
+];
+const VIBES = [
+  'Dark & Moody','Bright & Fun','Glitchy','Elegant','Chaotic',
+  'Calm & Clean','Bold & Loud','Mysterious','Futuristic','Nostalgic',
+  'Warm & Cozy','Cold & Sharp'
+];
 
 reg('spin', args => {
-  const cat   = getOpt(args, '-c', '--category', '--cat');
-  const count = parseInt(getOpt(args, '-n', '--count') || '1') || 1;
-
-  let pool = cat ? (IDEAS[cat] || []).map(([n, desc]) => [cat, n, desc]) : ALL_IDEAS;
-
-  if (cat && !IDEAS[cat]) {
-    ln(e('✗') + ' unknown category: ' + b(esc(cat)));
-    ln('  ' + d('options: ') + Object.keys(IDEAS).join('  '));
-    return;
-  }
-
-  const n     = Math.min(count, pool.length, 9);
-  const picks = [];
-  const tmp   = [...pool];
-  for (let x = 0; x < n; x++) {
-    const idx = Math.floor(Math.random() * tmp.length);
-    picks.push(tmp.splice(idx, 1)[0]);
-  }
+  const count = Math.min(parseInt(getOpt(args, '-n', '--count') || '1') || 1, 5);
+  const pick  = arr => arr[Math.floor(Math.random() * arr.length)];
 
   rule('SPIN');
   blank();
-  picks.forEach(([cat, name, desc], x) => {
+  for (let x = 0; x < count; x++) {
     if (x) blank();
-    ln('  ' + d('[' + cat + ']'));
-    ln('  ' + a(b(esc(name))));
-    ln('  ' + d(esc(desc)));
-  });
+    ln('  ' + a(esc(pick(STYLES))) + d(' × ') + a(esc(pick(TYPES))) + d(' × ') + a(esc(pick(VIBES))));
+  }
   blank();
-  ln('  ' + d('hostlab spin again · -n 3 for more · -c visual/audio/fun/… to filter'));
+  ln('  ' + d('spin again · spin -n 3 for more'));
   blank();
 });
 
@@ -684,6 +632,99 @@ reg('burn', args => {
   }
 
   ln(e('✗') + ' usage: ' + a('hostlab burn enc') + ' ' + d('<message>') + '  or  ' + a('hostlab burn dec') + ' ' + d('<token>'));
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QR FORGE
+// ═══════════════════════════════════════════════════════════════════════════
+reg('qr', args => {
+  const text = args.join(' ');
+  if (!text) {
+    ln(e('✗') + ' usage: qr ' + d('<url or text>'));
+    ln('  ' + d('example: qr https://github.com/iwohost/HostLab'));
+    return;
+  }
+  if (typeof qrcode === 'undefined') {
+    ln(e('✗') + ' QR library not loaded — try refreshing the page');
+    return;
+  }
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    const n = qr.getModuleCount();
+    const q = 2; // quiet zone
+
+    rule('QR FORGE');
+    blank();
+    // Inverted render: dark module = '  ' (bg shows through), light = '██' (bright blocks)
+    // This produces a correct QR on dark terminal backgrounds
+    for (let r = -q; r < n + q; r++) {
+      let row = '  ';
+      for (let c = -q; c < n + q; c++) {
+        const inBounds = r >= 0 && r < n && c >= 0 && c < n;
+        const dark = inBounds ? qr.isDark(r, c) : false;
+        row += dark ? '  ' : '██';
+      }
+      ln(row);
+    }
+    blank();
+    ln('  ' + d('encoded · ') + esc(text.length > 50 ? text.slice(0, 47) + '…' : text));
+    blank();
+  } catch (err) {
+    ln(e('✗') + ' could not generate QR: ' + esc(String(err)));
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// IMAGE → ASCII ART
+// ═══════════════════════════════════════════════════════════════════════════
+reg('img', args => {
+  if (!args.length) {
+    ln(e('✗') + ' usage: img ' + d('<image-url> [cols]'));
+    ln('  ' + d('note: image server must allow cross-origin access (CORS)'));
+    ln('  ' + d('tip: raw.githubusercontent.com URLs always work'));
+    return;
+  }
+  const url  = args[0];
+  const cols = Math.min(parseInt(args[1]) || 60, 120);
+  const CHARS = ' .:-=+*#%@';
+
+  const canvas = document.createElement('canvas');
+  const ctx    = canvas.getContext('2d');
+  const img    = new Image();
+  img.crossOrigin = 'anonymous';
+
+  ln('  ' + d('fetching…'));
+
+  img.onload = () => {
+    const rows = Math.round(cols * img.height / img.width * 0.45);
+    canvas.width = cols; canvas.height = rows;
+    ctx.drawImage(img, 0, 0, cols, rows);
+    const px = ctx.getImageData(0, 0, cols, rows).data;
+
+    rule('ASCII ART  ' + cols + '×' + rows);
+    blank();
+    for (let y = 0; y < rows; y++) {
+      let row = '  ';
+      for (let x = 0; x < cols; x++) {
+        const i   = (y * cols + x) * 4;
+        const lum = (0.299 * px[i] + 0.587 * px[i+1] + 0.114 * px[i+2]) / 255;
+        row += CHARS[Math.floor(lum * (CHARS.length - 1))];
+      }
+      ln(d(row));
+    }
+    blank();
+    screen.scrollTop = screen.scrollHeight;
+  };
+
+  img.onerror = () => {
+    ln(e('✗') + ' could not load image — check URL and CORS headers');
+    blank();
+    screen.scrollTop = screen.scrollHeight;
+  };
+
+  img.src = url;
 });
 
 // ── start ─────────────────────────────────────────────────────────────────
