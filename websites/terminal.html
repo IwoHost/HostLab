@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HostLab · Terminal</title>
+  <link rel="stylesheet" href="../other/backbutton.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:     #0b0b0b;
+      --fg:     #ddddd8;
+      --accent: #6dff3a;
+      --dim:    #444440;
+      --error:  #ff5050;
+      --warn:   #ffc050;
+      --info:   #50c8ff;
+      --glow:   0 0 10px rgba(109,255,58,.25);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      line-height: 1.65;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* subtle scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,.06) 3px, rgba(0,0,0,.06) 4px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* ── scrollable output ─────────────────────────────────── */
+    #screen {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 22px 6px;
+    }
+    #screen::-webkit-scrollbar { width: 5px; }
+    #screen::-webkit-scrollbar-track { background: transparent; }
+    #screen::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+
+    .ln {
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 1.65em;
+    }
+
+    /* ── text helpers (set via innerHTML) ──────────────────── */
+    .a { color: var(--accent); text-shadow: var(--glow); }
+    .d { color: var(--dim); }
+    .e { color: var(--error); }
+    .w { color: var(--warn); }
+    .i { color: var(--info); }
+    .b { font-weight: 700; }
+    .strike { text-decoration: line-through; }
+
+    /* ── input bar ─────────────────────────────────────────── */
+    #bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 6px 22px 18px;
+      border-top: 1px solid #161614;
+      gap: 0;
+    }
+    #ps1 {
+      color: var(--accent);
+      text-shadow: var(--glow);
+      white-space: nowrap;
+      user-select: none;
+      letter-spacing: .05em;
+    }
+    #cmd {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--fg);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      caret-color: var(--accent);
+      padding: 0 0 0 6px;
+    }
+
+    /* ── mobile ────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      body { font-size: 12px; }
+      #screen { padding: 14px 12px 4px; }
+      #bar    { padding: 6px 12px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="screen"></div>
+
+<div id="bar">
+  <span id="ps1">hostlab&gt;&nbsp;</span>
+  <input id="cmd" type="text" autocomplete="off" spellcheck="false" autofocus>
+</div>
+
+<a href="../index.html" class="back-home" title="Back to HostLab">
+  <img src="../other/logo/HLab_Logo.png" alt="HostLab">
+</a>
+
+<script>
+'use strict';
+
+// ── output primitives ────────────────────────────────────────────────────
+const screen = document.getElementById('screen');
+const cmdIn  = document.getElementById('cmd');
+
+function ln(html = '', cls = '') {
+  const d = document.createElement('div');
+  d.className = 'ln' + (cls ? ' ' + cls : '');
+  d.innerHTML = html;
+  screen.appendChild(d);
+  screen.scrollTop = screen.scrollHeight;
+}
+
+function blank() { ln(); }
+
+// escape user-provided strings before HTML insertion
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+const a = s => `<span class="a">${s}</span>`;
+const d = s => `<span class="d">${s}</span>`;
+const e = s => `<span class="e">${s}</span>`;
+const w = s => `<span class="w">${s}</span>`;
+const i = s => `<span class="i">${s}</span>`;
+const b = s => `<span class="b">${s}</span>`;
+
+function rule(label = '') {
+  const W = 58;
+  if (!label) { ln(d('─'.repeat(W))); return; }
+  const pad = Math.max(0, Math.floor((W - label.length - 2) / 2));
+  const r   = W - label.length - 2 - pad;
+  ln(d('─'.repeat(pad)) + ' ' + a(label) + ' ' + d('─'.repeat(Math.max(0, r))));
+}
+
+// ── history ──────────────────────────────────────────────────────────────
+let hist = [], histIdx = -1;
+
+// ── checklist persistence ────────────────────────────────────────────────
+const STORE = 'hostlab_checklist_v1';
+const loadList = () => { try { return JSON.parse(localStorage.getItem(STORE)) || []; } catch { return []; } };
+const saveList = l => localStorage.setItem(STORE, JSON.stringify(l));
+
+// ── boot ──────────────────────────────────────────────────────────────────
+const LOGO = [
+  '  ██╗  ██╗  ██████╗  ███████╗████████╗██╗      █████╗  ██████╗ ',
+  '  ██║  ██║ ██╔═══██╗ ██╔════╝╚══██╔══╝██║     ██╔══██╗ ██╔══██╗',
+  '  ███████║ ██║   ██║ ███████╗   ██║   ██║     ███████║ ██████╔╝',
+  '  ██╔══██║ ██║   ██║ ╚════██║   ██║   ██║     ██╔══██║ ██╔══██╗',
+  '  ██║  ██║ ╚██████╔╝ ███████║   ██║   ███████╗██║  ██║ ██████╔╝',
+  '  ╚═╝  ╚═╝  ╚═════╝  ╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝ ╚═════╝',
+];
+
+function boot() {
+  blank();
+  LOGO.forEach(row => ln(a(row)));
+  blank();
+  ln('  ' + d('terminal edition · v1.0 · type ') + a('help') + d(' to list commands'));
+  blank();
+  rule();
+  blank();
+}
+
+// ── arg parser ────────────────────────────────────────────────────────────
+function parseArgs(raw) {
+  const args = []; let cur = '', inQ = false, qc = '';
+  for (const ch of raw) {
+    if (inQ) { if (ch === qc) inQ = false; else cur += ch; }
+    else if (ch === '"' || ch === "'") { inQ = true; qc = ch; }
+    else if (ch === ' ') { if (cur) { args.push(cur); cur = ''; } }
+    else cur += ch;
+  }
+  if (cur) args.push(cur);
+  return args;
+}
+
+function getOpt(args, ...flags) {
+  for (const f of flags) {
+    const idx = args.indexOf(f);
+    if (idx !== -1 && idx + 1 < args.length) return args[idx + 1];
+  }
+  return null;
+}
+
+// ── command registry ──────────────────────────────────────────────────────
+const CMDS = {};
+const reg = (name, fn) => { CMDS[name] = fn; };
+
+function exec(raw) {
+  const parts = parseArgs(raw);
+  if (!parts.length) return;
+  const cmd = parts[0].toLowerCase();
+  if (CMDS[cmd]) CMDS[cmd](parts.slice(1));
+  else ln(e('✗') + ' unknown command: ' + b(esc(cmd)) + '  ' + d('(type help)'));
+}
+
+// ── input handler ─────────────────────────────────────────────────────────
+cmdIn.addEventListener('keydown', ev => {
+  if (ev.key === 'Enter') {
+    const raw = cmdIn.value.trim();
+    cmdIn.value = ''; histIdx = -1;
+    if (!raw) { blank(); return; }
+    hist.unshift(raw);
+    ln(a('hostlab&gt;') + ' ' + esc(raw));
+    blank();
+    exec(raw);
+    blank();
+  } else if (ev.key === 'ArrowUp') {
+    ev.preventDefault();
+    if (histIdx < hist.length - 1) cmdIn.value = hist[++histIdx];
+  } else if (ev.key === 'ArrowDown') {
+    ev.preventDefault();
+    histIdx > 0 ? (cmdIn.value = hist[--histIdx]) : (histIdx = -1, cmdIn.value = '');
+  } else if (ev.key === 'Tab') {
+    ev.preventDefault();
+    // basic tab completion on first word
+    const cur = cmdIn.value;
+    if (!cur.includes(' ')) {
+      const match = Object.keys(CMDS).find(k => k.startsWith(cur.toLowerCase()));
+      if (match) cmdIn.value = match;
+    }
+  }
+});
+
+document.addEventListener('click', () => cmdIn.focus());
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HELP
+// ═══════════════════════════════════════════════════════════════════════════
+reg('help', () => {
+  rule('HELP');
+  blank();
+  const rows = [
+    [a('ip') + ' ' + d('<IP/CIDR>'),                    'subnet visualizer — network, hosts, binary breakdown'],
+    [a('check'),                                          'list your tasks'],
+    [a('check add') + ' ' + d('<task>'),                 'add a task'],
+    [a('check done') + ' ' + d('<n>'),                   'toggle task n done/undone'],
+    [a('check rm') + ' ' + d('<n>'),                     'remove task n'],
+    [a('check clear'),                                    'remove all completed tasks'],
+    [a('spin'),                                           'random app idea  ·  -n 3  ·  -c visual'],
+    [a('gap') + ' ' + d('<n1> <dob1> <n2> <dob2>'),     'lifespan overlap (dates YYYY-MM-DD)'],
+    [a('burn enc') + ' ' + d('<message>'),               'encode a message into a shareable token'],
+    [a('burn dec') + ' ' + d('<token>'),                 'decode a token back to a message'],
+    [a('clear'),                                          'clear the screen'],
+    [a('about'),                                          'about this tool'],
+  ];
+  rows.forEach(([cmd, desc]) => ln('  ' + cmd + '  '.repeat(Math.max(1, 32 - cmd.replace(/<[^>]+>/g,'').length)) + d(desc)));
+  blank();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CLEAR / ABOUT
+// ═══════════════════════════════════════════════════════════════════════════
+reg('clear', () => { screen.innerHTML = ''; boot(); });
+reg('cls',   () => { screen.innerHTML = ''; boot(); });
+
+reg('about', () => {
+  rule('ABOUT');
+  blank();
+  ln('  ' + b('HostLab Terminal') + '  ' + d('· a CLI port of the personal experiment hub'));
+  blank();
+  ln('  ' + d('Runs entirely in your browser. No server, no tracking, no installs.'));
+  ln('  ' + d('Checklist persists via localStorage.'));
+  blank();
+  ln('  ' + d('github.com/iwohost/HostLab'));
+  blank();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// IP VISUALIZER
+// ═══════════════════════════════════════════════════════════════════════════
+function ipToInt(s) {
+  return s.split('.').reduce((acc, n) => ((acc << 8) | +n) >>> 0, 0);
+}
+function intToIP(n) {
+  return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.');
+}
+function addrKind(n) {
+  const A = (n >>> 24) & 255, B = (n >>> 16) & 255;
+  if (A === 127) return 'loopback';
+  if (A === 10)  return 'private';
+  if (A === 172 && B >= 16 && B <= 31) return 'private';
+  if (A === 192 && B === 168) return 'private';
+  if (A === 169 && B === 254) return 'link-local';
+  if ((n >>> 28) === 0xE) return 'multicast';
+  if (A === 0)   return 'reserved';
+  return 'public';
+}
+
+reg('ip', args => {
+  if (!args.length) {
+    ln(e('✗') + ' usage: ip ' + d('192.168.1.50/24'));
+    return;
+  }
+  const raw = args[0];
+  const [ipStr, pStr = '32'] = raw.split('/');
+  const prefix = parseInt(pStr);
+
+  if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ipStr) || isNaN(prefix) || prefix < 0 || prefix > 32
+      || ipStr.split('.').some(o => +o > 255)) {
+    ln(e('✗') + ' invalid address: ' + b(esc(raw)));
+    return;
+  }
+
+  const ipInt    = ipToInt(ipStr);
+  const maskInt  = prefix === 0 ? 0 : ((0xFFFFFFFF << (32 - prefix)) >>> 0);
+  const netInt   = (ipInt & maskInt) >>> 0;
+  const bcastInt = (netInt | (~maskInt >>> 0)) >>> 0;
+  const total    = Math.pow(2, 32 - prefix);
+  const usable   = Math.max(0, total - 2);
+
+  rule('IP VISUALIZER');
+  blank();
+
+  const rows = [
+    ['Address',       esc(ipStr) + '  ' + d('(' + addrKind(ipInt) + ')')],
+    ['Network',       esc(intToIP(netInt))],
+    ['Broadcast',     esc(intToIP(bcastInt))],
+    ['Subnet mask',   esc(intToIP(maskInt))],
+    ['Wildcard',      esc(intToIP((~maskInt) >>> 0))],
+    ['Prefix',        '/' + prefix],
+    ['Total IPs',     total.toLocaleString()],
+    ['Usable hosts',  usable.toLocaleString()],
+  ];
+  if (usable >= 1) {
+    rows.push(['First host', esc(intToIP(netInt + 1))]);
+    if (usable >= 2) rows.push(['Last host', esc(intToIP(bcastInt - 1))]);
+  }
+  rows.forEach(([k, v]) => ln('  ' + d(k.padEnd(18)) + ' ' + v));
+  blank();
+
+  ln('  ' + d('binary  —  ') + a('network bits') + d('  host bits'));
+  blank();
+
+  const labels = ['·A·', '·B·', '·C·', '·D·'];
+  for (let o = 0; o < 4; o++) {
+    const sh  = (3 - o) * 8;
+    const ib  = (ipInt   >>> sh) & 255;
+    const mb  = (maskInt >>> sh) & 255;
+    let row = '  ' + d(labels[o]) + '  ';
+    for (let bit = 7; bit >= 0; bit--) {
+      const val  = (ib >>> bit) & 1;
+      const isN  = !!((mb >>> bit) & 1);
+      row += isN ? a(val) : val;
+      if (bit === 4) row += ' ';
+    }
+    row += '  ' + d(String(ib).padStart(3));
+    ln(row);
+  }
+  blank();
+
+  if (prefix <= 30) {
+    const bw = 44;
+    ln('  ' + d('capacity') + '  ' + a('█'.repeat(bw)) + '  ' + d(usable.toLocaleString() + ' usable'));
+    blank();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CHECKLIST
+// ═══════════════════════════════════════════════════════════════════════════
+reg('check', args => {
+  const sub = (args[0] || '').toLowerCase();
+
+  if (!sub) {
+    const items = loadList();
+    rule('CHECKLIST');
+    blank();
+    if (!items.length) {
+      ln('  ' + d('Empty. Add a task:  ') + a('check add "do the thing"'));
+    } else {
+      items.forEach((item, idx) => {
+        const icon  = item.done ? a('✓') : d('○');
+        const label = item.done
+          ? '<span class="d strike">' + esc(item.text) + '</span>'
+          : esc(item.text);
+        ln('  ' + d((idx + 1).toString().padStart(2) + '.') + '  ' + icon + '  ' + label);
+      });
+      const done  = items.filter(x => x.done).length;
+      const total = items.length;
+      const pct   = Math.round(done / total * 100);
+      const bw    = 28, fill = Math.round(done / total * bw);
+      blank();
+      ln('  ' + a('█'.repeat(fill)) + d('░'.repeat(bw - fill)) + '  ' + d(done + '/' + total + '  (' + pct + '%)'));
+    }
+    blank();
+    return;
+  }
+
+  if (sub === 'add') {
+    const text = args.slice(1).join(' ');
+    if (!text) { ln(e('✗') + ' usage: check add ' + d('<task description>')); return; }
+    const items = loadList();
+    items.push({ text, done: false, created: new Date().toISOString().slice(0, 10) });
+    saveList(items);
+    ln('  ' + a('+') + '  ' + esc(text));
+    return;
+  }
+
+  if (sub === 'done') {
+    const n = parseInt(args[1]), items = loadList();
+    if (isNaN(n) || n < 1 || n > items.length) { ln(e('✗') + ' no task #' + esc(args[1] || '?')); return; }
+    items[n - 1].done = !items[n - 1].done;
+    saveList(items);
+    const s = items[n - 1].done ? a('done ✓') : d('undone ○');
+    ln('  ' + esc(items[n - 1].text) + '  →  ' + s);
+    return;
+  }
+
+  if (sub === 'rm') {
+    const n = parseInt(args[1]), items = loadList();
+    if (isNaN(n) || n < 1 || n > items.length) { ln(e('✗') + ' no task #' + esc(args[1] || '?')); return; }
+    const [removed] = items.splice(n - 1, 1);
+    saveList(items);
+    ln('  ' + d('removed:') + '  ' + esc(removed.text));
+    return;
+  }
+
+  if (sub === 'clear') {
+    const items = loadList();
+    const before = items.length;
+    saveList(items.filter(x => !x.done));
+    const n = before - loadList().length;
+    ln('  ' + d('cleared ' + n + ' completed task' + (n !== 1 ? 's' : '')));
+    return;
+  }
+
+  ln(e('✗') + ' unknown subcommand: ' + b(esc(sub)));
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SPIN
+// ═══════════════════════════════════════════════════════════════════════════
+const IDEAS = {
+  visual: [
+    ['Pixel Sorter',            'Sort pixels by hue or brightness in real time'],
+    ['ASCII Cam',               'Turn a webcam feed into live ASCII art'],
+    ['Gradient Mesh Editor',    'Drag control points to sculpt smooth color gradients'],
+    ['Reaction Diffusion',      'Interactive Turing-pattern simulator on a canvas'],
+    ['Chromatic Aberration Lab','Apply lens-split RGB fringing to any uploaded image'],
+    ['Halftone Engine',         'Simulate newspaper halftone at variable screen angles'],
+    ['Voronoi Painter',         'Click to drop seeds and watch a Voronoi diagram grow'],
+    ['Perlin Terrain',          'Real-time 2D terrain generator with color biomes'],
+    ['SVG Morpher',             'Draw a path and morph it into another with easing'],
+    ['Glitch Generator',        'Apply datamoshing and compression artifacts to images'],
+  ],
+  audio: [
+    ['Chord Namer',             'Click piano keys and instantly see the chord name'],
+    ['Binaural Beat Gen',       'Set two slightly-offset tones for focus or sleep'],
+    ['Lo-fi Degrader',          'Apply vinyl crackle and tape hiss to any audio'],
+    ['Arpeggiator',             'Play a chord and loop through its notes in patterns'],
+    ['Spectral Freeze',         'Freeze a moment of sound and let it drone forever'],
+    ['Euclidean Drummer',       'Generative drum machine built on Euclidean rhythms'],
+    ['Pitch Visualizer',        'Real-time pitch detection displayed on a musical staff'],
+  ],
+  productivity: [
+    ['Habit Punch Card',        'Heatmap-style tracker for daily habit streaks'],
+    ['Timezone Overlap',        'Find meeting windows across multiple time zones'],
+    ['Meeting Cost Clock',      'Watch money drain as your meeting runs over'],
+    ['One-liner Journal',       'Date-stamped single lines — simple, searchable log'],
+    ['Markdown Flashcards',     'Write Q/A pairs in Markdown, quiz yourself later'],
+    ['Decision Matrix',         'Weighted criteria table that scores options fairly'],
+    ['Focus Sprint Timer',      'Pomodoro with adaptive break lengths and history'],
+  ],
+  utility: [
+    ['Regex Explainer',         'Match groups with human-readable step-by-step output'],
+    ['Color Blind Sim',         'Preview any image through 8 types of color vision'],
+    ['CSS Easing Playground',   'Drag bezier handles, copy the CSS value instantly'],
+    ['Password Entropy Meter',  'Crack-time estimate and actionable suggestions'],
+    ['Font Pairing Lab',        'Drag-and-drop font combos with live preview'],
+    ['Contrast Ratio Checker',  'Pick two colors, get WCAG pass/fail instantly'],
+    ['Base Converter',          'Type in any numeric base, all others update live'],
+  ],
+  data: [
+    ['Spending Heatmap',        'Paste a CSV bank export → calendar heatmap'],
+    ['Word Frequency Map',      'Paste text → word cloud sorted by count'],
+    ['Sort Algorithm Race',     'Watch bubble, merge, and quicksort compete live'],
+    ['Network Graph Builder',   'Type node-edge pairs, see a force-directed graph'],
+    ['Correlation Explorer',    'Upload two CSVs, find statistical correlations'],
+    ['Log Timeline',            'Paste any log file → visual event timeline'],
+  ],
+  fun: [
+    ['Vibe Checker',            '5 sliders → your totally unscientific vibe score'],
+    ['Excuse Generator',        '500 plausible excuses by situation and severity'],
+    ['Commit Message Oracle',   'Suspiciously accurate random commit messages'],
+    ['Error Message Glossary',  'Human-readable dictionary of confusing system errors'],
+    ['Fake Loading Screen',     'Convincing progress bar with dramatic log output'],
+    ['Which Framework Are You?','5 questions → get roasted by a JS framework'],
+    ['Keyboard Smash Analyzer', 'Rate the quality of your asdfghjkl moments'],
+  ],
+};
+const ALL_IDEAS = Object.entries(IDEAS).flatMap(([cat, items]) => items.map(([n, desc]) => [cat, n, desc]));
+
+reg('spin', args => {
+  const cat   = getOpt(args, '-c', '--category', '--cat');
+  const count = parseInt(getOpt(args, '-n', '--count') || '1') || 1;
+
+  let pool = cat ? (IDEAS[cat] || []).map(([n, desc]) => [cat, n, desc]) : ALL_IDEAS;
+
+  if (cat && !IDEAS[cat]) {
+    ln(e('✗') + ' unknown category: ' + b(esc(cat)));
+    ln('  ' + d('options: ') + Object.keys(IDEAS).join('  '));
+    return;
+  }
+
+  const n     = Math.min(count, pool.length, 9);
+  const picks = [];
+  const tmp   = [...pool];
+  for (let x = 0; x < n; x++) {
+    const idx = Math.floor(Math.random() * tmp.length);
+    picks.push(tmp.splice(idx, 1)[0]);
+  }
+
+  rule('SPIN');
+  blank();
+  picks.forEach(([cat, name, desc], x) => {
+    if (x) blank();
+    ln('  ' + d('[' + cat + ']'));
+    ln('  ' + a(b(esc(name))));
+    ln('  ' + d(esc(desc)));
+  });
+  blank();
+  ln('  ' + d('run again · -n 3 for more · -c visual/audio/fun/… to filter'));
+  blank();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GAP VISUALIZER
+// ═══════════════════════════════════════════════════════════════════════════
+const parseDt  = s => { const d = new Date(s + 'T00:00:00'); return isNaN(d) ? null : d; };
+const daysDiff = (a, b) => Math.round((b - a) / 86400000);
+const fmtDate  = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+reg('gap', args => {
+  if (args.length < 4) {
+    ln(e('✗') + ' usage: gap ' + d('<name1> <YYYY-MM-DD> <name2> <YYYY-MM-DD>'));
+    ln('  ' + d('e.g.') + '  gap Alice 1990-05-15 Bob 1985-03-20');
+    return;
+  }
+  const [name1, dob1s, name2, dob2s] = args;
+  const d1 = parseDt(dob1s), d2 = parseDt(dob2s);
+  if (!d1) { ln(e('✗') + ' invalid date: ' + b(esc(dob1s))); return; }
+  if (!d2) { ln(e('✗') + ' invalid date: ' + b(esc(dob2s))); return; }
+
+  const LIFESPAN  = 90;
+  const spanDays  = Math.round(LIFESPAN * 365.25);
+  const death1    = new Date(d1.getTime() + spanDays * 86400000);
+  const death2    = new Date(d2.getTime() + spanDays * 86400000);
+  const today     = new Date();
+
+  const ovStart   = d1 > d2 ? d1 : d2;
+  const ovEnd     = death1 < death2 ? death1 : death2;
+  const fullOv    = Math.max(0, daysDiff(ovStart, ovEnd));
+
+  const livedEnd  = ovEnd < today ? ovEnd : today;
+  const livedOv   = Math.max(0, daysDiff(ovStart, livedEnd));
+
+  const pctFull   = (fullOv  / spanDays * 100).toFixed(1);
+  const pctLived  = (livedOv / spanDays * 100).toFixed(1);
+  const gapDays   = Math.abs(daysDiff(d1, d2));
+  const gapYrs    = (gapDays / 365.25).toFixed(1);
+  const younger   = d1 <= d2 ? esc(name2) : esc(name1);
+
+  rule('GAP VISUALIZER');
+  blank();
+
+  const rows = [
+    [esc(name1) + ' born',     fmtDate(d1)],
+    [esc(name2) + ' born',     fmtDate(d2)],
+    ['Age gap',                gapYrs + ' yrs  ' + d('(' + gapDays.toLocaleString() + ' days)')],
+    ['Overlap starts',         fmtDate(ovStart) + '  ' + d('(when ' + younger + ' was born)')],
+    ['Potential overlap',      fullOv.toLocaleString() + ' days  ' + d('(' + pctFull + '% of a ' + LIFESPAN + '-yr life)')],
+    ['Lived so far',           livedOv.toLocaleString() + ' days  ' + d('(' + pctLived + '%)')],
+  ];
+  rows.forEach(([k, v]) => ln('  ' + d(k.padEnd(22)) + ' ' + v));
+  blank();
+
+  ln('  ' + d('Timeline  (assumed ' + LIFESPAN + '-year lifespan)'));
+  blank();
+
+  const earliest   = d1 < d2 ? d1 : d2;
+  const latestDead = death1 > death2 ? death1 : death2;
+  const totalSpan  = daysDiff(earliest, latestDead);
+  const BAR        = 50;
+
+  function makeBar(birth, name, color) {
+    const s = Math.round(daysDiff(earliest, birth) / totalSpan * BAR);
+    const l = Math.max(1, Math.min(Math.round(spanDays / totalSpan * BAR), BAR - s));
+    return '  ' + d(esc(name).padEnd(10)) + '  '
+      + d('·'.repeat(s))
+      + color('█'.repeat(l))
+      + d('·'.repeat(Math.max(0, BAR - s - l)));
+  }
+
+  ln(makeBar(d1, name1, a));
+  ln(makeBar(d2, name2, s => i(s)));
+  blank();
+
+  const ovS = Math.round(daysDiff(earliest, ovStart) / totalSpan * BAR);
+  const ovL = Math.max(1, Math.round(fullOv / totalSpan * BAR));
+  ln('  ' + d('overlap'.padEnd(10)) + '  '
+    + d('·'.repeat(ovS))
+    + w('▓'.repeat(Math.min(ovL, BAR - ovS)))
+    + d('·'.repeat(Math.max(0, BAR - ovS - ovL)))
+    + '  ' + d(pctFull + '%'));
+  blank();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BURN NOTES
+// ═══════════════════════════════════════════════════════════════════════════
+function burnEncode(text) {
+  const bytes = new TextEncoder().encode(text);
+  let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+function burnDecode(token) {
+  const p = token.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = p + '='.repeat((4 - p.length % 4) % 4);
+  const bin = atob(pad);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+reg('burn', args => {
+  const sub = (args[0] || '').toLowerCase();
+
+  if (sub === 'enc') {
+    const msg = args.slice(1).join(' ');
+    if (!msg) { ln(e('✗') + ' usage: burn enc ' + d('<message>')); return; }
+    const token = burnEncode(msg);
+    rule('BURN — ENCODE');
+    blank();
+    ln('  ' + d('token'));
+    blank();
+    ln('  ' + a(esc(token)));
+    blank();
+    ln('  ' + d('decode with:  ') + 'burn dec ' + esc(token.slice(0, 20)) + (token.length > 20 ? '…' : ''));
+    blank();
+    return;
+  }
+
+  if (sub === 'dec') {
+    const token = args[1];
+    if (!token) { ln(e('✗') + ' usage: burn dec ' + d('<token>')); return; }
+    try {
+      const msg = burnDecode(token);
+      rule('BURN — DECODE');
+      blank();
+      ln('  ' + esc(msg));
+      blank();
+    } catch {
+      ln(e('✗') + ' invalid or corrupted token');
+    }
+    return;
+  }
+
+  ln(e('✗') + ' usage: ' + a('burn enc') + ' ' + d('<message>') + '  or  ' + a('burn dec') + ' ' + d('<token>'));
+});
+
+// ── start ─────────────────────────────────────────────────────────────────
+boot();
+cmdIn.focus();
+</script>
+</body>
+</html>
