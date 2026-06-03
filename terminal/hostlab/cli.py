@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""hostlab — terminal toolkit inspired by HostLab"""
+"""hostlab — interactive terminal toolkit"""
 from __future__ import annotations
 
 import json
@@ -7,6 +7,8 @@ import ipaddress
 import base64
 import zlib
 import random
+import shlex
+import os
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Optional
@@ -17,22 +19,16 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 from rich.align import Align
-from rich.rule import Rule
 from rich import box
 
-console = Console()
+# readline for arrow-key history (pre-installed on Linux, optional on Windows)
+try:
+    import readline
+    readline.set_history_length(200)
+except ImportError:
+    pass
 
-app = typer.Typer(
-    name="hostlab",
-    help="HostLab terminal toolkit",
-    no_args_is_help=True,
-    add_completion=False,
-    rich_markup_mode="rich",
-)
-check_app = typer.Typer(no_args_is_help=False)
-burn_app  = typer.Typer(no_args_is_help=True)
-app.add_typer(check_app, name="check", help="[green]●[/green] Persistent checklist manager")
-app.add_typer(burn_app,  name="burn",  help="[green]●[/green] Encode / decode secret notes")
+console = Console()
 
 # ── paths ─────────────────────────────────────────────────────────────────
 DATA_DIR       = Path.home() / ".hostlab"
@@ -48,65 +44,61 @@ def _header(title: str):
     console.print()
 
 def _fmt_date(d: date) -> str:
-    """Cross-platform date formatting (avoids %-d which breaks on Windows)."""
     return f"{d.day} {d.strftime('%B %Y')}"
 
+# ── boot screen ───────────────────────────────────────────────────────────
+LOGO = [
+    " ██╗  ██╗  ██████╗  ███████╗████████╗██╗      █████╗  ██████╗ ",
+    " ██║  ██║ ██╔═══██╗ ██╔════╝╚══██╔══╝██║     ██╔══██╗ ██╔══██╗",
+    " ███████║ ██║   ██║ ███████╗   ██║   ██║     ███████║ ██████╔╝",
+    " ██╔══██║ ██║   ██║ ╚════██║   ██║   ██║     ██╔══██║ ██╔══██╗",
+    " ██║  ██║ ╚██████╔╝ ███████║   ██║   ███████╗██║  ██║ ██████╔╝",
+    " ╚═╝  ╚═╝  ╚═════╝  ╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝ ╚═════╝",
+]
 
-# ═══════════════════════════════════════════════════════════════════════════
-# ABOUT
-# ═══════════════════════════════════════════════════════════════════════════
-
-@app.command("about")
-def about():
-    """Show the tool list and credits"""
+def _boot():
     console.print()
-    console.print(Panel(
-        Align.center(
-            "\n"
-            "[bold bright_green] H O S T L A B [/bold bright_green][dim]terminal[/dim]\n\n"
-            "[dim]a CLI port of the personal experiment hub[/dim]\n"
-        ),
-        border_style="green",
-        padding=(0, 4),
-    ))
+    for row in LOGO:
+        console.print(f"[bright_green]{row}[/bright_green]")
+    console.print()
+    console.print("  [dim]terminal edition · v1.0 · github.com/iwohost/HostLab[/dim]")
+    console.print()
+    console.rule(style="dim green")
     console.print()
 
     t = Table(box=box.SIMPLE, show_header=False, padding=(0, 2))
-    t.add_column("cmd",  style="bright_green", width=18)
+    t.add_column("cmd",  style="bright_green", width=22)
     t.add_column("desc", style="dim")
-
-    t.add_row("hostlab ip <CIDR>",  "Subnet visualizer — decompose any IP/CIDR")
-    t.add_row("hostlab check",      "Persistent checklist (add / done / rm / clear)")
-    t.add_row("hostlab spin",       "App idea spinner — get unstuck, build something")
-    t.add_row("hostlab gap",        "How many days did two lives share?")
-    t.add_row("hostlab burn enc",   "Compress a message into a shareable token")
-    t.add_row("hostlab burn dec",   "Recover a message from a token")
-
+    t.add_row("ip <CIDR>",        "subnet visualizer")
+    t.add_row("check",            "persistent checklist")
+    t.add_row("spin",             "app idea spinner  (-c visual/fun/…  -n 3)")
+    t.add_row("gap <n1> <dob1> <n2> <dob2>", "lifespan overlap")
+    t.add_row("burn enc <msg>",   "encode a note")
+    t.add_row("burn dec <token>", "decode a note")
+    t.add_row("clear · exit",     "")
     console.print(t)
-    console.print(f"\n  [dim]github.com/iwohost/HostLab[/dim]\n")
+    console.print()
+    console.rule(style="dim green")
+    console.print()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# IP VISUALIZER
+# TOOL IMPLEMENTATIONS
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _addr_kind(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> str:
+# ── IP visualizer ──────────────────────────────────────────────────────────
+def _addr_kind(ip) -> str:
     if ip.is_loopback:   return "loopback"
     if ip.is_link_local: return "link-local"
     if ip.is_private:    return "private"
     if ip.is_multicast:  return "multicast"
     return "public"
 
-@app.command("ip")
-def ip_viz(
-    address: str = typer.Argument(..., help="IP/CIDR — e.g. 192.168.1.50/24 or 10.0.0.1/8"),
-):
-    """[green]●[/green] Subnet visualizer — decompose an IP/CIDR into network details"""
+def _do_ip(address: str):
     try:
         iface = ipaddress.ip_interface(address)
     except ValueError as e:
-        console.print(f"\n  [red]✗[/red] {e}\n")
-        raise typer.Exit(1)
+        console.print(f"\n  [red]✗[/red] {e}\n"); return
 
     net    = iface.network
     prefix = net.prefixlen
@@ -118,7 +110,6 @@ def ip_viz(
     t = Table(box=box.SIMPLE, show_header=False, padding=(0, 2))
     t.add_column("k", style="dim",          width=20)
     t.add_column("v", style="bright_white")
-
     t.add_row("Address",       f"{iface.ip}  [dim]({_addr_kind(iface.ip)})[/dim]")
     t.add_row("Network",       str(net.network_address))
     t.add_row("Broadcast",     str(net.broadcast_address))
@@ -127,140 +118,94 @@ def ip_viz(
     t.add_row("Prefix",        f"/{prefix}")
     t.add_row("Total IPs",     f"{total:,}")
     t.add_row("Usable hosts",  f"{usable:,}")
-
     if usable >= 1:
         hosts = list(net.hosts())
-        t.add_row("First host",  str(hosts[0]))
+        t.add_row("First host", str(hosts[0]))
         if usable >= 2:
             t.add_row("Last host", str(hosts[-1]))
-
     console.print(t)
     console.print()
 
-    # ── binary breakdown ──────────────────────────────────────────────────
     console.print("  [dim]binary — [bright_green]network bits[/bright_green]  host bits[/dim]\n")
-
     ip_int   = int(iface.ip)
     mask_int = int(net.netmask)
-
-    labels = ["·A·", "·B·", "·C·", "·D·"]
-    for octet_idx in range(4):
-        shift     = (3 - octet_idx) * 8
-        ip_byte   = (ip_int   >> shift) & 0xFF
-        mask_byte = (mask_int >> shift) & 0xFF
-
-        row = Text(f"  {labels[octet_idx]}  ", style="dim")
-        for bit_pos in range(7, -1, -1):
-            bit    = (ip_byte   >> bit_pos) & 1
-            is_net = bool((mask_byte >> bit_pos) & 1)
-            row.append(str(bit), style="bold bright_green" if is_net else "white")
-            if bit_pos == 4:
-                row.append(" ")
-        row.append(f"  {ip_byte:>3}", style="dim")
+    for o in range(4):
+        sh  = (3 - o) * 8
+        ib  = (ip_int   >> sh) & 0xFF
+        mb  = (mask_int >> sh) & 0xFF
+        row = Text(f"  ·{'ABCD'[o]}·  ", style="dim")
+        for b in range(7, -1, -1):
+            row.append(str((ib >> b) & 1),
+                       style="bold bright_green" if (mb >> b) & 1 else "white")
+            if b == 4: row.append(" ")
+        row.append(f"  {ib:>3}", style="dim")
         console.print(row)
 
     console.print()
-
     if prefix <= 30:
-        bar_w = 46
-        console.print(
-            f"  [dim]capacity[/dim]  "
-            f"[bright_green]{'█' * bar_w}[/bright_green]  "
-            f"[dim]{usable:,} usable hosts[/dim]"
-        )
+        console.print(f"  [dim]capacity[/dim]  [bright_green]{'█' * 46}[/bright_green]  [dim]{usable:,} usable[/dim]")
     console.print()
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-# CHECKLIST
-# ═══════════════════════════════════════════════════════════════════════════
-
+# ── checklist ──────────────────────────────────────────────────────────────
 def _load() -> list[dict]:
     _ensure_dir()
-    if not CHECKLIST_FILE.exists():
-        return []
-    try:
-        return json.loads(CHECKLIST_FILE.read_text())
-    except Exception:
-        return []
+    if not CHECKLIST_FILE.exists(): return []
+    try: return json.loads(CHECKLIST_FILE.read_text())
+    except: return []
 
-def _save(items: list[dict]):
+def _save(items):
     _ensure_dir()
     CHECKLIST_FILE.write_text(json.dumps(items, indent=2))
 
-def _print_list(items: list[dict]):
-    if not items:
-        console.print('  [dim]Empty. Add a task with:  hostlab check add "do the thing"[/dim]')
-        return
-    for i, item in enumerate(items, 1):
-        done  = item.get("done", False)
-        icon  = "[bright_green]✓[/bright_green]" if done else "[dim]○[/dim]"
-        label = f"[dim strike]{item['text']}[/dim strike]" if done else item["text"]
-        console.print(f"  [dim]{i:>2}.[/dim]  {icon}  {label}")
+def _do_check(args: list[str]):
+    sub = args[0].lower() if args else ""
 
-@check_app.callback(invoke_without_command=True)
-def check_default(ctx: typer.Context):
-    """[green]●[/green] Persistent checklist — your tasks, in your terminal"""
-    if ctx.invoked_subcommand is not None:
-        return
-    items = _load()
-    _header("CHECKLIST")
-    _print_list(items)
-    if items:
+    if not sub:
+        items = _load()
+        _header("CHECKLIST")
+        if not items:
+            console.print('  [dim]Empty. Try:  check add "do the thing"[/dim]\n'); return
+        for i, item in enumerate(items, 1):
+            icon  = "[bright_green]✓[/bright_green]" if item.get("done") else "[dim]○[/dim]"
+            label = f"[dim strike]{item['text']}[/dim strike]" if item.get("done") else item["text"]
+            console.print(f"  [dim]{i:>2}.[/dim]  {icon}  {label}")
         done  = sum(1 for i in items if i.get("done"))
         total = len(items)
-        pct   = int(done / total * 100)
-        bar_w = 30
-        filled = int(done / total * bar_w)
-        bar = f"[bright_green]{'█' * filled}[/bright_green][dim]{'░' * (bar_w - filled)}[/dim]"
-        console.print(f"\n  {bar}  [dim]{done}/{total}  ({pct}%)[/dim]")
-    console.print()
+        bw    = 30; fill = int(done / total * bw)
+        console.print(f"\n  [bright_green]{'█'*fill}[/bright_green][dim]{'░'*(bw-fill)}[/dim]  [dim]{done}/{total}[/dim]")
+        console.print(); return
 
-@check_app.command("add")
-def check_add(text: str = typer.Argument(..., help="Task description")):
-    """Add a task"""
-    items = _load()
-    items.append({"text": text, "done": False, "created": date.today().isoformat()})
-    _save(items)
-    console.print(f"\n  [bright_green]+[/bright_green]  {text}\n")
+    if sub == "add":
+        text = " ".join(args[1:])
+        if not text: console.print("  usage: check add <task>"); return
+        items = _load(); items.append({"text": text, "done": False, "created": date.today().isoformat()})
+        _save(items); console.print(f"\n  [bright_green]+[/bright_green]  {text}\n"); return
 
-@check_app.command("done")
-def check_done(n: int = typer.Argument(..., help="Task number to toggle")):
-    """Toggle a task done/undone"""
-    items = _load()
-    if not 1 <= n <= len(items):
-        console.print(f"\n  [red]✗[/red]  No task #{n}\n"); raise typer.Exit(1)
-    item = items[n - 1]
-    item["done"] = not item["done"]
-    _save(items)
-    state = "[bright_green]done ✓[/bright_green]" if item["done"] else "[dim]undone ○[/dim]"
-    console.print(f"\n  {item['text']}  →  {state}\n")
+    if sub == "done":
+        try: n = int(args[1])
+        except: console.print("  usage: check done <number>"); return
+        items = _load()
+        if not 1 <= n <= len(items): console.print(f"  [red]✗[/red]  no task #{n}"); return
+        items[n-1]["done"] = not items[n-1]["done"]; _save(items)
+        s = "[bright_green]done ✓[/bright_green]" if items[n-1]["done"] else "[dim]undone ○[/dim]"
+        console.print(f"\n  {items[n-1]['text']}  →  {s}\n"); return
 
-@check_app.command("rm")
-def check_rm(n: int = typer.Argument(..., help="Task number to remove")):
-    """Remove a task"""
-    items = _load()
-    if not 1 <= n <= len(items):
-        console.print(f"\n  [red]✗[/red]  No task #{n}\n"); raise typer.Exit(1)
-    removed = items.pop(n - 1)
-    _save(items)
-    console.print(f"\n  [dim]removed:[/dim]  {removed['text']}\n")
+    if sub == "rm":
+        try: n = int(args[1])
+        except: console.print("  usage: check rm <number>"); return
+        items = _load()
+        if not 1 <= n <= len(items): console.print(f"  [red]✗[/red]  no task #{n}"); return
+        removed = items.pop(n-1); _save(items)
+        console.print(f"\n  [dim]removed:[/dim]  {removed['text']}\n"); return
 
-@check_app.command("clear")
-def check_clear():
-    """Remove all completed tasks"""
-    items  = _load()
-    before = len(items)
-    items  = [i for i in items if not i.get("done")]
-    _save(items)
-    n = before - len(items)
-    console.print(f"\n  [dim]cleared {n} completed task{'s' if n != 1 else ''}[/dim]\n")
+    if sub == "clear":
+        items = _load(); before = len(items)
+        items = [i for i in items if not i.get("done")]; _save(items)
+        console.print(f"\n  [dim]cleared {before - len(items)} completed task(s)[/dim]\n"); return
 
+    console.print(f"  [red]✗[/red]  unknown subcommand: {sub}")
 
-# ═══════════════════════════════════════════════════════════════════════════
-# APP IDEA SPINNER
-# ═══════════════════════════════════════════════════════════════════════════
-
+# ── spin ────────────────────────────────────────────────────────────────────
 _IDEAS: dict[str, list[tuple[str, str]]] = {
     "visual": [
         ("Pixel Sorter",            "Sort pixels by hue or brightness in real time"),
@@ -271,7 +216,6 @@ _IDEAS: dict[str, list[tuple[str, str]]] = {
         ("Halftone Engine",         "Simulate newspaper halftone at variable screen angles"),
         ("Voronoi Painter",         "Click to drop seeds and watch a Voronoi diagram grow"),
         ("Perlin Terrain",          "Real-time 2D terrain generator with color biomes"),
-        ("SVG Morpher",             "Draw a path and morph it into another with easing"),
         ("Glitch Generator",        "Apply datamoshing and compression artifacts to images"),
     ],
     "audio": [
@@ -290,14 +234,12 @@ _IDEAS: dict[str, list[tuple[str, str]]] = {
         ("One-liner Journal",       "Date-stamped single lines — simple, searchable log"),
         ("Markdown Flashcards",     "Write Q/A pairs in Markdown, quiz yourself later"),
         ("Decision Matrix",         "Weighted criteria table that scores options fairly"),
-        ("Focus Sprint Timer",      "Pomodoro with adaptive break lengths and history"),
     ],
     "utility": [
         ("Regex Explainer",         "Match groups with human-readable step-by-step output"),
         ("Color Blind Sim",         "Preview any image through 8 types of color vision"),
         ("CSS Easing Playground",   "Drag bezier handles, copy the CSS value instantly"),
         ("Password Entropy Meter",  "Crack-time estimate and actionable suggestions"),
-        ("Font Pairing Lab",        "Drag-and-drop font combos with live preview"),
         ("Contrast Ratio Checker",  "Pick two colors, get WCAG pass/fail instantly"),
         ("Base Converter",          "Type in any numeric base, all others update live"),
     ],
@@ -307,7 +249,6 @@ _IDEAS: dict[str, list[tuple[str, str]]] = {
         ("Sort Algorithm Race",     "Watch bubble, merge, and quicksort compete live"),
         ("Network Graph Builder",   "Type node-edge pairs, see a force-directed graph"),
         ("Correlation Explorer",    "Upload two CSVs, find statistical correlations"),
-        ("Log Timeline",            "Paste any log file → visual event timeline"),
     ],
     "fun": [
         ("Vibe Checker",            "5 sliders → your totally unscientific vibe score"),
@@ -319,133 +260,95 @@ _IDEAS: dict[str, list[tuple[str, str]]] = {
         ("Keyboard Smash Analyzer", "Rate the quality of your asdfghjkl moments"),
     ],
 }
+_ALL = [(c, n, d) for c, pairs in _IDEAS.items() for n, d in pairs]
 
-_ALL = [(cat, name, desc) for cat, pairs in _IDEAS.items() for name, desc in pairs]
+def _do_spin(args: list[str]):
+    cat   = None
+    count = 1
+    i = 0
+    while i < len(args):
+        if args[i] in ("-c", "--category") and i + 1 < len(args):
+            cat = args[i + 1]; i += 2
+        elif args[i] in ("-n", "--count") and i + 1 < len(args):
+            try: count = int(args[i + 1])
+            except: pass
+            i += 2
+        else:
+            i += 1
 
-@app.command("spin")
-def spin(
-    category: Optional[str] = typer.Option(
-        None, "-c", "--category",
-        help=f"Category: {', '.join(_IDEAS)}",
-    ),
-    count: int = typer.Option(1, "-n", "--count", help="How many ideas to show"),
-):
-    """[green]●[/green] App idea spinner — get unstuck, build something"""
-    pool = [(c, n, d) for c, n, d in _ALL if category is None or c == category]
-
-    if not pool:
-        opts = ", ".join(_IDEAS)
-        console.print(f"\n  [red]✗[/red]  Unknown category. Options: [dim]{opts}[/dim]\n")
-        raise typer.Exit(1)
+    pool = [(c, n, d) for c, n, d in _ALL if cat is None or c == cat]
+    if cat and not pool:
+        console.print(f"\n  [red]✗[/red]  unknown category: {cat}")
+        console.print(f"  [dim]options: {', '.join(_IDEAS)}[/dim]\n"); return
 
     picks = random.sample(pool, min(count, len(pool)))
-
     _header("SPIN")
-
-    for i, (cat, name, desc) in enumerate(picks):
-        if i:
-            console.print()
-        cat_tag = Text(f"  [{cat}]", style="dim")
-        console.print(cat_tag)
+    for idx, (c, name, desc) in enumerate(picks):
+        if idx: console.print()
+        console.print(Text(f"  [{c}]", style="dim"))
         console.print(Text(f"  {name}", style="bold bright_green"))
         console.print(Text(f"  {desc}", style="dim"))
-
     console.print()
-    console.print(f"  [dim]run again · -n 3 for more · -c visual/audio/fun/… to filter[/dim]")
+    console.print("  [dim]run again · spin -n 3 · spin -c fun[/dim]")
     console.print()
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-# GAP VISUALIZER
-# ═══════════════════════════════════════════════════════════════════════════
-
-@app.command("gap")
-def gap(
-    name1:    str = typer.Argument(..., help="First person's name"),
-    dob1:     str = typer.Argument(..., help="First person's birth date (YYYY-MM-DD)"),
-    name2:    str = typer.Argument(..., help="Second person's name"),
-    dob2:     str = typer.Argument(..., help="Second person's birth date (YYYY-MM-DD)"),
-    lifespan: int = typer.Option(90, "-l", "--lifespan", help="Assumed lifespan in years"),
-):
-    """[green]●[/green] Gap visualizer — how many days did two lives share?"""
+# ── gap ─────────────────────────────────────────────────────────────────────
+def _do_gap(name1: str, dob1: str, name2: str, dob2: str, lifespan: int = 90):
     try:
         d1 = date.fromisoformat(dob1)
         d2 = date.fromisoformat(dob2)
     except ValueError:
-        console.print("\n  [red]✗[/red]  Dates must be YYYY-MM-DD\n")
-        raise typer.Exit(1)
+        console.print("\n  [red]✗[/red]  dates must be YYYY-MM-DD\n"); return
 
-    today    = date.today()
-    span     = timedelta(days=int(lifespan * 365.25))
-    death1   = d1 + span
-    death2   = d2 + span
-
-    overlap_start = max(d1, d2)
-    overlap_end   = min(death1, death2)
-    full_overlap  = max(0, (overlap_end - overlap_start).days)
-
-    lived_end     = min(overlap_end, today)
-    lived_overlap = max(0, (lived_end - overlap_start).days)
-
-    total_days    = span.days
-    pct_potential = full_overlap  / total_days * 100
-    pct_lived     = lived_overlap / total_days * 100
-
-    age_gap_days  = abs((d2 - d1).days)
-    age_gap_years = age_gap_days / 365.25
+    span          = timedelta(days=int(lifespan * 365.25))
+    death1, death2 = d1 + span, d2 + span
+    today         = date.today()
+    ov_start      = max(d1, d2)
+    ov_end        = min(death1, death2)
+    full_ov       = max(0, (ov_end - ov_start).days)
+    lived_ov      = max(0, (min(ov_end, today) - ov_start).days)
+    td            = span.days
     younger       = name2 if d1 <= d2 else name1
 
     _header("GAP VISUALIZER")
-
     t = Table(box=box.SIMPLE, show_header=False, padding=(0, 2))
-    t.add_column("k", style="dim",          width=24)
+    t.add_column("k", style="dim", width=24)
     t.add_column("v", style="bright_white")
-
-    t.add_row(f"{name1} born",       _fmt_date(d1))
-    t.add_row(f"{name2} born",       _fmt_date(d2))
-    t.add_row("Age gap",             f"{age_gap_years:.1f} yrs  ({age_gap_days:,} days)")
-    t.add_row("Overlap starts",      f"{_fmt_date(overlap_start)}  (when {younger} was born)")
-    t.add_row("Potential overlap",   f"{full_overlap:,} days  ({pct_potential:.1f}% of a {lifespan}-yr life)")
-    t.add_row("Lived so far",        f"{lived_overlap:,} days  ({pct_lived:.1f}%)")
-
-    console.print(t)
-    console.print()
+    t.add_row(f"{name1} born",     _fmt_date(d1))
+    t.add_row(f"{name2} born",     _fmt_date(d2))
+    t.add_row("Age gap",           f"{abs((d2-d1).days)/365.25:.1f} yrs  ({abs((d2-d1).days):,} days)")
+    t.add_row("Overlap starts",    f"{_fmt_date(ov_start)}  (when {younger} was born)")
+    t.add_row("Potential overlap", f"{full_ov:,} days  ({full_ov/td*100:.1f}% of a {lifespan}-yr life)")
+    t.add_row("Lived so far",      f"{lived_ov:,} days  ({lived_ov/td*100:.1f}%)")
+    console.print(t); console.print()
 
     console.print(f"  [dim]Timeline  (assumed {lifespan}-year lifespan)[/dim]\n")
+    BAR      = 52
+    earliest = min(d1, d2)
+    total_sp = (max(death1, death2) - earliest).days
 
-    BAR = 52
-    earliest     = min(d1, d2)
-    latest_death = max(death1, death2)
-    total_span   = (latest_death - earliest).days
-
-    def _bar(birth: date, name: str, color: str):
-        s = int((birth - earliest).days / total_span * BAR)
-        l = max(1, min(int(span.days / total_span * BAR), BAR - s))
+    def _bar(birth, name, color):
+        s = int((birth - earliest).days / total_sp * BAR)
+        l = max(1, min(int(span.days / total_sp * BAR), BAR - s))
         row = Text(f"  {name:<10}  ", style="dim")
-        row.append("·" * s,             style="dim")
-        row.append("█" * l,             style=color)
+        row.append("·" * s, style="dim")
+        row.append("█" * l, style=color)
         row.append("·" * (BAR - s - l), style="dim")
         return row
 
     console.print(_bar(d1, name1, "bright_green"))
     console.print(_bar(d2, name2, "cyan"))
     console.print()
-
-    ov_s = int((overlap_start - earliest).days / total_span * BAR)
-    ov_l = max(1, int(full_overlap / total_span * BAR))
+    ov_s = int((ov_start - earliest).days / total_sp * BAR)
+    ov_l = max(1, int(full_ov / total_sp * BAR))
     row  = Text(f"  {'overlap':<10}  ", style="dim")
-    row.append("·" * ov_s,                style="dim")
+    row.append("·" * ov_s, style="dim")
     row.append("▓" * min(ov_l, BAR - ov_s), style="bright_yellow")
     row.append("·" * max(0, BAR - ov_s - ov_l), style="dim")
-    row.append(f"  {pct_potential:.0f}%", style="dim")
-    console.print(row)
-    console.print()
+    row.append(f"  {full_ov/td*100:.0f}%", style="dim")
+    console.print(row); console.print()
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-# BURN NOTES
-# ═══════════════════════════════════════════════════════════════════════════
-
+# ── burn ─────────────────────────────────────────────────────────────────────
 def _enc(text: str) -> str:
     return base64.urlsafe_b64encode(zlib.compress(text.encode(), 9)).decode().rstrip("=")
 
@@ -453,31 +356,191 @@ def _dec(token: str) -> str:
     pad = token + "=" * (-len(token) % 4)
     return zlib.decompress(base64.urlsafe_b64decode(pad)).decode()
 
+def _do_burn(args: list[str]):
+    sub = args[0].lower() if args else ""
+    if sub == "enc":
+        msg = " ".join(args[1:])
+        if not msg: console.print("  usage: burn enc <message>"); return
+        token = _enc(msg)
+        _header("BURN — ENCODE")
+        console.print(f"  [dim]token[/dim]\n")
+        from rich.panel import Panel
+        console.print(Panel(f"[bright_green]{token}[/bright_green]", border_style="dim green", padding=(0, 2)))
+        console.print(f"\n  [dim]decode with:[/dim]  burn dec {token[:16]}…\n")
+        return
+    if sub == "dec":
+        token = args[1] if len(args) > 1 else ""
+        if not token: console.print("  usage: burn dec <token>"); return
+        try:
+            msg = _dec(token)
+            _header("BURN — DECODE")
+            from rich.panel import Panel
+            console.print(Panel(f"[bright_white]{msg}[/bright_white]", border_style="dim green", padding=(0, 2)))
+            console.print()
+        except Exception:
+            console.print("  [red]✗[/red]  invalid or corrupted token")
+        return
+    console.print("  usage: burn enc <message>  ·  burn dec <token>")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REPL DISPATCHER
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _dispatch(raw: str):
+    try:
+        parts = shlex.split(raw)
+    except ValueError:
+        parts = raw.split()
+    if not parts: return
+
+    cmd  = parts[0].lower()
+    rest = parts[1:]
+
+    if cmd in ("exit", "quit", "q", "bye"):
+        console.print("\n  [dim]bye[/dim]\n")
+        raise SystemExit(0)
+
+    if cmd in ("clear", "cls"):
+        os.system("cls" if os.name == "nt" else "clear")
+        _boot(); return
+
+    if cmd == "help":
+        _header("HELP")
+        rows = [
+            ("ip <CIDR>",              "subnet visualizer"),
+            ("check",                  "list tasks"),
+            ("check add <task>",       "add a task"),
+            ("check done <n>",         "toggle done"),
+            ("check rm <n>",           "remove"),
+            ("check clear",            "remove completed"),
+            ("spin",                   "random idea  ·  -c visual  ·  -n 3"),
+            ("gap <n1> <dob1> <n2> <dob2>", "lifespan overlap"),
+            ("burn enc <message>",     "encode note"),
+            ("burn dec <token>",       "decode note"),
+            ("clear · exit",           ""),
+        ]
+        for c, d in rows:
+            console.print(f"  [bright_green]{c:<32}[/bright_green][dim]{d}[/dim]")
+        console.print(); return
+
+    if cmd == "ip":
+        if not rest: console.print("  usage: ip <CIDR>  e.g. ip 192.168.1.1/24"); return
+        _do_ip(rest[0]); return
+
+    if cmd == "check":
+        _do_check(rest); return
+
+    if cmd == "spin":
+        _do_spin(rest); return
+
+    if cmd == "gap":
+        if len(rest) < 4:
+            console.print("  usage: gap <name1> <YYYY-MM-DD> <name2> <YYYY-MM-DD>"); return
+        _do_gap(rest[0], rest[1], rest[2], rest[3]); return
+
+    if cmd == "burn":
+        _do_burn(rest); return
+
+    console.print(f"  [red]✗[/red]  unknown command: [bold]{cmd}[/bold]  [dim](type help)[/dim]")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REPL LOOP
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _repl():
+    _boot()
+    while True:
+        try:
+            raw = input("hostlab  ").strip()
+        except (EOFError, KeyboardInterrupt):
+            console.print("\n  [dim]bye[/dim]\n")
+            break
+        if not raw:
+            continue
+        _dispatch(raw)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TYPER APP  (for scripting: hostlab ip ..., hostlab spin, etc.)
+# ═══════════════════════════════════════════════════════════════════════════
+
+app = typer.Typer(
+    name="hostlab",
+    help="HostLab terminal toolkit  —  run with no args for interactive mode",
+    no_args_is_help=False,
+    add_completion=False,
+    rich_markup_mode="rich",
+    invoke_without_command=True,
+)
+check_app = typer.Typer(no_args_is_help=False)
+burn_app  = typer.Typer(no_args_is_help=True)
+app.add_typer(check_app, name="check", help="Persistent checklist")
+app.add_typer(burn_app,  name="burn",  help="Encode / decode notes")
+
+@app.callback()
+def _root(ctx: typer.Context):
+    if ctx.invoked_subcommand is None:
+        _repl()
+        raise typer.Exit()
+
+@app.command("ip")
+def ip_cmd(address: str = typer.Argument(...)):
+    """Subnet visualizer"""
+    _do_ip(address)
+
+@app.command("spin")
+def spin_cmd(
+    category: Optional[str] = typer.Option(None, "-c", "--category"),
+    count: int = typer.Option(1, "-n", "--count"),
+):
+    """App idea spinner"""
+    args = []
+    if category: args += ["-c", category]
+    if count != 1: args += ["-n", str(count)]
+    _do_spin(args)
+
+@app.command("gap")
+def gap_cmd(
+    name1: str, dob1: str, name2: str, dob2: str,
+    lifespan: int = typer.Option(90, "-l", "--lifespan"),
+):
+    """Lifespan overlap visualizer"""
+    _do_gap(name1, dob1, name2, dob2, lifespan)
+
+@check_app.callback(invoke_without_command=True)
+def check_default(ctx: typer.Context):
+    """Persistent checklist"""
+    if ctx.invoked_subcommand is None:
+        _do_check([])
+
+@check_app.command("add")
+def check_add(text: str = typer.Argument(...)):
+    _do_check(["add", text])
+
+@check_app.command("done")
+def check_done(n: int = typer.Argument(...)):
+    _do_check(["done", str(n)])
+
+@check_app.command("rm")
+def check_rm(n: int = typer.Argument(...)):
+    _do_check(["rm", str(n)])
+
+@check_app.command("clear")
+def check_clear():
+    _do_check(["clear"])
+
 @burn_app.command("enc")
-def burn_enc(message: str = typer.Argument(..., help="Message to encode")):
-    """Compress a message into a shareable token"""
-    token = _enc(message)
-    _header("BURN — ENCODE")
-    console.print(f"  [dim]token[/dim]\n")
-    console.print(Panel(f"[bright_green]{token}[/bright_green]", border_style="dim green", padding=(0, 2)))
-    console.print(f"\n  [dim]decode with:[/dim]  hostlab burn dec {token[:16]}…\n")
+def burn_enc(message: str = typer.Argument(...)):
+    """Encode a message"""
+    _do_burn(["enc", message])
 
 @burn_app.command("dec")
-def burn_dec(token: str = typer.Argument(..., help="Token to decode")):
-    """Recover a message from a token"""
-    try:
-        msg = _dec(token)
-    except Exception:
-        console.print("\n  [red]✗[/red]  Invalid or corrupted token\n")
-        raise typer.Exit(1)
-    _header("BURN — DECODE")
-    console.print(Panel(f"[bright_white]{msg}[/bright_white]", border_style="dim green", padding=(0, 2)))
-    console.print()
+def burn_dec(token: str = typer.Argument(...)):
+    """Decode a token"""
+    _do_burn(["dec", token])
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-# ENTRY
-# ═══════════════════════════════════════════════════════════════════════════
 
 def main():
     app()
