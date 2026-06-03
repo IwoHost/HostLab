@@ -128,38 +128,6 @@ function doSpin(args) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// QR FORGE
-// ══════════════════════════════════════════════════════════════════════════
-import qrcode from 'qrcode-generator';
-
-function doQR(args) {
-  const text = args.join(' ');
-  if (!text) return 'usage: qr <url or text>\n';
-  try {
-    const qr = qrcode(0, 'M');
-    qr.addData(text);
-    qr.make();
-    const n = qr.getModuleCount();
-    const q = 2;
-    let out = `\n${line()}\n  QR FORGE\n${line()}\n\n`;
-    for (let r = -q; r < n + q; r++) {
-      let row = '  ';
-      for (let c = -q; c < n + q; c++) {
-        const inB = r >= 0 && r < n && c >= 0 && c < n;
-        const dark = inB ? qr.isDark(r, c) : false;
-        row += dark ? '  ' : '██';
-      }
-      out += row + '\n';
-    }
-    const preview = text.length > 50 ? text.slice(0,47)+'…' : text;
-    out += `\n  encoded · ${preview}\n\n`;
-    return out;
-  } catch(err) {
-    return `✗  qr failed: ${err.message}\n`;
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════
 // GAP VISUALIZER
 // ══════════════════════════════════════════════════════════════════════════
 function doGap(args) {
@@ -275,7 +243,6 @@ ${line()}
   gap <n1> <dob1> <n2> <dob2>  lifespan overlap  (YYYY-MM-DD)
   burn enc <message>            encode a note
   burn dec <token>              decode a note
-  qr <url or text>              QR code in terminal
   help                          show this
 
 ${line()}
@@ -292,7 +259,6 @@ function dispatch(raw, base) {
   if (cmd==='spin') return doSpin(args);
   if (cmd==='gap')  return doGap(args);
   if (cmd==='burn') return doBurn(args);
-  if (cmd==='qr')   return doQR(args);
   if (cmd==='help') return makeHelp(base);
   return `✗  unknown command: ${cmd}\n   type 'help' to see commands\n`;
 }
