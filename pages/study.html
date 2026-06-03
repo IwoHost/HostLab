@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+  window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
+  gtag('js',new Date());gtag('config','G-R7MJHBKJVY');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HostLab · Study</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
+<link rel="stylesheet" href="../other/backbutton.css">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#0c0c0c;--surface:#111110;--surface2:#161614;
+  --text-primary:#f0f0ee;--text-secondary:#888884;--text-muted:#3a3a38;
+  --border:#222220;--border-dim:#1a1a18;--accent:#f0f0ee;--tag-bg:#1a1a18;
+  --study:#a78bfa;--study-dim:#4c1d95;--study-text:#c4b5fd;--study-bg:#130d20;
+  --font-display:'Syne',sans-serif;--font-mono:'Syne Mono',monospace;
+}
+
+html.light{
+  --bg:#f0ede6;--surface:#ffffff;--surface2:#f7f5f0;
+  --text-primary:#0f0f0f;--text-secondary:#6b6b6b;--text-muted:#b0b0b0;
+  --border:#d8d5ce;--border-dim:#e8e5de;--accent:#0f0f0f;--tag-bg:#e8e5de;
+  --study:#7c3aed;--study-dim:#7c3aed;--study-text:#6d28d9;--study-bg:#f5f0ff;
+}
+
+html,body{transition:background .35s ease,color .35s ease}
+
+body{background:var(--bg);color:var(--text-primary);font-family:var(--font-display);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.02) 2px,rgba(0,0,0,.02) 4px);pointer-events:none;z-index:0}
+
+header{padding:48px 64px 24px;display:flex;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--border);position:relative;z-index:1}
+
+.logo{font-family:var(--font-mono);font-size:13px;letter-spacing:.12em;color:var(--text-primary);text-decoration:none}
+.logo span{color:var(--text-muted)}
+.logo .sub{color:var(--text-secondary);padding-left:2px}
+.header-right{display:flex;align-items:center;gap:24px}
+.header-meta{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:.08em}
+
+.hero{padding:80px 64px 64px;border-bottom:1px solid var(--border);position:relative;z-index:1;overflow:hidden}
+.hero-bg-symbol{position:absolute;right:56px;top:50%;transform:translateY(-50%);font-size:200px;font-weight:700;color:var(--border-dim);line-height:1;pointer-events:none;font-family:var(--font-mono);letter-spacing:-.05em;user-select:none;opacity:.5}
+.hero-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;color:var(--text-muted);text-transform:uppercase;margin-bottom:20px}
+.hero h1{font-size:clamp(52px,7.5vw,90px);font-weight:700;letter-spacing:-.03em;line-height:.95;color:var(--text-primary)}
+.hero h1 em{font-style:normal;color:var(--text-muted)}
+.hero-sub{margin-top:28px;font-size:14px;color:var(--text-secondary);max-width:440px;line-height:1.6}
+
+.inf02-badge{display:inline-flex;align-items:center;gap:8px;margin-top:32px;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;color:var(--study-text);border:1px solid var(--study-dim);padding:10px 18px;background:var(--study-bg)}
+
+.section-header{padding:36px 64px 20px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+.section-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;color:var(--text-muted);text-transform:uppercase}
+.count-badge{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);background:var(--tag-bg);padding:4px 10px;border-radius:100px;transition:background .35s ease}
+
+.grid{padding:0 64px 80px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2px;position:relative;z-index:1}
+
+.card{background:var(--surface);border:1px solid var(--border);overflow:hidden;cursor:pointer;text-decoration:none;color:inherit;display:flex;flex-direction:column;transition:transform .2s ease,box-shadow .2s ease,background .35s ease,border-color .35s ease;animation:fadeUp .5s ease both;position:relative}
+.card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:1}
+html.light .card:hover{box-shadow:0 12px 40px rgba(0,0,0,.08)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.card:nth-child(1){animation-delay:.05s}.card:nth-child(2){animation-delay:.1s}.card:nth-child(3){animation-delay:.15s}
+
+.card-thumb{width:100%;aspect-ratio:16/9;background:var(--tag-bg);overflow:hidden;position:relative}
+.card-thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+.card:hover .card-thumb img{transform:scale(1.04)}
+
+.card-thumb-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:32px;color:var(--border);letter-spacing:.05em}
+
+.open-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s ease;background:rgba(0,0,0,.4)}
+.card:hover .open-overlay{opacity:1}
+.open-btn{width:48px;height:48px;border-radius:50%;background:var(--text-primary);display:flex;align-items:center;justify-content:center}
+.open-btn svg path{fill:var(--bg)}
+
+.card-body{padding:18px 22px 20px;flex:1;display:flex;flex-direction:column;gap:10px}
+.card-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card-title-block{display:flex;flex-direction:column;gap:4px}
+.card-index{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:.1em}
+.card-title{font-size:17px;font-weight:700;letter-spacing:-.02em;color:var(--text-primary);line-height:1.2}
+.card-desc{font-size:13px;color:var(--text-secondary);line-height:1.55;flex:1}
+
+.type-badge{font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;padding:3px 8px;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.type-badge.bash{background:var(--study-bg);color:#4ade80;border:1px solid #166534}
+.type-badge.cmd{background:#06101e;color:#38bdf8;border:1px solid #0369a1}
+.type-badge.exam{background:#1a1400;color:#fbbf24;border:1px solid #92400e}
+
+.card-footer{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);transition:border-color .35s ease}
+.card-tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:var(--text-muted);background:var(--tag-bg);padding:3px 7px;border-radius:2px;text-transform:uppercase}
+.card-arrow{width:28px;height:28px;border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s,border-color .2s}
+.card:hover .card-arrow{background:var(--accent);border-color:var(--accent)}
+.card-arrow svg path{stroke:var(--text-primary)}
+.card:hover .card-arrow svg path{stroke:var(--bg)}
+
+footer{border-top:1px solid var(--border);padding:24px 64px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+.footer-left{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:.1em}
+.footer-right{font-family:var(--font-mono);font-size:10px;color:var(--text-muted)}
+
+.theme-switch{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.switch-label{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase}
+.switch-track{width:36px;height:20px;background:#2a2a28;border-radius:100px;border:1px solid var(--border);position:relative;flex-shrink:0;transition:background .35s ease,border-color .35s ease}
+.switch-thumb{position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#555550;transition:transform .3s ease,background .35s ease}
+html.light .switch-thumb{transform:translateX(16px);background:#0f0f0f}
+html.light .switch-track{background:#d0ceca}
+
+@media(max-width:768px){header,.hero,.section-header,.grid,footer{padding-left:24px;padding-right:24px}.grid{grid-template-columns:1fr}.hero h1{font-size:44px}.hero-bg-symbol{font-size:110px;right:20px}}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="../index.html" class="logo">HOST<span>·</span>LAB<span class="sub"> / STUDY</span></a>
+  <div class="header-right">
+    <div class="header-meta" id="site-count">— STUDY</div>
+    <div class="theme-switch" id="theme-switch" title="Toggle light mode">
+      <span class="switch-label" id="switch-label">LIGHT</span>
+      <div class="switch-track"><div class="switch-thumb"></div></div>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-bg-symbol">∑</div>
+  <div class="hero-label">Nauka do egzaminu</div>
+  <h1>Stu<em>dy</em></h1>
+  <p class="hero-sub">Interaktywne kursy terminala do egzaminu INF02. Linux Bash i pliki wsadowe — od zera, krok po kroku, bez nudy.</p>
+  <div class="inf02-badge">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6 4v4M6 3h.01" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    EGZAMIN INF02 · TECHNIK INFORMATYK
+  </div>
+</section>
+
+<div class="section-header">
+  <span class="section-label">Kursy</span>
+  <span class="count-badge" id="count-badge">2</span>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<footer>
+  <div class="footer-left">HOSTLAB · STUDY</div>
+  <div class="footer-right" id="footer-date"></div>
+</footer>
+
+<script>
+const TOOLS=[
+  {
+    url:'../websites/bash-learn.html',
+    title:'Linux Bash',
+    desc:'15 interaktywnych lekcji: nawigacja po systemie plików, praca z plikami, grep, chmod, pipe i więcej. Symulowany terminal Linuxa w przeglądarce.',
+    type:'bash',
+    typeLabel:'LINUX',
+    tags:['bash','linux','inf02'],
+    placeholder:'$_',
+  },
+  {
+    url:'../websites/batch-learn.html',
+    title:'Pliki Wsadowe',
+    desc:'12 lekcji CMD: echo, dir, cd, del, copy, zmienne set, warunki if, pętle for i tworzenie plików .bat. Symulowany wiersz poleceń Windows.',
+    type:'cmd',
+    typeLabel:'WINDOWS CMD',
+    tags:['batch','.bat','cmd','inf02'],
+    placeholder:'C:\\>_',
+  },
+];
+
+document.getElementById('footer-date').textContent=new Date().toLocaleDateString('en-GB',{year:'numeric',month:'long',day:'numeric'}).toUpperCase();
+
+const themeSwitch=document.getElementById('theme-switch');
+const switchLabel=document.getElementById('switch-label');
+themeSwitch.addEventListener('click',()=>{
+  const isLight=document.documentElement.classList.toggle('light');
+  switchLabel.textContent=isLight?'DARK':'LIGHT';
+  localStorage.setItem('hostlab-theme',isLight?'light':'dark');
+});
+if(localStorage.getItem('hostlab-theme')==='light'){document.documentElement.classList.add('light');switchLabel.textContent='DARK'}
+
+const grid=document.getElementById('grid');
+
+TOOLS.forEach((t,i)=>{
+  const card=document.createElement('a');
+  card.className='card';card.href=t.url;
+
+  const tagHTML=(t.tags||[]).map(tg=>`<span class="tag">${tg}</span>`).join('');
+  const num=String(i+1).padStart(2,'0');
+
+  card.innerHTML=`
+    <div class="card-thumb">
+      <div class="card-thumb-placeholder">${t.placeholder}</div>
+      <div class="open-overlay">
+        <div class="open-btn">
+          <svg width="14" height="16" viewBox="0 0 14 16" fill="none"><path d="M1 1L13 8L1 15V1Z" fill="white"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-header-row">
+        <div class="card-title-block">
+          <div class="card-index">${num}</div>
+          <div class="card-title">${t.title}</div>
+        </div>
+        <span class="type-badge ${t.type}">${t.typeLabel}</span>
+      </div>
+      <p class="card-desc">${t.desc}</p>
+      <div class="card-footer">
+        <div class="card-tags">${tagHTML}</div>
+        <span class="card-arrow">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+  `;
+  grid.appendChild(card);
+});
+</script>
+</body>
+</html>
