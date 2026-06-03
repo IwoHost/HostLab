@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hostlab-terminal"
+version = "1.0.0"
+description = "HostLab terminal toolkit — a CLI port of the personal experiment hub"
+requires-python = ">=3.10"
+dependencies = [
+    "typer>=0.12",
+    "rich>=13",
+]
+
+[project.scripts]
+hostlab = "hostlab.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["hostlab*"]
