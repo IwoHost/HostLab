@@ -89,81 +89,74 @@ function doIP(args) {
 // ══════════════════════════════════════════════════════════════════════════
 // SPIN
 // ══════════════════════════════════════════════════════════════════════════
-const IDEAS = {
-  visual: [
-    ['Pixel Sorter',            'Sort pixels by hue or brightness in real time'],
-    ['ASCII Cam',               'Turn a webcam feed into live ASCII art'],
-    ['Gradient Mesh Editor',    'Drag control points to sculpt smooth color gradients'],
-    ['Reaction Diffusion',      'Interactive Turing-pattern simulator on a canvas'],
-    ['Chromatic Aberration Lab','Apply lens-split RGB fringing to any uploaded image'],
-    ['Halftone Engine',         'Simulate newspaper halftone at variable screen angles'],
-    ['Voronoi Painter',         'Click to drop seeds and watch a Voronoi diagram grow'],
-    ['Glitch Generator',        'Apply datamoshing and compression artifacts to images'],
-  ],
-  audio: [
-    ['Chord Namer',             'Click piano keys and instantly see the chord name'],
-    ['Binaural Beat Gen',       'Set two slightly-offset tones for focus or sleep'],
-    ['Lo-fi Degrader',          'Apply vinyl crackle and tape hiss to any audio'],
-    ['Arpeggiator',             'Play a chord and loop through its notes in patterns'],
-    ['Spectral Freeze',         'Freeze a moment of sound and let it drone forever'],
-    ['Euclidean Drummer',       'Generative drum machine built on Euclidean rhythms'],
-  ],
-  productivity: [
-    ['Habit Punch Card',        'Heatmap-style tracker for daily habit streaks'],
-    ['Timezone Overlap',        'Find meeting windows across multiple time zones'],
-    ['Meeting Cost Clock',      'Watch money drain as your meeting runs over'],
-    ['One-liner Journal',       'Date-stamped single lines — simple, searchable log'],
-    ['Decision Matrix',         'Weighted criteria table that scores options fairly'],
-  ],
-  utility: [
-    ['Regex Explainer',         'Match groups with human-readable step-by-step output'],
-    ['Color Blind Sim',         'Preview any image through 8 types of color vision'],
-    ['Password Entropy Meter',  'Crack-time estimate and actionable suggestions'],
-    ['Contrast Ratio Checker',  'Pick two colors, get WCAG pass/fail instantly'],
-    ['Base Converter',          'Type in any numeric base, all others update live'],
-  ],
-  data: [
-    ['Spending Heatmap',        'Paste a CSV bank export → calendar heatmap'],
-    ['Word Frequency Map',      'Paste text → word cloud sorted by count'],
-    ['Sort Algorithm Race',     'Watch bubble, merge, and quicksort compete live'],
-    ['Network Graph Builder',   'Type node-edge pairs, see a force-directed graph'],
-  ],
-  fun: [
-    ['Vibe Checker',            '5 sliders → your totally unscientific vibe score'],
-    ['Excuse Generator',        '500 plausible excuses by situation and severity'],
-    ['Commit Message Oracle',   'Suspiciously accurate random commit messages'],
-    ['Fake Loading Screen',     'Convincing progress bar with dramatic log output'],
-    ['Which Framework Are You?','5 questions → get roasted by a JS framework'],
-    ['Keyboard Smash Analyzer', 'Rate the quality of your asdfghjkl moments'],
-  ],
-};
-const ALL_IDEAS = Object.entries(IDEAS).flatMap(([cat,items])=>items.map(([n,d])=>[cat,n,d]));
+const STYLES = [
+  'Retro Terminal','Cyberpunk','Vaporwave','Dark Academia','Brutalist',
+  'Neon Noir','Minimal Zen','Art Deco','Cottagecore','Memphis',
+  'Glassmorphism','Neumorphism','Bauhaus','Psychedelic','Lo-Fi Pixel',
+  'Swiss Grid','Bento Grid','Y2K Throwback','Solarpunk','Maximalist',
+  'Monochrome Ink','Aurora','Industrial Grit','Kawaii Soft','Steampunk',
+  'Futuristic Flat','Organic Blob','Bold Type','Comic Book','Deep Space',
+  'Earthy Muted','High Contrast','Glitch Art','Corp. Memphis','Fantasy Map',
+  'Isometric 3D','Hand-Drawn','Blueprint','Luxury Black','Paper Cut',
+  'Neon Pastel','Retro Future','Analog Noise','Wabi-Sabi','Cybernetic',
+  'Ocean Depth','Desert Sand','Nordic Frost','Tokyo Pop','Rainforest',
+];
+const TYPES = [
+  'Dashboard','Portfolio','Social App','Dev Tool','Game',
+  'Productivity','Marketplace','Data Viz','Landing Page','Note-Taking',
+  'Music Player','Weather App','Habit Tracker','Chat UI','Code Editor',
+];
+const VIBES = [
+  'Dark & Moody','Bright & Fun','Glitchy','Elegant','Chaotic',
+  'Calm & Clean','Bold & Loud','Mysterious','Futuristic','Nostalgic',
+  'Warm & Cozy','Cold & Sharp',
+];
 
 function doSpin(args) {
-  let cat=null, count=1;
+  let count = 1;
   for (let i=0; i<args.length; i++) {
-    if ((args[i]==='-c'||args[i]==='--category') && args[i+1]) { cat=args[++i]; }
-    else if ((args[i]==='-n'||args[i]==='--count') && args[i+1]) { count=parseInt(args[++i])||1; }
+    if ((args[i]==='-n'||args[i]==='--count') && args[i+1]) { count=Math.min(parseInt(args[++i])||1,5); }
   }
-
-  let pool = cat ? (IDEAS[cat]||[]).map(([n,d])=>[cat,n,d]) : ALL_IDEAS;
-  if (cat && !IDEAS[cat])
-    return `✗  unknown category: ${cat}\n   options: ${Object.keys(IDEAS).join('  ')}`;
-
-  count = Math.min(count, pool.length, 9);
-  const picks=[], tmp=[...pool];
-  for (let i=0; i<count; i++) {
-    const idx = Math.floor(Math.random()*tmp.length);
-    picks.push(tmp.splice(idx,1)[0]);
-  }
-
+  const pick = arr => arr[Math.floor(Math.random()*arr.length)];
   let out = `\n${line()}\n  SPIN\n${line()}\n\n`;
-  picks.forEach(([c,name,desc],i)=>{
-    if (i) out+='\n';
-    out += `  [${c}]\n  ${name}\n  ${desc}\n`;
-  });
-  out += `\n  spin again · spin -n 3 · spin -c fun\n\n`;
+  for (let i=0; i<count; i++) {
+    if (i) out += '\n';
+    out += `  ${pick(STYLES)} × ${pick(TYPES)} × ${pick(VIBES)}\n`;
+  }
+  out += `\n  spin again · spin -n 3 for more\n\n`;
   return out;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// QR FORGE
+// ══════════════════════════════════════════════════════════════════════════
+import qrcode from 'qrcode-generator';
+
+function doQR(args) {
+  const text = args.join(' ');
+  if (!text) return 'usage: qr <url or text>\n';
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    const n = qr.getModuleCount();
+    const q = 2;
+    let out = `\n${line()}\n  QR FORGE\n${line()}\n\n`;
+    for (let r = -q; r < n + q; r++) {
+      let row = '  ';
+      for (let c = -q; c < n + q; c++) {
+        const inB = r >= 0 && r < n && c >= 0 && c < n;
+        const dark = inB ? qr.isDark(r, c) : false;
+        row += dark ? '  ' : '██';
+      }
+      out += row + '\n';
+    }
+    const preview = text.length > 50 ? text.slice(0,47)+'…' : text;
+    out += `\n  encoded · ${preview}\n\n`;
+    return out;
+  } catch(err) {
+    return `✗  qr failed: ${err.message}\n`;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -277,12 +270,13 @@ ${line()}
 ${line()}
 
   ip <CIDR>                     subnet visualizer
-  spin                          random app idea
-  spin -c <cat>                 visual  audio  productivity  utility  data  fun
-  spin -n <count>               show multiple ideas
+  spin                          random app idea combo
+  spin -n <count>               multiple combos (up to 5)
   gap <n1> <dob1> <n2> <dob2>  lifespan overlap  (YYYY-MM-DD)
   burn enc <message>            encode a note
   burn dec <token>              decode a note
+  qr <url or text>              QR code in terminal
+  help                          show this
 
 ${line()}
 `;
@@ -298,6 +292,7 @@ function dispatch(raw, base) {
   if (cmd==='spin') return doSpin(args);
   if (cmd==='gap')  return doGap(args);
   if (cmd==='burn') return doBurn(args);
+  if (cmd==='qr')   return doQR(args);
   if (cmd==='help') return makeHelp(base);
   return `✗  unknown command: ${cmd}\n   type 'help' to see commands\n`;
 }

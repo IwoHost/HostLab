@@ -11,8 +11,6 @@ import shlex
 import os
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Optional
-
 import typer
 from rich.console import Console
 from rich.panel import Panel
@@ -71,10 +69,11 @@ def _boot():
     t.add_column("desc", style="dim")
     t.add_row("ip <CIDR>",        "subnet visualizer")
     t.add_row("check",            "persistent checklist")
-    t.add_row("spin",             "app idea spinner  (-c visual/fun/…  -n 3)")
+    t.add_row("spin",             "random app idea combo  (-n 3 for more)")
     t.add_row("gap <n1> <dob1> <n2> <dob2>", "lifespan overlap")
     t.add_row("burn enc <msg>",   "encode a note")
     t.add_row("burn dec <token>", "decode a note")
+    t.add_row("qr <url or text>", "generate a QR code (needs: pip install qrcode)")
     t.add_row("clear · exit",     "")
     console.print(t)
     console.print()
@@ -206,90 +205,78 @@ def _do_check(args: list[str]):
     console.print(f"  [red]✗[/red]  unknown subcommand: {sub}")
 
 # ── spin ────────────────────────────────────────────────────────────────────
-_IDEAS: dict[str, list[tuple[str, str]]] = {
-    "visual": [
-        ("Pixel Sorter",            "Sort pixels by hue or brightness in real time"),
-        ("ASCII Cam",               "Turn a webcam feed into live ASCII art"),
-        ("Gradient Mesh Editor",    "Drag control points to sculpt smooth color gradients"),
-        ("Reaction Diffusion",      "Interactive Turing-pattern simulator on a canvas"),
-        ("Chromatic Aberration Lab","Apply lens-split RGB fringing to any uploaded image"),
-        ("Halftone Engine",         "Simulate newspaper halftone at variable screen angles"),
-        ("Voronoi Painter",         "Click to drop seeds and watch a Voronoi diagram grow"),
-        ("Perlin Terrain",          "Real-time 2D terrain generator with color biomes"),
-        ("Glitch Generator",        "Apply datamoshing and compression artifacts to images"),
-    ],
-    "audio": [
-        ("Chord Namer",             "Click piano keys and instantly see the chord name"),
-        ("Binaural Beat Gen",       "Set two slightly-offset tones for focus or sleep"),
-        ("Lo-fi Degrader",          "Apply vinyl crackle and tape hiss to any audio"),
-        ("Arpeggiator",             "Play a chord and loop through its notes in patterns"),
-        ("Spectral Freeze",         "Freeze a moment of sound and let it drone forever"),
-        ("Euclidean Drummer",       "Generative drum machine built on Euclidean rhythms"),
-        ("Pitch Visualizer",        "Real-time pitch detection displayed on a musical staff"),
-    ],
-    "productivity": [
-        ("Habit Punch Card",        "Heatmap-style tracker for daily habit streaks"),
-        ("Timezone Overlap",        "Find meeting windows across multiple time zones"),
-        ("Meeting Cost Clock",      "Watch money drain as your meeting runs over"),
-        ("One-liner Journal",       "Date-stamped single lines — simple, searchable log"),
-        ("Markdown Flashcards",     "Write Q/A pairs in Markdown, quiz yourself later"),
-        ("Decision Matrix",         "Weighted criteria table that scores options fairly"),
-    ],
-    "utility": [
-        ("Regex Explainer",         "Match groups with human-readable step-by-step output"),
-        ("Color Blind Sim",         "Preview any image through 8 types of color vision"),
-        ("CSS Easing Playground",   "Drag bezier handles, copy the CSS value instantly"),
-        ("Password Entropy Meter",  "Crack-time estimate and actionable suggestions"),
-        ("Contrast Ratio Checker",  "Pick two colors, get WCAG pass/fail instantly"),
-        ("Base Converter",          "Type in any numeric base, all others update live"),
-    ],
-    "data": [
-        ("Spending Heatmap",        "Paste a CSV bank export → calendar heatmap"),
-        ("Word Frequency Map",      "Paste text → word cloud sorted by count"),
-        ("Sort Algorithm Race",     "Watch bubble, merge, and quicksort compete live"),
-        ("Network Graph Builder",   "Type node-edge pairs, see a force-directed graph"),
-        ("Correlation Explorer",    "Upload two CSVs, find statistical correlations"),
-    ],
-    "fun": [
-        ("Vibe Checker",            "5 sliders → your totally unscientific vibe score"),
-        ("Excuse Generator",        "500 plausible excuses by situation and severity"),
-        ("Commit Message Oracle",   "Suspiciously accurate random commit messages"),
-        ("Error Message Glossary",  "Human-readable dictionary of confusing system errors"),
-        ("Fake Loading Screen",     "Convincing progress bar with dramatic log output"),
-        ("Which Framework Are You?","5 questions → get roasted by a JS framework"),
-        ("Keyboard Smash Analyzer", "Rate the quality of your asdfghjkl moments"),
-    ],
-}
-_ALL = [(c, n, d) for c, pairs in _IDEAS.items() for n, d in pairs]
+_STYLES = [
+    'Retro Terminal','Cyberpunk','Vaporwave','Dark Academia','Brutalist',
+    'Neon Noir','Minimal Zen','Art Deco','Cottagecore','Memphis',
+    'Glassmorphism','Neumorphism','Bauhaus','Psychedelic','Lo-Fi Pixel',
+    'Swiss Grid','Bento Grid','Y2K Throwback','Solarpunk','Maximalist',
+    'Monochrome Ink','Aurora','Industrial Grit','Kawaii Soft','Steampunk',
+    'Futuristic Flat','Organic Blob','Bold Type','Comic Book','Deep Space',
+    'Earthy Muted','High Contrast','Glitch Art','Corp. Memphis','Fantasy Map',
+    'Isometric 3D','Hand-Drawn','Blueprint','Luxury Black','Paper Cut',
+    'Neon Pastel','Retro Future','Analog Noise','Wabi-Sabi','Cybernetic',
+    'Ocean Depth','Desert Sand','Nordic Frost','Tokyo Pop','Rainforest',
+]
+_TYPES = [
+    'Dashboard','Portfolio','Social App','Dev Tool','Game',
+    'Productivity','Marketplace','Data Viz','Landing Page','Note-Taking',
+    'Music Player','Weather App','Habit Tracker','Chat UI','Code Editor',
+]
+_VIBES = [
+    'Dark & Moody','Bright & Fun','Glitchy','Elegant','Chaotic',
+    'Calm & Clean','Bold & Loud','Mysterious','Futuristic','Nostalgic',
+    'Warm & Cozy','Cold & Sharp',
+]
 
 def _do_spin(args: list[str]):
-    cat   = None
     count = 1
     i = 0
     while i < len(args):
-        if args[i] in ("-c", "--category") and i + 1 < len(args):
-            cat = args[i + 1]; i += 2
-        elif args[i] in ("-n", "--count") and i + 1 < len(args):
+        if args[i] in ("-n", "--count") and i + 1 < len(args):
             try: count = int(args[i + 1])
             except: pass
             i += 2
         else:
             i += 1
+    count = min(max(count, 1), 5)
 
-    pool = [(c, n, d) for c, n, d in _ALL if cat is None or c == cat]
-    if cat and not pool:
-        console.print(f"\n  [red]✗[/red]  unknown category: {cat}")
-        console.print(f"  [dim]options: {', '.join(_IDEAS)}[/dim]\n"); return
-
-    picks = random.sample(pool, min(count, len(pool)))
     _header("SPIN")
-    for idx, (c, name, desc) in enumerate(picks):
+    for idx in range(count):
         if idx: console.print()
-        console.print(Text(f"  [{c}]", style="dim"))
-        console.print(Text(f"  {name}", style="bold bright_green"))
-        console.print(Text(f"  {desc}", style="dim"))
+        style = random.choice(_STYLES)
+        kind  = random.choice(_TYPES)
+        vibe  = random.choice(_VIBES)
+        console.print(f"  [bright_green]{style}[/bright_green] [dim]×[/dim] [bright_green]{kind}[/bright_green] [dim]×[/dim] [bright_green]{vibe}[/bright_green]")
     console.print()
-    console.print("  [dim]run again · spin -n 3 · spin -c fun[/dim]")
+    console.print("  [dim]spin again · spin -n 3 for more[/dim]")
+    console.print()
+
+
+# ── qr ──────────────────────────────────────────────────────────────────────
+def _do_qr(args: list[str]):
+    text = " ".join(args)
+    if not text:
+        console.print("  usage: qr <url or text>"); return
+    try:
+        import qrcode as _qr
+    except ImportError:
+        console.print("  [red]✗[/red]  qrcode not installed — run: pip install qrcode")
+        return
+
+    qr = _qr.QRCode(border=2, error_correction=_qr.constants.ERROR_CORRECT_M)
+    qr.add_data(text)
+    qr.make(fit=True)
+
+    _header("QR FORGE")
+    for row in qr.modules:
+        line = "  "
+        for cell in row:
+            # dark module = 2 spaces (dark bg), light module = 2 blocks (bright)
+            line += "  " if cell else "██"
+        console.print(line, markup=False)
+    console.print()
+    preview = text[:50] + ("…" if len(text) > 50 else "")
+    console.print(f"  [dim]encoded · {preview}[/dim]")
     console.print()
 
 # ── gap ─────────────────────────────────────────────────────────────────────
@@ -414,10 +401,11 @@ def _dispatch(raw: str):
             ("check done <n>",         "toggle done"),
             ("check rm <n>",           "remove"),
             ("check clear",            "remove completed"),
-            ("spin",                   "random idea  ·  -c visual  ·  -n 3"),
+            ("spin",                   "random app combo  ·  spin -n 3"),
             ("gap <n1> <dob1> <n2> <dob2>", "lifespan overlap"),
             ("burn enc <message>",     "encode note"),
             ("burn dec <token>",       "decode note"),
+            ("qr <url or text>",       "QR code in terminal"),
             ("clear · exit",           ""),
         ]
         for c, d in rows:
@@ -441,6 +429,9 @@ def _dispatch(raw: str):
 
     if cmd == "burn":
         _do_burn(rest); return
+
+    if cmd == "qr":
+        _do_qr(rest); return
 
     console.print(f"  [red]✗[/red]  unknown command: [bold]{cmd}[/bold]  [dim](type help)[/dim]")
 
@@ -491,15 +482,9 @@ def ip_cmd(address: str = typer.Argument(...)):
     _do_ip(address)
 
 @app.command("spin")
-def spin_cmd(
-    category: Optional[str] = typer.Option(None, "-c", "--category"),
-    count: int = typer.Option(1, "-n", "--count"),
-):
-    """App idea spinner"""
-    args = []
-    if category: args += ["-c", category]
-    if count != 1: args += ["-n", str(count)]
-    _do_spin(args)
+def spin_cmd(count: int = typer.Option(1, "-n", "--count")):
+    """Random app idea combo"""
+    _do_spin(["-n", str(count)] if count != 1 else [])
 
 @app.command("gap")
 def gap_cmd(
@@ -540,6 +525,11 @@ def burn_enc(message: str = typer.Argument(...)):
 def burn_dec(token: str = typer.Argument(...)):
     """Decode a token"""
     _do_burn(["dec", token])
+
+@app.command("qr")
+def qr_cmd(text: list[str] = typer.Argument(...)):
+    """Generate a QR code in the terminal"""
+    _do_qr(list(text))
 
 
 def main():
