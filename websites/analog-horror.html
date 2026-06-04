@@ -348,7 +348,7 @@ h1::after { content: '_'; animation: blink 1s step-end infinite; }
   <div class="warn-note">
     <span>⚠</span> VIEWING THIS TAPE IS NOT RECOMMENDED &nbsp;·&nbsp;
     ALL PROCESSING IS LOCAL — NO UPLOAD &nbsp;·&nbsp;
-    <span>OUTPUT: WEBM</span>
+    <span>OUTPUT: MP4 / WEBM</span>
   </div>
 
 </div><!-- /container -->
@@ -897,7 +897,11 @@ async function startProcessing() {
     ...dest.stream.getAudioTracks(),
   ]);
 
-  let mime = 'video/webm;codecs=vp9,opus';
+  // Try MP4 first (Chrome 130+, Safari), fall back to WebM
+  let mime = 'video/mp4;codecs=avc1,mp4a.40.2';
+  if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/mp4;codecs=avc1';
+  if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/mp4';
+  if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm;codecs=vp9,opus';
   if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm;codecs=vp8,opus';
   if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
 
@@ -910,7 +914,8 @@ async function startProcessing() {
     const url  = URL.createObjectURL(blob);
     downloadBtn.onclick = () => {
       const a = document.createElement('a');
-      a.href = url; a.download = `${tapeId}_PROCESSED.webm`;
+      const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+      a.href = url; a.download = `${tapeId}_PROCESSED.${ext}`;
       a.click();
     };
     downloadBtn.classList.remove('hidden');
