@@ -345,6 +345,8 @@ function runBatch(code) {
 
   function expandVars(s) {
     s = String(s);
+    // %%x loop variable
+    s = s.replace(/%%([\w])/g, (_, v) => { const val = env[v.toUpperCase()]; return val !== undefined ? val : '%%'+v; });
     // %VAR%
     s = s.replace(/%([^%]+)%/g, (_, v) => env[v.toUpperCase()] !== undefined ? env[v.toUpperCase()] : '%'+v+'%');
     return s;
@@ -523,7 +525,7 @@ function runBatch(code) {
           }
           body=body.startsWith('(')?body.slice(1,-1).trim():body;
           for(let n=step>0?from:from;step>0?n<=to:n>=to;n+=step){
-            env[varN]=String(n);
+            env[varN.toUpperCase()]=String(n);
             execSingleCmd(expandVars(body));
           }
         }
@@ -543,7 +545,7 @@ function runBatch(code) {
           }
           body=body.startsWith('(')?body.slice(1,-1).trim():body;
           for(const item of items){
-            env[varN]=item;
+            env[varN.toUpperCase()]=item;
             execSingleCmd(expandVars(body));
           }
         }
@@ -638,7 +640,7 @@ function runBatch(code) {
       ? (()=>{const r=[];for(let n=opts.from;opts.step>0?n<=opts.to:n>=opts.to;n+=opts.step)r.push(String(n));return r;})()
       : opts.items;
     for(const item of items){
-      env[varN]=item;
+      env[varN.toUpperCase()]=item;
       execLines(body,0);
     }
     return i;
