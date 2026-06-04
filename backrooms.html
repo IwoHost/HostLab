@@ -459,9 +459,7 @@ function render() {
       const tiles = getChunk(cx, cy);
       const [ox, oy] = w2s(cx * CPX, cy * CPX);
 
-      const tw  = tpx + 0.5;
-      const sw  = Math.min(tpx * 0.38, 11); // shadow strip width
-      const doShadow = zoom > 0.25;
+      const tw = tpx + 0.5;
 
       // ── Main pass: walls + floor + damp + shadow (single loop) ───────────
       for (let ty = 0; ty < CT; ty++) {
@@ -489,25 +487,15 @@ function render() {
           ctx.fillStyle = floorPat;
           ctx.fillRect(sx, sy, tw, tw);
 
-          // Check void neighbours (reused for damp overlay + shadow)
-          const vN = (ty === 0    || !tiles[(ty-1)*CT+tx]);
-          const vS = (ty === CT-1 || !tiles[(ty+1)*CT+tx]);
-          const vW = (tx === 0    || !tiles[ty*CT+tx-1]);
-          const vE = (tx === CT-1 || !tiles[ty*CT+tx+1]);
-
           // Damp darkening on wall-adjacent tiles
-          if (vN || vS || vW || vE) {
+          const vAdj =
+            (ty === 0    || !tiles[(ty-1)*CT+tx]) ||
+            (ty === CT-1 || !tiles[(ty+1)*CT+tx]) ||
+            (tx === 0    || !tiles[ty*CT+tx-1])   ||
+            (tx === CT-1 || !tiles[ty*CT+tx+1]);
+          if (vAdj) {
             ctx.fillStyle = 'rgba(0,0,0,0.22)';
             ctx.fillRect(sx, sy, tw, tw);
-          }
-
-          // Shadow strips — solid rects, zero gradient allocation
-          if (doShadow) {
-            ctx.fillStyle = 'rgba(0,0,0,0.60)';
-            if (vN) ctx.fillRect(sx,        sy,        tw, sw);
-            if (vS) ctx.fillRect(sx,        sy+tpx-sw, tw, sw);
-            if (vW) ctx.fillRect(sx,        sy,        sw, tw);
-            if (vE) ctx.fillRect(sx+tpx-sw, sy,        sw, tw);
           }
         }
       }
