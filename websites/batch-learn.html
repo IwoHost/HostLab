@@ -251,7 +251,7 @@ const LESSONS = [
     task: 'Utwórz zmienną <code>set imie=</code> (wpisz swoje imię) i wypisz ją przez <code>echo Czesc, %imie%!</code>. W CMD zmienne odczytujemy przez <code>%NAZWA%</code>.',
     starter: '@echo off\nset imie=\nrem Uzupelnij zmienna imie i wypisz powitanie: Czesc, %imie%!\n',
     hint: '<b>set ZMIENNA=wartość</b> — przypisanie (bez spacji!)\n<b>%ZMIENNA%</b> — odczyt zmiennej\n\n⚠ Uważaj na spacje:\n<b>set x=5</b> ✓\n<b>set x = 5</b> ✗ (spacja wchodzi w wartość!)',
-    check: (code, out) => /set imie=\w/.test(code) && code.toLowerCase().includes('echo') && out.length > 2,
+    check: (code, out) => /set imie=\w+/.test(code) && code.includes('%imie%') && out.toLowerCase().includes('czesc'),
     ok: 'Zmienne CMD: set NAZWA=wartość (przypisanie), %NAZWA% (odczyt). Bez spacji wokół = !'
   },
   {
