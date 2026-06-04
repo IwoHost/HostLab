@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Backrooms</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box }
+html, body { width:100%; height:100%; overflow:hidden; background:#0a0805 }
+canvas { display:block; cursor:grab; touch-action:none; user-select:none }
+canvas.drag { cursor:grabbing }
+#hud {
+  position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+  color:#3d3020; font:11px/1 'Courier New',monospace; letter-spacing:.2em;
+  pointer-events:none; white-space:nowrap; user-select:none;
+}
+#home {
+  position:fixed; top:14px; right:14px;
+  background:rgba(8,6,3,.85); color:#4a3c28; border:1px solid #221a0e;
+  font:16px/1 'Courier New',monospace; padding:6px 11px;
+  cursor:pointer; outline:none; user-select:none;
+  transition:color .2s,border-color .2s;
+}
+#home:hover { color:#8a7050; border-color:#443020 }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">DEPTH 0 · ZONE ALPHA</div>
+<button id="home">⌂</button>
+<script>
+'use strict';
+
+// ── CONFIG ─────────────────────────────────────────────────────────────────────
+const CT   = 24;          // tiles per chunk side
+const TS   = 32;          // tile size px at zoom=1
+const CPX  = CT * TS;     // chunk pixel size = 768
+const SEED = 0xBA1C5EED;
+
+const ZONES = [
+  'ALPHA','BETA','GAMMA','DELTA','EPSILON',
+  'ZETA','ETA','THETA','IOTA','KAPPA','LAMBDA','MU'
+];
+
+// ── SEEDED RNG (mulberry32) ────────────────────────────────────────────────────
+function mulberry32(seed) {
+  let s = (seed >>> 0) || 1;
+  return () => {
+    s |= 0; s = s + 0x6D2B79F5 | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 0x100000000;
+  };
+}
+
+// Order-independent hash for a chunk coordinate pair
+function chunkHash(cx, cy) {
+  let h = SEED ^ 0xDEADBEEF;
+  h = (Math.imul(h ^ cx, 0x9e3779b9)) >>> 0;
+  h = (Math.imul(h ^ cy, 0x6b43a9b5)) >>> 0;
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+// Hash for a shared edge — symmetric key so both sides agree
+function edgeHash(ax, ay, bx, by) {
+  // Normalize so smaller coord is first
+  const k1 = ax < bx || (ax === bx && ay < by) ? ax * 100003 + ay : bx * 100003 + by;
+  const k2 = ax < bx || (ax === bx && ay < by) ? bx * 100003 + by : ax * 100003 + ay;
+  let h = SEED ^ 0xC0FFEE;
+  h = (Math.imul(h ^ k1, 0x9e3779b9)) >>> 0;
+  h = (Math.imul(h ^ k2, 0x6b43a9b5)) >>> 0;
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+// ── BSP ROOM GENERATOR ─────────────────────────────────────────────────────────
+function genChunk(cx, cy) {
+  const tiles = new Uint8Array(CT * CT); // 0=void, 1=floor
+  const rng   = mulberry32(chunkHash(cx, cy));
+  const rooms = []; // [{mx,my} room centers]
+
+  // Recursive BSP split — fills leaves into `rooms`, carves floor into `tiles`
+  function split(rx, ry, rw, rh, depth) {
+    const MIN = 5; // minimum room dimension in tiles
+
+    // Decide if we can split
+    const canV = rw >= MIN * 2 + 2;
+    const canH = rh >= MIN * 2 + 2;
+
+    if (depth >= 4 || (!canV && !canH)) {
+      // Leaf: carve room leaving 1-tile wall border
+      const fx = rx + 1, fy = ry + 1, fw = rw - 2, fh = rh - 2;
+      if (fw >= 2 && fh >= 2) {
+        for (let y = fy; y < fy + fh; y++)
+          for (let x = fx; x < fx + fw; x++)
+            tiles[y * CT + x] = 1;
+        rooms.push({ mx: fx + (fw >> 1), my: fy + (fh >> 1) });
+      }
+      return;
+    }
+
+    // Choose split direction: bias toward splitting the longer axis
+    let goV;
+    if (canV && canH) {
+      goV = rng() < (rw > rh + 3 ? 0.72 : rw < rh - 3 ? 0.28 : 0.5);
+    } else {
+      goV = canV;
+    }
+
+    if (goV) {
+      // Vertical split — pick position
+      const at = MIN + 1 + Math.floor(rng() * (rw - MIN * 2 - 1));
+      split(rx,      ry, at,      rh, depth + 1);
+      split(rx + at, ry, rw - at, rh, depth + 1);
+    } else {
+      const at = MIN + 1 + Math.floor(rng() * (rh - MIN * 2 - 1));
+      split(rx, ry,      rw, at,      depth + 1);
+      split(rx, ry + at, rw, rh - at, depth + 1);
+    }
+  }
+
+  split(0, 0, CT, CT, 0);
+
+  // Connect rooms with L-shaped corridors (2 tiles wide)
+  if (rooms.length >= 2) {
+    // Random spanning tree order
+    const indices = rooms.map((_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    for (let i = 1; i < indices.length; i++) {
+      const a = rooms[indices[i - 1]], b = rooms[indices[i]];
+      // L-corridor: go horizontal to elbow, then vertical
+      const ex = rng() < 0.5 ? a.mx : b.mx;
+      carveLine(tiles, a.mx, a.my, ex,   a.my);
+      carveLine(tiles, ex,   a.my, ex,   b.my);
+      carveLine(tiles, ex,   b.my, b.mx, b.my);
+    }
+  }
+
+  // Add cross-chunk doorways and corridors leading inward
+  addEdgeDoors(cx, cy, tiles);
+
+  return tiles;
+}
+
+// Carve a 2-tile-wide corridor along an axis-aligned line
+function carveLine(tiles, x0, y0, x1, y1) {
+  const dx = Math.sign(x1 - x0), dy = Math.sign(y1 - y0);
+  let x = x0, y = y0;
+  while (true) {
+    mark(tiles, x, y);
+    if (dx !== 0) mark(tiles, x, y + 1);  // widen vertically
+    if (dy !== 0) mark(tiles, x + 1, y);  // widen horizontally
+    if (x === x1 && y === y1) break;
+    if (x !== x1) x += dx; else y += dy;
+  }
+}
+
+function mark(tiles, x, y) {
+  if (x >= 0 && x < CT && y >= 0 && y < CT) tiles[y * CT + x] = 1;
+}
+
+// Place doorways on all 4 edges, then carve inward until hitting existing floor
+function addEdgeDoors(cx, cy, tiles) {
+  // East edge ↔ west edge of (cx+1, cy)
+  const ePos = doorPos(edgeHash(cx, cy, cx + 1, cy));
+  punchAndCarve(tiles, CT - 1, ePos, 0, -1); // x=CT-1, carve leftward (dx=-1)
+
+  // West edge ↔ east edge of (cx-1, cy)
+  const wPos = doorPos(edgeHash(cx - 1, cy, cx, cy));
+  punchAndCarve(tiles, 0, wPos, 0, 1); // x=0, carve rightward (dx=+1)
+
+  // South edge ↔ north edge of (cx, cy+1)
+  const sPos = doorPos(edgeHash(cx, cy, cx, cy + 1));
+  punchAndCarveH(tiles, sPos, CT - 1, -1); // y=CT-1, carve upward (dy=-1)
+
+  // North edge ↔ south edge of (cx, cy-1)
+  const nPos = doorPos(edgeHash(cx, cy - 1, cx, cy));
+  punchAndCarveH(tiles, nPos, 0, 1); // y=0, carve downward (dy=+1)
+}
+
+// Door position (2 tiles wide) along a chunk edge
+function doorPos(hash) {
+  const rng = mulberry32(hash);
+  return 3 + Math.floor(rng() * (CT - 6));
+}
+
+// Punch vertical-edge door and carve horizontally inward
+function punchAndCarve(tiles, edgeX, pos, unused, inDx) {
+  // pos = y tile, inDx = +1 (carve right) or -1 (carve left) — not used, use direction
+  const dx = edgeX === 0 ? 1 : -1;
+  // Mark door tiles on edge
+  mark(tiles, edgeX, pos);
+  mark(tiles, edgeX, pos + 1);
+  // Carve inward until we hit an existing floor tile (or reach the middle)
+  for (let tx = edgeX + dx; Math.abs(tx - edgeX) < CT; tx += dx) {
+    const wasFl = tiles[pos * CT + tx] === 1;
+    mark(tiles, tx, pos);
+    mark(tiles, tx, pos + 1);
+    if (wasFl) break; // connected to existing floor
+    if (Math.abs(tx - edgeX) >= CT - 2) break;
+  }
+}
+
+// Punch horizontal-edge door and carve vertically inward
+function punchAndCarveH(tiles, pos, edgeY, dy) {
+  mark(tiles, pos,     edgeY);
+  mark(tiles, pos + 1, edgeY);
+  for (let ty = edgeY + dy; Math.abs(ty - edgeY) < CT; ty += dy) {
+    const wasFl = tiles[ty * CT + pos] === 1;
+    mark(tiles, pos,     ty);
+    mark(tiles, pos + 1, ty);
+    if (wasFl) break;
+    if (Math.abs(ty - edgeY) >= CT - 2) break;
+  }
+}
+
+// ── CHUNK CACHE ────────────────────────────────────────────────────────────────
+const chunkCache = new Map();
+const CACHE_MAX  = 400;
+
+function getChunk(cx, cy) {
+  const k = `${cx},${cy}`;
+  if (!chunkCache.has(k)) {
+    if (chunkCache.size >= CACHE_MAX) {
+      // Evict oldest entry
+      chunkCache.delete(chunkCache.keys().next().value);
+    }
+    chunkCache.set(k, genChunk(cx, cy));
+  }
+  return chunkCache.get(k);
+}
+
+// ── CAMERA ─────────────────────────────────────────────────────────────────────
+let camX = 0, camY = 0, zoom = 1;
+const ZOOM_MIN = 0.2, ZOOM_MAX = 4.5;
+
+let W = 0, H = 0;
+
+function w2s(wx, wy) { return [(wx - camX) * zoom + W / 2, (wy - camY) * zoom + H / 2]; }
+function s2w(sx, sy) { return [(sx - W / 2) / zoom + camX, (sy - H / 2) / zoom + camY]; }
+
+function zoomAt(sx, sy, factor) {
+  const [wx, wy] = s2w(sx, sy);
+  zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom * factor));
+  camX = wx - (sx - W / 2) / zoom;
+  camY = wy - (sy - H / 2) / zoom;
+}
+
+// ── FLOOR TEXTURE (offscreen canvas, tiled) ────────────────────────────────────
+// Build a 128×128 carpet-noise texture once, reuse as pattern
+function buildFloorPattern(ctx) {
+  const sz = 128;
+  const oc = document.createElement('canvas');
+  oc.width = oc.height = sz;
+  const oc2 = oc.getContext('2d');
+  const id = oc2.createImageData(sz, sz);
+  const d  = id.data;
+  const rng = mulberry32(0xCAFE_B4BE);
+  for (let i = 0; i < sz * sz; i++) {
+    const n = rng();
+    // Sickly yellow-green base: R≈138 G≈128 B≈72, with ±20 noise
+    const j = (n - 0.5) * 40;
+    d[i * 4]     = Math.max(0, Math.min(255, 138 + j));
+    d[i * 4 + 1] = Math.max(0, Math.min(255, 128 + j * 0.85));
+    d[i * 4 + 2] = Math.max(0, Math.min(255,  72 + j * 0.5));
+    d[i * 4 + 3] = 255;
+  }
+  oc2.putImageData(id, 0, 0);
+  return ctx.createPattern(oc, 'repeat');
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let floorPat = null;
+
+// Per-chunk slightly different floor tint (seeded by chunk position)
+function chunkFloorTint(cx, cy) {
+  const rng = mulberry32(chunkHash(cx, cy) ^ 0xF100);
+  const bias = (rng() - 0.5) * 18;
+  // Returns an rgba overlay to give each chunk subtle hue variation
+  const r = Math.round(bias > 0 ? bias : 0);
+  const b = Math.round(bias < 0 ? -bias * 0.5 : 0);
+  return `rgba(${r},0,${b},0.12)`;
+}
+
+function render() {
+  if (!floorPat) floorPat = buildFloorPattern(ctx);
+
+  ctx.fillStyle = '#0a0805';
+  ctx.fillRect(0, 0, W, H);
+
+  const tpx = TS * zoom; // tile pixel size on screen
+
+  // Visible chunk range
+  const [wx0, wy0] = s2w(0, 0);
+  const [wx1, wy1] = s2w(W, H);
+  const cx0 = Math.floor(wx0 / CPX) - 1;
+  const cy0 = Math.floor(wy0 / CPX) - 1;
+  const cx1 = Math.ceil(wx1  / CPX) + 1;
+  const cy1 = Math.ceil(wy1  / CPX) + 1;
+
+  for (let cy = cy0; cy <= cy1; cy++) {
+    for (let cx = cx0; cx <= cx1; cx++) {
+      const tiles = getChunk(cx, cy);
+      const [ox, oy] = w2s(cx * CPX, cy * CPX);
+
+      // ── Floor tiles ──────────────────────────────────────────────────────
+      for (let ty = 0; ty < CT; ty++) {
+        for (let tx = 0; tx < CT; tx++) {
+          if (!tiles[ty * CT + tx]) continue;
+
+          const sx = ox + tx * tpx;
+          const sy = oy + ty * tpx;
+          const tw  = tpx + 0.5; // slight overhang to prevent gaps
+
+          // Base carpet pattern
+          ctx.fillStyle = floorPat;
+          ctx.fillRect(sx, sy, tw, tw);
+
+          // Fine grid lines at reasonable zoom
+          if (zoom > 0.5) {
+            ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+            ctx.lineWidth = 0.4;
+            ctx.strokeRect(sx + 0.2, sy + 0.2, tpx - 0.4, tpx - 0.4);
+          }
+        }
+      }
+
+      // ── Per-chunk subtle tint overlay ────────────────────────────────────
+      // (gives rooms slightly different aged/damp feel)
+      ctx.fillStyle = chunkFloorTint(cx, cy);
+      for (let ty = 0; ty < CT; ty++) {
+        for (let tx = 0; tx < CT; tx++) {
+          if (!tiles[ty * CT + tx]) continue;
+          ctx.fillRect(ox + tx * tpx, oy + ty * tpx, tpx + 0.5, tpx + 0.5);
+        }
+      }
+
+      // ── Wall-height shadow pass ──────────────────────────────────────────
+      // For each floor tile bordering void, draw a dark inset gradient
+      // (simulates wall casting shadow downward onto the floor)
+      // Only at zoom levels where it reads well
+      if (zoom > 0.3) {
+        const sw = Math.min(tpx * 0.45, 14); // shadow width
+
+        for (let ty = 0; ty < CT; ty++) {
+          for (let tx = 0; tx < CT; tx++) {
+            if (!tiles[ty * CT + tx]) continue;
+
+            const sx = ox + tx * tpx;
+            const sy = oy + ty * tpx;
+
+            // North neighbor void → shadow from top
+            if (ty === 0 || !tiles[(ty - 1) * CT + tx]) {
+              const g = ctx.createLinearGradient(sx, sy, sx, sy + sw);
+              g.addColorStop(0, 'rgba(0,0,0,0.75)');
+              g.addColorStop(1, 'rgba(0,0,0,0)');
+              ctx.fillStyle = g;
+              ctx.fillRect(sx, sy, tpx + 0.5, sw);
+            }
+            // South void → shadow from bottom
+            if (ty === CT - 1 || !tiles[(ty + 1) * CT + tx]) {
+              const g = ctx.createLinearGradient(sx, sy + tpx, sx, sy + tpx - sw);
+              g.addColorStop(0, 'rgba(0,0,0,0.75)');
+              g.addColorStop(1, 'rgba(0,0,0,0)');
+              ctx.fillStyle = g;
+              ctx.fillRect(sx, sy + tpx - sw, tpx + 0.5, sw);
+            }
+            // West void → shadow from left
+            if (tx === 0 || !tiles[ty * CT + (tx - 1)]) {
+              const g = ctx.createLinearGradient(sx, sy, sx + sw, sy);
+              g.addColorStop(0, 'rgba(0,0,0,0.75)');
+              g.addColorStop(1, 'rgba(0,0,0,0)');
+              ctx.fillStyle = g;
+              ctx.fillRect(sx, sy, sw, tpx + 0.5);
+            }
+            // East void → shadow from right
+            if (tx === CT - 1 || !tiles[ty * CT + (tx + 1)]) {
+              const g = ctx.createLinearGradient(sx + tpx, sy, sx + tpx - sw, sy);
+              g.addColorStop(0, 'rgba(0,0,0,0.75)');
+              g.addColorStop(1, 'rgba(0,0,0,0)');
+              ctx.fillStyle = g;
+              ctx.fillRect(sx + tpx - sw, sy, sw, tpx + 0.5);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ── INPUT ──────────────────────────────────────────────────────────────────────
+let dragging = false, dragX = 0, dragY = 0;
+let velX = 0, velY = 0;
+let rafFling = null;
+let lastMoveAt = 0;
+
+function stopFling() {
+  if (rafFling) { cancelAnimationFrame(rafFling); rafFling = null; }
+}
+
+function startFling() {
+  function step() {
+    const spd = Math.hypot(velX, velY);
+    if (spd < 0.08) { velX = velY = 0; return; }
+    camX -= velX / zoom;
+    camY -= velY / zoom;
+    velX *= 0.88;
+    velY *= 0.88;
+    render();
+    rafFling = requestAnimationFrame(step);
+  }
+  rafFling = requestAnimationFrame(step);
+}
+
+// Mouse
+canvas.addEventListener('mousedown', e => {
+  stopFling(); velX = velY = 0;
+  dragging = true; dragX = e.clientX; dragY = e.clientY;
+  canvas.classList.add('drag');
+});
+canvas.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const dx = e.clientX - dragX, dy = e.clientY - dragY;
+  camX -= dx / zoom; camY -= dy / zoom;
+  velX = dx; velY = dy;
+  dragX = e.clientX; dragY = e.clientY;
+  lastMoveAt = performance.now();
+  render();
+});
+canvas.addEventListener('mouseup', () => {
+  dragging = false; canvas.classList.remove('drag');
+  if (performance.now() - lastMoveAt < 120) startFling();
+});
+canvas.addEventListener('mouseleave', () => {
+  dragging = false; canvas.classList.remove('drag');
+});
+
+// Wheel zoom
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+  render();
+}, { passive: false });
+
+// Touch
+let lastTouches = null, lastPinchD = 0;
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault(); stopFling(); velX = velY = 0;
+  if (e.touches.length === 2) {
+    lastPinchD = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  }
+  lastTouches = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }));
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const ts = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }));
+  if (ts.length === 1 && lastTouches?.length >= 1) {
+    const dx = ts[0].x - lastTouches[0].x, dy = ts[0].y - lastTouches[0].y;
+    camX -= dx / zoom; camY -= dy / zoom;
+    velX = dx; velY = dy;
+  } else if (ts.length === 2 && lastTouches?.length >= 2) {
+    const d  = Math.hypot(ts[0].x - ts[1].x, ts[0].y - ts[1].y);
+    const cx = (ts[0].x + ts[1].x) / 2, cy_ = (ts[0].y + ts[1].y) / 2;
+    zoomAt(cx, cy_, d / lastPinchD);
+    lastPinchD = d;
+  }
+  lastTouches = ts; render();
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  lastTouches = null;
+  if (e.touches.length === 0) startFling();
+}, { passive: false });
+
+// Keyboard pan + zoom
+const keysDown = new Set();
+window.addEventListener('keydown', e => keysDown.add(e.key));
+window.addEventListener('keyup',   e => keysDown.delete(e.key));
+
+setInterval(() => {
+  let moved = false;
+  const spd = 5 / zoom;
+  if (keysDown.has('ArrowLeft')  || keysDown.has('a') || keysDown.has('A')) { camX -= spd; moved = true; }
+  if (keysDown.has('ArrowRight') || keysDown.has('d') || keysDown.has('D')) { camX += spd; moved = true; }
+  if (keysDown.has('ArrowUp')    || keysDown.has('w') || keysDown.has('W')) { camY -= spd; moved = true; }
+  if (keysDown.has('ArrowDown')  || keysDown.has('s') || keysDown.has('S')) { camY += spd; moved = true; }
+  if (keysDown.has('+') || keysDown.has('=')) { zoomAt(W / 2, H / 2, 1.03); moved = true; }
+  if (keysDown.has('-'))                      { zoomAt(W / 2, H / 2, 0.97); moved = true; }
+  if (moved) render();
+}, 16);
+
+// Home button
+document.getElementById('home').addEventListener('click', () => {
+  stopFling(); velX = velY = 0;
+  camX = 0; camY = 0; zoom = 1;
+  render();
+});
+
+// ── HUD ─────────────────────────────────────────────────────────────────────
+const hudEl = document.getElementById('hud');
+function hudLoop() {
+  const depth  = Math.round(Math.hypot(camX, camY) / CPX);
+  const zi     = (Math.abs(Math.floor(camX / CPX)) + Math.abs(Math.floor(camY / CPX))) % ZONES.length;
+  hudEl.textContent = `DEPTH ${depth} · ZONE ${ZONES[zi]}`;
+  requestAnimationFrame(hudLoop);
+}
+
+// ── RESIZE + BOOT ───────────────────────────────────────────────────────────
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  render();
+}
+window.addEventListener('resize', resize);
+resize();
+requestAnimationFrame(hudLoop);
+</script>
+</body>
+</html>
