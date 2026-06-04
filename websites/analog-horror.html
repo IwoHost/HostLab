@@ -362,7 +362,8 @@ let tapeDate  = null;
 let tapeId    = null;
 let rafHandle = null;
 
-const glitchSM = { active: false, timer: 1.2, band: null };
+const glitchSM   = { active: false, timer: 1.2, band: null, heavy: false };
+const outroState  = { running: false };
 
 // DOM
 const uploadZone    = document.getElementById('uploadZone');
@@ -459,7 +460,7 @@ function extractPreview() {
     const ctx = previewCanvas.getContext('2d');
     drawCropped(ctx, vid, sz);
     const vig = buildVignette(sz, sz);
-    applyPixels(ctx, sz, sz, 0, 0.09, vig, true);
+    applyPixels(ctx, sz, sz, 0, 0.04, vig, true);
     drawOverlay(ctx, sz, sz, tapeDate, 0, true);
     previewSection.classList.remove('hidden');
     setStatus('TAPE LOADED — READY TO PROCESS', '', 'READY');
@@ -491,7 +492,7 @@ function buildVignette(w, h) {
     const vy = (y / h - .5) * 2;
     for (let x = 0; x < w; x++) {
       const vx = (x / w - .5) * 2;
-      t[y * w + x] = Math.max(0, 1 - (vx*vx + vy*vy) * .58);
+      t[y * w + x] = Math.max(0, 1 - (vx*vx + vy*vy) * .44);
     }
   }
   return t;
@@ -516,16 +517,18 @@ function tickGlitch(h) {
   if (glitchSM.active) {
     if (glitchSM.timer <= 0) {
       glitchSM.active = false;
-      glitchSM.timer  = .7 + xrand() * 4.5;
+      glitchSM.heavy  = false;
+      glitchSM.timer  = .5 + xrand() * 3.5;
     }
   } else {
     if (glitchSM.timer <= 0) {
       glitchSM.active = true;
-      glitchSM.timer  = .04 + xrand() * .4;
+      glitchSM.heavy  = xrand() < .22; // 22% chance of heavy glitch episode
+      glitchSM.timer  = glitchSM.heavy ? (.2 + xrand() * .9) : (.04 + xrand() * .3);
       glitchSM.band   = {
-        y: Math.floor(xrand() * h),
-        height: 12 + Math.floor(xrand() * 90),
-        strength: 12 + xrand() * 60,
+        y:        Math.floor(xrand() * h),
+        height:   glitchSM.heavy ? (40 + Math.floor(xrand() * 140)) : (12 + Math.floor(xrand() * 70)),
+        strength: glitchSM.heavy ? (60 + xrand() * 120) : (10 + xrand() * 45),
       };
     }
   }
@@ -555,17 +558,20 @@ function trackingOffsets(h, t) {
 function applyPixels(ctx, w, h, time, noiseLevel, vig, isPreview) {
   xSeed = (xSeed + Date.now()) | 1;
 
+  const isHeavy = !isPreview && glitchSM.active && glitchSM.heavy;
   const img = ctx.getImageData(0, 0, w, h);
   const src = img.data;
   const dst = new Uint8ClampedArray(src.length);
-  const ca  = isPreview ? 2 : (2 + Math.floor(noiseLevel * 9));
+  // Heavy glitch amplifies chromatic aberration 4x
+  const ca  = isPreview ? 2 : (isHeavy ? (8 + Math.floor(noiseLevel * 20)) : (2 + Math.floor(noiseLevel * 6)));
   const nStr= noiseLevel * 255;
   const tOff= isPreview ? new Int16Array(h) : trackingOffsets(h, time);
 
   for (let y = 0; y < h; y++) {
     const tx      = tOff[y];
     const row     = y * w;
-    const scanDim = (y & 1) === 0 ? .70 : 1.0;
+    // Softer scanlines — less harsh dimming
+    const scanDim = (y & 1) === 0 ? .80 : 1.0;
 
     for (let x = 0; x < w; x++) {
       const sx  = Math.max(0, Math.min(w-1, x + tx));
@@ -581,15 +587,21 @@ function applyPixels(ctx, w, h, time, noiseLevel, vig, isPreview) {
       let g = src[gi + 1];
       let b = src[bi + 2];
 
+      // Subtle noise — much less than before
       const n = (xrand() - .5) * nStr;
       r += n; g += n; b += n;
 
-      // Warm VHS yellow cast
+      // Heavy desaturation + dull VHS palette
       const luma = r * .299 + g * .587 + b * .114;
-      const ds   = .30;
-      r = r * (1-ds) + luma * 1.09 * ds;
-      g = g * (1-ds) + luma * 0.97 * ds;
-      b = b * (1-ds) + luma * 0.70 * ds;
+      const ds   = .52;
+      r = r * (1-ds) + luma * 1.02 * ds;
+      g = g * (1-ds) + luma * 0.94 * ds;
+      b = b * (1-ds) + luma * 0.68 * ds;
+
+      // VHS pedestal — lift blacks, compress highlights (real VHS doesn't go full black)
+      r = r * .84 + 18;
+      g = g * .84 + 18;
+      b = b * .84 + 18;
 
       r *= scanDim; g *= scanDim; b *= scanDim;
 
@@ -617,6 +629,21 @@ function applyPixels(ctx, w, h, time, noiseLevel, vig, isPreview) {
   }
 
   ctx.putImageData(new ImageData(dst, w, h), 0, 0);
+
+  // Digital block corruption — copy a strip from elsewhere (heavy glitch only)
+  if (!isPreview && isHeavy && xrand() < .55) {
+    const strips = 1 + Math.floor(xrand() * 3);
+    for (let s = 0; s < strips; s++) {
+      const srcY  = Math.floor(xrand() * (h - 12));
+      const dstY  = Math.floor(xrand() * (h - 12));
+      const rows  = 2 + Math.floor(xrand() * 10);
+      const shift = Math.floor((xrand() - .5) * 30);
+      try {
+        const strip = ctx.getImageData(0, srcY, w, rows);
+        ctx.putImageData(strip, shift, dstY);
+      } catch(_) {}
+    }
+  }
 
   // Tape dropout
   if (!isPreview && xrand() < .045) {
@@ -808,9 +835,67 @@ async function startProcessing() {
   const duration = vid.duration;
   let noiseLevel = .09;
 
+  const OUTRO_MSGS = [
+    'RECORDING STOPPED UNEXPECTEDLY',
+    'TAPE DAMAGED',
+    '** DO NOT CONTINUE VIEWING **',
+    'ERROR CODE: 0x3A1F',
+    'SIGNAL LOST',
+  ];
+
   vid.addEventListener('ended', () => {
-    recorder.stop();
     if (rafHandle) cancelAnimationFrame(rafHandle);
+    outroState.running = true;
+    const outroStart = Date.now();
+    const OUTRO_MS   = 2800;
+
+    function outroFrame() {
+      const elapsed = Date.now() - outroStart;
+      if (elapsed >= OUTRO_MS) {
+        outroState.running = false;
+        recorder.stop();
+        return;
+      }
+
+      xSeed = (xSeed + elapsed) | 1;
+
+      // Full static
+      const si = ctx.getImageData(0, 0, sz, sz);
+      const sd = si.data;
+      const staticBlend = Math.min(1, elapsed / 120);
+      for (let i = 0; i < sd.length; i += 4) {
+        const n = xrand() * 255;
+        sd[i]   = sd[i]   * (1-staticBlend) + n * staticBlend;
+        sd[i+1] = sd[i+1] * (1-staticBlend) + n * staticBlend;
+        sd[i+2] = sd[i+2] * (1-staticBlend) + n * staticBlend;
+        sd[i+3] = 255;
+      }
+      ctx.putImageData(si, 0, 0);
+
+      // Flashing error messages
+      const msgIdx   = Math.floor(elapsed / 600) % OUTRO_MSGS.length;
+      const showText = Math.floor(elapsed / 200) % 3 !== 0; // blink
+      if (elapsed > 200 && showText) {
+        const fs  = Math.max(14, Math.floor(sz / 18));
+        ctx.font  = `${fs}px 'VT323', monospace`;
+        ctx.fillStyle = 'rgba(220, 18, 18, .92)';
+        const msg = OUTRO_MSGS[msgIdx];
+        const mw  = ctx.measureText(msg).width;
+        ctx.fillText(msg, (sz - mw) / 2, sz / 2);
+
+        if (elapsed > 800) {
+          ctx.font = `${Math.floor(fs * .7)}px 'VT323', monospace`;
+          ctx.fillStyle = 'rgba(200,190,160,.6)';
+          const sub = '[ TAPE ' + tapeId + ' ]';
+          const sw  = ctx.measureText(sub).width;
+          ctx.fillText(sub, (sz - sw) / 2, sz / 2 + fs * 1.4);
+        }
+      }
+
+      rafHandle = requestAnimationFrame(outroFrame);
+    }
+
+    outroFrame();
   }, { once: true });
 
   function frame() {
@@ -820,7 +905,7 @@ async function startProcessing() {
     let sum = 0;
     for (let i = 0; i < tdBuf.length; i++) { const v = tdBuf[i]/128 - 1; sum += v*v; }
     const rms    = Math.sqrt(sum / tdBuf.length);
-    const target = rms < .025 ? .48 : (rms < .08 ? .16 : .09);
+    const target = rms < .025 ? .32 : (rms < .08 ? .08 : .04);
     noiseLevel  += (target - noiseLevel) * .07;
 
     noiseGain.gain.value = .012 + (1 - Math.min(rms * 7, 1)) * .055;
