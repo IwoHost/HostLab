@@ -9,7 +9,7 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HostLab Â· Study</title>
+<title>HostLab · Study</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
 <link rel="stylesheet" href="../other/backbutton.css">
@@ -95,9 +95,9 @@ html.light .switch-track{background:#d0ceca}
 <body>
 
 <header>
-  <a href="../index.html" class="logo">HOST<span>Â·</span>LAB<span style="color:var(--text-secondary);padding-left:2px"> / STUDY</span></a>
+  <a href="../index.html" class="logo">HOST<span>·</span>LAB<span style="color:var(--text-secondary);padding-left:2px"> / STUDY</span></a>
   <div class="header-right">
-    <div class="header-meta" id="site-count">â€” STUDY</div>
+    <div class="header-meta" id="site-count">– STUDY</div>
     <div class="theme-switch" id="theme-switch" title="Toggle light mode">
       <span class="switch-label" id="switch-label">LIGHT</span>
       <div class="switch-track"><div class="switch-thumb"></div></div>
@@ -108,18 +108,18 @@ html.light .switch-track{background:#d0ceca}
 <section class="hero">
   <div class="hero-label">Nauka do egzaminu</div>
   <h1>Stu<em>dy</em></h1>
-  <p class="hero-sub">Kursy i materiaĹ‚y do egzaminu INF02. Linux Bash, pliki wsadowe, Ĺ›ciÄ…gi â€” od zera, krok po kroku.</p>
+  <p class="hero-sub">Kursy i materiały do egzaminu INF02. Linux Bash, pliki wsadowe, ściągi – od zera, krok po kroku.</p>
 </section>
 
 <div class="grid-header">
-  <span class="grid-label">Wszystkie materiaĹ‚y</span>
+  <span class="grid-label">Wszystkie materiały</span>
   <span class="count-badge" id="count-badge">0</span>
 </div>
 
 <main class="grid" id="grid"></main>
 
 <footer>
-  <div class="footer-left">HOSTLAB Â· STUDY</div>
+  <div class="footer-left">HOSTLAB · STUDY</div>
   <div class="footer-right" id="footer-date"></div>
 </footer>
 
@@ -138,7 +138,7 @@ function imgSrc(url){return'../other/p_'+url.split('/').pop().replace('.html',''
 
 document.getElementById('footer-date').textContent=new Date().toLocaleDateString('en-GB',{year:'numeric',month:'long',day:'numeric'}).toUpperCase();
 document.getElementById('count-badge').textContent=TOOLS.length;
-document.getElementById('site-count').textContent=TOOLS.length+' NARZÄDZI';
+document.getElementById('site-count').textContent=TOOLS.length+' NARZĘDZI';
 
 const ts=document.getElementById('theme-switch');
 const sl=document.getElementById('switch-label');
@@ -180,7 +180,6 @@ TOOLS.forEach((t,i)=>{
 </script>
 </body>
 </html>
-
 
 
 
