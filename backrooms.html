@@ -80,27 +80,73 @@ function genChunk(cx, cy) {
   const rng   = mulberry32(chunkHash(cx, cy));
   const rooms = []; // [{mx,my} room centers]
 
+  // Carve one BSP leaf — varied shapes: rectangle, L-shape, or corridor strip
+  function carveLeaf(rx, ry, rw, rh) {
+    const fx = rx + 1, fy = ry + 1, fw = rw - 2, fh = rh - 2;
+    if (fw < 2 || fh < 2) return;
+
+    const aspect = Math.max(fw, fh) / Math.min(fw, fh);
+    const r = rng();
+
+    if (aspect >= 3.0 || (aspect >= 2.0 && r < 0.45)) {
+      // ── Corridor leaf: very elongated → 1–2 tile strip running full length ─
+      const stripW = (Math.min(fw, fh) >= 3 && rng() < 0.55) ? 2 : 1;
+      if (fw >= fh) {
+        const sy = fy + Math.floor(rng() * Math.max(1, fh - stripW));
+        for (let y = sy; y < sy + stripW; y++)
+          for (let x = fx; x < fx + fw; x++) mark(tiles, x, y);
+        rooms.push({ mx: fx + (fw >> 1), my: sy });
+      } else {
+        const sx = fx + Math.floor(rng() * Math.max(1, fw - stripW));
+        for (let y = fy; y < fy + fh; y++)
+          for (let x = sx; x < sx + stripW; x++) mark(tiles, x, y);
+        rooms.push({ mx: sx, my: fy + (fh >> 1) });
+      }
+
+    } else if (r < 0.30 && fw >= 6 && fh >= 6) {
+      // ── L-shaped room: fill rect then void one corner ─────────────────────
+      for (let y = fy; y < fy + fh; y++)
+        for (let x = fx; x < fx + fw; x++) tiles[y * CT + x] = 1;
+
+      const corner = Math.floor(rng() * 4);
+      const cutW   = 2 + Math.floor(rng() * Math.max(1, (fw >> 1) - 1));
+      const cutH   = 2 + Math.floor(rng() * Math.max(1, (fh >> 1) - 1));
+
+      for (let y = fy; y < fy + fh; y++) {
+        for (let x = fx; x < fx + fw; x++) {
+          const tl = corner === 0 && x < fx + cutW && y < fy + cutH;
+          const tr = corner === 1 && x >= fx + fw - cutW && y < fy + cutH;
+          const bl = corner === 2 && x < fx + cutW && y >= fy + fh - cutH;
+          const br = corner === 3 && x >= fx + fw - cutW && y >= fy + fh - cutH;
+          if (tl || tr || bl || br) tiles[y * CT + x] = 0;
+        }
+      }
+      // Place the room center in the quadrant opposite to the cut corner
+      const offX = (corner === 1 || corner === 3) ? -(fw >> 2) : (fw >> 2);
+      const offY = (corner === 2 || corner === 3) ? -(fh >> 2) : (fh >> 2);
+      rooms.push({ mx: fx + (fw >> 1) + offX, my: fy + (fh >> 1) + offY });
+
+    } else {
+      // ── Standard rectangle ────────────────────────────────────────────────
+      for (let y = fy; y < fy + fh; y++)
+        for (let x = fx; x < fx + fw; x++) tiles[y * CT + x] = 1;
+      rooms.push({ mx: fx + (fw >> 1), my: fy + (fh >> 1) });
+    }
+  }
+
   // Recursive BSP split — fills leaves into `rooms`, carves floor into `tiles`
   function split(rx, ry, rw, rh, depth) {
-    const MIN = 5; // minimum room dimension in tiles
+    const MIN = 4; // minimum room dimension in tiles (smaller → more variety)
 
-    // Decide if we can split
     const canV = rw >= MIN * 2 + 2;
     const canH = rh >= MIN * 2 + 2;
 
     if (depth >= 4 || (!canV && !canH)) {
-      // Leaf: carve room leaving 1-tile wall border
-      const fx = rx + 1, fy = ry + 1, fw = rw - 2, fh = rh - 2;
-      if (fw >= 2 && fh >= 2) {
-        for (let y = fy; y < fy + fh; y++)
-          for (let x = fx; x < fx + fw; x++)
-            tiles[y * CT + x] = 1;
-        rooms.push({ mx: fx + (fw >> 1), my: fy + (fh >> 1) });
-      }
+      carveLeaf(rx, ry, rw, rh);
       return;
     }
 
-    // Choose split direction: bias toward splitting the longer axis
+    // Bias toward splitting the longer axis
     let goV;
     if (canV && canH) {
       goV = rng() < (rw > rh + 3 ? 0.72 : rw < rh - 3 ? 0.28 : 0.5);
@@ -109,7 +155,6 @@ function genChunk(cx, cy) {
     }
 
     if (goV) {
-      // Vertical split — pick position
       const at = MIN + 1 + Math.floor(rng() * (rw - MIN * 2 - 1));
       split(rx,      ry, at,      rh, depth + 1);
       split(rx + at, ry, rw - at, rh, depth + 1);
@@ -122,9 +167,8 @@ function genChunk(cx, cy) {
 
   split(0, 0, CT, CT, 0);
 
-  // Connect rooms with L-shaped corridors (2 tiles wide)
+  // Connect rooms — mix of 1-tile (narrow/claustrophobic) and 2-tile corridors
   if (rooms.length >= 2) {
-    // Random spanning tree order
     const indices = rooms.map((_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(rng() * (i + 1));
@@ -132,11 +176,11 @@ function genChunk(cx, cy) {
     }
     for (let i = 1; i < indices.length; i++) {
       const a = rooms[indices[i - 1]], b = rooms[indices[i]];
-      // L-corridor: go horizontal to elbow, then vertical
+      const w  = rng() < 0.38 ? 1 : 2; // 38% chance of tight 1-tile passage
       const ex = rng() < 0.5 ? a.mx : b.mx;
-      carveLine(tiles, a.mx, a.my, ex,   a.my);
-      carveLine(tiles, ex,   a.my, ex,   b.my);
-      carveLine(tiles, ex,   b.my, b.mx, b.my);
+      carveLine(tiles, a.mx, a.my, ex,   a.my,  w);
+      carveLine(tiles, ex,   a.my, ex,   b.my,  w);
+      carveLine(tiles, ex,   b.my, b.mx, b.my,  w);
     }
   }
 
@@ -146,14 +190,16 @@ function genChunk(cx, cy) {
   return tiles;
 }
 
-// Carve a 2-tile-wide corridor along an axis-aligned line
-function carveLine(tiles, x0, y0, x1, y1) {
+// Carve an axis-aligned corridor, width = 1 (tight) or 2 (normal)
+function carveLine(tiles, x0, y0, x1, y1, width = 2) {
   const dx = Math.sign(x1 - x0), dy = Math.sign(y1 - y0);
   let x = x0, y = y0;
   while (true) {
     mark(tiles, x, y);
-    if (dx !== 0) mark(tiles, x, y + 1);  // widen vertically
-    if (dy !== 0) mark(tiles, x + 1, y);  // widen horizontally
+    if (width >= 2) {
+      if (dx !== 0) mark(tiles, x, y + 1);
+      if (dy !== 0) mark(tiles, x + 1, y);
+    }
     if (x === x1 && y === y1) break;
     if (x !== x1) x += dx; else y += dy;
   }
