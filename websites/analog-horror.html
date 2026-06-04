@@ -877,17 +877,23 @@ async function startProcessing() {
         const msgIdx   = Math.floor(elapsed / 550) % OUTRO_MSGS.length;
         const showText = Math.floor(elapsed / 180) % 3 !== 0;
         if (elapsed > 150 && showText) {
-          const fs = Math.max(14, Math.floor(sz / 18));
-          ctx.font = `${fs}px 'VT323', monospace`;
-          ctx.fillStyle = 'rgba(220,18,18,.92)';
+          const fs  = Math.max(14, Math.floor(sz / 18));
+          ctx.font  = `${fs}px 'VT323', monospace`;
           const msg = OUTRO_MSGS[msgIdx];
           const mw  = ctx.measureText(msg).width;
+          const pad = fs * 0.5;
+          // Dark backing so text is readable over static
+          ctx.fillStyle = 'rgba(0,0,0,.72)';
+          ctx.fillRect((sz - mw) / 2 - pad, sz / 2 - fs * 1.1, mw + pad * 2, fs * 1.4);
+          ctx.fillStyle = 'rgba(220,18,18,.96)';
           ctx.fillText(msg, (sz - mw) / 2, sz / 2);
           if (elapsed > 700) {
             ctx.font = `${Math.floor(fs*.7)}px 'VT323', monospace`;
-            ctx.fillStyle = 'rgba(200,190,160,.55)';
             const sub = '[ TAPE ' + tapeId + ' ]';
             const sw  = ctx.measureText(sub).width;
+            ctx.fillStyle = 'rgba(0,0,0,.6)';
+            ctx.fillRect((sz - sw) / 2 - pad, sz / 2 + fs * 0.4, sw + pad * 2, fs * 1.1);
+            ctx.fillStyle = 'rgba(200,190,160,.85)';
             ctx.fillText(sub, (sz - sw) / 2, sz / 2 + fs * 1.4);
           }
         }
