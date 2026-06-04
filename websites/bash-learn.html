@@ -224,6 +224,9 @@ textarea#editor::selection{background:rgba(0,255,65,.15)}
       <div class="line-nums" id="line-nums"></div>
       <textarea id="editor" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"></textarea>
     </div>
+    <div id="editor-warning" style="display:none;padding:6px 14px;font-size:10px;letter-spacing:.08em;background:#001a00;color:#00ff41;border-top:1px solid #1a2e1a;">
+      ⚠ UWAGA: zmieniłeś wymagane linie — skrypt może nie zadziałać
+    </div>
   </div>
 
   <!-- TERMINAL -->
@@ -274,6 +277,7 @@ const LESSONS = [
     task: 'Napisz swój pierwszy skrypt Bash. Każdy skrypt zaczyna się od <code>#!/bin/bash</code> (shebang). Użyj <code>echo</code> żeby wypisać dokładnie: <b>Hello, World!</b>',
     starter: '#!/bin/bash\n# Twój pierwszy skrypt Bash\n# Dopisz polecenie echo poniżej:\n\n# dopisz tutaj\n',
     hint: '<b>#!/bin/bash</b> — shebang, mówi systemowi jaki interpreter użyć\n<b>echo "tekst"</b> — wypisuje tekst na ekran\n\nPrzykład:\n<b>echo "Hello, World!"</b>',
+    guardLines: ['#!/bin/bash'],
     check: (code, out) => out.trim() === 'Hello, World!',
     ok: 'echo wypisuje tekst. Shebang #!/bin/bash to obowiązkowy nagłówek każdego skryptu Bash.'
   },
@@ -282,6 +286,7 @@ const LESSONS = [
     task: 'Utwórz zmienną <code>imie</code> z wartością <code>Jan</code> i wypisz: <b>Cześć, Jan!</b>. Zmienne tworzymy bez spacji wokół znaku =. Odczytujemy przez <code>$imie</code>.',
     starter: '#!/bin/bash\n\n# Przypisz wartość "Jan" do zmiennej imie:\n# dopisz tutaj\n\n# Wypisz: Cześć, $imie!\n# dopisz tutaj\n',
     hint: '<b>imie="Jan"</b> — przypisanie (bez spacji!)\n<b>$imie</b> lub <b>${imie}</b> — odczyt zmiennej\n\nW podwójnych cudzysłowach <b>" "</b> zmienne są rozwijane.\nW pojedynczych <b>\' \'</b> — nie są.',
+    guardLines: ['#!/bin/bash'],
     check: (code, out) => out.includes('Cześć, Jan!'),
     ok: 'Zmienne w Bash: przypisujesz przez VAR=wartość (bez spacji), odczytujesz przez $VAR.'
   },
@@ -290,6 +295,7 @@ const LESSONS = [
     task: 'Utwórz zmienne <code>a=10</code> i <code>b=3</code>. Wypisz:<br><b>Suma: 13</b><br><b>Iloczyn: 30</b><br><b>Reszta: 1</b><br>Użyj składni <code>$(( ))</code>.',
     starter: '#!/bin/bash\n\na=10\nb=3\n\n# Wypisz Suma: oraz wynik a+b\n# dopisz tutaj\n\n# Wypisz Iloczyn: oraz wynik a*b\n# dopisz tutaj\n\n# Wypisz Reszta: oraz wynik a%b\n# dopisz tutaj\n',
     hint: '<b>$(( wyrażenie ))</b> — obliczenia matematyczne\n\nOperatory: <b>+ - * / %</b>\n\nPrzykład:\n<b>echo "Suma: $((a + b))"</b>\n<b>echo "$((10 % 3))"</b>  # 1',
+    guardLines: ['#!/bin/bash','a=10','b=3'],
     check: (code, out) => out.includes('Suma: 13') && out.includes('Iloczyn: 30') && out.includes('Reszta: 1'),
     ok: 'Arytmetyka w Bash: $(( )). Działa z +, -, *, /, % (modulo). Wynik zawsze całkowity.'
   },
@@ -298,6 +304,7 @@ const LESSONS = [
     task: 'Ustaw zmienną <code>x=15</code>. Sprawdź czy jest większa od 10. Wypisz <b>Duża liczba</b> jeśli tak, <b>Mała liczba</b> jeśli nie. Użyj <code>[ $x -gt 10 ]</code>.',
     starter: '#!/bin/bash\n\nx=15\n\n# Napisz warunek if/else sprawdzający czy x > 10\n# dopisz tutaj\n',
     hint: 'Operatory porównania liczb:\n<b>-gt</b> &gt; | <b>-lt</b> &lt; | <b>-eq</b> == | <b>-ne</b> !=\n<b>-ge</b> &gt;= | <b>-le</b> &lt;=\n\nStruktura:\n<b>if [ $x -gt 10 ]; then\n  echo "Duża liczba"\nelse\n  echo "Mała liczba"\nfi</b>\n\n⚠ Spacje wewnątrz [ ] są OBOWIĄZKOWE!',
+    guardLines: ['#!/bin/bash','x=15'],
     check: (code, out) => out.trim() === 'Duża liczba',
     ok: 'Warunek if: [ ] to test, spacje wewnątrz wymagane. Kończymy blokiem fi.'
   },
@@ -306,6 +313,7 @@ const LESSONS = [
     task: 'Wypisz owoce z listy: jablko, gruszka, sliwka. Każdy w formacie <b>Owoc: jablko</b> itd. Użyj pętli <code>for owoc in ...; do</code>.',
     starter: '#!/bin/bash\n\n# Napisz pętlę for iterującą po: jablko gruszka sliwka\n# Wypisz "Owoc: $owoc" dla każdego elementu\n# dopisz tutaj\n',
     hint: '<b>for zmienna in lista; do</b>\n  polecenia\n<b>done</b>\n\nKażdy element trafia do zmiennej po kolei.\n\nPrzykład:\n<b>for owoc in jablko gruszka sliwka; do\n  echo "Owoc: $owoc"\ndone</b>',
+    guardLines: ['#!/bin/bash'],
     check: (code, out) => out.includes('Owoc: jablko') && out.includes('Owoc: gruszka') && out.includes('Owoc: sliwka'),
     ok: 'Pętla for iteruje po liście elementów. Każdy element trafia do zmiennej (tu: $owoc).'
   },
@@ -314,6 +322,8 @@ const LESSONS = [
     task: 'Wypisz liczby od 1 do 5. Każda w formacie <b>Liczba: 1</b>, <b>Liczba: 2</b> itd. Użyj zakresu <code>{1..5}</code>.',
     starter: '#!/bin/bash\n\n# Napisz pętlę for z zakresem {1..5}\n# Wypisz "Liczba: $i" dla każdej liczby\n# dopisz tutaj\n',
     hint: '<b>{1..10}</b> — zakres od 1 do 10\n<b>{1..10..2}</b> — co 2 (1,3,5,7,9)\n\nStruktura:\n<b>for i in {1..5}; do\n  echo "Liczba: $i"\ndone</b>',
+    guardLines: ['#!/bin/bash'],
+    guardLines: ['#!/bin/bash'],
     check: (code, out) => [1,2,3,4,5].every(n => out.includes('Liczba: '+n)),
     ok: '{1..N} to wygodny zakres numeryczny. Pętla for to jedno z najczęstszych narzędzi w Bash!'
   },
@@ -322,6 +332,7 @@ const LESSONS = [
     task: 'Wypisz odliczanie od 5 do 1 (format: <b>Odliczanie: 5</b> ... <b>Odliczanie: 1</b>), a potem dokładnie <b>START!</b>. Użyj pętli while i <code>((n--))</code> do zmniejszania.',
     starter: '#!/bin/bash\n\nn=5\n\n# Napisz pętlę while która odlicza od 5 do 1\n# Po pętli wypisz START!\n# dopisz tutaj\n',
     hint: '<b>while [ warunek ]; do</b>\n  polecenia\n<b>done</b>\n\n<b>((n--))</b> zmniejsza n o 1\n\nStruktura:\n<b>while [ $n -gt 0 ]; do\n  echo "Odliczanie: $n"\n  ((n--))\ndone\necho "START!"</b>',
+    guardLines: ['#!/bin/bash','n=5'],
     check: (code, out) => out.includes('START!') && out.includes('Odliczanie: 5') && out.includes('Odliczanie: 1'),
     ok: 'Pętla while działa dopóki warunek jest true. Zawsze dbaj o zmianę warunku, żeby nie było pętli nieskończonej!'
   },
@@ -330,6 +341,7 @@ const LESSONS = [
     task: 'Napisz funkcję <code>powitanie()</code> która przyjmuje argument i wypisuje <b>Cześć, [argument]!</b>. Wywołaj ją z argumentami <b>Anna</b> i <b>Marek</b>.',
     starter: '#!/bin/bash\n\n# Zdefiniuj funkcję powitanie() wypisującą "Cześć, $1!"\n# dopisz tutaj\n\n# Wywołaj powitanie z argumentem "Anna"\n# dopisz tutaj\n\n# Wywołaj powitanie z argumentem "Marek"\n# dopisz tutaj\n',
     hint: '<b>nazwa() {</b>\n  polecenia\n<b>}</b>\n\nParametry funkcji:\n<b>$1</b> — pierwszy argument\n\nWywołanie: <b>nazwa argument1</b>\n\nPrzykład:\n<b>powitanie() {\n  echo "Cześć, $1!"\n}\npowitanie "Anna"</b>',
+    guardLines: ['#!/bin/bash'],
     check: (code, out) => out.includes('Cześć, Anna!') && out.includes('Cześć, Marek!'),
     ok: 'Funkcje: definiujesz przez nazwa() { ... }, parametry to $1, $2... Wywołujesz podając nazwę i argumenty.'
   },
@@ -338,6 +350,7 @@ const LESSONS = [
     task: 'Skrypt przyjmuje argumenty z wiersza poleceń. Wypisz dokładnie cztery linie:<br><b>Skrypt: skrypt.sh</b><br><b>Liczba argumentów: 0</b><br><b>Pierwszy: </b><br><b>Wszystkie: </b><br>Użyj <code>$0</code>, <code>$#</code>, <code>$1</code>, <code>$@</code>.',
     starter: '#!/bin/bash\n\n# Wypisz nazwę skryptu ($0), liczbę argumentów ($#),\n# pierwszy argument ($1) i wszystkie argumenty ($@)\n# dopisz tutaj\n',
     hint: '<b>$0</b> — nazwa skryptu\n<b>$1, $2...</b> — kolejne argumenty\n<b>$#</b> — liczba argumentów\n<b>$@</b> — wszystkie argumenty\n\nPrzykład:\n<b>echo "Skrypt: $0"\necho "Liczba argumentów: $#"\necho "Pierwszy: $1"\necho "Wszystkie: $@"</b>',
+    guardLines: ['#!/bin/bash'],
     check: (code, out) => out.includes('Skrypt: skrypt.sh') && out.includes('Liczba argumentów: 0') && out.includes('Pierwszy:') && out.includes('Wszystkie:'),
     ok: 'Argumenty pozycyjne $1..$N, $# to liczba argumentów, $@ to wszystkie. Podstawa elastycznych skryptów!'
   },
@@ -346,6 +359,7 @@ const LESSONS = [
     task: 'Utwórz tablicę <code>owoce=("jablko" "kiwi" "arbuz" "banan")</code>. Iteruj po niej i dla każdego sprawdź długość: jeśli &gt; 4 wypisz <b>owoc: długa (N)</b>, jeśli nie — <b>owoc: krótka (N)</b>.',
     starter: '#!/bin/bash\n\n# Utwórz tablicę owoce z elementami: jablko kiwi arbuz banan\n# dopisz tutaj\n\n# Iteruj po "${owoce[@]}" i sprawdzaj długość każdego elementu\n# ${#owoc} zwraca długość stringa\n# dopisz tutaj\n',
     hint: '<b>tablica=("a" "b" "c")</b> — definicja tablicy\n<b>"${tablica[@]}"</b> — wszystkie elementy\n<b>${#zmienna}</b> — długość stringa\n\nStruktura:\n<b>for owoc in "${owoce[@]}"; do\n  dlugosc=${#owoc}\n  if [ $dlugosc -gt 4 ]; then\n    echo "$owoc: długa ($dlugosc)"\n  else\n    echo "$owoc: krótka ($dlugosc)"\n  fi\ndone</b>',
+    guardLines: ['#!/bin/bash'],
     check: (code, out) => out.includes('jablko: długa') && out.includes('kiwi: krótka') && out.includes('arbuz: długa') && out.includes('banan: długa'),
     ok: 'Tablice, pętle, warunki, długość stringa — solidna podstawa Bash!'
   },
@@ -354,6 +368,7 @@ const LESSONS = [
     task: 'Przekierowania: <code>&gt;</code> zapisuje do pliku, <code>&gt;&gt;</code> dopisuje, <code>2&gt;</code> przekierowuje błędy, <code>|</code> (potok) łączy polecenia. Wypisz przez potok: <code>echo "linia1 linia2" | tr " " "\\n"</code> wypisze każde słowo w nowej linii. Napisz potok który wypisze słowa: <b>alfa</b>, <b>beta</b>, <b>gamma</b> każde w osobnej linii.',
     starter: '#!/bin/bash\n\n# Użyj echo z potokiem (|) i tr " " "\\n"\n# aby wypisać słowa alfa, beta, gamma każde w nowej linii\n# dopisz tutaj\n',
     hint: '<b>echo "a b c" | tr " " "\\n"</b> — zamienia spacje na nowe linie\n\nPrzekierowania:\n<b>&gt; plik</b> — nadpisuje plik\n<b>&gt;&gt; plik</b> — dopisuje do pliku\n<b>2&gt; plik</b> — przekierowuje błędy\n\nPotok <b>|</b> przesyła wyjście jednego polecenia na wejście drugiego.',
+    guardLines: ['#!/bin/bash'],
     check: (code, out) => out.includes('alfa') && out.includes('beta') && out.includes('gamma') && out.split('\n').filter(l=>l.trim()).length >= 3,
     ok: 'Potoki | i przekierowania > >> 2> to podstawa łączenia poleceń w Bash. Potęga powłoki!'
   },
@@ -362,6 +377,7 @@ const LESSONS = [
     task: '<code>grep "wzorzec" plik</code> wyszukuje linie pasujące do wzorca. Flagi: <code>-i</code> (ignoruj wielkość liter), <code>-c</code> (zlicz), <code>-v</code> (odwróć). W symulatorze możesz użyć zmiennej jako "pliku". Wypisz przez echo kilka linii zawierających słowo "bash", a następnie sprawdź za pomocą warunku if czy zmienna zawiera "bash" i wypisz <b>Znaleziono: bash</b>.',
     starter: '#!/bin/bash\n\n# Przypisz do zmiennej "tekst" wartość zawierającą słowo "bash"\n# dopisz tutaj\n\n# Sprawdź czy zmienna zawiera "bash" i wypisz "Znaleziono: bash"\n# Użyj: if echo "$tekst" | grep -q "bash"; then\n# (w symulatorze: sprawdź przez [[ $tekst == *bash* ]])\n# dopisz tutaj\n',
     hint: '<b>grep "wzorzec" plik</b> — szukaj w pliku\n<b>grep -i</b> — ignoruj wielkość liter\n<b>grep -c</b> — zlicz pasujące linie\n<b>grep -v</b> — pokaż linie BEZ wzorca\n\nW symulatorze sprawdź zawartość zmiennej:\n<b>if [[ $tekst == *bash* ]]; then\n  echo "Znaleziono: bash"\nfi</b>',
+    guardLines: ['#!/bin/bash'],
     check: (code, out) => out.includes('Znaleziono: bash'),
     ok: 'grep to podstawowe narzędzie do wyszukiwania wzorców w tekście. Niezbędne w skryptach!'
   },
@@ -370,6 +386,7 @@ const LESSONS = [
     task: '<code>chmod</code> zmienia uprawnienia pliku. Zapis ósemkowy: 4=r (odczyt), 2=w (zapis), 1=x (wykonanie). Suma: rwx=7, rw-=6, r-x=5, r--=4. Format: <code>chmod 755 plik</code> (właściciel rwx, grupa r-x, inni r-x). Wypisz dokładnie: <b>chmod 755 skrypt.sh</b> i <b>chmod 644 dane.txt</b>.',
     starter: '#!/bin/bash\n\n# Wypisz polecenie chmod dla skrypt.sh z uprawnieniami 755\n# dopisz tutaj\n\n# Wypisz polecenie chmod dla dane.txt z uprawnieniami 644\n# dopisz tutaj\n',
     hint: 'Uprawnienia ósemkowe:\n<b>7</b> = rwx (4+2+1)\n<b>6</b> = rw- (4+2)\n<b>5</b> = r-x (4+1)\n<b>4</b> = r-- (tylko odczyt)\n\n<b>chmod 755 plik</b> — właściciel rwx, reszta r-x\n<b>chmod 644 plik</b> — właściciel rw-, reszta r--\n\nWypisz komendę:\n<b>echo "chmod 755 skrypt.sh"</b>',
+    guardLines: ['#!/bin/bash'],
     check: (code, out) => out.includes('chmod 755 skrypt.sh') && out.includes('chmod 644 dane.txt'),
     ok: 'chmod z zapisem ósemkowym: 4=r, 2=w, 1=x. Trzy cyfry: właściciel, grupa, inni. Podstawa uprawnień w Linuksie!'
   }
@@ -673,7 +690,18 @@ function updateLineNums() {
   lineNumsEl.scrollTop = editorEl.scrollTop;
 }
 
-editorEl.addEventListener('input', updateLineNums);
+editorEl.addEventListener('input', () => {
+  updateLineNums();
+  const L = LESSONS[currentLesson];
+  const warn = document.getElementById('editor-warning');
+  if (L && L.guardLines) {
+    const code = editorEl.value;
+    const broken = L.guardLines.some(line => !code.includes(line));
+    warn.style.display = broken ? 'block' : 'none';
+  } else {
+    warn.style.display = 'none';
+  }
+});
 editorEl.addEventListener('scroll', () => { lineNumsEl.scrollTop = editorEl.scrollTop; });
 editorEl.addEventListener('keydown', e => {
   if(e.ctrlKey && e.key === 'Enter') {
@@ -712,6 +740,7 @@ function loadLesson() {
   editorEl.value=L.starter;
   updateLineNums();
   outputEl.innerHTML='<span class="line-sys">// Napisz skrypt i kliknij URUCHOM</span>\n<span class="cursor-line"></span>';
+  document.getElementById('editor-warning').style.display='none';
   setStatus('GOTOWY');
   hideHint();
   document.getElementById('btn-prev').disabled=currentLesson===0;

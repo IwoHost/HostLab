@@ -243,6 +243,7 @@ const LESSONS = [
     task: 'Każdy skrypt .bat zaczyna się od <code>@echo off</code> — wyłącza pokazywanie komend. Dodaj <code>echo</code> żeby wypisać <b>Witaj, swiecie!</b>',
     starter: '@echo off\nrem Zadanie: wypisz "Witaj, swiecie!" na ekranie\n',
     hint: '<b>@echo off</b> — @ ukrywa tę linię, echo off wyłącza pokazywanie pozostałych poleceń\n<b>echo tekst</b> — wypisuje tekst\n<b>echo.</b> — wypisuje pustą linię\n\nBez @echo off CMD pokazywałby każdą komendę przed wykonaniem.',
+    guardLines: ['@echo off'],
     check: (code, out) => out.toLowerCase().includes('witaj') && code.toLowerCase().includes('echo'),
     ok: '@echo off to obowiązkowy nagłówek pliku .bat. Bez niego CMD wyświetla każdą linię kodu.'
   },
@@ -260,6 +261,7 @@ const LESSONS = [
     task: 'Użyj <code>set /a</code> żeby obliczyć: <b>suma = 10+5</b>, <b>iloczyn = 4*3</b>, <b>reszta = 17%%3</b>. Wypisz każdy wynik przez <code>echo</code>.',
     starter: '@echo off\nrem Oblicz suma=10+5, iloczyn=4*3, reszta=17%%3 i wypisz wyniki\n',
     hint: '<b>set /a wynik=wyrażenie</b> — arytmetyka\nOperatory: + - * / %%\n\n⚠ W pliku .bat modulo to <b>%%</b> (podwójny %)\n\nPrzykład: set /a x=10+5\necho Wynik: %x%',
+    guardLines: ['@echo off'],
     check: (code, out) => out.includes('15') && out.includes('12') && code.includes('set /a'),
     ok: 'set /a włącza arytmetykę. W plikach .bat modulo to %% (podwójny procent, bo % sam służy do zmiennych).'
   },
@@ -268,6 +270,7 @@ const LESSONS = [
     task: 'Zadeklaruj <code>set x=10</code> i sprawdź warunek: jeśli x jest większe od 5 wypisz <b>"Liczba wieksza od 5"</b>, w przeciwnym razie <b>"Liczba mniejsza"</b>.',
     starter: '@echo off\nset x=10\nrem Sprawdz warunek if: czy x jest wieksze od 5\n',
     hint: 'Operatory: <b>equ</b> = | <b>neq</b> != | <b>lss</b> &lt; | <b>gtr</b> &gt;\n\nStruktura:\n<b>if %x% gtr 5 (\n  echo ...\n) else (\n  echo ...\n)</b>',
+    guardLines: ['@echo off', 'set x=10'],
     check: (code, out) => (out.includes('wieksza') || out.includes('większa') || out.includes('mniejsza')) && code.includes('if'),
     ok: 'IF w CMD: operatory equ/neq/lss/gtr/leq/geq. Bloki wieloliniowe przez nawiasy ( ).'
   },
@@ -276,6 +279,7 @@ const LESSONS = [
     task: 'Wypisz każdy kolor z listy używając pętli for: <b>czerwony, zielony, niebieski</b>. Każdy wiersz: <code>Kolor: [kolor]</code>.',
     starter: '@echo off\nrem Uzyj petli for aby wypisac: czerwony, zielony, niebieski\nrem for %%i in (lista) do echo ...\n',
     hint: '<b>for %%i in (lista) do polecenie</b>\n\nW .bat: <b>%%i</b> (podwójny %)\nW CMD ręcznie: <b>%i</b> (pojedynczy %)\n\nWieloliniowy blok:\n<b>for %%i in (a b c) do (\n  echo %%i\n)</b>',
+    guardLines: ['@echo off'],
     check: (code, out) => ['czerwony','zielony','niebieski'].every(c => out.toLowerCase().includes(c)) && code.includes('for'),
     ok: 'Pętla for w .bat: %%i (podwójny %), w CMD ręcznie %i. Zawsze pamiętaj o tej różnicy!'
   },
@@ -284,6 +288,7 @@ const LESSONS = [
     task: 'Wypisz liczby od 1 do 5 używając zakresu liczbowego <code>for /l</code>. Format: <code>(start, krok, koniec)</code>. Każdy wiersz: <code>Liczba: [n]</code>.',
     starter: '@echo off\nrem Uzyj "for /l" aby wypisac liczby od 1 do 5\nrem for /l %%i in (start,krok,koniec) do ...\n',
     hint: '<b>for /l %%i in (start,krok,koniec)</b>\n\nPrzykłady:\n<b>(1,1,5)</b> — od 1 do 5\n<b>(10,-1,1)</b> — odliczanie\n\n/l = loop (liczby)',
+    guardLines: ['@echo off'],
     check: (code, out) => [1,2,3,4,5].every(n => out.includes(String(n))) && code.includes('for /l'),
     ok: 'for /l to pętla liczbowa: (start, krok, koniec). Idealna do odliczania i iteracji N razy.'
   },
@@ -292,6 +297,7 @@ const LESSONS = [
     task: 'Ten skrypt zapętla się w nieskończoność — brakuje warunku stopu. Dodaj <code>if %n% lss 1 goto koniec</code> żeby pętla zatrzymała się po odliczeniu do 0.',
     starter: '@echo off\nset n=3\n:petla\nrem Dodaj tutaj warunek stopu: if %n% lss 1 goto koniec\necho Odliczanie: %n%\nset /a n=n-1\ngoto petla\n:koniec\necho START!\n',
     hint: '<b>:etykieta</b> — definicja etykiety\n<b>goto etykieta</b> — skok bezwarunkowy\n\nWarunkowy skok:\n<b>if %x%==0 goto koniec</b>\n<b>if %n% lss 1 goto koniec</b>',
+    guardLines: ['@echo off','set n=3',':petla','echo Odliczanie: %n%','set /a n=n-1','goto petla',':koniec','echo START!'],
     check: (code, out) => out.includes('START!') && out.includes('Odliczanie: 3') && code.includes('goto koniec'),
     ok: 'Etykiety :nazwa i goto to podstawa kontroli przepływu w .bat. Ostrożnie z nieskończonymi pętlami!'
   },
@@ -300,6 +306,7 @@ const LESSONS = [
     task: 'Skrypt wywołuje <code>call :separator</code> dwukrotnie — ale podprogram jest pusty. Dodaj <code>echo ------------------</code> wewnątrz <code>:separator</code>.',
     starter: '@echo off\necho Start skryptu\ncall :separator\necho Srodek skryptu\ncall :separator\necho Koniec skryptu\ngoto :eof\n\n:separator\nrem Wypisz tutaj linie kresek: echo ------------------\nexit /b\n',
     hint: '<b>call :etykieta</b> — wywołanie podprogramu (wraca po exit /b)\n<b>exit /b</b> — powrót z podprogramu\n<b>goto :eof</b> — koniec głównego skryptu\n\nArgumenty: call :nazwa arg1\nWewnątrz: %1 to arg1',
+    guardLines: ['@echo off','echo Start skryptu','call :separator','echo Koniec skryptu','goto :eof',':separator','exit /b'],
     check: (code, out) => out.includes('Start') && out.includes('Koniec') && (out.match(/--+/g)||[]).length>=2,
     ok: 'call :etykieta to podprogramy w .bat. exit /b wraca do miejsca wywołania. goto :eof kończy skrypt.'
   },
@@ -308,6 +315,7 @@ const LESSONS = [
     task: 'Skrypt przyjmuje argumenty: <code>%0</code> = nazwa skryptu, <code>%1</code> = pierwszy argument. Wypisz nazwe skryptu i pierwsze trzy argumenty.',
     starter: '@echo off\nrem Wypisz nazwe skryptu (%0) i argumenty (%1, %2, %3)\n',
     hint: '<b>%0</b> — nazwa skryptu\n<b>%1, %2... %9</b> — kolejne argumenty\n<b>%*</b> — wszystkie argumenty\n\nPrzykład:\necho Skrypt: %0\necho Pierwszy: %1',
+    guardLines: ['@echo off'],
     check: (code, out) => code.includes('%0') && code.includes('%1') && code.toLowerCase().includes('echo'),
     ok: 'Argumenty .bat: %1..%9, %0 to nazwa skryptu, %* to wszystkie. Uruchamiasz: skrypt.bat arg1 arg2'
   },
@@ -316,6 +324,7 @@ const LESSONS = [
     task: 'Napisz od zera skrypt który:<br>1. Iteruje pętlą for po liście: <b>jablko gruszka banan kiwi</b><br>2. Dla każdego wywołuje <code>call :drukuj %%o</code><br>3. Liczy owoce w zmiennej<br>4. Podprogram <code>:drukuj</code> wypisuje <code> - %1</code>',
     starter: '@echo off\nrem Napisz skrypt od zera - iteruj po owocach i wywolaj :drukuj\n\n\ngoto :eof\n\n:drukuj\nrem Wypisz: " - %1"\nexit /b\n',
     hint: '<b>set licznik=0</b>\n<b>for %%o in (jablko gruszka banan kiwi) do (</b>\n<b>  set /a licznik=licznik+1</b>\n<b>  call :drukuj %%o</b>\n<b>)</b>\n\n:drukuj\n<b>echo  - %1</b>\n<b>exit /b</b>',
+    guardLines: ['@echo off','goto :eof',':drukuj','exit /b'],
     check: (code, out) => out.includes('jablko') && out.includes('kiwi') && code.includes(':drukuj') && code.includes('call'),
     ok: 'Brawo! Pętle, podprogramy, zmienne, call z argumentami — to kompletny zestaw do egzaminu INF02!'
   }
