@@ -94,7 +94,13 @@ function genChunk(cx, cy) {
 
   // Carve one BSP leaf — varied shapes: rectangle, L-shape, or corridor strip
   function carveLeaf(rx, ry, rw, rh) {
-    const fx = rx + 1, fy = ry + 1, fw = rw - 2, fh = rh - 2;
+    // Asymmetric random margins — rooms drift within their BSP cell so they
+    // don't land on a perfect grid
+    const rm = n => Math.floor(rng() * (Math.min(n, 3) + 1));
+    const ml = rm(rw >> 2), mr = rm(rw >> 2);
+    const mt = rm(rh >> 2), mb = rm(rh >> 2);
+    const fx = rx + ml, fy = ry + mt;
+    const fw = rw - ml - mr, fh = rh - mt - mb;
     if (fw < 2 || fh < 2) return;
 
     const aspect = Math.max(fw, fh) / Math.min(fw, fh);
@@ -178,6 +184,17 @@ function genChunk(cx, cy) {
   }
 
   split(0, 0, CT, CT, 0);
+
+  // Nibble convex corners off rooms — only tiles with 3+ floor neighbours are
+  // safe to remove without risking disconnection; gives jagged wall edges
+  for (let y = 1; y < CT - 1; y++) {
+    for (let x = 1; x < CT - 1; x++) {
+      if (!tiles[y * CT + x]) continue;
+      const n4 = (tiles[(y-1)*CT+x]===1) + (tiles[(y+1)*CT+x]===1) +
+                 (tiles[y*CT+x-1]===1)   + (tiles[y*CT+x+1]===1);
+      if (n4 >= 3 && rng() < 0.14) tiles[y * CT + x] = 0;
+    }
+  }
 
   // Connect rooms — mix of 1-tile (narrow/claustrophobic) and 2-tile corridors
   if (rooms.length >= 2) {
