@@ -454,13 +454,13 @@ function extractPreview() {
   }, { once: true });
 
   vid.addEventListener('seeked', () => {
-    const [cw, ch] = clampRes(vid.videoWidth, vid.videoHeight, 640, 480);
-    previewCanvas.width = cw; previewCanvas.height = ch;
+    const sz = squareSize(vid.videoWidth, vid.videoHeight, 480);
+    previewCanvas.width = sz; previewCanvas.height = sz;
     const ctx = previewCanvas.getContext('2d');
-    ctx.drawImage(vid, 0, 0, cw, ch);
-    const vig = buildVignette(cw, ch);
-    applyPixels(ctx, cw, ch, 0, 0.09, vig, true);
-    drawOverlay(ctx, cw, ch, tapeDate, 0, true);
+    drawCropped(ctx, vid, sz);
+    const vig = buildVignette(sz, sz);
+    applyPixels(ctx, sz, sz, 0, 0.09, vig, true);
+    drawOverlay(ctx, sz, sz, tapeDate, 0, true);
     previewSection.classList.remove('hidden');
     setStatus('TAPE LOADED — READY TO PROCESS', '', 'READY');
     processBtn.disabled = false;
@@ -470,10 +470,16 @@ function extractPreview() {
   vid.load();
 }
 
-function clampRes(w, h, maxW, maxH) {
-  if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
-  if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
-  return [w, h];
+function squareSize(vw, vh, max) {
+  return Math.min(vw, vh, max);
+}
+
+function drawCropped(ctx, vid, size) {
+  const vw = vid.videoWidth, vh = vid.videoHeight;
+  const src = Math.min(vw, vh);
+  const sx  = (vw - src) / 2;
+  const sy  = (vh - src) / 2;
+  ctx.drawImage(vid, sx, sy, src, src, 0, 0, size, size);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -727,11 +733,12 @@ async function startProcessing() {
   await new Promise(r => vid.addEventListener('loadedmetadata', r, { once: true }));
   await new Promise(r => vid.addEventListener('canplay', r, { once: true }));
 
-  const [cw, ch] = clampRes(vid.videoWidth, vid.videoHeight, 640, 480);
-  const canvas   = document.createElement('canvas');
-  canvas.width = cw; canvas.height = ch;
+  const sz     = squareSize(vid.videoWidth, vid.videoHeight, 480);
+  const cw = sz, ch = sz;
+  const canvas = document.createElement('canvas');
+  canvas.width = sz; canvas.height = sz;
   const ctx = canvas.getContext('2d');
-  const vig = buildVignette(cw, ch);
+  const vig = buildVignette(sz, sz);
 
   // Audio chain
   const actx = new AudioContext();
@@ -818,7 +825,7 @@ async function startProcessing() {
 
     noiseGain.gain.value = .012 + (1 - Math.min(rms * 7, 1)) * .055;
 
-    ctx.drawImage(vid, 0, 0, cw, ch);
+    drawCropped(ctx, vid, sz);
     if (!vid.ended) tickGlitch(ch);
     applyPixels(ctx, cw, ch, vid.currentTime, noiseLevel, vig, false);
     drawOverlay(ctx, cw, ch, tapeDate, vid.currentTime, false);
