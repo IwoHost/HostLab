@@ -75,6 +75,18 @@ function edgeHash(ax, ay, bx, by) {
 }
 
 // ── BSP ROOM GENERATOR ─────────────────────────────────────────────────────────
+// Split position with 30% chance of a very lopsided cut (small + large leaf)
+function biasedSplit(rng, size, MIN) {
+  const range = size - MIN * 2 - 1;
+  if (range <= 0) return MIN + 1;
+  if (rng() < 0.30) {
+    // Lopsided: one side gets only MIN+1 to MIN+3 tiles
+    const small = MIN + 1 + Math.floor(rng() * Math.min(3, range));
+    return rng() < 0.5 ? small : size - small;
+  }
+  return MIN + 1 + Math.floor(rng() * range);
+}
+
 function genChunk(cx, cy) {
   const tiles = new Uint8Array(CT * CT); // 0=void, 1=floor
   const rng   = mulberry32(chunkHash(cx, cy));
@@ -88,8 +100,8 @@ function genChunk(cx, cy) {
     const aspect = Math.max(fw, fh) / Math.min(fw, fh);
     const r = rng();
 
-    if (aspect >= 3.0 || (aspect >= 2.0 && r < 0.45)) {
-      // ── Corridor leaf: very elongated → 1–2 tile strip running full length ─
+    if (aspect >= 2.0 || (aspect >= 1.5 && r < 0.45)) {
+      // ── Corridor leaf: elongated → 1–2 tile strip running full length ──────
       const stripW = (Math.min(fw, fh) >= 3 && rng() < 0.55) ? 2 : 1;
       if (fw >= fh) {
         const sy = fy + Math.floor(rng() * Math.max(1, fh - stripW));
@@ -103,7 +115,7 @@ function genChunk(cx, cy) {
         rooms.push({ mx: sx, my: fy + (fh >> 1) });
       }
 
-    } else if (r < 0.30 && fw >= 6 && fh >= 6) {
+    } else if (r < 0.45 && fw >= 3 && fh >= 3) {
       // ── L-shaped room: fill rect then void one corner ─────────────────────
       for (let y = fy; y < fy + fh; y++)
         for (let x = fx; x < fx + fw; x++) tiles[y * CT + x] = 1;
@@ -155,11 +167,11 @@ function genChunk(cx, cy) {
     }
 
     if (goV) {
-      const at = MIN + 1 + Math.floor(rng() * (rw - MIN * 2 - 1));
+      const at = biasedSplit(rng, rw, MIN);
       split(rx,      ry, at,      rh, depth + 1);
       split(rx + at, ry, rw - at, rh, depth + 1);
     } else {
-      const at = MIN + 1 + Math.floor(rng() * (rh - MIN * 2 - 1));
+      const at = biasedSplit(rng, rh, MIN);
       split(rx, ry,      rw, at,      depth + 1);
       split(rx, ry + at, rw, rh - at, depth + 1);
     }
@@ -336,6 +348,13 @@ function chunkFloorTint(cx, cy) {
 
 function render() {
   if (!floorPat) floorPat = buildFloorPattern(ctx);
+
+  // Pin pattern to world-space: panning/zooming moves the texture with the floor
+  floorPat.setTransform(new DOMMatrix([
+    zoom, 0, 0, zoom,
+    W / 2 - camX * zoom,
+    H / 2 - camY * zoom
+  ]));
 
   ctx.fillStyle = '#0a0805';
   ctx.fillRect(0, 0, W, H);
