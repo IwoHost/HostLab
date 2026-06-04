@@ -175,6 +175,7 @@ TOOLS.forEach((t,i)=>{
   const img=document.createElement('img');img.src=imgSrc(t.url);img.alt=t.title;
   img.onerror=()=>{thumb.innerHTML='<div class="card-thumb-placeholder">NO PREVIEW</div>'};
   thumb.appendChild(img);
+  grid.appendChild(card);
 });
 </script>
 </body>
