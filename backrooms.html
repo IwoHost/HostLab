@@ -470,12 +470,16 @@ function render() {
           const sx = ox + tx * tpx, sy = oy + ty * tpx;
 
           if (!t) {
-            // Void — draw wallpaper only on wall-face tiles (adjacent to floor)
-            if ((tx > 0    && tiles[ty*CT+tx-1]) ||
-                (tx < CT-1 && tiles[ty*CT+tx+1]) ||
-                (ty > 0    && tiles[(ty-1)*CT+tx]) ||
-                (ty < CT-1 && tiles[(ty+1)*CT+tx])) {
-              ctx.fillStyle = wallPat;
+            // All void gets wallpaper; non-wall-face tiles get a heavy dark overlay
+            ctx.fillStyle = wallPat;
+            ctx.fillRect(sx, sy, tw, tw);
+            const isWallFace =
+              (tx > 0    && tiles[ty*CT+tx-1]) ||
+              (tx < CT-1 && tiles[ty*CT+tx+1]) ||
+              (ty > 0    && tiles[(ty-1)*CT+tx]) ||
+              (ty < CT-1 && tiles[(ty+1)*CT+tx]);
+            if (!isWallFace) {
+              ctx.fillStyle = 'rgba(0,0,0,0.68)';
               ctx.fillRect(sx, sy, tw, tw);
             }
             continue;
