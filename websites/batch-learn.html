@@ -251,6 +251,7 @@ const LESSONS = [
     task: 'Utwórz zmienną <code>set imie=</code> (wpisz swoje imię) i wypisz ją przez <code>echo Czesc, %imie%!</code>. W CMD zmienne odczytujemy przez <code>%NAZWA%</code>.',
     starter: '@echo off\nset imie=\nrem Uzupelnij zmienna imie i wypisz powitanie: Czesc, %imie%!\n',
     hint: '<b>set ZMIENNA=wartość</b> — przypisanie (bez spacji!)\n<b>%ZMIENNA%</b> — odczyt zmiennej\n\n⚠ Uważaj na spacje:\n<b>set x=5</b> ✓\n<b>set x = 5</b> ✗ (spacja wchodzi w wartość!)',
+    guardLines: ['@echo off','set imie='],
     check: (code, out) => /set imie=\w+/.test(code) && code.includes('%imie%') && out.toLowerCase().includes('czesc'),
     ok: 'Zmienne CMD: set NAZWA=wartość (przypisanie), %NAZWA% (odczyt). Bez spacji wokół = !'
   },
@@ -659,7 +660,18 @@ function updateLineNums() {
   lineNumsEl.scrollTop = editorEl.scrollTop;
 }
 
-editorEl.addEventListener('input', updateLineNums);
+editorEl.addEventListener('input', () => {
+  updateLineNums();
+  const L = LESSONS[currentLesson];
+  const warn = document.getElementById('editor-warning');
+  if (L && L.guardLines) {
+    const code = editorEl.value;
+    const broken = L.guardLines.some(line => !code.includes(line));
+    warn.style.display = broken ? 'block' : 'none';
+  } else {
+    warn.style.display = 'none';
+  }
+});
 editorEl.addEventListener('scroll', () => { lineNumsEl.scrollTop = editorEl.scrollTop; });
 editorEl.addEventListener('keydown', e => {
   if(e.key==='Tab'){
@@ -689,6 +701,7 @@ function loadLesson() {
   editorEl.value=L.starter;
   updateLineNums();
   outputEl.innerHTML='<span class="line-sys">// Napisz skrypt i kliknij URUCHOM</span>\n<span class="cursor-line"></span>';
+  document.getElementById('editor-warning').style.display='none';
   setStatus('GOTOWY');hideHint();
   document.getElementById('btn-prev').disabled=currentLesson===0;
   document.getElementById('btn-next').disabled=currentLesson===LESSONS.length-1;
