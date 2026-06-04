@@ -440,7 +440,8 @@ function render() {
   floorPat.setTransform(worldMat);
   wallPat.setTransform(worldMat);
 
-  ctx.fillStyle = '#0a0805';
+  // Dark warm-brown background — deep void reads as "dark wallpaper" not void
+  ctx.fillStyle = '#130e06';
   ctx.fillRect(0, 0, W, H);
 
   const tpx = TS * zoom; // tile pixel size on screen
@@ -458,90 +459,61 @@ function render() {
       const tiles = getChunk(cx, cy);
       const [ox, oy] = w2s(cx * CPX, cy * CPX);
 
-      const tw = tpx + 0.5;
+      const tw  = tpx + 0.5;
+      const sw  = Math.min(tpx * 0.38, 11); // shadow strip width
+      const doShadow = zoom > 0.25;
 
-      // ── Wall-face tiles (void adjacent to floor → show wallpaper) ────────
+      // ── Main pass: walls + floor + damp + shadow (single loop) ───────────
       for (let ty = 0; ty < CT; ty++) {
         for (let tx = 0; tx < CT; tx++) {
-          if (tiles[ty * CT + tx]) continue;
-          const isWall =
-            (tx > 0    && tiles[ty*CT + tx-1]) ||
-            (tx < CT-1 && tiles[ty*CT + tx+1]) ||
-            (ty > 0    && tiles[(ty-1)*CT + tx]) ||
-            (ty < CT-1 && tiles[(ty+1)*CT + tx]);
-          if (!isWall) continue;
-          ctx.fillStyle = wallPat;
-          ctx.fillRect(ox + tx * tpx, oy + ty * tpx, tw, tw);
-        }
-      }
+          const t  = tiles[ty * CT + tx];
+          const sx = ox + tx * tpx, sy = oy + ty * tpx;
 
-      // ── Floor tiles + damp border overlay ───────────────────────────────
-      for (let ty = 0; ty < CT; ty++) {
-        for (let tx = 0; tx < CT; tx++) {
-          if (!tiles[ty * CT + tx]) continue;
+          if (!t) {
+            // Void — draw wallpaper only on wall-face tiles (adjacent to floor)
+            if ((tx > 0    && tiles[ty*CT+tx-1]) ||
+                (tx < CT-1 && tiles[ty*CT+tx+1]) ||
+                (ty > 0    && tiles[(ty-1)*CT+tx]) ||
+                (ty < CT-1 && tiles[(ty+1)*CT+tx])) {
+              ctx.fillStyle = wallPat;
+              ctx.fillRect(sx, sy, tw, tw);
+            }
+            continue;
+          }
 
-          const sx = ox + tx * tpx;
-          const sy = oy + ty * tpx;
-
+          // Floor carpet
           ctx.fillStyle = floorPat;
           ctx.fillRect(sx, sy, tw, tw);
 
-          if (zoom > 0.5) {
-            ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-            ctx.lineWidth = 0.4;
-            ctx.strokeRect(sx + 0.2, sy + 0.2, tpx - 0.4, tpx - 0.4);
-          }
+          // Check void neighbours (reused for damp overlay + shadow)
+          const vN = (ty === 0    || !tiles[(ty-1)*CT+tx]);
+          const vS = (ty === CT-1 || !tiles[(ty+1)*CT+tx]);
+          const vW = (tx === 0    || !tiles[ty*CT+tx-1]);
+          const vE = (tx === CT-1 || !tiles[ty*CT+tx+1]);
 
-          // Damp darkening on tiles directly bordering a wall
-          const nearWall =
-            (tx === 0    || !tiles[ty*CT + tx-1]) ||
-            (tx === CT-1 || !tiles[ty*CT + tx+1]) ||
-            (ty === 0    || !tiles[(ty-1)*CT + tx]) ||
-            (ty === CT-1 || !tiles[(ty+1)*CT + tx]);
-          if (nearWall) {
+          // Damp darkening on wall-adjacent tiles
+          if (vN || vS || vW || vE) {
             ctx.fillStyle = 'rgba(0,0,0,0.22)';
             ctx.fillRect(sx, sy, tw, tw);
+          }
+
+          // Shadow strips — solid rects, zero gradient allocation
+          if (doShadow) {
+            ctx.fillStyle = 'rgba(0,0,0,0.60)';
+            if (vN) ctx.fillRect(sx,        sy,        tw, sw);
+            if (vS) ctx.fillRect(sx,        sy+tpx-sw, tw, sw);
+            if (vW) ctx.fillRect(sx,        sy,        sw, tw);
+            if (vE) ctx.fillRect(sx+tpx-sw, sy,        sw, tw);
           }
         }
       }
 
-      // ── Per-chunk tint ───────────────────────────────────────────────────
+      // ── Per-chunk tint (one fillStyle set for entire chunk) ──────────────
       ctx.fillStyle = chunkFloorTint(cx, cy);
       for (let ty = 0; ty < CT; ty++) {
         for (let tx = 0; tx < CT; tx++) {
           if (!tiles[ty * CT + tx]) continue;
           ctx.fillRect(ox + tx * tpx, oy + ty * tpx, tw, tw);
-        }
-      }
-
-      // ── Wall-height shadows ──────────────────────────────────────────────
-      if (zoom > 0.3) {
-        const sw = Math.min(tpx * 0.45, 14);
-        for (let ty = 0; ty < CT; ty++) {
-          for (let tx = 0; tx < CT; tx++) {
-            if (!tiles[ty * CT + tx]) continue;
-            const sx = ox + tx * tpx, sy = oy + ty * tpx;
-            if (ty === 0    || !tiles[(ty-1)*CT + tx]) {
-              const g = ctx.createLinearGradient(sx, sy, sx, sy+sw);
-              g.addColorStop(0,'rgba(0,0,0,0.75)'); g.addColorStop(1,'rgba(0,0,0,0)');
-              ctx.fillStyle = g; ctx.fillRect(sx, sy, tw, sw);
-            }
-            if (ty === CT-1 || !tiles[(ty+1)*CT + tx]) {
-              const g = ctx.createLinearGradient(sx, sy+tpx, sx, sy+tpx-sw);
-              g.addColorStop(0,'rgba(0,0,0,0.75)'); g.addColorStop(1,'rgba(0,0,0,0)');
-              ctx.fillStyle = g; ctx.fillRect(sx, sy+tpx-sw, tw, sw);
-            }
-            if (tx === 0    || !tiles[ty*CT + tx-1]) {
-              const g = ctx.createLinearGradient(sx, sy, sx+sw, sy);
-              g.addColorStop(0,'rgba(0,0,0,0.75)'); g.addColorStop(1,'rgba(0,0,0,0)');
-              ctx.fillStyle = g; ctx.fillRect(sx, sy, sw, tw);
-            }
-            if (tx === CT-1 || !tiles[ty*CT + tx+1]) {
-              const g = ctx.createLinearGradient(sx+tpx, sy, sx+tpx-sw, sy);
-              g.addColorStop(0,'rgba(0,0,0,0.75)'); g.addColorStop(1,'rgba(0,0,0,0)');
-              ctx.fillStyle = g; ctx.fillRect(sx+tpx-sw, sy, sw, tw);
-            }
-          }
         }
       }
 
