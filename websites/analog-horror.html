@@ -690,7 +690,7 @@ function makeNoiseBuffer(actx, secs = 1.5) {
   const sr  = actx.sampleRate;
   const buf = actx.createBuffer(1, Math.floor(sr * secs), sr);
   const d   = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * .75;
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * .35;
   return buf;
 }
 
@@ -744,7 +744,7 @@ async function startProcessing() {
   const noiseSrc = actx.createBufferSource();
   noiseSrc.buffer = noiseBuf; noiseSrc.loop = true;
   const noiseGain = actx.createGain();
-  noiseGain.gain.value = .055;
+  noiseGain.gain.value = .012;
   noiseSrc.connect(noiseGain);
 
   const dest = actx.createMediaStreamDestination();
@@ -801,7 +801,7 @@ async function startProcessing() {
     const target = rms < .025 ? .48 : (rms < .08 ? .16 : .09);
     noiseLevel  += (target - noiseLevel) * .07;
 
-    noiseGain.gain.value = .055 + (1 - Math.min(rms * 7, 1)) * .20;
+    noiseGain.gain.value = .012 + (1 - Math.min(rms * 7, 1)) * .055;
 
     ctx.drawImage(vid, 0, 0, cw, ch);
     if (!vid.ended) tickGlitch(ch);
