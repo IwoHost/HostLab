@@ -512,7 +512,7 @@ function render() {
               (ty > 0    && tiles[(ty-1)*CT+tx]) ||
               (ty < CT-1 && tiles[(ty+1)*CT+tx]);
             if (!isWallFace) {
-              ctx.fillStyle = 'rgba(0,0,0,0.68)';
+              ctx.fillStyle = 'rgba(0,0,0,0.86)';
               ctx.fillRect(sx, sy, tw, tw);
             }
             continue;
