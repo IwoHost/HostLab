@@ -444,6 +444,8 @@ function extractPreview() {
   const vid = document.createElement('video');
   vid.src = URL.createObjectURL(videoFile);
   vid.muted = true; vid.preload = 'metadata';
+  vid.setAttribute('playsinline', '');
+  vid.setAttribute('webkit-playsinline', '');
 
   vid.addEventListener('loadedmetadata', () => {
     tapeDurEl.textContent = 'DURATION: ' + fmtDur(vid.duration);
@@ -452,13 +454,13 @@ function extractPreview() {
   }, { once: true });
 
   vid.addEventListener('seeked', () => {
-    const [cw, ch] = clampRes(vid.videoWidth, vid.videoHeight, 640, 480);
-    previewCanvas.width = cw; previewCanvas.height = ch;
+    const sz = squareSize(vid.videoWidth, vid.videoHeight, 480);
+    previewCanvas.width = sz; previewCanvas.height = sz;
     const ctx = previewCanvas.getContext('2d');
-    ctx.drawImage(vid, 0, 0, cw, ch);
-    const vig = buildVignette(cw, ch);
-    applyPixels(ctx, cw, ch, 0, 0.09, vig, true);
-    drawOverlay(ctx, cw, ch, tapeDate, 0, true);
+    drawCropped(ctx, vid, sz);
+    const vig = buildVignette(sz, sz);
+    applyPixels(ctx, sz, sz, 0, 0.09, vig, true);
+    drawOverlay(ctx, sz, sz, tapeDate, 0, true);
     previewSection.classList.remove('hidden');
     setStatus('TAPE LOADED — READY TO PROCESS', '', 'READY');
     processBtn.disabled = false;
@@ -468,10 +470,16 @@ function extractPreview() {
   vid.load();
 }
 
-function clampRes(w, h, maxW, maxH) {
-  if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
-  if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
-  return [w, h];
+function squareSize(vw, vh, max) {
+  return Math.min(vw, vh, max);
+}
+
+function drawCropped(ctx, vid, size) {
+  const vw = vid.videoWidth, vh = vid.videoHeight;
+  const src = Math.min(vw, vh);
+  const sx  = (vw - src) / 2;
+  const sy  = (vh - src) / 2;
+  ctx.drawImage(vid, sx, sy, src, src, 0, 0, size, size);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -690,7 +698,7 @@ function makeNoiseBuffer(actx, secs = 1.5) {
   const sr  = actx.sampleRate;
   const buf = actx.createBuffer(1, Math.floor(sr * secs), sr);
   const d   = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * .75;
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * .35;
   return buf;
 }
 
@@ -701,6 +709,16 @@ processBtn.addEventListener('click', () => startProcessing());
 
 async function startProcessing() {
   if (!videoFile) return;
+
+  // Feature detection — canvas.captureStream + MediaRecorder required
+  const testCanvas = document.createElement('canvas');
+  if (typeof testCanvas.captureStream !== 'function' || typeof MediaRecorder === 'undefined') {
+    setStatus('BROWSER NOT SUPPORTED — USE CHROME ON DESKTOP OR ANDROID', '', 'ERROR');
+    processBtn.disabled = false;
+    progressWrap.classList.add('hidden');
+    return;
+  }
+
   processBtn.disabled = true;
   downloadBtn.classList.add('hidden');
   progressWrap.classList.remove('hidden');
@@ -709,18 +727,22 @@ async function startProcessing() {
   const vid = document.createElement('video');
   vid.src = URL.createObjectURL(videoFile);
   vid.muted = false; vid.preload = 'auto';
+  vid.setAttribute('playsinline', '');
+  vid.setAttribute('webkit-playsinline', '');
 
   await new Promise(r => vid.addEventListener('loadedmetadata', r, { once: true }));
   await new Promise(r => vid.addEventListener('canplay', r, { once: true }));
 
-  const [cw, ch] = clampRes(vid.videoWidth, vid.videoHeight, 640, 480);
-  const canvas   = document.createElement('canvas');
-  canvas.width = cw; canvas.height = ch;
+  const sz     = squareSize(vid.videoWidth, vid.videoHeight, 480);
+  const cw = sz, ch = sz;
+  const canvas = document.createElement('canvas');
+  canvas.width = sz; canvas.height = sz;
   const ctx = canvas.getContext('2d');
-  const vig = buildVignette(cw, ch);
+  const vig = buildVignette(sz, sz);
 
   // Audio chain
   const actx = new AudioContext();
+  try { await actx.resume(); } catch(_) {}
   try { await document.fonts.load(`16px 'VT323'`); } catch(_) {}
 
   const mediaSrc  = actx.createMediaElementSource(vid);
@@ -744,7 +766,7 @@ async function startProcessing() {
   const noiseSrc = actx.createBufferSource();
   noiseSrc.buffer = noiseBuf; noiseSrc.loop = true;
   const noiseGain = actx.createGain();
-  noiseGain.gain.value = .055;
+  noiseGain.gain.value = .012;
   noiseSrc.connect(noiseGain);
 
   const dest = actx.createMediaStreamDestination();
@@ -801,9 +823,9 @@ async function startProcessing() {
     const target = rms < .025 ? .48 : (rms < .08 ? .16 : .09);
     noiseLevel  += (target - noiseLevel) * .07;
 
-    noiseGain.gain.value = .055 + (1 - Math.min(rms * 7, 1)) * .20;
+    noiseGain.gain.value = .012 + (1 - Math.min(rms * 7, 1)) * .055;
 
-    ctx.drawImage(vid, 0, 0, cw, ch);
+    drawCropped(ctx, vid, sz);
     if (!vid.ended) tickGlitch(ch);
     applyPixels(ctx, cw, ch, vid.currentTime, noiseLevel, vig, false);
     drawOverlay(ctx, cw, ch, tapeDate, vid.currentTime, false);
