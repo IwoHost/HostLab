@@ -444,6 +444,8 @@ function extractPreview() {
   const vid = document.createElement('video');
   vid.src = URL.createObjectURL(videoFile);
   vid.muted = true; vid.preload = 'metadata';
+  vid.setAttribute('playsinline', '');
+  vid.setAttribute('webkit-playsinline', '');
 
   vid.addEventListener('loadedmetadata', () => {
     tapeDurEl.textContent = 'DURATION: ' + fmtDur(vid.duration);
@@ -701,6 +703,16 @@ processBtn.addEventListener('click', () => startProcessing());
 
 async function startProcessing() {
   if (!videoFile) return;
+
+  // Feature detection — canvas.captureStream + MediaRecorder required
+  const testCanvas = document.createElement('canvas');
+  if (typeof testCanvas.captureStream !== 'function' || typeof MediaRecorder === 'undefined') {
+    setStatus('BROWSER NOT SUPPORTED — USE CHROME ON DESKTOP OR ANDROID', '', 'ERROR');
+    processBtn.disabled = false;
+    progressWrap.classList.add('hidden');
+    return;
+  }
+
   processBtn.disabled = true;
   downloadBtn.classList.add('hidden');
   progressWrap.classList.remove('hidden');
@@ -709,6 +721,8 @@ async function startProcessing() {
   const vid = document.createElement('video');
   vid.src = URL.createObjectURL(videoFile);
   vid.muted = false; vid.preload = 'auto';
+  vid.setAttribute('playsinline', '');
+  vid.setAttribute('webkit-playsinline', '');
 
   await new Promise(r => vid.addEventListener('loadedmetadata', r, { once: true }));
   await new Promise(r => vid.addEventListener('canplay', r, { once: true }));
@@ -721,6 +735,7 @@ async function startProcessing() {
 
   // Audio chain
   const actx = new AudioContext();
+  try { await actx.resume(); } catch(_) {}
   try { await document.fonts.load(`16px 'VT323'`); } catch(_) {}
 
   const mediaSrc  = actx.createMediaElementSource(vid);
