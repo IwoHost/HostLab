@@ -362,8 +362,10 @@ let tapeDate  = null;
 let tapeId    = null;
 let rafHandle = null;
 
-const glitchSM   = { active: false, timer: 1.2, band: null, heavy: false };
-const outroState  = { running: false };
+const glitchSM  = { active: false, timer: 2.5, band: null, heavy: false };
+const tsGlitch  = { active: false, timer: 12 + Math.random() * 15 };
+const outroState = { running: false };
+let shakeX = 0, shakeY = 0, joltX = 0, joltY = 0;
 
 // DOM
 const uploadZone    = document.getElementById('uploadZone');
@@ -475,12 +477,17 @@ function squareSize(vw, vh, max) {
   return Math.min(vw, vh, max);
 }
 
-function drawCropped(ctx, vid, size) {
+function drawCropped(ctx, vid, size, ox = 0, oy = 0) {
   const vw = vid.videoWidth, vh = vid.videoHeight;
   const src = Math.min(vw, vh);
   const sx  = (vw - src) / 2;
   const sy  = (vh - src) / 2;
-  ctx.drawImage(vid, sx, sy, src, src, 0, 0, size, size);
+  // Ghost echo — faint double image (worn tape ghosting)
+  ctx.globalAlpha = 0.09;
+  ctx.drawImage(vid, sx, sy, src, src, ox + 7, oy + 2, size, size);
+  ctx.globalAlpha = 1.0;
+  // Main image with camera shake offset
+  ctx.drawImage(vid, sx, sy, src, src, ox, oy, size, size);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -518,13 +525,13 @@ function tickGlitch(h) {
     if (glitchSM.timer <= 0) {
       glitchSM.active = false;
       glitchSM.heavy  = false;
-      glitchSM.timer  = .5 + xrand() * 3.5;
+      glitchSM.timer  = 3 + xrand() * 8; // longer quiet stretches
     }
   } else {
     if (glitchSM.timer <= 0) {
       glitchSM.active = true;
-      glitchSM.heavy  = xrand() < .22; // 22% chance of heavy glitch episode
-      glitchSM.timer  = glitchSM.heavy ? (.2 + xrand() * .9) : (.04 + xrand() * .3);
+      glitchSM.heavy  = xrand() < .10; // 10% chance — rare heavy episode
+      glitchSM.timer  = glitchSM.heavy ? (.15 + xrand() * .6) : (.04 + xrand() * .22);
       glitchSM.band   = {
         y:        Math.floor(xrand() * h),
         height:   glitchSM.heavy ? (40 + Math.floor(xrand() * 140)) : (12 + Math.floor(xrand() * 70)),
@@ -550,6 +557,15 @@ function trackingOffsets(h, t) {
     out[y] = Math.round(off);
   }
   return out;
+}
+
+function tickTsGlitch() {
+  tsGlitch.timer -= 1/30;
+  if (tsGlitch.active) {
+    if (tsGlitch.timer <= 0) { tsGlitch.active = false; tsGlitch.timer = 12 + xrand() * 18; }
+  } else {
+    if (tsGlitch.timer <= 0) { tsGlitch.active = true;  tsGlitch.timer = .15 + xrand() * .4; }
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -631,7 +647,7 @@ function applyPixels(ctx, w, h, time, noiseLevel, vig, isPreview) {
   ctx.putImageData(new ImageData(dst, w, h), 0, 0);
 
   // Digital block corruption — copy a strip from elsewhere (heavy glitch only)
-  if (!isPreview && isHeavy && xrand() < .55) {
+  if (!isPreview && isHeavy && xrand() < .22) {
     const strips = 1 + Math.floor(xrand() * 3);
     for (let s = 0; s < strips; s++) {
       const srcY  = Math.floor(xrand() * (h - 12));
@@ -646,7 +662,7 @@ function applyPixels(ctx, w, h, time, noiseLevel, vig, isPreview) {
   }
 
   // Tape dropout
-  if (!isPreview && xrand() < .045) {
+  if (!isPreview && xrand() < .016) {
     const dy   = Math.floor(xrand() * h * .85) + h * .07;
     const dlen = Math.floor(xrand() * w * .55) + w * .08;
     const dx   = Math.floor(xrand() * (w - dlen));
@@ -688,8 +704,15 @@ function drawOverlay(ctx, w, h, td, videoTime, isPreview) {
     ctx.fillText('● REC', Math.floor(fs * .5), Math.floor(fs * 1.4));
   }
 
+  // Timestamp — occasionally glitch digits
+  let tsStr = stampTime(td, videoTime);
+  if (!isPreview && tsGlitch.active) {
+    const gc = '0123456789???  ';
+    tsStr = tsStr.split('').map(c => /[0-9]/.test(c) && xrand() < .55
+      ? gc[Math.floor(xrand() * gc.length)] : c).join('');
+  }
   ctx.fillStyle = 'rgba(218,212,170,.88)';
-  ctx.fillText(stampTime(td, videoTime), Math.floor(fs * .5), h - Math.floor(fs * .7));
+  ctx.fillText(tsStr, Math.floor(fs * .5), h - Math.floor(fs * .7));
 
   const counter = 'SP  ' + fmtDur(videoTime);
   const cw = ctx.measureText(counter).width;
@@ -707,6 +730,72 @@ function drawOverlay(ctx, w, h, td, videoTime, isPreview) {
     const mw = ctx.measureText(msg).width;
     ctx.fillText(msg, (w - mw) / 2, h / 2);
   }
+}
+
+// ═══════════════════════════════════════════════════════
+// COLOR BARS INTRO
+// ═══════════════════════════════════════════════════════
+const BAR_COLORS = [
+  [191,191,191],[191,191,0],[0,191,191],[0,191,0],
+  [191,0,191],[191,0,0],[0,0,191]
+];
+
+function runIntro(ctx, sz) {
+  return new Promise(resolve => {
+    const t0  = Date.now();
+    const DUR = 2600;
+    const bw  = sz / 7;
+
+    function draw() {
+      const elapsed = Date.now() - t0;
+      if (elapsed >= DUR) { resolve(); return; }
+      xSeed = (xSeed + elapsed) | 1;
+
+      for (let i = 0; i < 7; i++) {
+        const [r,g,b] = BAR_COLORS[i];
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(Math.floor(i * bw), 0, Math.ceil(bw) + 1, sz);
+      }
+
+      // Noise over bars
+      const img = ctx.getImageData(0, 0, sz, sz);
+      const d   = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const n = (xrand() - .5) * 22;
+        d[i]   = Math.max(0, Math.min(255, d[i]   + n));
+        d[i+1] = Math.max(0, Math.min(255, d[i+1] + n));
+        d[i+2] = Math.max(0, Math.min(255, d[i+2] + n));
+      }
+      ctx.putImageData(img, 0, 0);
+
+      // Scanlines
+      for (let y = 0; y < sz; y += 4) {
+        ctx.fillStyle = 'rgba(0,0,0,.09)';
+        ctx.fillRect(0, y, sz, 2);
+      }
+
+      // Label
+      const fs  = Math.max(12, Math.floor(sz / 22));
+      ctx.font  = `${fs}px 'VT323', monospace`;
+      const lbl = 'COLOR BARS  —  DO NOT ADJUST YOUR SET';
+      const lw  = ctx.measureText(lbl).width;
+      const ly  = sz * .88;
+      ctx.fillStyle = 'rgba(0,0,0,.72)';
+      ctx.fillRect((sz-lw)/2 - 8, ly - fs * 1.1, lw + 16, fs * 1.5);
+      ctx.fillStyle = 'rgba(238,234,210,.93)';
+      ctx.fillText(lbl, (sz-lw)/2, ly);
+
+      // Occasional glitch line
+      if (xrand() < .025) {
+        const gy = Math.floor(xrand() * sz);
+        ctx.fillStyle = `rgba(${xrand()*255|0},${xrand()*255|0},${xrand()*255|0},.65)`;
+        ctx.fillRect(0, gy, sz, 1);
+      }
+
+      rafHandle = requestAnimationFrame(draw);
+    }
+    draw();
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -982,8 +1071,19 @@ async function startProcessing() {
 
     noiseGain.gain.value = .012 + (1 - Math.min(rms * 7, 1)) * .055;
 
-    drawCropped(ctx, vid, sz);
-    if (!vid.ended) tickGlitch(ch);
+    // Wow & flutter — subtle tape pitch wobble
+    vid.playbackRate = 1 + Math.sin(vid.currentTime * 0.6) * 0.012 + (xrand() - .5) * 0.004;
+
+    // Camera shake — slow drift + rare jolt
+    shakeX = Math.sin(vid.currentTime * 0.38) * 1.6 + Math.sin(vid.currentTime * 1.2) * 0.6;
+    shakeY = Math.sin(vid.currentTime * 0.31 + 1.1) * 1.3 + Math.sin(vid.currentTime * 0.85) * 0.4;
+    if (xrand() < .002) { joltX = (xrand() - .5) * 7; joltY = (xrand() - .5) * 5; }
+    joltX *= .80; joltY *= .80;
+    const ox = Math.round(shakeX + joltX);
+    const oy = Math.round(shakeY + joltY);
+
+    if (!vid.ended) { tickGlitch(ch); tickTsGlitch(); }
+    drawCropped(ctx, vid, sz, ox, oy);
     applyPixels(ctx, cw, ch, vid.currentTime, noiseLevel, vig, false);
     drawOverlay(ctx, cw, ch, tapeDate, vid.currentTime, false);
 
@@ -997,6 +1097,9 @@ async function startProcessing() {
   }
 
   recorder.start(100);
+  setStatus('PLAYING COLOR BARS...', 'active', 'BARS');
+  await runIntro(ctx, sz);
+  setStatus('PROCESSING TAPE...', 'active', 'ENCODING');
   vid.play();
   frame();
 }
