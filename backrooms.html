@@ -293,6 +293,40 @@ function punchAndCarveH(tiles, pos, edgeY, dy) {
   }
 }
 
+// BFS from void-adjacent floor tiles outward — each floor tile gets the
+// distance to the nearest wall (0 = touching wall, 1 = 1 tile away, …)
+function computeWallDist(tiles) {
+  const dist  = new Uint8Array(CT * CT).fill(99);
+  const queue = [];
+  for (let y = 0; y < CT; y++) {
+    for (let x = 0; x < CT; x++) {
+      if (!tiles[y * CT + x]) continue;
+      const adj =
+        (x > 0    && !tiles[y*CT + x-1]) ||
+        (x < CT-1 && !tiles[y*CT + x+1]) ||
+        (y > 0    && !tiles[(y-1)*CT + x]) ||
+        (y < CT-1 && !tiles[(y+1)*CT + x]);
+      if (adj) { dist[y * CT + x] = 0; queue.push(y * CT + x); }
+    }
+  }
+  for (let i = 0; i < queue.length; i++) {
+    const idx = queue[i];
+    const x = idx % CT, y = (idx / CT) | 0;
+    const nd = dist[idx] + 1;
+    if (nd >= 4) continue; // only propagate up to 3 tiles deep
+    for (const [dy, dx] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || nx >= CT || ny < 0 || ny >= CT) continue;
+      if (!tiles[ny * CT + nx]) continue;
+      const ni = ny * CT + nx;
+      if (dist[ni] <= nd) continue;
+      dist[ni] = nd;
+      queue.push(ni);
+    }
+  }
+  return dist;
+}
+
 // ── CHUNK CACHE ────────────────────────────────────────────────────────────────
 const chunkCache = new Map();
 const CACHE_MAX  = 400;
@@ -301,10 +335,11 @@ function getChunk(cx, cy) {
   const k = `${cx},${cy}`;
   if (!chunkCache.has(k)) {
     if (chunkCache.size >= CACHE_MAX) {
-      // Evict oldest entry
       chunkCache.delete(chunkCache.keys().next().value);
     }
-    chunkCache.set(k, genChunk(cx, cy));
+    const tiles    = genChunk(cx, cy);
+    const wallDist = computeWallDist(tiles);
+    chunkCache.set(k, { tiles, wallDist });
   }
   return chunkCache.get(k);
 }
@@ -456,12 +491,10 @@ function render() {
 
   for (let cy = cy0; cy <= cy1; cy++) {
     for (let cx = cx0; cx <= cx1; cx++) {
-      const tiles = getChunk(cx, cy);
+      const { tiles, wallDist } = getChunk(cx, cy);
       const [ox, oy] = w2s(cx * CPX, cy * CPX);
 
-      const tw  = tpx + 0.5;
-      const sw  = Math.min(tpx * 0.38, 11); // shadow strip width
-      const doShadow = zoom > 0.25;
+      const tw = tpx + 0.5;
 
       // ── Main pass: walls + floor + damp + shadow (single loop) ───────────
       for (let ty = 0; ty < CT; ty++) {
@@ -470,12 +503,16 @@ function render() {
           const sx = ox + tx * tpx, sy = oy + ty * tpx;
 
           if (!t) {
-            // Void — draw wallpaper only on wall-face tiles (adjacent to floor)
-            if ((tx > 0    && tiles[ty*CT+tx-1]) ||
-                (tx < CT-1 && tiles[ty*CT+tx+1]) ||
-                (ty > 0    && tiles[(ty-1)*CT+tx]) ||
-                (ty < CT-1 && tiles[(ty+1)*CT+tx])) {
-              ctx.fillStyle = wallPat;
+            // All void gets wallpaper; non-wall-face tiles get a heavy dark overlay
+            ctx.fillStyle = wallPat;
+            ctx.fillRect(sx, sy, tw, tw);
+            const isWallFace =
+              (tx > 0    && tiles[ty*CT+tx-1]) ||
+              (tx < CT-1 && tiles[ty*CT+tx+1]) ||
+              (ty > 0    && tiles[(ty-1)*CT+tx]) ||
+              (ty < CT-1 && tiles[(ty+1)*CT+tx]);
+            if (!isWallFace) {
+              ctx.fillStyle = 'rgba(0,0,0,0.68)';
               ctx.fillRect(sx, sy, tw, tw);
             }
             continue;
@@ -485,26 +522,11 @@ function render() {
           ctx.fillStyle = floorPat;
           ctx.fillRect(sx, sy, tw, tw);
 
-          // Check void neighbours (reused for damp overlay + shadow)
-          const vN = (ty === 0    || !tiles[(ty-1)*CT+tx]);
-          const vS = (ty === CT-1 || !tiles[(ty+1)*CT+tx]);
-          const vW = (tx === 0    || !tiles[ty*CT+tx-1]);
-          const vE = (tx === CT-1 || !tiles[ty*CT+tx+1]);
-
-          // Damp darkening on wall-adjacent tiles
-          if (vN || vS || vW || vE) {
-            ctx.fillStyle = 'rgba(0,0,0,0.22)';
-            ctx.fillRect(sx, sy, tw, tw);
-          }
-
-          // Shadow strips — solid rects, zero gradient allocation
-          if (doShadow) {
-            ctx.fillStyle = 'rgba(0,0,0,0.60)';
-            if (vN) ctx.fillRect(sx,        sy,        tw, sw);
-            if (vS) ctx.fillRect(sx,        sy+tpx-sw, tw, sw);
-            if (vW) ctx.fillRect(sx,        sy,        sw, tw);
-            if (vE) ctx.fillRect(sx+tpx-sw, sy,        sw, tw);
-          }
+          // Wall shadow — one value per tile from nearest wall, no compounding
+          const d = wallDist[ty * CT + tx];
+          if (d === 0) { ctx.fillStyle = 'rgba(0,0,0,0.42)'; ctx.fillRect(sx, sy, tw, tw); }
+          else if (d === 1) { ctx.fillStyle = 'rgba(0,0,0,0.20)'; ctx.fillRect(sx, sy, tw, tw); }
+          else if (d === 2) { ctx.fillStyle = 'rgba(0,0,0,0.07)'; ctx.fillRect(sx, sy, tw, tw); }
         }
       }
 
