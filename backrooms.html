@@ -356,7 +356,7 @@ function buildWallPattern(ctx) {
   const oc2 = oc.getContext('2d');
   const id  = oc2.createImageData(sz, sz);
   const d   = id.data;
-  const rng = mulberry32(0xWA77_1337 | 0);
+  const rng = mulberry32(0xBA771337);
   for (let y = 0; y < sz; y++) {
     for (let x = 0; x < sz; x++) {
       const i = (y * sz + x) * 4;
