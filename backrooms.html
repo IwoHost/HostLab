@@ -219,7 +219,31 @@ function genChunk(cx, cy) {
   // Add cross-chunk doorways and corridors leading inward
   addEdgeDoors(cx, cy, tiles);
 
-  return tiles;
+  // Generate flicker zones — ~40% of chunks have 1-2 rooms with dying fluorescent lights
+  const flickerZones = [];
+  const frng = mulberry32(chunkHash(cx, cy) ^ 0xF11C1337);
+  if (frng() < 0.40 && rooms.length > 0) {
+    const count = frng() < 0.35 ? Math.min(2, rooms.length) : 1;
+    const order = rooms.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(frng() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    for (let i = 0; i < count; i++) {
+      const rm = rooms[order[i]];
+      const hw = 3 + Math.floor(frng() * 3);
+      const hh = 3 + Math.floor(frng() * 3);
+      flickerZones.push({
+        wx: (cx * CT + rm.mx - hw) * TS,
+        wy: (cy * CT + rm.my - hh) * TS,
+        ww: hw * 2 * TS,
+        wh: hh * 2 * TS,
+        seed: frng(),
+      });
+    }
+  }
+
+  return { tiles, flickerZones };
 }
 
 // Carve an axis-aligned corridor, width = 1 (tight) or 2 (normal)
@@ -340,11 +364,21 @@ function getChunk(cx, cy) {
     if (chunkCache.size >= CACHE_MAX) {
       chunkCache.delete(chunkCache.keys().next().value);
     }
-    const tiles    = genChunk(cx, cy);
+    const { tiles, flickerZones } = genChunk(cx, cy);
     const wallDist = computeWallDist(tiles);
-    chunkCache.set(k, { tiles, wallDist });
+    chunkCache.set(k, { tiles, wallDist, flickerZones });
   }
   return chunkCache.get(k);
+}
+
+// Returns 0 (on) → 0.85 (off) — fluorescent tube dying cycle
+function flickerAlpha(now, seed) {
+  const t = (now * 0.001 + seed * 31.7) % 14; // 14s cycle, phase-shifted by seed
+  if (t < 10.0) return 0;                               // 71% of time: stable on
+  if (t < 10.6) return (Math.floor(t * 24) % 2) * 0.80; // rapid stutter
+  if (t < 12.2) return 0.82;                            // lights out
+  if (t < 12.8) return (Math.floor(t * 18) % 3 === 0) ? 0.10 : 0.82; // restart
+  return 0;                                              // back on
 }
 
 // ── CAMERA ─────────────────────────────────────────────────────────────────────
@@ -470,6 +504,7 @@ function chunkFloorTint(cx, cy) {
 }
 
 function render() {
+  const now = performance.now();
   if (!floorPat) floorPat = buildFloorPattern(ctx);
   if (!wallPat)  wallPat  = buildWallPattern(ctx);
 
@@ -494,7 +529,7 @@ function render() {
 
   for (let cy = cy0; cy <= cy1; cy++) {
     for (let cx = cx0; cx <= cx1; cx++) {
-      const { tiles, wallDist } = getChunk(cx, cy);
+      const { tiles, wallDist, flickerZones } = getChunk(cx, cy);
       const [ox, oy] = w2s(cx * CPX, cy * CPX);
 
       const tw = tpx + 0.5;
@@ -562,6 +597,15 @@ function render() {
           ctx.fill();
           ctx.restore();
         }
+      }
+
+      // ── Flicker overlay (invisible dying fluorescent tubes) ───────────────
+      for (const fz of flickerZones) {
+        const alpha = flickerAlpha(now, fz.seed);
+        if (alpha <= 0) continue;
+        const [fzsx, fzsy] = w2s(fz.wx, fz.wy);
+        ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(3)})`;
+        ctx.fillRect(fzsx, fzsy, fz.ww * zoom, fz.wh * zoom);
       }
     }
   }
@@ -691,6 +735,9 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 requestAnimationFrame(hudLoop);
+
+// Flicker animation — redraws at ~16fps so flickering rooms animate
+setInterval(() => render(), 60);
 </script>
 </body>
 </html>
