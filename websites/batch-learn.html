@@ -200,7 +200,7 @@ textarea#editor::selection{background:rgba(255,179,0,.15)}
 </div>
 
 <div class="bottom-bar">
-  <button class="btn btn-run" onclick="runScript()">&#9654; URUCHOM</button>
+  <button class="btn btn-run" onclick="runScript()" title="Uruchom (Ctrl+Enter)">&#9654; URUCHOM</button>
   <button class="btn" onclick="resetEditor()">&#8635; RESETUJ</button>
   <button class="btn" onclick="showHint()">? PODPOWIEDŹ</button>
   <div class="btn-sep"></div>
@@ -230,7 +230,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 1 — PIERWSZY SKRYPT .BAT',
     task: 'Każdy skrypt .bat zaczyna się od <code>@echo off</code> — wyłącza pokazywanie komend. Użyj <code>echo</code> żeby wypisać <b>Witaj, świecie!</b>',
-    starter: '@echo off\necho Witaj, swiecie!\n',
+    starter: '@echo off\n:: Wypisz: Witaj, swiecie!\n\n',
     hint: '<b>@echo off</b> — @ ukrywa tę linię, echo off wyłącza pokazywanie pozostałych poleceń\n<b>echo tekst</b> — wypisuje tekst\n<b>echo.</b> — wypisuje pustą linię\n\nBez @echo off CMD pokazywałby każdą komendę przed wykonaniem.',
     check: (code, out) => out.toLowerCase().includes('witaj'),
     ok: '@echo off to obowiązkowy nagłówek pliku .bat. Bez niego CMD wyświetla każdą linię kodu.'
@@ -238,7 +238,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 2 — ZMIENNE SET',
     task: 'Utwórz zmienną <code>set imie=Jan</code> i wypisz ją przez <code>echo Cześć, %imie%!</code>. W CMD zmienne odczytujemy przez <code>%NAZWA%</code>.',
-    starter: '@echo off\nset imie=Jan\necho Czesc, %imie%!\n',
+    starter: '@echo off\n:: Utwórz zmienną imie z wartością Jan\n\n:: Wypisz: Czesc, %imie%!\n\n',
     hint: '<b>set ZMIENNA=wartość</b> — przypisanie (bez spacji!)\n<b>%ZMIENNA%</b> — odczyt zmiennej\n\n⚠ Uważaj na spacje:\n<b>set x=5</b> ✓\n<b>set x = 5</b> ✗ (spacja wchodzi w wartość!)\n\n<b>set</b> (bez argumentów) — lista wszystkich zmiennych',
     check: (code, out) => (out.toLowerCase().includes('czesc') || out.toLowerCase().includes('cześć') || /jan/i.test(out)) && /set\s+\w+=/i.test(code) && /%\w+%/.test(code),
     ok: 'Zmienne CMD: set NAZWA=wartość (przypisanie), %NAZWA% (odczyt). Bez spacji wokół = !'
@@ -246,7 +246,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 3 — ZMIENNE LICZBOWE',
     task: 'Utwórz zmienne <code>set /a wynik=10+5</code>. Flaga <code>/a</code> włącza tryb arytmetyczny. Wypisz wynik i oblicz kilka działań.',
-    starter: '@echo off\nset /a suma=10+5\nset /a iloczyn=4*3\nset /a reszta=17%%3\necho Suma: %suma%\necho Iloczyn: %iloczyn%\necho Reszta: %reszta%\n',
+    starter: '@echo off\n:: Oblicz suma = 10+5, iloczyn = 4*3, reszta = 17%%3\n:: (użyj set /a)\n\n\n:: Wypisz: Suma: %suma%\n\n:: Wypisz: Iloczyn: %iloczyn%\n\n:: Wypisz: Reszta: %reszta%\n\n',
     hint: '<b>set /a wynik=wyrażenie</b> — arytmetyka\nOperatory: + - * / %%\n\n⚠ W pliku .bat modulo to <b>%%</b> (podwójny %)\nW CMD (ręcznie) to tylko <b>%</b>\n\n<b>set /a x=x+1</b> — inkrementacja',
     check: (code, out) => out.includes('Suma:') && out.includes('15') && /set\s+\/a/i.test(code),
     ok: 'set /a włącza arytmetykę. W plikach .bat modulo to %% (podwójny procent, bo % sam służy do zmiennych).'
@@ -254,7 +254,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 4 — WARUNEK IF',
     task: 'Sprawdź czy plik istnieje używając <code>if exist</code>. Struktura:\n<code>if exist plik.txt (echo Istnieje) else (echo Brak)</code>\nLub sprawdź wartość zmiennej: <code>if %x%==5 echo Tak</code>',
-    starter: '@echo off\nset x=10\nif %x% gtr 5 (\n  echo Liczba wieksza od 5\n) else (\n  echo Liczba mniejsza lub rowna 5\n)\n',
+    starter: '@echo off\nset x=10\n:: Napisz warunek if sprawdzający czy x gtr 5\n:: Jeśli tak: wypisz "Liczba wieksza od 5"\n:: Jeśli nie: wypisz "Liczba mniejsza lub rowna 5"\n\n',
     hint: 'Operatory porównania (tylko te słowa kluczowe!):\n<b>equ</b> (==) | <b>neq</b> (!=) | <b>lss</b> (&lt;) | <b>gtr</b> (&gt;) | <b>leq</b> (&lt;=) | <b>geq</b> (&gt;=)\n\n⚠ W CMD NIE używamy &lt;, &gt;, &lt;=, &gt;= jak w C/Python/Bash!\nTylko: <b>equ neq lss gtr leq geq</b>\n\nSprawdzanie pliku:\n<b>if exist plik.txt echo OK</b>',
     check: (code, out) => (out.includes('wieksza') || out.includes('większa') || out.includes('mniejsza')) && /\bif\b.+\b(gtr|lss|equ|neq|geq|leq)\b/i.test(code),
     ok: 'IF w CMD: operatory equ/neq/lss/gtr/leq/geq. Bloki wieloliniowe przez nawiasy ( ).'
@@ -262,7 +262,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 5 — PĘTLA FOR (LISTA)',
     task: 'Wypisz kolory z listy używając pętli for:\n<code>for %%i in (czerwony zielony niebieski) do echo Kolor: %%i</code>\nW pliku .bat używamy <code>%%i</code>, w CMD ręcznie tylko <code>%i</code>.',
-    starter: '@echo off\nfor %%i in (czerwony zielony niebieski) do (\n  echo Kolor: %%i\n)\n',
+    starter: '@echo off\n:: Napisz pętlę for po liście: czerwony zielony niebieski\n:: Wypisz: "Kolor: %%i" dla każdego\n\n',
     hint: '<b>for %%i in (lista) do polecenie</b>\n\nW .bat: <b>%%i</b> (podwójny %)\nW CMD ręcznie: <b>%i</b> (pojedynczy %)\n\nWieloliniowy blok:\n<b>for %%i in (a b c) do (\n  echo %%i\n)</b>',
     check: (code, out) => ['czerwony','zielony','niebieski'].every(c => out.toLowerCase().includes(c)) && /for\s+%%\w/i.test(code),
     ok: 'Pętla for w .bat: %%i (podwójny %), w CMD ręcznie %i. Zawsze pamiętaj o tej różnicy!'
@@ -270,7 +270,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 6 — PĘTLA FOR (ZAKRES)',
     task: 'Wypisz liczby od 1 do 5 używając zakresu:\n<code>for /l %%i in (1,1,5) do echo Liczba: %%i</code>\nFormat: <code>(start, krok, koniec)</code>',
-    starter: '@echo off\nfor /l %%i in (1,1,5) do (\n  echo Liczba: %%i\n)\n',
+    starter: '@echo off\n:: Napisz pętlę for /l od 1 do 5 (krok 1)\n:: Wypisz: "Liczba: %%i" dla każdej liczby\n\n',
     hint: '<b>for /l %%i in (start,krok,koniec)</b>\n\nPrzykłady:\n<b>(1,1,10)</b> — od 1 do 10 co 1\n<b>(0,2,10)</b> — od 0 do 10 co 2\n<b>(10,-1,1)</b> — odliczanie od 10 do 1\n\n/l = loop (liczby)',
     check: (code, out) => [1,2,3,4,5].every(n => out.includes('Liczba: '+n)) && /for\s+\/l\s+%%\w/i.test(code),
     ok: 'for /l to pętla liczbowa: (start, krok, koniec). Idealna do odliczania i iteracji N razy.'
@@ -278,7 +278,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 7 — ETYKIETY I GOTO',
     task: 'Etykiety w .bat to <code>:nazwa</code>. Skaczemy do nich przez <code>goto nazwa</code>. Napisz pętlę odliczającą od 3 do 1 używając goto.',
-    starter: '@echo off\nset n=3\n:petla\nif %n% lss 1 goto koniec\necho Odliczanie: %n%\nset /a n=n-1\ngoto petla\n:koniec\necho START!\n',
+    starter: '@echo off\nset n=3\n:: Napisz pętlę goto: skocz do :petla\n:: Sprawdź czy n < 1, jeśli tak goto koniec\n:: Wypisz: "Odliczanie: %n%"\n:: Zmniejsz n o 1 i wróć do :petla\n\n\n:koniec\necho START!\n',
     hint: '<b>:etykieta</b> — definicja etykiety\n<b>goto etykieta</b> — skok bezwarunkowy\n<b>goto :eof</b> — koniec skryptu\n\nWarunkowy skok:\n<b>if %x%==0 goto koniec</b>\n\n⚠ Etykiety są ignorowane jako polecenia',
     check: (code, out) => out.includes('START!') && out.includes('Odliczanie: 3') && /\bgoto\b/i.test(code) && /^:/m.test(code),
     ok: 'Etykiety :nazwa i goto to podstawa kontroli przepływu w .bat. Ostrożnie z nieskończonymi pętlami!'
@@ -286,7 +286,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 8 — PODPROGRAMY CALL',
     task: 'Użyj <code>call :podprogram</code> żeby wywołać podprogram. Zakończ go przez <code>exit /b</code>. Napisz podprogram który wypisuje separator.',
-    starter: '@echo off\necho Start skryptu\ncall :separator\necho Srodek skryptu\ncall :separator\necho Koniec skryptu\ngoto :eof\n\n:separator\necho ------------------\nexit /b\n',
+    starter: '@echo off\necho Start skryptu\n:: Wywołaj :separator\n\necho Srodek skryptu\n:: Wywołaj :separator\n\necho Koniec skryptu\ngoto :eof\n\n:separator\n:: Wypisz linię separatora (np. ------------------)\n\nexit /b\n',
     hint: '<b>call :etykieta</b> — wywołanie podprogramu (wraca po exit /b)\n<b>exit /b</b> — powrót z podprogramu\n<b>goto :eof</b> — koniec głównego skryptu\n\nArgumenty podprogramu:\n<b>call :nazwa arg1 arg2</b>\nWewnątrz: <b>%1</b> to arg1, <b>%2</b> to arg2',
     check: (code, out) => out.includes('Start') && out.includes('Koniec') && (out.match(/--+/g)||[]).length>=2 && /call\s+:/i.test(code),
     ok: 'call :etykieta to podprogramy w .bat. exit /b wraca do miejsca wywołania. goto :eof kończy skrypt.'
@@ -294,7 +294,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 9 — ARGUMENTY SKRYPTU',
     task: 'Skrypt .bat przyjmuje argumenty: <code>%1</code> to pierwszy, <code>%2</code> drugi, <code>%0</code> to nazwa skryptu. Wypisz je wszystkie.',
-    starter: '@echo off\necho Skrypt: %0\necho Pierwszy argument: %1\necho Drugi argument: %2\necho Trzeci argument: %3\n',
+    starter: '@echo off\n:: Wypisz: Skrypt: %0\n\n:: Wypisz: Pierwszy argument: %1\n\n:: Wypisz: Drugi argument: %2\n\n:: Wypisz: Trzeci argument: %3\n\n',
     hint: '<b>%0</b> — nazwa skryptu\n<b>%1, %2... %9</b> — kolejne argumenty\n<b>%*</b> — wszystkie argumenty\n\nUruchomienie:\n<b>skrypt.bat Jan Kowalski 25</b>\nWtedy %1=Jan, %2=Kowalski, %3=25\n\n<b>shift</b> — przesuwa argumenty (%2→%1 etc.)',
     check: (code, out) => out.includes('Skrypt:') || out.includes('Pierwszy argument:'),
     ok: 'Argumenty .bat: %1..%9, %0 to nazwa skryptu, %* to wszystkie. Uruchamiasz: skrypt.bat arg1 arg2'
@@ -302,7 +302,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 10 — SKRYPT KOŃCOWY',
     task: 'Napisz skrypt który: iteruje po liście owoców pętlą for, używa podprogramu <code>:drukuj</code> do wypisania każdego owocu z numerem, używa zmiennej licznika.',
-    starter: '@echo off\nset licznik=0\nfor %%o in (jablko gruszka banan kiwi) do (\n  set /a licznik=licznik+1\n  call :drukuj %%o\n)\necho.\necho Razem: %licznik% owocow\ngoto :eof\n\n:drukuj\necho  - %1\nexit /b\n',
+    starter: '@echo off\nset licznik=0\n:: Napisz pętlę for po liście: jablko gruszka banan kiwi\n:: W pętli: zwiększ licznik i wywołaj :drukuj z %%o\n\n\necho.\necho Razem: %licznik% owocow\ngoto :eof\n\n:drukuj\n:: Wypisz: " - %1"\n\nexit /b\n',
     hint: '<b>set /a licznik=licznik+1</b> — inkrementacja w pętli\n<b>call :drukuj %%o</b> — wywołanie podprogramu z argumentem\n<b>echo.</b> — pusta linia\n\n⚠ W bloku ( ) po for/if zmienne są obliczane raz — jeśli licznik nie rośnie, użyj setlocal enabledelayedexpansion i <b>!licznik!</b>',
     check: (code, out) => (out.includes('jablko') || out.includes('jabłko')) && (out.includes('gruszka') || out.includes('kiwi')),
     ok: 'Brawo! Pętle, podprogramy, zmienne, call z argumentami — to kompletny zestaw do egzaminu INF02!'
@@ -314,7 +314,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 1 — TWORZENIE KATALOGÓW',
     task: 'Utwórz katalog <code>PROJEKT</code> poleceniem <code>md PROJEKT</code>. Sprawdź jego istnienie przez <code>dir</code>. Wypisz: <b>Utworzono katalog: PROJEKT</b>',
-    starter: '@echo off\nmd PROJEKT\necho Utworzono katalog: PROJEKT\ndir /b\n',
+    starter: '@echo off\n:: Utwórz katalog PROJEKT\n\necho Utworzono katalog: PROJEKT\n:: Wypisz listę plików (dir /b)\n\n',
     hint: '<b>md NAZWA</b> lub <b>mkdir NAZWA</b> — tworzy katalog\n<b>md a\\b\\c</b> — tworzy całą ścieżkę\n<b>dir</b> — lista plików i katalogów\n<b>dir /b</b> — tylko nazwy (bez szczegółów)\n\nNa egzaminie: utwórz folder o podanej nazwie',
     check: (code, out, vfs) => vfs.dirs.has('PROJEKT') && out.includes('PROJEKT'),
     ok: 'md tworzy katalogi. Na egzaminie INF02 bardzo często musisz tworzyć foldery i pliki w skrypcie!'
@@ -322,7 +322,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 2 — TWORZENIE PLIKÓW',
     task: 'Utwórz plik <code>notatka.txt</code> z treścią przez <code>echo tekst > plik.txt</code>. Wypisz zawartość przez <code>type notatka.txt</code>.',
-    starter: '@echo off\necho Moja pierwsza notatka > notatka.txt\necho Zawartosc pliku:\ntype notatka.txt\n',
+    starter: '@echo off\n:: Utwórz plik notatka.txt z treścią "Moja pierwsza notatka"\n\necho Zawartosc pliku:\n:: Wypisz zawartość notatka.txt (type)\n\n',
     hint: '<b>echo tekst > plik.txt</b> — tworzy/nadpisuje plik\n<b>echo tekst >> plik.txt</b> — dopisuje do pliku\n<b>type plik.txt</b> — wyświetla zawartość\n\n⚠ CMD automatycznie dodaje spację przed >\nUżywaj: <b>echo tekst> plik.txt</b> lub <b>echo tekst > plik.txt</b>',
     check: (code, out, vfs) => out.includes('Moja pierwsza notatka') && vfs.files['notatka.txt'] !== undefined,
     ok: 'Przekierowanie > zapisuje do pliku, >> dopisuje. type wyświetla zawartość. Podstawa pracy z plikami w CMD!'
@@ -330,7 +330,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 3 — KOMENDY SYSTEMOWE',
     task: 'Wypisz informacje systemowe: datę (<code>date /t</code>), czas (<code>time /t</code>), nazwę komputera (<code>hostname</code>). Format:\n<b>Data: [wynik]</b>\n<b>Czas: [wynik]</b>\n<b>Komputer: [wynik]</b>',
-    starter: '@echo off\nfor /f %%a in (\'date /t\') do set data=%%a\nfor /f %%a in (\'time /t\') do set czas=%%a\nfor /f %%a in (\'hostname\') do set komputer=%%a\necho Data: %data%\necho Czas: %czas%\necho Komputer: %komputer%\n',
+    starter: '@echo off\n:: Zapisz wynik date /t do zmiennej data\n\n:: Zapisz wynik time /t do zmiennej czas\n\n:: Zapisz wynik hostname do zmiennej komputer\n\n:: Wypisz: Data: %data%\n\n:: Wypisz: Czas: %czas%\n\n:: Wypisz: Komputer: %komputer%\n\n',
     hint: '<b>date /t</b> — tylko data (bez pytania o zmianę)\n<b>time /t</b> — tylko czas\n<b>hostname</b> — nazwa komputera\n<b>ver</b> — wersja systemu\n\nDo zapisania wyniku komendy do zmiennej:\n<b>for /f %%a in (\'komenda\') do set var=%%a</b>',
     check: (code, out) => out.includes('Data:') && out.includes('Czas:') && out.includes('Komputer:'),
     ok: 'date /t, time /t, hostname — podstawowe komendy systemowe CMD. for /f pozwala zapisać ich wynik do zmiennej!'
@@ -338,7 +338,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 4 — PRZEKIEROWANIE DO PLIKU',
     task: 'Zapisz datę do pliku <code>data.txt</code> przez <code>date /t > data.txt</code>. Następnie wypisz zawartość przez <code>type data.txt</code>. Poprzedź: <b>Zawartosc pliku:</b>',
-    starter: '@echo off\ndate /t > data.txt\necho Zawartosc pliku:\ntype data.txt\n',
+    starter: '@echo off\n:: Zapisz wynik date /t do pliku data.txt\n\necho Zawartosc pliku:\n:: Wypisz zawartość data.txt (type)\n\n',
     hint: '<b>komenda > plik</b> — zapisuje wyjście do pliku (nadpisuje)\n<b>komenda >> plik</b> — dopisuje do pliku\n<b>type plik</b> — wyświetla plik\n\nPrzykłady:\n<b>date /t > data.txt</b>\n<b>hostname > host.txt</b>\n<b>ver > wersja.txt</b>',
     check: (code, out, vfs) => vfs.files['data.txt'] !== undefined && out.includes('Zawartosc pliku:'),
     ok: 'Przekierowanie > to jedna z najważniejszych technik w CMD. Komenda > plik.txt zapisuje wynik do pliku.'
@@ -346,7 +346,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 5 — FOLDER Z PLIKAMI',
     task: 'Utwórz folder <code>INFO</code> i zapisz do niego 3 pliki:\n• <code>INFO\\user.txt</code> — wynik <code>hostname</code>\n• <code>INFO\\data.txt</code> — wynik <code>date /t</code>\n• <code>INFO\\wersja.txt</code> — wynik <code>ver</code>',
-    starter: '@echo off\nmd INFO\nhostname > INFO\\user.txt\ndate /t > INFO\\data.txt\nver > INFO\\wersja.txt\necho Utworzono folder INFO z plikami:\ndir /b INFO\n',
+    starter: '@echo off\n:: Utwórz folder INFO\n\n:: Zapisz wynik hostname do INFO\user.txt\n\n:: Zapisz wynik date /t do INFO\data.txt\n\n:: Zapisz wynik ver do INFO\wersja.txt\n\necho Utworzono folder INFO z plikami:\ndir /b INFO\n',
     hint: '<b>md INFO</b> — utwórz folder\n<b>hostname > INFO\\user.txt</b> — zapisz wynik do pliku w folderze\n<b>dir /b INFO</b> — lista plików w folderze\n\nTo typowe zadanie egzaminacyjne INF02!\nStruktura: md → pliki z przekierowaniem → sprawdzenie dir',
     check: (code, out, vfs) => ['INFO/user.txt','INFO/data.txt','INFO/wersja.txt'].every(f => vfs.files[f] !== undefined),
     ok: 'Tworzenie folderu z plikami zawierającymi wyniki komend — to klasyczne zadanie INF02. Zapamiętaj ten wzorzec!'
@@ -354,7 +354,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 6 — DOPISYWANIE DO PLIKU',
     task: 'Utwórz plik <code>raport.txt</code>. Dopisuj do niego kolejne linie przez <code>>></code>:\n• <code>echo System: Windows >> raport.txt</code>\n• <code>date /t >> raport.txt</code>\nNa koniec wypisz zawartość przez <code>type raport.txt</code>. Poprzedź: <b>Zawartosc raportu:</b>',
-    starter: '@echo off\necho System: Windows > raport.txt\ndate /t >> raport.txt\nhostname >> raport.txt\necho Zawartosc raportu:\ntype raport.txt\n',
+    starter: '@echo off\n:: Utwórz raport.txt: echo System: Windows > raport.txt\n\n:: Dopisz wynik date /t (>>)\n\n:: Dopisz wynik hostname (>>)\n\necho Zawartosc raportu:\n:: Wypisz zawartość raport.txt\n\n',
     hint: '<b>></b> — nadpisuje plik (usuwa poprzednią zawartość)\n<b>>></b> — dopisuje na koniec pliku\n\nPrzykład budowania raportu:\n<b>echo "Raport" > r.txt</b>\n<b>date /t >> r.txt</b>\n<b>hostname >> r.txt</b>\n<b>type r.txt</b>',
     check: (code, out, vfs) => (vfs.files['raport.txt']||'').includes('Windows') && out.includes('Zawartosc raportu:'),
     ok: '>> dopisuje do istniejącego pliku. Idealne do tworzenia logów i raportów w skryptach CMD!'
@@ -362,7 +362,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 7 — ZADANIE EGZAMINACYJNE',
     task: 'Napisz skrypt który tworzy katalog <code>ARCHIWUM</code> i zapisuje do niego:\n• <code>ARCHIWUM\\data.txt</code> — wynik komendy <code>date /t</code>\n• <code>ARCHIWUM\\host.txt</code> — wynik komendy <code>hostname</code>\nNa koniec wypisz zawartości obu plików.',
-    starter: '@echo off\nmd ARCHIWUM\ndate /t > ARCHIWUM\\data.txt\nhostname > ARCHIWUM\\host.txt\necho === data.txt ===\ntype ARCHIWUM\\data.txt\necho === host.txt ===\ntype ARCHIWUM\\host.txt\n',
+    starter: '@echo off\n:: Utwórz katalog ARCHIWUM\n\n:: Zapisz wynik date /t do ARCHIWUM\data.txt\n\n:: Zapisz wynik hostname do ARCHIWUM\host.txt\n\necho === data.txt ===\n:: Wypisz zawartość ARCHIWUM\data.txt\n\necho === host.txt ===\n:: Wypisz zawartość ARCHIWUM\host.txt\n\n',
     hint: 'Schemat zadania egzaminacyjnego:\n1. <b>md FOLDER</b>\n2. <b>komenda > FOLDER\\plik.txt</b>\n3. <b>type FOLDER\\plik.txt</b>\n\nNajczęstsze komendy do zapisu:\n<b>date /t</b> — data\n<b>time /t</b> — czas\n<b>hostname</b> — nazwa hosta\n<b>ver</b> — wersja systemu',
     check: (code, out, vfs) => vfs.dirs.has('ARCHIWUM') && vfs.files['ARCHIWUM/data.txt'] !== undefined && vfs.files['ARCHIWUM/host.txt'] !== undefined,
     ok: 'To wzorzec typowego zadania INF02: md + przekierowania. Ćwicz go do perfekcji!'
@@ -370,7 +370,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 8 — KOMPLEKSOWY SKRYPT',
     task: 'Napisz skrypt który tworzy katalog <code>RAPORT</code> z 3 plikami:\n• <code>RAPORT\\info.txt</code> — linia "System: Windows" + wynik <code>ver</code>\n• <code>RAPORT\\user.txt</code> — wynik <code>hostname</code>\n• <code>RAPORT\\lista.txt</code> — lista plików z katalogu RAPORT\nNa końcu wypisz zawartość <code>RAPORT\\info.txt</code>.',
-    starter: '@echo off\nmd RAPORT\necho System: Windows > RAPORT\\info.txt\nver >> RAPORT\\info.txt\nhostname > RAPORT\\user.txt\ndir /b RAPORT > RAPORT\\lista.txt\necho === RAPORT\\info.txt ===\ntype RAPORT\\info.txt\n',
+    starter: '@echo off\n:: Utwórz katalog RAPORT\n\n:: Utwórz RAPORT\info.txt: echo System: Windows > ...\n\n:: Dopisz wynik ver do RAPORT\info.txt\n\n:: Zapisz wynik hostname do RAPORT\user.txt\n\n:: Zapisz dir /b RAPORT do RAPORT\lista.txt\n\necho === RAPORT\\info.txt ===\n:: Wypisz zawartość RAPORT\info.txt\n\n',
     hint: 'Złożone zadanie — kilka operacji:\n1. md RAPORT\n2. echo + >> do info.txt\n3. hostname > user.txt\n4. dir /b RAPORT > lista.txt\n5. type do weryfikacji\n\n<b>dir /b RAPORT > RAPORT\\lista.txt</b>\nzapisuje listę plików do pliku w tym samym katalogu',
     check: (code, out, vfs) => vfs.dirs.has('RAPORT') && (vfs.files['RAPORT/info.txt']||'').includes('Windows') && vfs.files['RAPORT/user.txt'] !== undefined && vfs.files['RAPORT/lista.txt'] !== undefined,
     ok: 'Brawo! Opanowałeś tworzenie struktury katalogów z plikami. To najczęstsze zadanie praktyczne na INF02!'
@@ -866,6 +866,16 @@ editorEl.addEventListener('keydown',e=>{
     editorEl.selectionStart=editorEl.selectionEnd=s+2;
     updateLineNums();
   }
+  if((e.ctrlKey||e.metaKey) && e.key==='Enter'){
+    e.preventDefault();
+    runScript();
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    hideHint();
+    document.getElementById('success-overlay').classList.remove('show');
+  }
 });
 
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -895,6 +905,7 @@ function loadLesson(){
   updateLineNums();
   outputEl.innerHTML='<span class="line-sys">// Napisz skrypt i kliknij URUCHOM</span>\n<span class="cursor-line"></span>';
   setStatus('GOTOWY');hideHint();
+  document.getElementById('success-overlay').classList.remove('show');
   document.getElementById('btn-prev').disabled=currentLesson===0;
   document.getElementById('btn-next').disabled=currentLesson===curLessons().length-1;
   lessonCounter.textContent=`${currentLesson+1} / ${curLessons().length}`;
