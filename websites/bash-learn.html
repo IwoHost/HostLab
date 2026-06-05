@@ -234,7 +234,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 2 — ZMIENNE',
     task: 'Utwórz zmienną <code>imie="Jan"</code> i wypisz ją: <code>echo "Cześć, $imie!"</code>. Zmienne tworzymy bez spacji wokół znaku =.',
-    starter: '#!/bin/bash\n\nimie="Jan"\n\necho "Cześć, $imie!"\n',
+    starter: '#!/bin/bash\n\n# Przypisz wartość "Jan" do zmiennej imie:\n\n\n# Wypisz: Cześć, $imie!\n\n',
     hint: '<b>imie="Jan"</b> — przypisanie (bez spacji!)\n<b>$imie</b> lub <b>${imie}</b> — odczyt zmiennej\n\nW podwójnych cudzysłowach <b>" "</b> zmienne są rozwijane.\nW pojedynczych <b>\' \'</b> — nie są.',
     check: (code, out) => (/Cześć,\s*\S+/.test(out) || out.includes('Czesc')) && /\$\w+/.test(code),
     ok: 'Zmienne w Bash: przypisujesz przez VAR=wartość (bez spacji), odczytujesz przez $VAR.'
@@ -242,7 +242,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 3 — ARYTMETYKA',
     task: 'Utwórz zmienne <code>a=10</code> i <code>b=3</code>. Wypisz wyniki:\n<code>echo "Suma: $((a + b))"</code>\n<code>echo "Reszta: $((a % b))"</code>',
-    starter: '#!/bin/bash\n\na=10\nb=3\n\necho "Suma: $((a + b))"\necho "Iloczyn: $((a * b))"\necho "Reszta: $((a % b))"\n',
+    starter: '#!/bin/bash\n\na=10\nb=3\n\n# Wypisz "Suma: " i wynik a+b\n\n# Wypisz "Iloczyn: " i wynik a*b\n\n# Wypisz "Reszta: " i wynik a%b\n\n',
     hint: '<b>$(( wyrażenie ))</b> — obliczenia matematyczne\n\nOperatory: <b>+ - * / %</b>\n\nPrzykład:\n<b>echo "$((10 / 3))"</b>   # 3\n<b>echo "$((10 % 3))"</b>  # 1',
     check: (code, out) => out.includes('Suma:') && out.includes('13') && /\$\(\(/.test(code),
     ok: 'Arytmetyka w Bash: $(( )). Działa z +, -, *, /, % (modulo). Wynik zawsze całkowity.'
@@ -250,7 +250,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 4 — WARUNEK IF',
     task: 'Sprawdź czy liczba jest większa od 10. Struktura:\n<code>if [ $x -gt 10 ]; then</code>\n<code>  echo "..."</code>\n<code>else</code>\n<code>  echo "..."</code>\n<code>fi</code>',
-    starter: '#!/bin/bash\n\nx=15\n\nif [ $x -gt 10 ]; then\n  echo "Duża liczba"\nelse\n  echo "Mała liczba"\nfi\n',
+    starter: '#!/bin/bash\n\nx=15\n\n# Napisz warunek if sprawdzający czy x jest większe od 10\n# Jeśli tak: wypisz "Duża liczba"\n# Jeśli nie: wypisz "Mała liczba"\n\n',
     hint: 'Operatory porównania liczb:\n<b>-gt</b> &gt; | <b>-lt</b> &lt; | <b>-eq</b> == | <b>-ne</b> !=\n<b>-ge</b> &gt;= | <b>-le</b> &lt;=\n\n⚠ Spacje wewnątrz [ ] są OBOWIĄZKOWE!\n[ $x -gt 10 ] ✓\n[$x -gt 10] ✗',
     check: (code, out) => (out.includes('Duża liczba') || out.includes('Mała liczba')) && /if\s*\[/.test(code) && /\bfi\b/.test(code),
     ok: 'Warunek if: [ ] to test, spacje wewnątrz wymagane. Kończymy blokiem fi.'
@@ -258,7 +258,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 5 — PĘTLA FOR (LISTA)',
     task: 'Wypisz owoce z listy używając pętli for:\n<code>for owoc in jabłko gruszka śliwka; do</code>\n<code>  echo "Owoc: $owoc"</code>\n<code>done</code>',
-    starter: '#!/bin/bash\n\nfor owoc in jablko gruszka sliwka; do\n  echo "Owoc: $owoc"\ndone\n',
+    starter: '#!/bin/bash\n\n# Napisz pętlę for po liście: jablko gruszka sliwka\n# Wypisz: "Owoc: $owoc" dla każdego\n\n',
     hint: '<b>for zmienna in lista; do</b>\n  polecenia\n<b>done</b>\n\nKażdy element trafia do zmiennej po kolei.\n\n<b>for plik in *.txt; do\n  echo $plik\ndone</b>',
     check: (code, out) => (['jablko','gruszka','sliwka'].every(c => out.includes(c)) || ['jabłko','gruszka','śliwka'].every(c => out.includes(c))) && /\bfor\b/.test(code) && /\bdo\b/.test(code),
     ok: 'Pętla for iteruje po liście elementów. Każdy element trafia do zmiennej (tu: $owoc).'
@@ -266,7 +266,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 6 — PĘTLA FOR (ZAKRES)',
     task: 'Wypisz liczby od 1 do 5 używając zakresu <code>{1..5}</code>. Format: <b>Liczba: N</b> dla każdej.',
-    starter: '#!/bin/bash\n\nfor i in {1..5}; do\n  echo "Liczba: $i"\ndone\n',
+    starter: '#!/bin/bash\n\n# Napisz pętlę for używając zakresu {1..5}\n# Wypisz: "Liczba: N" dla każdej liczby\n\n',
     hint: '<b>{1..10}</b> — zakres od 1 do 10\n<b>{1..10..2}</b> — co 2 (1,3,5,7,9)\n<b>{a..z}</b> — zakres liter\n\nAlternatywnie:\n<b>for i in $(seq 1 5); do</b>',
     check: (code, out) => [1,2,3,4,5].every(n => out.includes('Liczba: '+n)) && /\bfor\b/.test(code) && /\bdo\b/.test(code),
     ok: '{1..N} to wygodny zakres numeryczny. Pętla for to jedno z najczęstszych narzędzi w Bash!'
@@ -274,7 +274,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 7 — PĘTLA WHILE',
     task: 'Wypisz odliczanie od 5 do 1, a potem <b>START!</b>. Używaj <code>((n--))</code> do zmniejszania zmiennej.',
-    starter: '#!/bin/bash\n\nn=5\n\nwhile [ $n -gt 0 ]; do\n  echo "Odliczanie: $n"\n  ((n--))\ndone\n\necho "START!"\n',
+    starter: '#!/bin/bash\n\nn=5\n\n# Napisz pętlę while odliczającą od 5 do 1\n# Wypisz: "Odliczanie: N" dla każdej iteracji\n# Pamiętaj o ((n--))\n\n# Na końcu wypisz: START!\n\n',
     hint: '<b>while [ warunek ]; do</b>\n  polecenia\n<b>done</b>\n\n<b>((n--))</b> zmniejsza n o 1\n<b>((n++))</b> zwiększa n o 1\n<b>((n+=5))</b> dodaje 5\n\n⚠ Pamiętaj o zmianie warunku!',
     check: (code, out) => out.includes('START!') && out.includes('Odliczanie: 5') && out.includes('Odliczanie: 1') && /\bwhile\b/.test(code) && /\bdo\b/.test(code),
     ok: 'Pętla while działa dopóki warunek jest true. Zawsze dbaj o zmianę warunku, żeby nie było pętli nieskończonej!'
@@ -282,7 +282,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 8 — FUNKCJE',
     task: 'Napisz funkcję <code>powitanie()</code> która przyjmuje argument i wypisuje <b>Cześć, [argument]!</b>. Wywołaj ją dwukrotnie z różnymi imionami.',
-    starter: '#!/bin/bash\n\npowitanie() {\n  echo "Cześć, $1!"\n}\n\npowitanie "Anna"\npowitanie "Marek"\n',
+    starter: '#!/bin/bash\n\n# Zdefiniuj funkcję powitanie() która wypisuje: Cześć, $1!\n\n\n# Wywołaj funkcję z argumentem "Anna"\n\n# Wywołaj funkcję z argumentem "Marek"\n\n',
     hint: '<b>nazwa() {</b>\n  polecenia\n<b>}</b>\n\nParametry funkcji:\n<b>$1</b> — pierwszy argument\n<b>$2</b> — drugi argument\n<b>$@</b> — wszystkie argumenty\n\nWywołanie: <b>nazwa argument1 argument2</b>',
     check: (code, out) => {
       const lines = out.trim().split('\n').filter(l => l.includes('Cześć'));
@@ -293,7 +293,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 9 — ARGUMENTY SKRYPTU',
     task: 'Skrypt przyjmuje argumenty z wiersza poleceń: <code>$1</code>, <code>$2</code>, <code>$#</code> (liczba), <code>$@</code> (wszystkie). Wypisz je wszystkie.',
-    starter: '#!/bin/bash\n\necho "Skrypt: $0"\necho "Liczba argumentów: $#"\necho "Pierwszy: $1"\necho "Drugi: $2"\necho "Wszystkie: $@"\n',
+    starter: '#!/bin/bash\n\n# Wypisz: Skrypt: $0\n\n# Wypisz: Liczba argumentów: $#\n\n# Wypisz: Pierwszy: $1\n\n# Wypisz: Drugi: $2\n\n# Wypisz: Wszystkie: $@\n\n',
     hint: '<b>$0</b> — nazwa skryptu\n<b>$1, $2...</b> — kolejne argumenty\n<b>$#</b> — liczba argumentów\n<b>$@</b> — wszystkie argumenty\n\nUruchomienie:\n<b>./skrypt.sh Jan Kowalski 25</b>\nWtedy $1=Jan, $2=Kowalski, $3=25',
     check: (code, out) => out.includes('Skrypt:') || out.includes('Liczba argumentów:') || out.includes('Pierwszy:'),
     ok: 'Argumenty pozycyjne $1..$N, $# to liczba argumentów, $@ to wszystkie. Podstawa elastycznych skryptów!'
@@ -301,7 +301,7 @@ const LESSONS_CH1 = [
   {
     title: 'LEKCJA 10 — SKRYPT KOŃCOWY',
     task: 'Napisz skrypt z tablicą <code>owoce=("jabłko" "kiwi" "arbuz")</code>. Iteruj po tablicy i dla każdego owocu sprawdź czy jego długość jest większa niż 4 znaki. Wypisz odpowiedź.',
-    starter: '#!/bin/bash\n\nowoce=("jablko" "kiwi" "arbuz" "banan")\n\nfor owoc in "${owoce[@]}"; do\n  dlugosc=${#owoc}\n  if [ $dlugosc -gt 4 ]; then\n    echo "$owoc: długa ($dlugosc)"\n  else\n    echo "$owoc: krótka ($dlugosc)"\n  fi\ndone\n',
+    starter: '#!/bin/bash\n\nowoce=("jablko" "kiwi" "arbuz" "banan")\n\n# Przejdź przez tablicę owoce[@]\n# Dla każdego owocu pobierz długość (${#owoc})\n# Jeśli długość > 4: wypisz "$owoc: długa (N)"\n# W przeciwnym razie: wypisz "$owoc: krótka (N)"\n\n',
     hint: '<b>tablica=("a" "b" "c")</b> — definicja tablicy\n<b>"${tablica[@]}"</b> — wszystkie elementy\n<b>${#zmienna}</b> — długość stringa\n<b>${#tablica[@]}</b> — liczba elementów\n\nUżywaj cudzysłowów przy "${tablica[@]}" żeby obsłużyć spacje w elementach!',
     check: (code, out) => (out.includes('długa') || out.includes('krótka')) && (out.includes('jablko') || out.includes('jabłko') || out.includes('kiwi')),
     ok: 'Brawo! Tablice, pętle, warunki, długość stringa — to solidna podstawa Bash. Jesteś gotowy na egzamin INF02!'
@@ -313,7 +313,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 1 — TWORZENIE KATALOGÓW',
     task: 'Utwórz katalog <code>PROJEKT</code> poleceniem <code>mkdir PROJEKT</code>. Sprawdź jego istnienie przez <code>ls</code>. Wypisz: <b>Utworzono katalog: PROJEKT</b>',
-    starter: '#!/bin/bash\n\nmkdir PROJEKT\necho "Utworzono katalog: PROJEKT"\nls\n',
+    starter: '#!/bin/bash\n\n# Utwórz katalog PROJEKT\n\necho "Utworzono katalog: PROJEKT"\n\n# Wypisz listę plików (ls)\n\n',
     hint: '<b>mkdir NAZWA</b> — tworzy katalog\n<b>mkdir -p a/b/c</b> — tworzy całą ścieżkę\n<b>ls</b> — lista plików i katalogów\n<b>ls -la</b> — szczegółowa lista\n\nNa egzaminie często: utwórz folder o podanej nazwie',
     check: (code, out, vfs) => vfs.dirs.has('PROJEKT') && out.includes('PROJEKT'),
     ok: 'mkdir tworzy katalogi. Na egzaminie INF02 bardzo często musisz tworzyć foldery i pliki w skrypcie!'
@@ -321,7 +321,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 2 — TWORZENIE PLIKÓW',
     task: 'Utwórz plik <code>notatka.txt</code> z treścią przez <code>echo "tekst" > plik.txt</code>. Wypisz zawartość przez <code>cat notatka.txt</code>.',
-    starter: '#!/bin/bash\n\necho "Moja pierwsza notatka" > notatka.txt\necho "Zawartosc pliku:"\ncat notatka.txt\n',
+    starter: '#!/bin/bash\n\n# Utwórz plik notatka.txt z treścią "Moja pierwsza notatka"\n\necho "Zawartosc pliku:"\n\n# Wypisz zawartość notatka.txt (cat)\n\n',
     hint: '<b>echo "tekst" > plik.txt</b> — tworzy/nadpisuje plik\n<b>echo "tekst" >> plik.txt</b> — dopisuje do pliku\n<b>cat plik.txt</b> — wyświetla zawartość\n<b>touch plik.txt</b> — tworzy pusty plik',
     check: (code, out, vfs) => out.includes('Moja pierwsza notatka') && vfs.files['notatka.txt'] !== undefined,
     ok: 'Przekierowanie > zapisuje do pliku, >> dopisuje. cat wyświetla zawartość. Podstawa pracy z plikami!'
@@ -329,7 +329,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 3 — KOMENDY SYSTEMOWE',
     task: 'Wypisz informacje systemowe: datę (<code>date</code>), nazwę użytkownika (<code>whoami</code>), bieżący katalog (<code>pwd</code>). Format:\n<b>Data: [wynik date]</b>\n<b>Uzytkownik: [wynik whoami]</b>\n<b>Katalog: [wynik pwd]</b>',
-    starter: '#!/bin/bash\n\necho "Data: $(date)"\necho "Uzytkownik: $(whoami)"\necho "Katalog: $(pwd)"\n',
+    starter: '#!/bin/bash\n\n# Wypisz: Data: [wynik date]\n\n# Wypisz: Uzytkownik: [wynik whoami]\n\n# Wypisz: Katalog: [wynik pwd]\n\n',
     hint: '<b>$(komenda)</b> — podstawianie wyniku komendy\n<b>date</b> — aktualna data i czas\n<b>whoami</b> — nazwa zalogowanego użytkownika\n<b>pwd</b> — bieżący katalog roboczy\n<b>hostname</b> — nazwa komputera\n<b>uname -a</b> — informacje o systemie',
     check: (code, out) => out.includes('Data:') && out.includes('Uzytkownik:') && out.includes('Katalog:'),
     ok: 'Podstawianie $(komenda) uruchamia komendę i wstawia jej wynik. Kluczowe na egzaminie INF02!'
@@ -337,7 +337,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 4 — PRZEKIEROWANIE DO PLIKU',
     task: 'Zapisz datę do pliku <code>data.txt</code> przez <code>date > data.txt</code>. Następnie wypisz zawartość pliku przez <code>cat data.txt</code>. Poprzedź: <b>Zawartosc pliku:</b>',
-    starter: '#!/bin/bash\n\ndate > data.txt\necho "Zawartosc pliku:"\ncat data.txt\n',
+    starter: '#!/bin/bash\n\n# Zapisz wynik date do pliku data.txt\n\necho "Zawartosc pliku:"\n\n# Wypisz zawartość data.txt\n\n',
     hint: '<b>komenda > plik</b> — zapisuje wyjście do pliku (nadpisuje)\n<b>komenda >> plik</b> — dopisuje do pliku\n<b>cat plik</b> — wyświetla plik\n\nPrzykłady:\n<b>date > data.txt</b>\n<b>whoami > user.txt</b>\n<b>pwd > sciezka.txt</b>',
     check: (code, out, vfs) => vfs.files['data.txt'] !== undefined && out.includes('Zawartosc pliku:'),
     ok: 'Przekierowanie > to jedna z najważniejszych technik w Bash. Komenda > plik.txt zapisuje wynik do pliku.'
@@ -345,7 +345,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 5 — FOLDER Z PLIKAMI',
     task: 'Utwórz folder <code>INFO</code> i zapisz do niego 3 pliki:\n• <code>INFO/user.txt</code> — wynik <code>whoami</code>\n• <code>INFO/data.txt</code> — wynik <code>date</code>\n• <code>INFO/sciezka.txt</code> — wynik <code>pwd</code>',
-    starter: '#!/bin/bash\n\nmkdir INFO\nwhoami > INFO/user.txt\ndate > INFO/data.txt\npwd > INFO/sciezka.txt\necho "Utworzono folder INFO z plikami:"\nls INFO\n',
+    starter: '#!/bin/bash\n\n# Utwórz folder INFO\n\n# Zapisz wynik whoami do INFO/user.txt\n\n# Zapisz wynik date do INFO/data.txt\n\n# Zapisz wynik pwd do INFO/sciezka.txt\n\necho "Utworzono folder INFO z plikami:"\nls INFO\n',
     hint: '<b>mkdir INFO</b> — utwórz folder\n<b>whoami > INFO/user.txt</b> — zapisz wynik do pliku w folderze\n<b>ls INFO</b> — lista plików w folderze\n\nTo typowe zadanie egzaminacyjne INF02!\nStruktura: mkdir → pliki z przekierowaniem → sprawdzenie ls',
     check: (code, out, vfs) => ['INFO/user.txt','INFO/data.txt','INFO/sciezka.txt'].every(f => vfs.files[f] !== undefined),
     ok: 'Tworzenie folderu z plikami zawierającymi wyniki komend — to klasyczne zadanie INF02. Zapamiętaj ten wzorzec!'
@@ -353,7 +353,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 6 — DOPISYWANIE DO PLIKU',
     task: 'Utwórz plik <code>raport.txt</code>. Dopisuj do niego kolejne linie przez <code>>></code>:\n• <code>echo "System: Linux" >> raport.txt</code>\n• <code>date >> raport.txt</code>\nNa koniec wypisz zawartość przez <code>cat raport.txt</code>. Poprzedź: <b>Zawartosc raportu:</b>',
-    starter: '#!/bin/bash\n\necho "System: Linux" > raport.txt\ndate >> raport.txt\nwhoami >> raport.txt\necho "Zawartosc raportu:"\ncat raport.txt\n',
+    starter: '#!/bin/bash\n\n# Utwórz raport.txt: echo "System: Linux" > raport.txt\n\n# Dopisz wynik date do raport.txt (>>)\n\n# Dopisz wynik whoami do raport.txt (>>)\n\necho "Zawartosc raportu:"\n\n# Wypisz zawartość raport.txt\n\n',
     hint: '<b>></b> — nadpisuje plik (usuwa poprzednią zawartość)\n<b>>></b> — dopisuje na koniec pliku\n\nPrzykład budowania raportu:\n<b>echo "Raport" > r.txt</b>\n<b>date >> r.txt</b>\n<b>whoami >> r.txt</b>\n<b>cat r.txt</b>',
     check: (code, out, vfs) => (vfs.files['raport.txt']||'').includes('Linux') && out.includes('Zawartosc raportu:'),
     ok: '>> dopisuje do istniejącego pliku. Idealne do tworzenia logów i raportów w skryptach!'
@@ -361,7 +361,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 7 — ZADANIE EGZAMINACYJNE',
     task: 'Napisz skrypt który tworzy katalog <code>ARCHIWUM</code> i zapisuje do niego:\n• <code>ARCHIWUM/data.txt</code> — wynik komendy <code>date</code>\n• <code>ARCHIWUM/sciezka.txt</code> — wynik komendy <code>pwd</code>\nNa koniec wypisz zawartości obu plików.',
-    starter: '#!/bin/bash\n\nmkdir ARCHIWUM\ndate > ARCHIWUM/data.txt\npwd > ARCHIWUM/sciezka.txt\necho "=== data.txt ==="\ncat ARCHIWUM/data.txt\necho "=== sciezka.txt ==="\ncat ARCHIWUM/sciezka.txt\n',
+    starter: '#!/bin/bash\n\n# Utwórz katalog ARCHIWUM\n\n# Zapisz wynik date do ARCHIWUM/data.txt\n\n# Zapisz wynik pwd do ARCHIWUM/sciezka.txt\n\necho "=== data.txt ==="\n# Wypisz zawartość ARCHIWUM/data.txt\n\necho "=== sciezka.txt ==="\n# Wypisz zawartość ARCHIWUM/sciezka.txt\n\n',
     hint: 'Schemat zadania egzaminacyjnego:\n1. <b>mkdir FOLDER</b>\n2. <b>komenda > FOLDER/plik.txt</b>\n3. <b>cat FOLDER/plik.txt</b>\n\nNajczęstsze komendy do zapisu:\n<b>date</b> — data\n<b>whoami</b> — użytkownik\n<b>pwd</b> — ścieżka\n<b>hostname</b> — nazwa hosta',
     check: (code, out, vfs) => vfs.dirs.has('ARCHIWUM') && vfs.files['ARCHIWUM/data.txt'] !== undefined && vfs.files['ARCHIWUM/sciezka.txt'] !== undefined,
     ok: 'To wzorzec typowego zadania INF02: mkdir + przekierowania. Ćwicz go do perfekcji!'
@@ -369,7 +369,7 @@ const LESSONS_CH2 = [
   {
     title: 'LEKCJA 8 — KOMPLEKSOWY SKRYPT',
     task: 'Napisz skrypt który tworzy katalog <code>RAPORT</code> z 3 plikami:\n• <code>RAPORT/info.txt</code> — linia "System: Linux" + wynik <code>date</code>\n• <code>RAPORT/user.txt</code> — wynik <code>whoami</code>\n• <code>RAPORT/lista.txt</code> — lista plików z katalogu RAPORT\nNa końcu wypisz zawartość <code>RAPORT/info.txt</code>.',
-    starter: '#!/bin/bash\n\nmkdir RAPORT\necho "System: Linux" > RAPORT/info.txt\ndate >> RAPORT/info.txt\nwhoami > RAPORT/user.txt\nls RAPORT > RAPORT/lista.txt\necho "=== RAPORT/info.txt ==="\ncat RAPORT/info.txt\n',
+    starter: '#!/bin/bash\n\n# Utwórz katalog RAPORT\n\n# Utwórz RAPORT/info.txt: echo "System: Linux" > ...\n\n# Dopisz wynik date do RAPORT/info.txt\n\n# Zapisz wynik whoami do RAPORT/user.txt\n\n# Zapisz ls RAPORT do RAPORT/lista.txt\n\necho "=== RAPORT/info.txt ==="\n# Wypisz zawartość RAPORT/info.txt\n\n',
     hint: 'Złożone zadanie — kilka operacji:\n1. mkdir RAPORT\n2. echo + >> do info.txt\n3. whoami > user.txt\n4. ls RAPORT > lista.txt\n5. cat do weryfikacji\n\n<b>ls RAPORT > RAPORT/lista.txt</b>\nzapisuje listę plików do pliku w tym samym katalogu',
     check: (code, out, vfs) => vfs.dirs.has('RAPORT') && (vfs.files['RAPORT/info.txt']||'').includes('Linux') && vfs.files['RAPORT/user.txt'] !== undefined && vfs.files['RAPORT/lista.txt'] !== undefined,
     ok: 'Brawo! Opanowałeś tworzenie struktury katalogów z plikami. To najczęstsze zadanie praktyczne na INF02!'
