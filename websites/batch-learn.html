@@ -335,6 +335,8 @@ function runBatch(code) {
 
   function expandVars(s) {
     s = String(s);
+    // %%VAR — for-loop variable in .bat scripts (must expand before %VAR%)
+    s = s.replace(/%%([a-zA-Z_]\w*)/g, (_, v) => env[v.toUpperCase()] !== undefined ? env[v.toUpperCase()] : '%%'+v);
     // %VAR%
     s = s.replace(/%([^%]+)%/g, (_, v) => env[v.toUpperCase()] !== undefined ? env[v.toUpperCase()] : '%'+v+'%');
     return s;
@@ -349,7 +351,7 @@ function runBatch(code) {
       const e = expr.replace(/([a-zA-Z_]\w*)/g, v => {
         const n = Number(env[v.toUpperCase()]);
         return isNaN(n) ? '0' : String(n);
-      }).replace(/%%/g,'%').replace(/%/g,'%');
+      }).replace(/%%/g,'%');
       return Math.floor(Function('"use strict";return ('+e+')')());
     } catch(ex) { return 0; }
   }
@@ -392,8 +394,9 @@ function runBatch(code) {
     const labelMap = buildLabelMap(lines);
     let i = startIdx;
     let depth = 0;
+    let execGuard = 0;
 
-    while (i < lines.length) {
+    while (i < lines.length && execGuard++ < 2000) {
       const raw = lines[i];
       const t = raw.trim();
 
@@ -483,19 +486,22 @@ function runBatch(code) {
           else if(elseCmd) execSingleCmd(elseCmd);
           i++;continue;
         }
-        // if VAR op VAL command
-        const simpleMatch = rest.match(/^(.+?)\s+(equ|neq|lss|gtr|leq|geq|==.+?)\s+(.+)$/i);
-        if(simpleMatch) {
-          const condStr=simpleMatch[1]+' '+simpleMatch[2]+' '+simpleMatch[3];
-          const spaceCmd = condStr.lastIndexOf(' echo ');
-          if(spaceCmd>-1) {
-            // try to eval as "cond command"
-            const condTokens=rest.split(/\s+/);
-            // find where condition ends (3 tokens: a op b)
-            let condParts=condTokens.slice(0,3), cmd=condTokens.slice(3).join(' ');
-            if(evalCond(condParts)) execSingleCmd(expandVars(cmd));
+        // if VAR op VAL command (single line, no parens)
+        const condTokens = rest.split(/\s+/);
+        const opIdx = condTokens.findIndex(tok => /^(equ|neq|lss|gtr|leq|geq)$/i.test(tok));
+        if(opIdx > 0 && opIdx + 1 < condTokens.length) {
+          const condParts = condTokens.slice(0, opIdx + 2);
+          const cmdStr = expandVars(condTokens.slice(opIdx + 2).join(' ').trim());
+          if(evalCond(condParts) && cmdStr) {
+            if(/^goto\s+/i.test(cmdStr)) {
+              const lbl = cmdStr.slice(5).trim().toLowerCase().replace(/^:/,'');
+              if(lbl==='eof') { i = lines.length; continue; }
+              const tgt = labelMap[lbl];
+              if(tgt !== undefined) { i = tgt + 1; continue; }
+            } else {
+              execSingleCmd(cmdStr);
+            }
           }
-          i++;continue;
         }
         i++;continue;
       }
@@ -512,8 +518,8 @@ function runBatch(code) {
             i=fr;continue;
           }
           body=body.startsWith('(')?body.slice(1,-1).trim():body;
-          for(let n=step>0?from:from;step>0?n<=to:n>=to;n+=step){
-            env[varN]=String(n);
+          for(let n=from;step>0?n<=to:n>=to;n+=step){
+            setVar(varN, String(n));
             execSingleCmd(expandVars(body));
           }
         }
@@ -533,7 +539,7 @@ function runBatch(code) {
           }
           body=body.startsWith('(')?body.slice(1,-1).trim():body;
           for(const item of items){
-            env[varN]=item;
+            setVar(varN, item);
             execSingleCmd(expandVars(body));
           }
         }
@@ -628,7 +634,7 @@ function runBatch(code) {
       ? (()=>{const r=[];for(let n=opts.from;opts.step>0?n<=opts.to:n>=opts.to;n+=opts.step)r.push(String(n));return r;})()
       : opts.items;
     for(const item of items){
-      env[varN]=item;
+      setVar(varN, item);
       execLines(body,0);
     }
     return i;
