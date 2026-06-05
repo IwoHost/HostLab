@@ -251,7 +251,7 @@ const LESSONS = [
     task: 'Utwórz zmienną <code>set imie=Jan</code> i wypisz ją przez <code>echo Cześć, %imie%!</code>. W CMD zmienne odczytujemy przez <code>%NAZWA%</code>.',
     starter: '@echo off\nset imie=Jan\necho Czesc, %imie%!\n',
     hint: '<b>set ZMIENNA=wartość</b> — przypisanie (bez spacji!)\n<b>%ZMIENNA%</b> — odczyt zmiennej\n\n⚠ Uważaj na spacje:\n<b>set x=5</b> ✓\n<b>set x = 5</b> ✗ (spacja wchodzi w wartość!)\n\n<b>set</b> (bez argumentów) — lista wszystkich zmiennych',
-    check: (code, out) => out.toLowerCase().includes('czesc') || out.toLowerCase().includes('cześć') || /jan/i.test(out),
+    check: (code, out) => (out.toLowerCase().includes('czesc') || out.toLowerCase().includes('cześć') || /jan/i.test(out)) && /set\s+\w+=/i.test(code) && /%\w+%/.test(code),
     ok: 'Zmienne CMD: set NAZWA=wartość (przypisanie), %NAZWA% (odczyt). Bez spacji wokół = !'
   },
   {
@@ -259,15 +259,15 @@ const LESSONS = [
     task: 'Utwórz zmienne <code>set /a wynik=10+5</code>. Flaga <code>/a</code> włącza tryb arytmetyczny. Wypisz wynik i oblicz kilka działań.',
     starter: '@echo off\nset /a suma=10+5\nset /a iloczyn=4*3\nset /a reszta=17%%3\necho Suma: %suma%\necho Iloczyn: %iloczyn%\necho Reszta: %reszta%\n',
     hint: '<b>set /a wynik=wyrażenie</b> — arytmetyka\nOperatory: + - * / %%\n\n⚠ W pliku .bat modulo to <b>%%</b> (podwójny %)\nW CMD (ręcznie) to tylko <b>%</b>\n\n<b>set /a x=x+1</b> — inkrementacja',
-    check: (code, out) => out.includes('Suma:') && out.includes('15'),
+    check: (code, out) => out.includes('Suma:') && out.includes('15') && /set\s+\/a/i.test(code),
     ok: 'set /a włącza arytmetykę. W plikach .bat modulo to %% (podwójny procent, bo % sam służy do zmiennych).'
   },
   {
     title: 'LEKCJA 4 — WARUNEK IF',
     task: 'Sprawdź czy plik istnieje używając <code>if exist</code>. Struktura:\n<code>if exist plik.txt (echo Istnieje) else (echo Brak)</code>\nLub sprawdź wartość zmiennej: <code>if %x%==5 echo Tak</code>',
     starter: '@echo off\nset x=10\nif %x% gtr 5 (\n  echo Liczba wieksza od 5\n) else (\n  echo Liczba mniejsza lub rowna 5\n)\n',
-    hint: 'Operatory porównania:\n<b>equ</b> = | <b>neq</b> != | <b>lss</b> &lt; | <b>gtr</b> &gt; | <b>leq</b> &lt;= | <b>geq</b> &gt;=\n\nSprawdzanie pliku:\n<b>if exist plik.txt echo OK</b>\n\nSprawdzanie stringa:\n<b>if "%x%"=="tak" echo Tak</b>',
-    check: (code, out) => out.includes('wieksza') || out.includes('większa') || out.includes('mniejsza'),
+    hint: 'Operatory porównania (tylko te słowa kluczowe!):\n<b>equ</b> (==) | <b>neq</b> (!=) | <b>lss</b> (&lt;) | <b>gtr</b> (&gt;) | <b>leq</b> (&lt;=) | <b>geq</b> (&gt;=)\n\n⚠ W CMD NIE używamy &lt;, &gt;, &lt;=, &gt;= jak w C/Python/Bash!\nTylko: <b>equ neq lss gtr leq geq</b>\n\nSprawdzanie pliku:\n<b>if exist plik.txt echo OK</b>',
+    check: (code, out) => (out.includes('wieksza') || out.includes('większa') || out.includes('mniejsza')) && /\bif\b.+\b(gtr|lss|equ|neq|geq|leq)\b/i.test(code),
     ok: 'IF w CMD: operatory equ/neq/lss/gtr/leq/geq. Bloki wieloliniowe przez nawiasy ( ).'
   },
   {
@@ -275,7 +275,7 @@ const LESSONS = [
     task: 'Wypisz kolory z listy używając pętli for:\n<code>for %%i in (czerwony zielony niebieski) do echo Kolor: %%i</code>\nW pliku .bat używamy <code>%%i</code>, w CMD ręcznie tylko <code>%i</code>.',
     starter: '@echo off\nfor %%i in (czerwony zielony niebieski) do (\n  echo Kolor: %%i\n)\n',
     hint: '<b>for %%i in (lista) do polecenie</b>\n\nW .bat: <b>%%i</b> (podwójny %)\nW CMD ręcznie: <b>%i</b> (pojedynczy %)\n\nWieloliniowy blok:\n<b>for %%i in (a b c) do (\n  echo %%i\n)</b>',
-    check: (code, out) => ['czerwony','zielony','niebieski'].every(c => out.toLowerCase().includes(c)),
+    check: (code, out) => ['czerwony','zielony','niebieski'].every(c => out.toLowerCase().includes(c)) && /for\s+%%\w/i.test(code),
     ok: 'Pętla for w .bat: %%i (podwójny %), w CMD ręcznie %i. Zawsze pamiętaj o tej różnicy!'
   },
   {
@@ -283,7 +283,7 @@ const LESSONS = [
     task: 'Wypisz liczby od 1 do 5 używając zakresu:\n<code>for /l %%i in (1,1,5) do echo Liczba: %%i</code>\nFormat: <code>(start, krok, koniec)</code>',
     starter: '@echo off\nfor /l %%i in (1,1,5) do (\n  echo Liczba: %%i\n)\n',
     hint: '<b>for /l %%i in (start,krok,koniec)</b>\n\nPrzykłady:\n<b>(1,1,10)</b> — od 1 do 10 co 1\n<b>(0,2,10)</b> — od 0 do 10 co 2\n<b>(10,-1,1)</b> — odliczanie od 10 do 1\n\n/l = loop (liczby)',
-    check: (code, out) => [1,2,3,4,5].every(n => out.includes('Liczba: '+n)),
+    check: (code, out) => [1,2,3,4,5].every(n => out.includes('Liczba: '+n)) && /for\s+\/l\s+%%\w/i.test(code),
     ok: 'for /l to pętla liczbowa: (start, krok, koniec). Idealna do odliczania i iteracji N razy.'
   },
   {
@@ -291,7 +291,7 @@ const LESSONS = [
     task: 'Etykiety w .bat to <code>:nazwa</code>. Skaczemy do nich przez <code>goto nazwa</code>. Napisz pętlę odliczającą od 3 do 1 używając goto.',
     starter: '@echo off\nset n=3\n:petla\nif %n% lss 1 goto koniec\necho Odliczanie: %n%\nset /a n=n-1\ngoto petla\n:koniec\necho START!\n',
     hint: '<b>:etykieta</b> — definicja etykiety\n<b>goto etykieta</b> — skok bezwarunkowy\n<b>goto :eof</b> — koniec skryptu\n\nWarunkowy skok:\n<b>if %x%==0 goto koniec</b>\n\n⚠ Etykiety są ignorowane jako polecenia',
-    check: (code, out) => out.includes('START!') && out.includes('Odliczanie: 3'),
+    check: (code, out) => out.includes('START!') && out.includes('Odliczanie: 3') && /\bgoto\b/i.test(code) && /^:/m.test(code),
     ok: 'Etykiety :nazwa i goto to podstawa kontroli przepływu w .bat. Ostrożnie z nieskończonymi pętlami!'
   },
   {
@@ -299,7 +299,7 @@ const LESSONS = [
     task: 'Użyj <code>call :podprogram</code> żeby wywołać podprogram. Zakończ go przez <code>exit /b</code>. Napisz podprogram który wypisuje separator.',
     starter: '@echo off\necho Start skryptu\ncall :separator\necho Srodek skryptu\ncall :separator\necho Koniec skryptu\ngoto :eof\n\n:separator\necho ------------------\nexit /b\n',
     hint: '<b>call :etykieta</b> — wywołanie podprogramu (wraca po exit /b)\n<b>exit /b</b> — powrót z podprogramu\n<b>goto :eof</b> — koniec głównego skryptu\n\nArgumenty podprogramu:\n<b>call :nazwa arg1 arg2</b>\nWewnątrz: <b>%1</b> to arg1, <b>%2</b> to arg2',
-    check: (code, out) => out.includes('Start') && out.includes('Koniec') && (out.match(/--+/g)||[]).length>=2,
+    check: (code, out) => out.includes('Start') && out.includes('Koniec') && (out.match(/--+/g)||[]).length>=2 && /call\s+:/i.test(code),
     ok: 'call :etykieta to podprogramy w .bat. exit /b wraca do miejsca wywołania. goto :eof kończy skrypt.'
   },
   {

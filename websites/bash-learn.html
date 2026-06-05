@@ -282,7 +282,7 @@ const LESSONS = [
     task: 'Utwórz zmienną <code>imie="Jan"</code> i wypisz ją: <code>echo "Cześć, $imie!"</code>. Zmienne tworzymy bez spacji wokół znaku =.',
     starter: '#!/bin/bash\n\nimie="Jan"\n\necho "Cześć, $imie!"\n',
     hint: '<b>imie="Jan"</b> — przypisanie (bez spacji!)\n<b>$imie</b> lub <b>${imie}</b> — odczyt zmiennej\n\nW podwójnych cudzysłowach <b>" "</b> zmienne są rozwijane.\nW pojedynczych <b>\' \'</b> — nie są.',
-    check: (code, out) => /Cześć,\s*\S+/.test(out) || out.includes('Czesc'),
+    check: (code, out) => (/Cześć,\s*\S+/.test(out) || out.includes('Czesc')) && /\$\w+/.test(code),
     ok: 'Zmienne w Bash: przypisujesz przez VAR=wartość (bez spacji), odczytujesz przez $VAR.'
   },
   {
@@ -290,7 +290,7 @@ const LESSONS = [
     task: 'Utwórz zmienne <code>a=10</code> i <code>b=3</code>. Wypisz wyniki:\n<code>echo "Suma: $((a + b))"</code>\n<code>echo "Reszta: $((a % b))"</code>',
     starter: '#!/bin/bash\n\na=10\nb=3\n\necho "Suma: $((a + b))"\necho "Iloczyn: $((a * b))"\necho "Reszta: $((a % b))"\n',
     hint: '<b>$(( wyrażenie ))</b> — obliczenia matematyczne\n\nOperatory: <b>+ - * / %</b>\n\nPrzykład:\n<b>echo "$((10 / 3))"</b>   # 3\n<b>echo "$((10 % 3))"</b>  # 1',
-    check: (code, out) => out.includes('Suma:') && out.includes('13'),
+    check: (code, out) => out.includes('Suma:') && out.includes('13') && /\$\(\(/.test(code),
     ok: 'Arytmetyka w Bash: $(( )). Działa z +, -, *, /, % (modulo). Wynik zawsze całkowity.'
   },
   {
@@ -298,7 +298,7 @@ const LESSONS = [
     task: 'Sprawdź czy liczba jest większa od 10. Struktura:\n<code>if [ $x -gt 10 ]; then</code>\n<code>  echo "..."</code>\n<code>else</code>\n<code>  echo "..."</code>\n<code>fi</code>',
     starter: '#!/bin/bash\n\nx=15\n\nif [ $x -gt 10 ]; then\n  echo "Duża liczba"\nelse\n  echo "Mała liczba"\nfi\n',
     hint: 'Operatory porównania liczb:\n<b>-gt</b> &gt; | <b>-lt</b> &lt; | <b>-eq</b> == | <b>-ne</b> !=\n<b>-ge</b> &gt;= | <b>-le</b> &lt;=\n\n⚠ Spacje wewnątrz [ ] są OBOWIĄZKOWE!\n[ $x -gt 10 ] ✓\n[$x -gt 10] ✗',
-    check: (code, out) => out.includes('Duża liczba') || out.includes('Mała liczba'),
+    check: (code, out) => (out.includes('Duża liczba') || out.includes('Mała liczba')) && /if\s*\[/.test(code) && /\bfi\b/.test(code),
     ok: 'Warunek if: [ ] to test, spacje wewnątrz wymagane. Kończymy blokiem fi.'
   },
   {
@@ -306,7 +306,7 @@ const LESSONS = [
     task: 'Wypisz owoce z listy używając pętli for:\n<code>for owoc in jabłko gruszka śliwka; do</code>\n<code>  echo "Owoc: $owoc"</code>\n<code>done</code>',
     starter: '#!/bin/bash\n\nfor owoc in jablko gruszka sliwka; do\n  echo "Owoc: $owoc"\ndone\n',
     hint: '<b>for zmienna in lista; do</b>\n  polecenia\n<b>done</b>\n\nKażdy element trafia do zmiennej po kolei.\n\n<b>for plik in *.txt; do\n  echo $plik\ndone</b>',
-    check: (code, out) => ['jablko','gruszka','sliwka'].every(c => out.includes(c)) || ['jabłko','gruszka','śliwka'].every(c => out.includes(c)),
+    check: (code, out) => (['jablko','gruszka','sliwka'].every(c => out.includes(c)) || ['jabłko','gruszka','śliwka'].every(c => out.includes(c))) && /\bfor\b/.test(code) && /\bdo\b/.test(code),
     ok: 'Pętla for iteruje po liście elementów. Każdy element trafia do zmiennej (tu: $owoc).'
   },
   {
@@ -314,7 +314,7 @@ const LESSONS = [
     task: 'Wypisz liczby od 1 do 5 używając zakresu <code>{1..5}</code>. Format: <b>Liczba: N</b> dla każdej.',
     starter: '#!/bin/bash\n\nfor i in {1..5}; do\n  echo "Liczba: $i"\ndone\n',
     hint: '<b>{1..10}</b> — zakres od 1 do 10\n<b>{1..10..2}</b> — co 2 (1,3,5,7,9)\n<b>{a..z}</b> — zakres liter\n\nAlternatywnie:\n<b>for i in $(seq 1 5); do</b>',
-    check: (code, out) => [1,2,3,4,5].every(n => out.includes('Liczba: '+n)),
+    check: (code, out) => [1,2,3,4,5].every(n => out.includes('Liczba: '+n)) && /\bfor\b/.test(code) && /\bdo\b/.test(code),
     ok: '{1..N} to wygodny zakres numeryczny. Pętla for to jedno z najczęstszych narzędzi w Bash!'
   },
   {
@@ -322,7 +322,7 @@ const LESSONS = [
     task: 'Wypisz odliczanie od 5 do 1, a potem <b>START!</b>. Używaj <code>((n--))</code> do zmniejszania zmiennej.',
     starter: '#!/bin/bash\n\nn=5\n\nwhile [ $n -gt 0 ]; do\n  echo "Odliczanie: $n"\n  ((n--))\ndone\n\necho "START!"\n',
     hint: '<b>while [ warunek ]; do</b>\n  polecenia\n<b>done</b>\n\n<b>((n--))</b> zmniejsza n o 1\n<b>((n++))</b> zwiększa n o 1\n<b>((n+=5))</b> dodaje 5\n\n⚠ Pamiętaj o zmianie warunku!',
-    check: (code, out) => out.includes('START!') && out.includes('Odliczanie: 5') && out.includes('Odliczanie: 1'),
+    check: (code, out) => out.includes('START!') && out.includes('Odliczanie: 5') && out.includes('Odliczanie: 1') && /\bwhile\b/.test(code) && /\bdo\b/.test(code),
     ok: 'Pętla while działa dopóki warunek jest true. Zawsze dbaj o zmianę warunku, żeby nie było pętli nieskończonej!'
   },
   {
@@ -332,7 +332,7 @@ const LESSONS = [
     hint: '<b>nazwa() {</b>\n  polecenia\n<b>}</b>\n\nParametry funkcji:\n<b>$1</b> — pierwszy argument\n<b>$2</b> — drugi argument\n<b>$@</b> — wszystkie argumenty\n\nWywołanie: <b>nazwa argument1 argument2</b>',
     check: (code, out) => {
       const lines = out.trim().split('\n').filter(l => l.includes('Cześć'));
-      return lines.length >= 2;
+      return lines.length >= 2 && /\w+\s*\(\)\s*\{/.test(code);
     },
     ok: 'Funkcje: definiujesz przez nazwa() { ... }, parametry to $1, $2... Wywołujesz podając nazwę i argumenty.'
   },
