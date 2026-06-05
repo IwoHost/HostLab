@@ -355,8 +355,11 @@ const LESSONS = [
 ];
 
 // ─── STATE ─────────────────────────────────────────────────────────────
-let currentLesson = 0;
 let progress = JSON.parse(localStorage.getItem('hl-bash2') || '[]');
+let currentLesson = Math.min(
+  parseInt(localStorage.getItem('hl-bash2-lesson') || '0'),
+  LESSONS.length - 1
+);
 
 // ─── BASH INTERPRETER ──────────────────────────────────────────────────
 function runBash(code) {
@@ -649,6 +652,7 @@ function setStatus(msg, cls) {
 function goLesson(n) {
   if(n<0||n>=LESSONS.length) return;
   currentLesson=n;
+  localStorage.setItem('hl-bash2-lesson', n);
   loadLesson();
 }
 
@@ -693,6 +697,7 @@ function runScript() {
         setStatus('ZALICZONE!','ok');
         progress[currentLesson]=true;
         localStorage.setItem('hl-bash2',JSON.stringify(progress));
+        progressFill.style.width=(progress.filter(Boolean).length/LESSONS.length*100)+'%';
         setTimeout(()=>showSuccess(L.ok),700);
       } else {
         setStatus('URUCHOMIONO — SPRAWDŹ WYJŚCIE','');
