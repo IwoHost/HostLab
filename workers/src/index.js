@@ -128,6 +128,100 @@ function doSpin(args) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// PORT LOOKUP
+// ══════════════════════════════════════════════════════════════════════════
+// [name, proto, desc, used, secure: 1=yes 0=no null=neutral, tip]
+const PORT_DB = {
+  20:['FTP Data','TCP','FTP file transfer data channel','vsftpd · FileZilla',0,'use SFTP on port 22 instead'],
+  21:['FTP','TCP','FTP control channel — login + commands','vsftpd · FileZilla · WinSCP',0,'unencrypted — prefer SFTP (22)'],
+  22:['SSH / SFTP','TCP','Secure remote shell and file transfer','OpenSSH · PuTTY · all servers',1,null],
+  23:['Telnet','TCP','Unencrypted remote shell — legacy','legacy routers · old gear',0,'completely insecure — use SSH (22)'],
+  25:['SMTP','TCP','Email relay between mail servers','Postfix · Sendmail · Exim',0,'server-to-server only; clients use 587'],
+  53:['DNS','TCP+UDP','Translates domain names to IP addresses','BIND · Unbound · dnsmasq',null,null],
+  67:['DHCP Server','UDP','Assigns IP addresses to devices','ISC DHCP · dnsmasq',null,null],
+  68:['DHCP Client','UDP','Client side of DHCP IP assignment','all OS network stacks',null,null],
+  69:['TFTP','UDP','Trivial file transfer — no auth, no encrypt','PXE boot · network devices',0,'no authentication whatsoever'],
+  80:['HTTP','TCP','Unencrypted web traffic','nginx · Apache · Caddy',0,'use HTTPS (443)'],
+  88:['Kerberos','TCP+UDP','Network authentication protocol','Active Directory · MIT Kerberos',1,null],
+  110:['POP3','TCP','Download email from server (older)','Thunderbird · Outlook',0,'use POP3S (995)'],
+  111:['RPCBind','TCP+UDP','Maps RPC services to ports','NFS stack · Sun RPC',null,null],
+  123:['NTP','UDP','Syncs system clocks over the network','ntpd · chrony · timesyncd',null,null],
+  135:['RPC','TCP','Windows remote procedure calls','Windows services',null,'often targeted — firewall externally'],
+  139:['NetBIOS-SSN','TCP','NetBIOS session service','Windows file sharing',null,null],
+  143:['IMAP','TCP','Access email on server (keeps messages)','Thunderbird · Outlook',0,'use IMAPS (993)'],
+  161:['SNMP','UDP','Monitor and manage network devices','Nagios · Zabbix · routers',0,'use SNMPv3 with auth'],
+  179:['BGP','TCP','Routes traffic between internet networks','ISP routers · Quagga · FRR',null,null],
+  194:['IRC','TCP','Internet Relay Chat','ircd · InspIRCd',0,null],
+  389:['LDAP','TCP+UDP','Directory services — users and groups','OpenLDAP · Active Directory',0,'use LDAPS (636)'],
+  443:['HTTPS','TCP','Encrypted web traffic over TLS','nginx · Apache · Caddy',1,null],
+  445:['SMB','TCP','Windows file and printer sharing','Windows · Samba',null,'block on internet-facing firewalls'],
+  465:['SMTPS','TCP','SMTP wrapped in TLS (implicit)','mail servers',1,null],
+  500:['IKE / IPSec','UDP','IPSec VPN key exchange','Cisco VPN · StrongSwan',1,null],
+  514:['Syslog','UDP','Send system log messages to a log server','rsyslog · syslog-ng',null,null],
+  587:['SMTP Submission','TCP','Client sends email to outgoing mail server','Thunderbird · Outlook',1,'use this + STARTTLS, not port 25'],
+  636:['LDAPS','TCP','LDAP over TLS — secure directory access','OpenLDAP · Active Directory',1,null],
+  853:['DNS-over-TLS','TCP','Encrypted DNS queries','Unbound · Cloudflare 1.1.1.1',1,null],
+  873:['rsync','TCP','Fast file sync and backup','rsync daemon',null,'use over SSH tunnel for encryption'],
+  993:['IMAPS','TCP','IMAP over TLS — secure email access','all mail clients',1,null],
+  995:['POP3S','TCP','POP3 over TLS — secure email download','all mail clients',1,null],
+  1080:['SOCKS','TCP','Generic proxy protocol','proxies · Tor · SSH tunnels',null,null],
+  1194:['OpenVPN','TCP+UDP','Open-source VPN protocol','OpenVPN client/server',1,null],
+  1433:['MSSQL','TCP','Microsoft SQL Server database','SQL Server · SSMS',null,'never expose to internet'],
+  1521:['Oracle DB','TCP','Oracle Database listener','Oracle DB · SQL*Plus',null,'never expose to internet'],
+  1723:['PPTP','TCP','Point-to-Point Tunneling Protocol','Windows VPN (legacy)',0,'broken encryption — do not use'],
+  1883:['MQTT','TCP','Lightweight IoT messaging protocol','Mosquitto · Home Assistant',0,'use MQTT over TLS (8883)'],
+  2049:['NFS','TCP+UDP','Network file system — share drives','Linux/Unix file servers',null,null],
+  2181:['ZooKeeper','TCP','Distributed coordination service','Kafka · Hadoop · HBase',null,null],
+  2375:['Docker','TCP','Docker daemon API — no TLS','Docker',0,'never expose — full root access'],
+  2376:['Docker TLS','TCP','Docker daemon API over TLS','Docker',1,null],
+  3000:['Dev Server','TCP','Common dev server port','Node.js · Rails · Grafana',null,null],
+  3306:['MySQL','TCP','MySQL and MariaDB database','MySQL · MariaDB',null,'never expose to internet'],
+  3389:['RDP','TCP','Windows Remote Desktop Protocol','Windows Remote Desktop',null,'brute-forced heavily — use VPN'],
+  5000:['Flask / UPnP','TCP','Flask dev server · UPnP control','Flask · Docker registry',null,null],
+  5432:['PostgreSQL','TCP','PostgreSQL database','PostgreSQL',null,'never expose to internet'],
+  5601:['Kibana','TCP','Elasticsearch visualization UI','Kibana · ELK stack',null,null],
+  5900:['VNC','TCP','Virtual Network Computing — remote desktop','TigerVNC · RealVNC',0,'use over SSH tunnel'],
+  5984:['CouchDB','TCP','CouchDB database HTTP API','CouchDB',null,null],
+  6379:['Redis','TCP','Redis in-memory cache and data store','Redis',0,'no auth by default — bind to localhost'],
+  6443:['Kubernetes API','TCP','Kubernetes API server','kubectl · k8s control plane',1,null],
+  6881:['BitTorrent','TCP+UDP','BitTorrent peer-to-peer file transfer','qBittorrent · Transmission',null,null],
+  8000:['HTTP Alt','TCP','Alternate HTTP — common dev port','Django dev · Python http.server',null,null],
+  8080:['HTTP Proxy / Alt','TCP','Common HTTP alt and proxy port','Tomcat · Jenkins · proxies',null,null],
+  8443:['HTTPS Alt','TCP','Alternate HTTPS — Tomcat · panels','Tomcat · cPanel',1,null],
+  8883:['MQTT TLS','TCP','MQTT over TLS — secure IoT messaging','Mosquitto · AWS IoT',1,null],
+  8888:['Jupyter','TCP','Jupyter Notebook web interface','Jupyter · JupyterLab',null,'bind to localhost only'],
+  9000:['PHP-FPM','TCP','PHP FastCGI process manager','PHP-FPM · SonarQube',null,null],
+  9090:['Prometheus','TCP','Prometheus metrics server · Cockpit UI','Prometheus · Cockpit',null,null],
+  9092:['Kafka','TCP','Apache Kafka message broker','Kafka',null,null],
+  9200:['Elasticsearch','TCP','Elasticsearch REST API','Elasticsearch · ELK stack',0,'no auth by default — never expose'],
+  11211:['Memcached','TCP+UDP','Memcached distributed memory cache','Memcached',0,'no auth — bind to localhost only'],
+  15672:['RabbitMQ UI','TCP','RabbitMQ management web interface','RabbitMQ',null,null],
+  27017:['MongoDB','TCP','MongoDB database','MongoDB',0,'no auth by default — bind to localhost'],
+  51820:['WireGuard','UDP','Modern fast VPN protocol','WireGuard',1,null],
+};
+
+function doPort(args) {
+  if (!args.length) return 'usage: port <number>  e.g. port 443\n';
+  let out = '';
+  args.forEach((arg, idx) => {
+    const num = parseInt(arg);
+    if (isNaN(num)) { out += `✗  not a number: ${arg}\n`; return; }
+    if (idx) out += '\n';
+    const p = PORT_DB[num];
+    out += `\n${line()}\n  PORT ${num}\n${line()}\n\n`;
+    if (!p) { out += `  not in database — may be unassigned or custom\n\n`; return; }
+    const [name, proto, desc, used, secure, tip] = p;
+    const secStr = secure===1 ? '✓ encrypted' : secure===0 ? '✗ unencrypted' : '—';
+    out += `  ${name.padEnd(24)} ${proto}\n  ${desc}\n\n`;
+    if (used) out += `  used by  ${used}\n`;
+    out += `  secure   ${secStr}\n`;
+    if (tip)  out += `  note     ${tip}\n`;
+    out += '\n';
+  });
+  return out;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // GAP VISUALIZER
 // ══════════════════════════════════════════════════════════════════════════
 function doGap(args) {
@@ -232,6 +326,7 @@ ${line()}
   ${u('gap+Alice+1990-05-15+Bob+1985-03-20')}
   ${u('burn+enc+your+message+here')}
   ${u('burn+dec+TOKEN')}
+  ${u('port+443')}
 
 ${line()}
   commands
@@ -243,6 +338,7 @@ ${line()}
   gap <n1> <dob1> <n2> <dob2>  lifespan overlap  (YYYY-MM-DD)
   burn enc <message>            encode a note
   burn dec <token>              decode a note
+  port <number>                 look up a well-known port
   help                          show this
 
 ${line()}
@@ -259,6 +355,7 @@ function dispatch(raw, base) {
   if (cmd==='spin') return doSpin(args);
   if (cmd==='gap')  return doGap(args);
   if (cmd==='burn') return doBurn(args);
+  if (cmd==='port') return doPort(args);
   if (cmd==='help') return makeHelp(base);
   return `✗  unknown command: ${cmd}\n   type 'help' to see commands\n`;
 }
