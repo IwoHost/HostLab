@@ -24,7 +24,6 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 @keyframes scanIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── TOPBAR ── */
 .topbar{
   flex-shrink:0;padding:10px 20px;
   border-bottom:1px solid var(--border);
@@ -33,6 +32,10 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 }
 .topbar-logo{font-size:10px;letter-spacing:.2em;color:var(--dim);margin-right:auto}
 .topbar-logo span{color:var(--amber)}
+.chapter-tabs{display:flex;gap:2px;margin-right:8px}
+.ch-tab{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:9px;letter-spacing:.15em;padding:5px 12px;cursor:pointer;transition:all .15s;text-transform:uppercase}
+.ch-tab:hover{border-color:var(--dim);color:var(--text)}
+.ch-tab.ch-active{border-color:var(--amber);color:var(--amber)}
 .lesson-nav{display:flex;align-items:center;gap:10px}
 .nav-btn{
   background:none;border:1px solid var(--border);color:var(--muted);
@@ -45,7 +48,6 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 .progress-wrap{width:120px;height:3px;background:var(--border)}
 .progress-fill{height:100%;background:var(--amber);transition:width .4s ease;box-shadow:0 0 6px rgba(255,179,0,.4)}
 
-/* ── LESSON BAR ── */
 .lesson-bar{
   flex-shrink:0;padding:10px 20px;
   border-bottom:1px solid var(--border);
@@ -55,10 +57,8 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 .lesson-task{font-size:11px;color:var(--text);letter-spacing:.04em;line-height:1.55}
 .lesson-task code{color:var(--amber);background:rgba(255,179,0,.08);padding:1px 5px}
 
-/* ── SPLIT ── */
 .split{flex:1;display:flex;overflow:hidden;position:relative;z-index:10}
 
-/* ── EDITOR PANEL ── */
 .editor-panel{
   width:46%;flex-shrink:0;
   display:flex;flex-direction:column;
@@ -89,7 +89,6 @@ textarea#editor{
 }
 textarea#editor::selection{background:rgba(255,179,0,.15)}
 
-/* ── TERMINAL PANEL ── */
 .terminal-panel{flex:1;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;}
 #output{
   flex:1;padding:14px 18px;font-size:12px;line-height:1.65;
@@ -101,7 +100,6 @@ textarea#editor::selection{background:rgba(255,179,0,.15)}
 .line-ok{color:var(--amber)}
 .cursor-line::after{content:'_';animation:blink 1s infinite;color:var(--amber)}
 
-/* ── BOTTOM BAR ── */
 .bottom-bar{
   flex-shrink:0;padding:9px 20px;
   border-top:1px solid var(--border);
@@ -121,7 +119,6 @@ textarea#editor::selection{background:rgba(255,179,0,.15)}
 .status-msg.ok{color:var(--amber)}
 .status-msg.err{color:var(--err)}
 
-/* ── HINT ── */
 .hint-box{
   position:absolute;bottom:64px;right:20px;max-width:310px;
   background:var(--surface2);border:1px solid var(--border);
@@ -133,7 +130,6 @@ textarea#editor::selection{background:rgba(255,179,0,.15)}
 .hint-close{position:absolute;top:6px;right:10px;cursor:pointer;color:var(--muted);font-size:13px}
 .hint-close:hover{color:var(--text)}
 
-/* ── SUCCESS ── */
 .success-overlay{
   position:fixed;inset:0;background:rgba(14,9,0,.92);
   display:none;flex-direction:column;align-items:center;justify-content:center;
@@ -163,9 +159,12 @@ textarea#editor::selection{background:rgba(255,179,0,.15)}
 </head>
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-logo">HOST<span>·</span>LAB // CMD</div>
+  <div class="chapter-tabs">
+    <button class="ch-tab ch-active" id="ch0-btn" onclick="switchChapter(0)">R1: PODSTAWY</button>
+    <button class="ch-tab" id="ch1-btn" onclick="switchChapter(1)">R2: EGZAMIN</button>
+  </div>
   <div class="lesson-nav">
     <button class="nav-btn" id="btn-prev" onclick="goLesson(currentLesson-1)">&#8592; PREV</button>
     <span class="lesson-counter" id="lesson-counter">1 / 10</span>
@@ -174,16 +173,12 @@ textarea#editor::selection{background:rgba(255,179,0,.15)}
   </div>
 </div>
 
-<!-- LESSON BAR -->
 <div class="lesson-bar" id="lesson-bar">
   <div class="lesson-title" id="lesson-title"></div>
   <div class="lesson-task" id="lesson-task"></div>
 </div>
 
-<!-- SPLIT AREA -->
 <div class="split">
-
-  <!-- EDITOR -->
   <div class="editor-panel">
     <div class="panel-header">
       <div class="panel-dot lit"></div>
@@ -194,8 +189,6 @@ textarea#editor::selection{background:rgba(255,179,0,.15)}
       <textarea id="editor" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"></textarea>
     </div>
   </div>
-
-  <!-- TERMINAL -->
   <div class="terminal-panel">
     <div class="panel-header">
       <div class="panel-dot"></div>
@@ -204,10 +197,8 @@ textarea#editor::selection{background:rgba(255,179,0,.15)}
     <div id="output"><span class="line-sys">// Napisz skrypt i kliknij URUCHOM</span>
 <span class="cursor-line"></span></div>
   </div>
-
 </div>
 
-<!-- BOTTOM BAR -->
 <div class="bottom-bar">
   <button class="btn btn-run" onclick="runScript()">&#9654; URUCHOM</button>
   <button class="btn" onclick="resetEditor()">&#8635; RESETUJ</button>
@@ -216,13 +207,11 @@ textarea#editor::selection{background:rgba(255,179,0,.15)}
   <span class="status-msg" id="status-msg">GOTOWY</span>
 </div>
 
-<!-- HINT -->
 <div class="hint-box" id="hint-box">
   <span class="hint-close" onclick="hideHint()">&#x2715;</span>
   <span id="hint-text"></span>
 </div>
 
-<!-- SUCCESS -->
 <div class="success-overlay" id="success-overlay">
   <div class="success-box">
     <div class="success-title">ZALICZONE_</div>
@@ -236,8 +225,8 @@ textarea#editor::selection{background:rgba(255,179,0,.15)}
 </a>
 
 <script>
-// ─── LESSONS ───────────────────────────────────────────────────────────
-const LESSONS = [
+// ─── CHAPTER 1 LESSONS ─────────────────────────────────────────────────
+const LESSONS_CH1 = [
   {
     title: 'LEKCJA 1 — PIERWSZY SKRYPT .BAT',
     task: 'Każdy skrypt .bat zaczyna się od <code>@echo off</code> — wyłącza pokazywanie komend. Użyj <code>echo</code> żeby wypisać <b>Witaj, świecie!</b>',
@@ -320,12 +309,92 @@ const LESSONS = [
   }
 ];
 
+// ─── CHAPTER 2 LESSONS ─────────────────────────────────────────────────
+const LESSONS_CH2 = [
+  {
+    title: 'LEKCJA 1 — TWORZENIE KATALOGÓW',
+    task: 'Utwórz katalog <code>PROJEKT</code> poleceniem <code>md PROJEKT</code>. Sprawdź jego istnienie przez <code>dir</code>. Wypisz: <b>Utworzono katalog: PROJEKT</b>',
+    starter: '@echo off\nmd PROJEKT\necho Utworzono katalog: PROJEKT\ndir /b\n',
+    hint: '<b>md NAZWA</b> lub <b>mkdir NAZWA</b> — tworzy katalog\n<b>md a\\b\\c</b> — tworzy całą ścieżkę\n<b>dir</b> — lista plików i katalogów\n<b>dir /b</b> — tylko nazwy (bez szczegółów)\n\nNa egzaminie: utwórz folder o podanej nazwie',
+    check: (code, out, vfs) => vfs.dirs.has('PROJEKT') && out.includes('PROJEKT'),
+    ok: 'md tworzy katalogi. Na egzaminie INF02 bardzo często musisz tworzyć foldery i pliki w skrypcie!'
+  },
+  {
+    title: 'LEKCJA 2 — TWORZENIE PLIKÓW',
+    task: 'Utwórz plik <code>notatka.txt</code> z treścią przez <code>echo tekst > plik.txt</code>. Wypisz zawartość przez <code>type notatka.txt</code>.',
+    starter: '@echo off\necho Moja pierwsza notatka > notatka.txt\necho Zawartosc pliku:\ntype notatka.txt\n',
+    hint: '<b>echo tekst > plik.txt</b> — tworzy/nadpisuje plik\n<b>echo tekst >> plik.txt</b> — dopisuje do pliku\n<b>type plik.txt</b> — wyświetla zawartość\n\n⚠ CMD automatycznie dodaje spację przed >\nUżywaj: <b>echo tekst> plik.txt</b> lub <b>echo tekst > plik.txt</b>',
+    check: (code, out, vfs) => out.includes('Moja pierwsza notatka') && vfs.files['notatka.txt'] !== undefined,
+    ok: 'Przekierowanie > zapisuje do pliku, >> dopisuje. type wyświetla zawartość. Podstawa pracy z plikami w CMD!'
+  },
+  {
+    title: 'LEKCJA 3 — KOMENDY SYSTEMOWE',
+    task: 'Wypisz informacje systemowe: datę (<code>date /t</code>), czas (<code>time /t</code>), nazwę komputera (<code>hostname</code>). Format:\n<b>Data: [wynik]</b>\n<b>Czas: [wynik]</b>\n<b>Komputer: [wynik]</b>',
+    starter: '@echo off\nfor /f %%a in (\'date /t\') do set data=%%a\nfor /f %%a in (\'time /t\') do set czas=%%a\nfor /f %%a in (\'hostname\') do set komputer=%%a\necho Data: %data%\necho Czas: %czas%\necho Komputer: %komputer%\n',
+    hint: '<b>date /t</b> — tylko data (bez pytania o zmianę)\n<b>time /t</b> — tylko czas\n<b>hostname</b> — nazwa komputera\n<b>ver</b> — wersja systemu\n\nDo zapisania wyniku komendy do zmiennej:\n<b>for /f %%a in (\'komenda\') do set var=%%a</b>',
+    check: (code, out) => out.includes('Data:') && out.includes('Czas:') && out.includes('Komputer:'),
+    ok: 'date /t, time /t, hostname — podstawowe komendy systemowe CMD. for /f pozwala zapisać ich wynik do zmiennej!'
+  },
+  {
+    title: 'LEKCJA 4 — PRZEKIEROWANIE DO PLIKU',
+    task: 'Zapisz datę do pliku <code>data.txt</code> przez <code>date /t > data.txt</code>. Następnie wypisz zawartość przez <code>type data.txt</code>. Poprzedź: <b>Zawartosc pliku:</b>',
+    starter: '@echo off\ndate /t > data.txt\necho Zawartosc pliku:\ntype data.txt\n',
+    hint: '<b>komenda > plik</b> — zapisuje wyjście do pliku (nadpisuje)\n<b>komenda >> plik</b> — dopisuje do pliku\n<b>type plik</b> — wyświetla plik\n\nPrzykłady:\n<b>date /t > data.txt</b>\n<b>hostname > host.txt</b>\n<b>ver > wersja.txt</b>',
+    check: (code, out, vfs) => vfs.files['data.txt'] !== undefined && out.includes('Zawartosc pliku:'),
+    ok: 'Przekierowanie > to jedna z najważniejszych technik w CMD. Komenda > plik.txt zapisuje wynik do pliku.'
+  },
+  {
+    title: 'LEKCJA 5 — FOLDER Z PLIKAMI',
+    task: 'Utwórz folder <code>INFO</code> i zapisz do niego 3 pliki:\n• <code>INFO\\user.txt</code> — wynik <code>hostname</code>\n• <code>INFO\\data.txt</code> — wynik <code>date /t</code>\n• <code>INFO\\wersja.txt</code> — wynik <code>ver</code>',
+    starter: '@echo off\nmd INFO\nhostname > INFO\\user.txt\ndate /t > INFO\\data.txt\nver > INFO\\wersja.txt\necho Utworzono folder INFO z plikami:\ndir /b INFO\n',
+    hint: '<b>md INFO</b> — utwórz folder\n<b>hostname > INFO\\user.txt</b> — zapisz wynik do pliku w folderze\n<b>dir /b INFO</b> — lista plików w folderze\n\nTo typowe zadanie egzaminacyjne INF02!\nStruktura: md → pliki z przekierowaniem → sprawdzenie dir',
+    check: (code, out, vfs) => ['INFO/user.txt','INFO/data.txt','INFO/wersja.txt'].every(f => vfs.files[f] !== undefined),
+    ok: 'Tworzenie folderu z plikami zawierającymi wyniki komend — to klasyczne zadanie INF02. Zapamiętaj ten wzorzec!'
+  },
+  {
+    title: 'LEKCJA 6 — DOPISYWANIE DO PLIKU',
+    task: 'Utwórz plik <code>raport.txt</code>. Dopisuj do niego kolejne linie przez <code>>></code>:\n• <code>echo System: Windows >> raport.txt</code>\n• <code>date /t >> raport.txt</code>\nNa koniec wypisz zawartość przez <code>type raport.txt</code>. Poprzedź: <b>Zawartosc raportu:</b>',
+    starter: '@echo off\necho System: Windows > raport.txt\ndate /t >> raport.txt\nhostname >> raport.txt\necho Zawartosc raportu:\ntype raport.txt\n',
+    hint: '<b>></b> — nadpisuje plik (usuwa poprzednią zawartość)\n<b>>></b> — dopisuje na koniec pliku\n\nPrzykład budowania raportu:\n<b>echo "Raport" > r.txt</b>\n<b>date /t >> r.txt</b>\n<b>hostname >> r.txt</b>\n<b>type r.txt</b>',
+    check: (code, out, vfs) => (vfs.files['raport.txt']||'').includes('Windows') && out.includes('Zawartosc raportu:'),
+    ok: '>> dopisuje do istniejącego pliku. Idealne do tworzenia logów i raportów w skryptach CMD!'
+  },
+  {
+    title: 'LEKCJA 7 — ZADANIE EGZAMINACYJNE',
+    task: 'Napisz skrypt który tworzy katalog <code>ARCHIWUM</code> i zapisuje do niego:\n• <code>ARCHIWUM\\data.txt</code> — wynik komendy <code>date /t</code>\n• <code>ARCHIWUM\\host.txt</code> — wynik komendy <code>hostname</code>\nNa koniec wypisz zawartości obu plików.',
+    starter: '@echo off\nmd ARCHIWUM\ndate /t > ARCHIWUM\\data.txt\nhostname > ARCHIWUM\\host.txt\necho === data.txt ===\ntype ARCHIWUM\\data.txt\necho === host.txt ===\ntype ARCHIWUM\\host.txt\n',
+    hint: 'Schemat zadania egzaminacyjnego:\n1. <b>md FOLDER</b>\n2. <b>komenda > FOLDER\\plik.txt</b>\n3. <b>type FOLDER\\plik.txt</b>\n\nNajczęstsze komendy do zapisu:\n<b>date /t</b> — data\n<b>time /t</b> — czas\n<b>hostname</b> — nazwa hosta\n<b>ver</b> — wersja systemu',
+    check: (code, out, vfs) => vfs.dirs.has('ARCHIWUM') && vfs.files['ARCHIWUM/data.txt'] !== undefined && vfs.files['ARCHIWUM/host.txt'] !== undefined,
+    ok: 'To wzorzec typowego zadania INF02: md + przekierowania. Ćwicz go do perfekcji!'
+  },
+  {
+    title: 'LEKCJA 8 — KOMPLEKSOWY SKRYPT',
+    task: 'Napisz skrypt który tworzy katalog <code>RAPORT</code> z 3 plikami:\n• <code>RAPORT\\info.txt</code> — linia "System: Windows" + wynik <code>ver</code>\n• <code>RAPORT\\user.txt</code> — wynik <code>hostname</code>\n• <code>RAPORT\\lista.txt</code> — lista plików z katalogu RAPORT\nNa końcu wypisz zawartość <code>RAPORT\\info.txt</code>.',
+    starter: '@echo off\nmd RAPORT\necho System: Windows > RAPORT\\info.txt\nver >> RAPORT\\info.txt\nhostname > RAPORT\\user.txt\ndir /b RAPORT > RAPORT\\lista.txt\necho === RAPORT\\info.txt ===\ntype RAPORT\\info.txt\n',
+    hint: 'Złożone zadanie — kilka operacji:\n1. md RAPORT\n2. echo + >> do info.txt\n3. hostname > user.txt\n4. dir /b RAPORT > lista.txt\n5. type do weryfikacji\n\n<b>dir /b RAPORT > RAPORT\\lista.txt</b>\nzapisuje listę plików do pliku w tym samym katalogu',
+    check: (code, out, vfs) => vfs.dirs.has('RAPORT') && (vfs.files['RAPORT/info.txt']||'').includes('Windows') && vfs.files['RAPORT/user.txt'] !== undefined && vfs.files['RAPORT/lista.txt'] !== undefined,
+    ok: 'Brawo! Opanowałeś tworzenie struktury katalogów z plikami. To najczęstsze zadanie praktyczne na INF02!'
+  }
+];
+
+// ─── CHAPTERS CONFIG ───────────────────────────────────────────────────
+const CHAPTERS = [
+  { key: 'c0', name: 'R1: PODSTAWY', lessons: LESSONS_CH1 },
+  { key: 'c1', name: 'R2: EGZAMIN',  lessons: LESSONS_CH2 }
+];
+
 // ─── STATE ─────────────────────────────────────────────────────────────
-let progress = JSON.parse(localStorage.getItem('hl-batch2') || '[]');
-let currentLesson = Math.min(
-  parseInt(localStorage.getItem('hl-batch2-lesson') || '0'),
-  LESSONS.length - 1
-);
+let currentChapter = parseInt(localStorage.getItem('hl-batch2-chap') || '0');
+let allProgress = [
+  JSON.parse(localStorage.getItem('hl-batch2-c0') || '[]'),
+  JSON.parse(localStorage.getItem('hl-batch2-c1') || '[]')
+];
+let currentLesson = 0;
+
+function curLessons() { return CHAPTERS[currentChapter].lessons; }
+function curProg()    { return allProgress[currentChapter]; }
+function progKey()    { return 'hl-batch2-' + CHAPTERS[currentChapter].key; }
+function posKey()     { return 'hl-batch2-' + CHAPTERS[currentChapter].key + '-pos'; }
 
 // ─── BATCH INTERPRETER ─────────────────────────────────────────────────
 function runBatch(code) {
@@ -333,49 +402,90 @@ function runBatch(code) {
   const env = {};
   let echoOn = true;
 
-  function emit(text, cls) { output.push({text:String(text), cls:cls||'line-out'}); }
-  function emitErr(t) { emit(t,'line-err'); }
+  // Virtual File System
+  const vfsDirs = new Set();
+  const vfsFiles = {};
+  let captureFile = null;
+  let captureAppend = false;
+
+  function bPath(p) {
+    return String(p).replace(/\\/g,'/').replace(/^[A-Za-z]:\//,'').replace(/^\.\//,'');
+  }
+
+  function dirList(dirPath) {
+    const prefix = dirPath ? (dirPath.endsWith('/') ? dirPath : dirPath+'/') : '';
+    const items = new Set();
+    vfsDirs.forEach(d => {
+      if(!prefix && !d.includes('/')) items.add(d);
+      else if(prefix && d.startsWith(prefix)) {
+        const rest = d.slice(prefix.length);
+        if(rest && !rest.includes('/')) items.add(rest);
+      }
+    });
+    Object.keys(vfsFiles).forEach(f => {
+      if(!prefix && !f.includes('/')) items.add(f);
+      else if(prefix && f.startsWith(prefix)) {
+        const rest = f.slice(prefix.length);
+        if(rest && !rest.includes('/')) items.add(rest);
+      }
+    });
+    return [...items].sort();
+  }
+
+  function simDate() { return new Date().toLocaleDateString('pl-PL'); }
+  function simTime() { return new Date().toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}); }
+
+  function emit(text, cls) {
+    if(captureFile !== null) {
+      vfsFiles[captureFile] = (vfsFiles[captureFile]||'') + String(text) + '\n';
+      return;
+    }
+    output.push({text:String(text), cls:cls||'line-out'});
+  }
+  function emitDirect(text, cls) { output.push({text:String(text), cls:cls||'line-out'}); }
+
+  function startCapture(file, append) {
+    captureFile = bPath(expandVars(file));
+    if(!append) vfsFiles[captureFile] = '';
+    captureAppend = append;
+  }
+  function endCapture() { captureFile = null; captureAppend = false; }
 
   function expandVars(s) {
     s = String(s);
-    // %%VAR — for-loop variable in .bat scripts (must expand before %VAR%)
+    // %%VAR for-loop variables (before %VAR%)
     s = s.replace(/%%([a-zA-Z_]\w*)/g, (_, v) => env[v.toUpperCase()] !== undefined ? env[v.toUpperCase()] : '%%'+v);
     // %VAR%
-    s = s.replace(/%([^%]+)%/g, (_, v) => env[v.toUpperCase()] !== undefined ? env[v.toUpperCase()] : '%'+v+'%');
+    s = s.replace(/%([^%\n]+)%/g, (_, v) => env[v.toUpperCase()] !== undefined ? env[v.toUpperCase()] : '%'+v+'%');
     return s;
   }
 
   function setVar(name, value) { env[name.toUpperCase()] = String(value); }
   function getVar(name) { return env[name.toUpperCase()] || ''; }
 
-  // Evaluate arithmetic expression with variable substitution
   function evalArith(expr) {
     try {
-      const e = expr.replace(/([a-zA-Z_]\w*)/g, v => {
-        const n = Number(env[v.toUpperCase()]);
-        return isNaN(n) ? '0' : String(n);
-      }).replace(/%%/g,'%');
+      const e = expr
+        .replace(/%%/g,'%')
+        .replace(/([a-zA-Z_]\w*)/g, v => {
+          const n = Number(env[v.toUpperCase()]);
+          return isNaN(n) ? '0' : String(n);
+        });
       return Math.floor(Function('"use strict";return ('+e+')')());
     } catch(ex) { return 0; }
   }
 
   function evalCond(parts) {
-    // parts: array of tokens after "if"
-    // Handle: exist, not exist, ==, equ/neq/lss/gtr/leq/geq
     const str = parts.join(' ');
-    // exist
-    if (/^exist\s/i.test(str)) return true; // no filesystem, assume exists for education
-    // not exist
-    if (/^not exist\s/i.test(str)) return false;
-    // VAR op VAL (numeric)
+    if(/^exist\s/i.test(str)) return true;
+    if(/^not exist\s/i.test(str)) return false;
     const numOp = str.match(/^(.+?)\s+(equ|neq|lss|gtr|leq|geq)\s+(.+)$/i);
-    if (numOp) {
-      const a = Number(expandVars(numOp[1].trim())), b = Number(expandVars(numOp[3].trim())), op=numOp[2].toLowerCase();
+    if(numOp) {
+      const a=Number(expandVars(numOp[1].trim())), b=Number(expandVars(numOp[3].trim())), op=numOp[2].toLowerCase();
       return op==='equ'?a===b:op==='neq'?a!==b:op==='lss'?a<b:op==='gtr'?a>b:op==='leq'?a<=b:a>=b;
     }
-    // VAR==VAL (string or number)
     const eqOp = str.match(/^(.+?)==(.+)$/);
-    if (eqOp) {
+    if(eqOp) {
       const a=expandVars(eqOp[1].trim()).replace(/^"|"$/g,'');
       const b=expandVars(eqOp[2].trim()).replace(/^"|"$/g,'');
       return a===b;
@@ -383,195 +493,285 @@ function runBatch(code) {
     return false;
   }
 
-  // Parse script into labeled sections
   function buildLabelMap(lines) {
-    const map = {};
-    lines.forEach((l,idx) => {
+    const map={};
+    lines.forEach((l,idx)=>{
       const t=l.trim();
-      if(t.startsWith(':')) map[t.slice(1).toLowerCase()] = idx;
+      if(t.startsWith(':')&&t.length>1) map[t.slice(1).toLowerCase()]=idx;
     });
     return map;
   }
 
-  function execLines(lines, startIdx, maxDepth) {
+  // check for redirect: returns {cmd, file, append} or null
+  function checkRedirect(t) {
+    // >> before >
+    const appM = /^(.*?)\s+>>\s+(\S+)\s*$/.exec(t);
+    if(appM) return {cmd:appM[1].trim(), file:appM[2], append:true};
+    const wrtM = /^(.*?)\s+>\s+(\S+)\s*$/.exec(t);
+    if(wrtM) return {cmd:wrtM[1].trim(), file:wrtM[2], append:false};
+    return null;
+  }
+
+  function execSingleCmd(cmd) {
+    cmd=cmd.trim();
+    if(!cmd) return;
+    const redir = checkRedirect(cmd);
+    const actualCmd = redir ? redir.cmd.trim() : cmd;
+
+    if(redir) startCapture(redir.file, redir.append);
+
+    if(/^@?echo$/i.test(actualCmd)||/^@?echo\.$/i.test(actualCmd)) { emit(''); }
+    else if(/^@?echo\s+/i.test(actualCmd)) {
+      const lead=actualCmd.match(/^@?echo\s+/i)[0];
+      emit(expandVars(actualCmd.slice(lead.length)));
+    }
+    else if(/^set\s+\/a\s+/i.test(actualCmd)){
+      const m=actualCmd.slice(7).trim().match(/^([a-zA-Z_]\w*)\s*=\s*(.+)$/);
+      if(m) setVar(m[1], evalArith(m[2]));
+    }
+    else if(/^set\s+/i.test(actualCmd)){
+      const rest=actualCmd.slice(4).trim(), eqIdx=rest.indexOf('=');
+      if(eqIdx>-1) setVar(rest.slice(0,eqIdx), rest.slice(eqIdx+1));
+    }
+    else if(/^date\s*\/t$/i.test(actualCmd)) { emit(simDate()); }
+    else if(/^time\s*\/t$/i.test(actualCmd)) { emit(simTime()); }
+    else if(/^hostname$/i.test(actualCmd)) { emit('HOSTLAB-PC'); }
+    else if(/^ver$/i.test(actualCmd)) { emit('Microsoft Windows [Version 10.0.19045]'); }
+    else if(/^(dir|dir\s+)/i.test(actualCmd)) {
+      const parts=actualCmd.split(/\s+/);
+      const bare=parts.includes('/b')||parts.includes('/B');
+      const dirArg=parts.find(p=>!/^(dir|\/b|\/B|\/w|\/W)$/i.test(p));
+      const dirPath=dirArg ? bPath(expandVars(dirArg)) : '';
+      const items=dirList(dirPath);
+      if(bare){items.forEach(it=>emit(it));}
+      else{emit(' Katalog: '+(dirPath||'C:\\'));items.forEach(it=>emit(' '+it));}
+    }
+    else if(/^(md|mkdir)\s+/i.test(actualCmd)){
+      const parts=actualCmd.split(/\s+/);
+      const dn=bPath(expandVars(parts[parts.length-1]));
+      if(dn) vfsDirs.add(dn);
+    }
+    else if(/^type\s+/i.test(actualCmd)){
+      const f=bPath(expandVars(actualCmd.slice(5).trim()));
+      const content=vfsFiles[f];
+      if(content!==undefined){
+        content.split('\n').filter((l,i,a)=>!(i===a.length-1&&l==='')).forEach(l=>emit(l));
+      } else {
+        emitDirect('Nie można odnaleźć określonego pliku — '+f,'line-err');
+      }
+    }
+
+    if(redir) endCapture();
+  }
+
+  function execLines(lines, startIdx) {
     const labelMap = buildLabelMap(lines);
     let i = startIdx;
-    let depth = 0;
     let execGuard = 0;
 
-    while (i < lines.length && execGuard++ < 2000) {
-      const raw = lines[i];
-      const t = raw.trim();
+    while(i < lines.length && execGuard++ < 3000) {
+      const raw=lines[i];
+      const t=raw.trim();
 
-      // skip empty / comments
-      if(!t || /^rem\s/i.test(t) || t.startsWith('::')) { i++; continue; }
-      // label — just skip
+      if(!t||/^rem\s/i.test(t)||t.startsWith('::')) { i++; continue; }
       if(t.startsWith(':')) { i++; continue; }
 
-      // @echo off / @echo on
       if(/^@?echo\s+off$/i.test(t)) { echoOn=false; i++; continue; }
       if(/^@?echo\s+on$/i.test(t)) { echoOn=true; i++; continue; }
 
+      // check redirect at top level
+      const redir = checkRedirect(t);
+      const tcmd = redir ? redir.cmd.trim() : t;
+
       // echo
-      if(/^@?echo$/i.test(t)) { emit(''); i++; continue; }
-      if(/^@?echo\./i.test(t)) { emit(''); i++; continue; }
-      if(/^@?echo\s+/i.test(t)) {
-        const lead = t.match(/^@?echo\s+/i)[0];
-        const msg = expandVars(t.slice(lead.length));
-        emit(msg); i++; continue;
+      if(/^@?echo$/i.test(tcmd)||/^@?echo\.$/i.test(tcmd)) {
+        if(redir) { startCapture(redir.file,redir.append); emit(''); endCapture(); }
+        else emit('');
+        i++; continue;
+      }
+      if(/^@?echo\s+/i.test(tcmd)) {
+        const lead=tcmd.match(/^@?echo\s+/i)[0];
+        const msg=expandVars(tcmd.slice(lead.length));
+        if(redir) { startCapture(redir.file,redir.append); emit(msg); endCapture(); }
+        else emit(msg);
+        i++; continue;
       }
 
       // set
-      if(/^set\s+/i.test(t)) {
-        const rest = t.slice(4).trim();
-        // set /a
-        if(/^\/a\s+/i.test(rest)) {
+      if(/^set\s+/i.test(tcmd)) {
+        const rest=tcmd.slice(4).trim();
+        if(/^\/a\s+/i.test(rest)){
           const expr=rest.slice(3).trim();
-          // handle varName=expr
           const m=expr.match(/^([a-zA-Z_]\w*)\s*=\s*(.+)$/);
-          if(m) { setVar(m[1], evalArith(m[2])); }
+          if(m) setVar(m[1], evalArith(m[2]));
           i++; continue;
         }
-        // set /p (simulate input)
         if(/^\/p\s+/i.test(rest)) { i++; continue; }
-        // normal set
         const eqIdx=rest.indexOf('=');
-        if(eqIdx>-1) { setVar(rest.slice(0,eqIdx), rest.slice(eqIdx+1)); }
+        if(eqIdx>-1) setVar(rest.slice(0,eqIdx), rest.slice(eqIdx+1));
         i++; continue;
       }
 
       // goto
-      if(/^goto\s+/i.test(t)) {
-        const label=t.slice(5).trim().toLowerCase().replace(/^:/,'');
-        if(label===':eof'||label==='eof'||label===':EOF') { break; }
+      if(/^goto\s+/i.test(tcmd)) {
+        const label=tcmd.slice(5).trim().toLowerCase().replace(/^:/,'');
+        if(label==='eof') break;
         const target=labelMap[label];
         if(target!==undefined){i=target+1;continue;}
-        i++;continue;
+        i++; continue;
       }
 
       // exit /b or exit
-      if(/^exit(\s+\/b)?$/i.test(t)) { break; }
+      if(/^exit(\s+\/b)?$/i.test(tcmd)) break;
 
-      // call :label (subroutine)
-      if(/^call\s+:/i.test(t)) {
-        const parts=t.slice(5).trim().split(/\s+/);
+      // call :label
+      if(/^call\s+:/i.test(tcmd)) {
+        const parts=tcmd.slice(5).trim().split(/\s+/);
         const label=parts[0].slice(1).toLowerCase();
         const args=parts.slice(1).map(a=>expandVars(a));
         const savedArgs={};
         args.forEach((a,idx)=>{savedArgs[idx+1]=env[String(idx+1)];env[String(idx+1)]=a;});
         const target=labelMap[label];
-        if(target!==undefined) execLines(lines, target+1, maxDepth+1);
+        if(target!==undefined) execLines(lines, target+1);
         args.forEach((_,idx)=>{
           if(savedArgs[idx+1]!==undefined)env[String(idx+1)]=savedArgs[idx+1];
           else delete env[String(idx+1)];
         });
-        i++;continue;
+        i++; continue;
       }
 
       // if block
-      if(/^if\s+/i.test(t)) {
-        const rest = t.slice(3).trim();
-        // Extract condition and action
-        // Handle multiline: if ... (\n  commands\n) else (\n  commands\n)
-        if(rest.includes('(') && !rest.includes(')')) {
-          // multiline if — collect lines
-          const ifResult = handleIfBlock(lines, i, labelMap);
-          i = ifResult;
+      if(/^if\s+/i.test(tcmd)) {
+        const rest=tcmd.slice(3).trim();
+        if(rest.includes('(') && !rest.trimEnd().endsWith(')')) {
+          i=handleIfBlock(lines, i, labelMap);
           continue;
         }
-        // single-line if
-        const parenMatch = rest.match(/^(.+?)\s+\((.+)\)(?:\s+else\s+\((.+)\))?$/);
-        if(parenMatch) {
+        const parenMatch=rest.match(/^(.+?)\s+\((.+)\)(?:\s+else\s+\((.+)\))?$/);
+        if(parenMatch){
           const cond=parenMatch[1].trim();
           const thenCmd=parenMatch[2].trim();
           const elseCmd=parenMatch[3]?parenMatch[3].trim():null;
-          if(evalCond(cond.split(/\s+/))) execSingleCmd(thenCmd);
+          if(evalCond(cond.split(/\s+/)))execSingleCmd(thenCmd);
           else if(elseCmd) execSingleCmd(elseCmd);
           i++;continue;
         }
-        // if VAR op VAL command (single line, no parens)
-        const condTokens = rest.split(/\s+/);
-        const opIdx = condTokens.findIndex(tok => /^(equ|neq|lss|gtr|leq|geq)$/i.test(tok));
-        if(opIdx > 0 && opIdx + 1 < condTokens.length) {
-          const condParts = condTokens.slice(0, opIdx + 2);
-          const cmdStr = expandVars(condTokens.slice(opIdx + 2).join(' ').trim());
+        // single-line: if VAR op VAL command (handles goto too)
+        const condTokens=rest.split(/\s+/);
+        const opIdx=condTokens.findIndex(tok=>/^(equ|neq|lss|gtr|leq|geq)$/i.test(tok));
+        if(opIdx>0 && opIdx+1<condTokens.length) {
+          const condParts=condTokens.slice(0, opIdx+2);
+          const cmdStr=expandVars(condTokens.slice(opIdx+2).join(' ').trim());
           if(evalCond(condParts) && cmdStr) {
-            if(/^goto\s+/i.test(cmdStr)) {
-              const lbl = cmdStr.slice(5).trim().toLowerCase().replace(/^:/,'');
-              if(lbl==='eof') { i = lines.length; continue; }
-              const tgt = labelMap[lbl];
-              if(tgt !== undefined) { i = tgt + 1; continue; }
+            if(/^goto\s+/i.test(cmdStr)){
+              const lbl=cmdStr.slice(5).trim().toLowerCase().replace(/^:/,'');
+              if(lbl==='eof'){i=lines.length;continue;}
+              const tgt=labelMap[lbl];
+              if(tgt!==undefined){i=tgt+1;continue;}
             } else {
               execSingleCmd(cmdStr);
             }
           }
         }
-        i++;continue;
+        i++; continue;
       }
 
-      // for /l
-      if(/^for\s+\/l\s+/i.test(t)) {
-        const m=t.match(/for\s+\/l\s+%%(\w)\s+in\s+\((\d+),(-?\d+),(\d+)\)\s+do\s+(.*)/i);
-        if(m) {
+      // for /l (with spaces allowed around commas)
+      if(/^for\s+\/l\s+/i.test(tcmd)) {
+        const m=tcmd.match(/for\s+\/l\s+%%(\w)\s+in\s+\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s+do\s+(.*)/i);
+        if(m){
           const varN=m[1], from=parseInt(m[2]), step=parseInt(m[3]), to=parseInt(m[4]);
           let body=m[5].trim();
-          // multiline?
-          if(body.startsWith('(') && !body.endsWith(')')) {
-            const fr=handleForBlock(lines, i, varN, 'range', {from,step,to});
-            i=fr;continue;
+          if(body.startsWith('(')&&!body.endsWith(')')) {
+            i=handleForBlock(lines,i,varN,'range',{from,step,to});continue;
           }
           body=body.startsWith('(')?body.slice(1,-1).trim():body;
           for(let n=from;step>0?n<=to:n>=to;n+=step){
-            setVar(varN, String(n));
+            setVar(varN,String(n));
             execSingleCmd(expandVars(body));
           }
         }
-        i++;continue;
+        i++; continue;
+      }
+
+      // for /f "tokens=*" %%a in ('cmd') do ...
+      if(/^for\s+\/f\s+/i.test(tcmd)) {
+        const m=tcmd.match(/for\s+\/f\s+['"'][^'"']*['"']\s+%%(\w)\s+in\s+\('([^']+)'\)\s+do\s+(.*)/i);
+        if(m){
+          const varN=m[1], cmd=m[2].trim(), body=m[3].trim();
+          let result='';
+          if(/^date\s*\/t$/i.test(cmd)) result=simDate();
+          else if(/^time\s*\/t$/i.test(cmd)) result=simTime();
+          else if(/^hostname$/i.test(cmd)) result='HOSTLAB-PC';
+          else if(/^ver$/i.test(cmd)) result='Microsoft Windows [Version 10.0.19045]';
+          if(result){ setVar(varN,result); execSingleCmd(expandVars(body)); }
+        }
+        i++; continue;
       }
 
       // for %%i in (list) do
-      if(/^for\s+%%/i.test(t)) {
-        const m=t.match(/for\s+%%(\w)\s+in\s+\(([^)]+)\)\s+do\s+(.*)/i);
-        if(m) {
+      if(/^for\s+%%/i.test(tcmd)) {
+        const m=tcmd.match(/for\s+%%(\w)\s+in\s+\(([^)]+)\)\s+do\s+(.*)/i);
+        if(m){
           const varN=m[1];
           const items=m[2].trim().split(/\s+/);
           let body=m[3].trim();
-          if(body.startsWith('(') && !body.endsWith(')')) {
-            const fr=handleForBlock(lines, i, varN, 'list', {items});
-            i=fr;continue;
+          if(body.startsWith('(')&&!body.endsWith(')')) {
+            i=handleForBlock(lines,i,varN,'list',{items});continue;
           }
           body=body.startsWith('(')?body.slice(1,-1).trim():body;
-          for(const item of items){
-            setVar(varN, item);
-            execSingleCmd(expandVars(body));
-          }
+          for(const item of items){ setVar(varN,item); execSingleCmd(expandVars(body)); }
         }
-        i++;continue;
+        i++; continue;
       }
 
-      // cls — clear output
-      if(/^cls$/i.test(t)) { output.length=0; i++; continue; }
-      // pause — simulate
-      if(/^pause$/i.test(t)) { emit('Naciśnij dowolny klawisz aby kontynuować...','line-sys'); i++; continue; }
-      // title — skip
-      if(/^title\s/i.test(t)) { i++; continue; }
+      // system commands at top level (possibly with redirect)
+      if(/^(date\s*\/t|time\s*\/t|hostname|ver)$/i.test(tcmd)) {
+        if(redir) startCapture(redir.file, redir.append);
+        if(/^date/i.test(tcmd)) emit(simDate());
+        else if(/^time/i.test(tcmd)) emit(simTime());
+        else if(/^hostname/i.test(tcmd)) emit('HOSTLAB-PC');
+        else if(/^ver/i.test(tcmd)) emit('Microsoft Windows [Version 10.0.19045]');
+        if(redir) endCapture();
+        i++; continue;
+      }
+
+      if(/^(md|mkdir)\s+/i.test(tcmd)) {
+        const parts=tcmd.split(/\s+/);
+        const dn=bPath(expandVars(parts[parts.length-1]));
+        if(dn) vfsDirs.add(dn);
+        i++; continue;
+      }
+
+      if(/^type\s+/i.test(tcmd)) {
+        const f=bPath(expandVars(tcmd.slice(5).trim()));
+        const content=vfsFiles[f];
+        if(content!==undefined){
+          content.split('\n').filter((l,ix,a)=>!(ix===a.length-1&&l==='')).forEach(l=>emitDirect(l));
+        } else {
+          emitDirect('Nie można odnaleźć pliku — '+f,'line-err');
+        }
+        i++; continue;
+      }
+
+      if(/^(dir|dir\s+)/i.test(tcmd)) {
+        const parts=tcmd.split(/\s+/);
+        const bare=parts.some(p=>/^\/b$/i.test(p));
+        const dirArg=parts.find(p=>!/^(dir|\/b|\/B|\/w|\/W)$/i.test(p));
+        const dirPath=dirArg ? bPath(expandVars(dirArg)) : '';
+        const items=dirList(dirPath);
+        if(redir) startCapture(redir.file, redir.append);
+        if(bare){items.forEach(it=>emit(it));}
+        else{emit(' Katalog: '+(dirPath||'C:\\'));items.forEach(it=>emit(' '+it));}
+        if(redir) endCapture();
+        i++; continue;
+      }
+
+      if(/^cls$/i.test(tcmd)) { output.length=0; i++; continue; }
+      if(/^pause$/i.test(tcmd)) { emitDirect('Naciśnij dowolny klawisz aby kontynuować...','line-sys'); i++; continue; }
+      if(/^title\s/i.test(tcmd)) { i++; continue; }
 
       i++;
-    }
-  }
-
-  function execSingleCmd(cmd) {
-    cmd=cmd.trim();
-    if(/^echo\s*/i.test(cmd)) {
-      const rest=cmd.slice(4).trim();
-      if(rest==='.'||rest==='') {emit('');return;}
-      emit(expandVars(rest));
-    } else if(/^set\s+\/a\s+/i.test(cmd)){
-      const m=cmd.slice(7).trim().match(/^([a-zA-Z_]\w*)\s*=\s*(.+)$/);
-      if(m) setVar(m[1], evalArith(m[2]));
-    } else if(/^set\s+/i.test(cmd)){
-      const rest=cmd.slice(4).trim(), eqIdx=rest.indexOf('=');
-      if(eqIdx>-1) setVar(rest.slice(0,eqIdx), rest.slice(eqIdx+1));
     }
   }
 
@@ -580,23 +780,16 @@ function runBatch(code) {
     const condMatch=ifLine.match(/^if\s+(.+?)\s+\($/i);
     const cond=condMatch?condMatch[1].trim():'';
     const result=evalCond(cond.split(/\s+/));
-
     let i=startIdx+1, depth=1;
     const thenLines=[], elseLines=[];
     let inElse=false;
-
-    while(i<lines.length) {
+    while(i<lines.length){
       const t=lines[i].trim();
       if(t==='(')depth++;
       if(t===')'){
         depth--;
         if(depth===0){
-          // check for else
-          if(i+1<lines.length&&/^\)\s+else\s+\($/i.test(lines[i].trim()||'')){
-            // handled below
-          }
           i++;
-          // look ahead for ) else (
           if(i<lines.length&&/^else\s*\($/i.test(lines[i].trim())){
             inElse=true;i++;depth=1;
             while(i<lines.length){
@@ -633,44 +826,39 @@ function runBatch(code) {
       if(t===')'){depth--;if(depth===0){i++;break;}}
       body.push(lines[i]);i++;
     }
-    const items = type==='range'
+    const items=type==='range'
       ? (()=>{const r=[];for(let n=opts.from;opts.step>0?n<=opts.to:n>=opts.to;n+=opts.step)r.push(String(n));return r;})()
       : opts.items;
-    for(const item of items){
-      setVar(varN, item);
-      execLines(body,0);
-    }
+    for(const item of items){ setVar(varN,item); execLines(body,0); }
     return i;
   }
 
-  const lines = code.split('\n');
-  // Default positional args to empty
+  const lines=code.split('\n');
   for(let i=0;i<=9;i++) env[String(i)]='';
   env['0']='skrypt.bat';
-
-  execLines(lines, 0);
-  return output;
+  execLines(lines,0);
+  return {output, vfs:{dirs:vfsDirs, files:vfsFiles}};
 }
 
 // ─── UI ────────────────────────────────────────────────────────────────
-const editorEl = document.getElementById('editor');
-const outputEl = document.getElementById('output');
-const lineNumsEl = document.getElementById('line-nums');
-const progressFill = document.getElementById('progress-fill');
-const lessonCounter = document.getElementById('lesson-counter');
-const statusMsg = document.getElementById('status-msg');
+const editorEl=document.getElementById('editor');
+const outputEl=document.getElementById('output');
+const lineNumsEl=document.getElementById('line-nums');
+const progressFill=document.getElementById('progress-fill');
+const lessonCounter=document.getElementById('lesson-counter');
+const statusMsg=document.getElementById('status-msg');
 
-function updateLineNums() {
-  const n = editorEl.value.split('\n').length;
-  let html = '';
-  for(let i=1;i<=n;i++) html += `<div>${i}</div>`;
-  lineNumsEl.innerHTML = html;
-  lineNumsEl.scrollTop = editorEl.scrollTop;
+function updateLineNums(){
+  const n=editorEl.value.split('\n').length;
+  let html='';
+  for(let i=1;i<=n;i++) html+=`<div>${i}</div>`;
+  lineNumsEl.innerHTML=html;
+  lineNumsEl.scrollTop=editorEl.scrollTop;
 }
 
-editorEl.addEventListener('input', updateLineNums);
-editorEl.addEventListener('scroll', () => { lineNumsEl.scrollTop = editorEl.scrollTop; });
-editorEl.addEventListener('keydown', e => {
+editorEl.addEventListener('input',updateLineNums);
+editorEl.addEventListener('scroll',()=>{lineNumsEl.scrollTop=editorEl.scrollTop;});
+editorEl.addEventListener('keydown',e=>{
   if(e.key==='Tab'){
     e.preventDefault();
     const s=editorEl.selectionStart, v=editorEl.value;
@@ -680,21 +868,27 @@ editorEl.addEventListener('keydown', e => {
   }
 });
 
-function escHtml(s){
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-function setStatus(msg, cls) {
-  statusMsg.textContent=msg;
-  statusMsg.className='status-msg'+(cls?' '+cls:'');
-}
-function goLesson(n) {
-  if(n<0||n>=LESSONS.length)return;
-  currentLesson=n;
-  localStorage.setItem('hl-batch2-lesson', n);
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function setStatus(msg,cls){statusMsg.textContent=msg;statusMsg.className='status-msg'+(cls?' '+cls:'');}
+
+function switchChapter(idx){
+  currentChapter=idx;
+  localStorage.setItem('hl-batch2-chap',idx);
+  document.getElementById('ch0-btn').classList.toggle('ch-active',idx===0);
+  document.getElementById('ch1-btn').classList.toggle('ch-active',idx===1);
+  currentLesson=Math.min(parseInt(localStorage.getItem(posKey())||'0'),curLessons().length-1);
   loadLesson();
 }
-function loadLesson() {
-  const L=LESSONS[currentLesson];
+
+function goLesson(n){
+  if(n<0||n>=curLessons().length)return;
+  currentLesson=n;
+  localStorage.setItem(posKey(),n);
+  loadLesson();
+}
+
+function loadLesson(){
+  const L=curLessons()[currentLesson];
   document.getElementById('lesson-title').textContent=L.title;
   document.getElementById('lesson-task').innerHTML=L.task;
   editorEl.value=L.starter;
@@ -702,19 +896,19 @@ function loadLesson() {
   outputEl.innerHTML='<span class="line-sys">// Napisz skrypt i kliknij URUCHOM</span>\n<span class="cursor-line"></span>';
   setStatus('GOTOWY');hideHint();
   document.getElementById('btn-prev').disabled=currentLesson===0;
-  document.getElementById('btn-next').disabled=currentLesson===LESSONS.length-1;
-  lessonCounter.textContent=`${currentLesson+1} / ${LESSONS.length}`;
-  const done=progress.filter(Boolean).length;
-  progressFill.style.width=(done/LESSONS.length*100)+'%';
+  document.getElementById('btn-next').disabled=currentLesson===curLessons().length-1;
+  lessonCounter.textContent=`${currentLesson+1} / ${curLessons().length}`;
+  const done=curProg().filter(Boolean).length;
+  progressFill.style.width=(done/curLessons().length*100)+'%';
 }
-function runScript() {
+
+function runScript(){
   const code=editorEl.value;
   if(!code.trim()){setStatus('PUSTY SKRYPT','err');return;}
-  outputEl.innerHTML='<span class="line-sys">C:\\Users\\Student&gt; skrypt.bat</span>\n';
   setStatus('URUCHAMIANIE...','');
   setTimeout(()=>{
     try{
-      const lines=runBatch(code);
+      const {output:lines, vfs}=runBatch(code);
       let html='<span class="line-sys">C:\\Users\\Student&gt; skrypt.bat</span>\n';
       if(lines.length===0){
         html+='<span class="line-sys">// (brak wyjścia)</span>\n';
@@ -727,12 +921,12 @@ function runScript() {
       outputEl.innerHTML=html;
       outputEl.scrollTop=outputEl.scrollHeight;
       const outText=lines.map(l=>l.text).join('\n');
-      const L=LESSONS[currentLesson];
-      if(L.check(code,outText)){
+      const L=curLessons()[currentLesson];
+      if(L.check(code,outText,vfs)){
         setStatus('ZALICZONE!','ok');
-        progress[currentLesson]=true;
-        localStorage.setItem('hl-batch2',JSON.stringify(progress));
-        progressFill.style.width=(progress.filter(Boolean).length/LESSONS.length*100)+'%';
+        curProg()[currentLesson]=true;
+        localStorage.setItem(progKey(),JSON.stringify(curProg()));
+        progressFill.style.width=(curProg().filter(Boolean).length/curLessons().length*100)+'%';
         setTimeout(()=>showSuccess(L.ok),700);
       } else {
         setStatus('URUCHOMIONO — SPRAWDŹ WYJŚCIE','');
@@ -743,36 +937,41 @@ function runScript() {
     }
   },80);
 }
+
 function resetEditor(){
-  editorEl.value=LESSONS[currentLesson].starter;
+  editorEl.value=curLessons()[currentLesson].starter;
   updateLineNums();
   outputEl.innerHTML='<span class="line-sys">// Skrypt zresetowany</span>\n<span class="cursor-line"></span>';
   setStatus('ZRESETOWANO');
 }
+
 function showHint(){
-  document.getElementById('hint-text').innerHTML=LESSONS[currentLesson].hint;
+  document.getElementById('hint-text').innerHTML=curLessons()[currentLesson].hint;
   document.getElementById('hint-box').classList.add('show');
 }
 function hideHint(){document.getElementById('hint-box').classList.remove('show');}
+
 function showSuccess(msg){
   document.getElementById('success-msg').textContent=msg;
   const ov=document.getElementById('success-overlay');
   ov.classList.add('show');
   const btn=document.getElementById('success-next-btn');
-  if(currentLesson>=LESSONS.length-1){
-    btn.textContent='KONIEC KURSU ✓';
+  if(currentLesson>=curLessons().length-1){
+    btn.textContent='KONIEC ROZDZIAŁU ✓';
     btn.onclick=()=>ov.classList.remove('show');
   } else {
     btn.textContent='NASTĘPNA LEKCJA →';
     btn.onclick=nextLesson;
   }
 }
+
 function nextLesson(){
   document.getElementById('success-overlay').classList.remove('show');
-  if(currentLesson<LESSONS.length-1)goLesson(currentLesson+1);
+  if(currentLesson<curLessons().length-1)goLesson(currentLesson+1);
 }
 
 // INIT
+currentLesson=Math.min(parseInt(localStorage.getItem(posKey())||'0'),curLessons().length-1);
 loadLesson();
 </script>
 </body>
