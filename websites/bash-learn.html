@@ -196,7 +196,7 @@ textarea#editor::selection{background:rgba(0,255,65,.15)}
 </div>
 
 <div class="bottom-bar">
-  <button class="btn btn-run" onclick="runScript()">&#9654; URUCHOM</button>
+  <button class="btn btn-run" onclick="runScript()" title="Uruchom (Ctrl+Enter)">&#9654; URUCHOM</button>
   <button class="btn" onclick="resetEditor()">&#8635; RESETUJ</button>
   <button class="btn" onclick="showHint()">? PODPOWIEDŹ</button>
   <div class="btn-sep"></div>
@@ -806,6 +806,16 @@ editorEl.addEventListener('keydown', e => {
     editorEl.selectionStart=editorEl.selectionEnd=s+2;
     updateLineNums();
   }
+  if((e.ctrlKey||e.metaKey) && e.key==='Enter'){
+    e.preventDefault();
+    runScript();
+  }
+});
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape') {
+    hideHint();
+    document.getElementById('success-overlay').classList.remove('show');
+  }
 });
 
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -840,6 +850,7 @@ function loadLesson() {
   outputEl.innerHTML='<span class="line-sys">// Napisz skrypt i kliknij URUCHOM</span>\n<span class="cursor-line"></span>';
   setStatus('GOTOWY');
   hideHint();
+  document.getElementById('success-overlay').classList.remove('show');
   document.getElementById('btn-prev').disabled=currentLesson===0;
   document.getElementById('btn-next').disabled=currentLesson===curLessons().length-1;
   lessonCounter.textContent=`${currentLesson+1} / ${curLessons().length}`;
