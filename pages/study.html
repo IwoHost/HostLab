@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
@@ -57,10 +57,6 @@ html.light .card:hover{box-shadow:0 12px 40px rgba(0,0,0,.08)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
 .card-thumb{width:100%;aspect-ratio:16/9;background:var(--tag-bg);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
-.card-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}
-.card:hover .card-thumb img{transform:scale(1.04)}
-.card-thumb-text{font-family:var(--font-mono);font-size:clamp(18px,3vw,32px);color:var(--border);letter-spacing:.05em;user-select:none}
-.card:hover .card-thumb-text{color:var(--text-muted);transition:color .3s}
 .card-thumb-text{font-family:var(--font-mono);font-size:clamp(18px,3vw,32px);color:var(--border);letter-spacing:.05em;user-select:none}
 .card:hover .card-thumb-text{color:var(--text-muted);transition:color .3s}
 
@@ -97,7 +93,7 @@ html.light .switch-track{background:#d0ceca}
 <header>
   <a href="../index.html" class="logo">HOST<span>·</span>LAB<span style="color:var(--text-secondary);padding-left:2px"> / STUDY</span></a>
   <div class="header-right">
-    <div class="header-meta" id="site-count">– STUDY</div>
+    <div class="header-meta" id="site-count">— STUDY</div>
     <div class="theme-switch" id="theme-switch" title="Toggle light mode">
       <span class="switch-label" id="switch-label">LIGHT</span>
       <div class="switch-track"><div class="switch-thumb"></div></div>
@@ -108,7 +104,7 @@ html.light .switch-track{background:#d0ceca}
 <section class="hero">
   <div class="hero-label">Nauka do egzaminu</div>
   <h1>Stu<em>dy</em></h1>
-  <p class="hero-sub">Kursy i materiały do egzaminu INF02. Linux Bash, pliki wsadowe, ściągi – od zera, krok po kroku.</p>
+  <p class="hero-sub">Kursy i materiały do egzaminu INF02. Linux Bash, pliki wsadowe, ściągi — od zera, krok po kroku.</p>
 </section>
 
 <div class="grid-header">
@@ -125,16 +121,15 @@ html.light .switch-track{background:#d0ceca}
 
 <script>
 const TOOLS=[
-  {url:'../websites/bash-learn.html',title:'Linux Bash',badge:'LINUX',tags:['bash','linux','inf02'],
-   desc:'15 interaktywnych lekcji w symulowanym terminalu. Nawigacja po systemie plików, praca z plikami, grep, chmod, pipe i więcej.'},
-  {url:'../websites/batch-learn.html',title:'Pliki Wsadowe',badge:'CMD',tags:['batch','.bat','cmd','inf02'],
-   desc:'12 lekcji Windows CMD. echo, dir, cd, del, copy, set, if, for i tworzenie plików .bat. Symulowany wiersz poleceń.'},
-  {url:'../websites/inf02-prep.html',title:'ściąga INF02',badge:'NOTES',tags:['ściąga','komendy','sieć','inf02'],
-   desc:'Szybka ściąga do egzaminu. Komendy bash i CMD, uprawnienia chmod, porty, model OSI, subnetting – wszystko na jednej stronie.'},
-  {url:'../websites/inf02-3czerwca.html',title:'3 Czerwca',badge:'EXAM DAY',tags:['egzamin','inf02','3czerwca'],
-   desc:'Strona na dzień egzaminu. Ostatnie przypomnienia, kluczowe fakty, które musisz pamiętać. Nie panikuj – wszystko jest tutaj.'},
+  {url:'../websites/bash-learn.html',title:'Linux Bash',badge:'LINUX',thumb:'$_',tags:['bash','linux','inf02'],
+   desc:'18 interaktywnych lekcji w 2 rozdziałach — Podstawy (zmienne, if, pętle, funkcje) + Rozdział Egzamin (mkdir, date, whoami, przekierowania > i >>).'},
+  {url:'../websites/batch-learn.html',title:'Pliki Wsadowe',badge:'CMD',thumb:'C:\\>_',tags:['batch','.bat','cmd','inf02'],
+   desc:'18 lekcji Windows CMD w 2 rozdziałach — Podstawy (set, if, for, goto, call) + Rozdział Egzamin (md, date /t, hostname, przekierowania > i >>).'},
+  {url:'../websites/inf02-prep.html',title:'Ściąga INF02',badge:'NOTES',thumb:'[INF02]',tags:['ściąga','komendy','sieć','inf02'],
+   desc:'Szybka ściąga do egzaminu. Komendy bash i CMD, uprawnienia chmod, porty, model OSI, subnetting — wszystko na jednej stronie.'},
+  {url:'../websites/inf02-3czerwca.html',title:'3 Czerwca',badge:'EXAM DAY',thumb:'!',tags:['egzamin','inf02','3czerwca'],
+   desc:'Strona na dzień egzaminu. Ostatnie przypomnienia, kluczowe fakty, które musisz pamiętać. Nie panikuj — wszystko jest tutaj.'},
 ];
-function imgSrc(url){return'../other/p_'+url.split('/').pop().replace('.html','')+'.png'}
 
 document.getElementById('footer-date').textContent=new Date().toLocaleDateString('en-GB',{year:'numeric',month:'long',day:'numeric'}).toUpperCase();
 document.getElementById('count-badge').textContent=TOOLS.length;
@@ -155,7 +150,7 @@ TOOLS.forEach((t,i)=>{
   card.className='card';card.href=t.url;
   const tagHTML=(t.tags||[]).map(tg=>`<span class="tag">${tg}</span>`).join('');
   card.innerHTML=`
-    <div class="card-thumb"></div>
+    <div class="card-thumb"><span class="card-thumb-text">${t.thumb}</span></div>
     <div class="card-body">
       <div class="card-header-row">
         <div class="card-title-block">
@@ -171,15 +166,8 @@ TOOLS.forEach((t,i)=>{
       </div>
     </div>
   `;
-  const thumb=card.querySelector('.card-thumb');
-  const img=document.createElement('img');img.src=imgSrc(t.url);img.alt=t.title;
-  img.onerror=()=>{thumb.innerHTML='<div class="card-thumb-placeholder">NO PREVIEW</div>'};
-  thumb.appendChild(img);
   grid.appendChild(card);
 });
 </script>
 </body>
 </html>
-
-
-
