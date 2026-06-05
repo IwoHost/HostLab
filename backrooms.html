@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Backrooms</title>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+
+<!-- Google tag (gtag.js) -->
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-R7MJHBKJVY');
+</script>
+<link rel="stylesheet" href="other/backbutton.css">
+<style>
+* { margin:0; padding:0; box-sizing:border-box }
+html, body { width:100%; height:100%; overflow:hidden; background:#0a0805 }
+canvas { display:block; cursor:grab; touch-action:none; user-select:none }
+canvas.drag { cursor:grabbing }
+#hud {
+  position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+  color:#3d3020; font:11px/1 'Courier New',monospace; letter-spacing:.2em;
+  pointer-events:none; white-space:nowrap; user-select:none;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">DEPTH 0 · ZONE ALPHA</div>
+<a href="index.html" class="back-home" title="Back to HostLab"><img src="other/logo/HLab_Logo.png" alt="HostLab"></a>
+<script>
+'use strict';
+
+// ── CONFIG ─────────────────────────────────────────────────────────────────────
+const CT   = 24;          // tiles per chunk side
+const TS   = 32;          // tile size px at zoom=1
+const CPX  = CT * TS;     // chunk pixel size = 768
+const SEED = 0xBA1C5EED;
+
+const ZONES = [
+  'ALPHA','BETA','GAMMA','DELTA','EPSILON',
+  'ZETA','ETA','THETA','IOTA','KAPPA','LAMBDA','MU'
+];
+
+// ── SEEDED RNG (mulberry32) ────────────────────────────────────────────────────
+function mulberry32(seed) {
+  let s = (seed >>> 0) || 1;
+  return () => {
+    s |= 0; s = s + 0x6D2B79F5 | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 0x100000000;
+  };
+}
+
+// Order-independent hash for a chunk coordinate pair
+function chunkHash(cx, cy) {
+  let h = SEED ^ 0xDEADBEEF;
+  h = (Math.imul(h ^ cx, 0x9e3779b9)) >>> 0;
+  h = (Math.imul(h ^ cy, 0x6b43a9b5)) >>> 0;
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+// Hash for a shared edge — symmetric key so both sides agree
+function edgeHash(ax, ay, bx, by) {
+  // Normalize so smaller coord is first
+  const k1 = ax < bx || (ax === bx && ay < by) ? ax * 100003 + ay : bx * 100003 + by;
+  const k2 = ax < bx || (ax === bx && ay < by) ? bx * 100003 + by : ax * 100003 + ay;
+  let h = SEED ^ 0xC0FFEE;
+  h = (Math.imul(h ^ k1, 0x9e3779b9)) >>> 0;
+  h = (Math.imul(h ^ k2, 0x6b43a9b5)) >>> 0;
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+// ── BSP ROOM GENERATOR ─────────────────────────────────────────────────────────
+// Split position with 30% chance of a very lopsided cut (small + large leaf)
+function biasedSplit(rng, size, MIN) {
+  const range = size - MIN * 2 - 1;
+  if (range <= 0) return MIN + 1;
+  if (rng() < 0.30) {
+    // Lopsided: one side gets only MIN+1 to MIN+3 tiles
+    const small = MIN + 1 + Math.floor(rng() * Math.min(3, range));
+    return rng() < 0.5 ? small : size - small;
+  }
+  return MIN + 1 + Math.floor(rng() * range);
+}
+
+function genChunk(cx, cy) {
+  const tiles = new Uint8Array(CT * CT); // 0=void, 1=floor
+  const rng   = mulberry32(chunkHash(cx, cy));
+  const rooms = []; // [{mx,my} room centers]
+
+  // Carve one BSP leaf — varied shapes: rectangle, L-shape, or corridor strip
+  function carveLeaf(rx, ry, rw, rh) {
+    // Asymmetric random margins — rooms drift within their BSP cell so they
+    // don't land on a perfect grid
+    const rm = n => Math.floor(rng() * (Math.min(n, 3) + 1));
+    const ml = rm(rw >> 2), mr = rm(rw >> 2);
+    const mt = rm(rh >> 2), mb = rm(rh >> 2);
+    const fx = rx + ml, fy = ry + mt;
+    const fw = rw - ml - mr, fh = rh - mt - mb;
+    if (fw < 2 || fh < 2) return;
+
+    const aspect = Math.max(fw, fh) / Math.min(fw, fh);
+    const r = rng();
+
+    if (aspect >= 2.0 || (aspect >= 1.5 && r < 0.45)) {
+      // ── Corridor leaf: elongated → 1–2 tile strip running full length ──────
+      const stripW = (Math.min(fw, fh) >= 3 && rng() < 0.55) ? 2 : 1;
+      if (fw >= fh) {
+        const sy = fy + Math.floor(rng() * Math.max(1, fh - stripW));
+        for (let y = sy; y < sy + stripW; y++)
+          for (let x = fx; x < fx + fw; x++) mark(tiles, x, y);
+        rooms.push({ mx: fx + (fw >> 1), my: sy });
+      } else {
+        const sx = fx + Math.floor(rng() * Math.max(1, fw - stripW));
+        for (let y = fy; y < fy + fh; y++)
+          for (let x = sx; x < sx + stripW; x++) mark(tiles, x, y);
+        rooms.push({ mx: sx, my: fy + (fh >> 1) });
+      }
+
+    } else if (r < 0.45 && fw >= 3 && fh >= 3) {
+      // ── L-shaped room: fill rect then void one corner ─────────────────────
+      for (let y = fy; y < fy + fh; y++)
+        for (let x = fx; x < fx + fw; x++) tiles[y * CT + x] = 1;
+
+      const corner = Math.floor(rng() * 4);
+      const cutW   = 2 + Math.floor(rng() * Math.max(1, (fw >> 1) - 1));
+      const cutH   = 2 + Math.floor(rng() * Math.max(1, (fh >> 1) - 1));
+
+      for (let y = fy; y < fy + fh; y++) {
+        for (let x = fx; x < fx + fw; x++) {
+          const tl = corner === 0 && x < fx + cutW && y < fy + cutH;
+          const tr = corner === 1 && x >= fx + fw - cutW && y < fy + cutH;
+          const bl = corner === 2 && x < fx + cutW && y >= fy + fh - cutH;
+          const br = corner === 3 && x >= fx + fw - cutW && y >= fy + fh - cutH;
+          if (tl || tr || bl || br) tiles[y * CT + x] = 0;
+        }
+      }
+      // Place the room center in the quadrant opposite to the cut corner
+      const offX = (corner === 1 || corner === 3) ? -(fw >> 2) : (fw >> 2);
+      const offY = (corner === 2 || corner === 3) ? -(fh >> 2) : (fh >> 2);
+      rooms.push({ mx: fx + (fw >> 1) + offX, my: fy + (fh >> 1) + offY });
+
+    } else {
+      // ── Standard rectangle ────────────────────────────────────────────────
+      for (let y = fy; y < fy + fh; y++)
+        for (let x = fx; x < fx + fw; x++) tiles[y * CT + x] = 1;
+      rooms.push({ mx: fx + (fw >> 1), my: fy + (fh >> 1) });
+    }
+  }
+
+  // Recursive BSP split — fills leaves into `rooms`, carves floor into `tiles`
+  function split(rx, ry, rw, rh, depth) {
+    const MIN = 4; // minimum room dimension in tiles (smaller → more variety)
+
+    const canV = rw >= MIN * 2 + 2;
+    const canH = rh >= MIN * 2 + 2;
+
+    if (depth >= 4 || (!canV && !canH)) {
+      carveLeaf(rx, ry, rw, rh);
+      return;
+    }
+
+    // Bias toward splitting the longer axis
+    let goV;
+    if (canV && canH) {
+      goV = rng() < (rw > rh + 3 ? 0.72 : rw < rh - 3 ? 0.28 : 0.5);
+    } else {
+      goV = canV;
+    }
+
+    if (goV) {
+      const at = biasedSplit(rng, rw, MIN);
+      split(rx,      ry, at,      rh, depth + 1);
+      split(rx + at, ry, rw - at, rh, depth + 1);
+    } else {
+      const at = biasedSplit(rng, rh, MIN);
+      split(rx, ry,      rw, at,      depth + 1);
+      split(rx, ry + at, rw, rh - at, depth + 1);
+    }
+  }
+
+  split(0, 0, CT, CT, 0);
+
+  // Nibble convex corners off rooms — only tiles with 3+ floor neighbours are
+  // safe to remove without risking disconnection; gives jagged wall edges
+  for (let y = 1; y < CT - 1; y++) {
+    for (let x = 1; x < CT - 1; x++) {
+      if (!tiles[y * CT + x]) continue;
+      const n4 = (tiles[(y-1)*CT+x]===1) + (tiles[(y+1)*CT+x]===1) +
+                 (tiles[y*CT+x-1]===1)   + (tiles[y*CT+x+1]===1);
+      if (n4 >= 3 && rng() < 0.14) tiles[y * CT + x] = 0;
+    }
+  }
+
+  // Connect rooms — mix of 1-tile (narrow/claustrophobic) and 2-tile corridors
+  if (rooms.length >= 2) {
+    const indices = rooms.map((_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    for (let i = 1; i < indices.length; i++) {
+      const a = rooms[indices[i - 1]], b = rooms[indices[i]];
+      const w  = rng() < 0.38 ? 1 : 2; // 38% chance of tight 1-tile passage
+      const ex = rng() < 0.5 ? a.mx : b.mx;
+      carveLine(tiles, a.mx, a.my, ex,   a.my,  w);
+      carveLine(tiles, ex,   a.my, ex,   b.my,  w);
+      carveLine(tiles, ex,   b.my, b.mx, b.my,  w);
+    }
+  }
+
+  // Add cross-chunk doorways and corridors leading inward
+  addEdgeDoors(cx, cy, tiles);
+
+  // Generate flicker zones — ~40% of chunks have 1-2 rooms with dying fluorescent lights
+  const flickerZones = [];
+  const frng = mulberry32(chunkHash(cx, cy) ^ 0xF11C1337);
+  if (frng() < 0.40 && rooms.length > 0) {
+    const count = frng() < 0.35 ? Math.min(2, rooms.length) : 1;
+    const order = rooms.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(frng() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    for (let i = 0; i < count; i++) {
+      const rm = rooms[order[i]];
+      const hw = 3 + Math.floor(frng() * 3);
+      const hh = 3 + Math.floor(frng() * 3);
+      flickerZones.push({
+        wx: (cx * CT + rm.mx - hw) * TS,
+        wy: (cy * CT + rm.my - hh) * TS,
+        ww: hw * 2 * TS,
+        wh: hh * 2 * TS,
+        seed: frng(),
+      });
+    }
+  }
+
+  return { tiles, flickerZones };
+}
+
+// Carve an axis-aligned corridor, width = 1 (tight) or 2 (normal)
+function carveLine(tiles, x0, y0, x1, y1, width = 2) {
+  const dx = Math.sign(x1 - x0), dy = Math.sign(y1 - y0);
+  let x = x0, y = y0;
+  while (true) {
+    mark(tiles, x, y);
+    if (width >= 2) {
+      if (dx !== 0) mark(tiles, x, y + 1);
+      if (dy !== 0) mark(tiles, x + 1, y);
+    }
+    if (x === x1 && y === y1) break;
+    if (x !== x1) x += dx; else y += dy;
+  }
+}
+
+function mark(tiles, x, y) {
+  if (x >= 0 && x < CT && y >= 0 && y < CT) tiles[y * CT + x] = 1;
+}
+
+// Place doorways on all 4 edges, then carve inward until hitting existing floor
+function addEdgeDoors(cx, cy, tiles) {
+  // East edge ↔ west edge of (cx+1, cy)
+  const ePos = doorPos(edgeHash(cx, cy, cx + 1, cy));
+  punchAndCarve(tiles, CT - 1, ePos, 0, -1); // x=CT-1, carve leftward (dx=-1)
+
+  // West edge ↔ east edge of (cx-1, cy)
+  const wPos = doorPos(edgeHash(cx - 1, cy, cx, cy));
+  punchAndCarve(tiles, 0, wPos, 0, 1); // x=0, carve rightward (dx=+1)
+
+  // South edge ↔ north edge of (cx, cy+1)
+  const sPos = doorPos(edgeHash(cx, cy, cx, cy + 1));
+  punchAndCarveH(tiles, sPos, CT - 1, -1); // y=CT-1, carve upward (dy=-1)
+
+  // North edge ↔ south edge of (cx, cy-1)
+  const nPos = doorPos(edgeHash(cx, cy - 1, cx, cy));
+  punchAndCarveH(tiles, nPos, 0, 1); // y=0, carve downward (dy=+1)
+}
+
+// Door position (2 tiles wide) along a chunk edge
+function doorPos(hash) {
+  const rng = mulberry32(hash);
+  return 3 + Math.floor(rng() * (CT - 6));
+}
+
+// Punch vertical-edge door and carve horizontally inward
+function punchAndCarve(tiles, edgeX, pos, unused, inDx) {
+  // pos = y tile, inDx = +1 (carve right) or -1 (carve left) — not used, use direction
+  const dx = edgeX === 0 ? 1 : -1;
+  // Mark door tiles on edge
+  mark(tiles, edgeX, pos);
+  mark(tiles, edgeX, pos + 1);
+  // Carve inward until we hit an existing floor tile (or reach the middle)
+  for (let tx = edgeX + dx; Math.abs(tx - edgeX) < CT; tx += dx) {
+    const wasFl = tiles[pos * CT + tx] === 1;
+    mark(tiles, tx, pos);
+    mark(tiles, tx, pos + 1);
+    if (wasFl) break; // connected to existing floor
+    if (Math.abs(tx - edgeX) >= CT - 2) break;
+  }
+}
+
+// Punch horizontal-edge door and carve vertically inward
+function punchAndCarveH(tiles, pos, edgeY, dy) {
+  mark(tiles, pos,     edgeY);
+  mark(tiles, pos + 1, edgeY);
+  for (let ty = edgeY + dy; Math.abs(ty - edgeY) < CT; ty += dy) {
+    const wasFl = tiles[ty * CT + pos] === 1;
+    mark(tiles, pos,     ty);
+    mark(tiles, pos + 1, ty);
+    if (wasFl) break;
+    if (Math.abs(ty - edgeY) >= CT - 2) break;
+  }
+}
+
+// BFS from void-adjacent floor tiles outward — each floor tile gets the
+// distance to the nearest wall (0 = touching wall, 1 = 1 tile away, …)
+function computeWallDist(tiles) {
+  const dist  = new Uint8Array(CT * CT).fill(99);
+  const queue = [];
+  for (let y = 0; y < CT; y++) {
+    for (let x = 0; x < CT; x++) {
+      if (!tiles[y * CT + x]) continue;
+      const adj =
+        (x > 0    && !tiles[y*CT + x-1]) ||
+        (x < CT-1 && !tiles[y*CT + x+1]) ||
+        (y > 0    && !tiles[(y-1)*CT + x]) ||
+        (y < CT-1 && !tiles[(y+1)*CT + x]);
+      if (adj) { dist[y * CT + x] = 0; queue.push(y * CT + x); }
+    }
+  }
+  for (let i = 0; i < queue.length; i++) {
+    const idx = queue[i];
+    const x = idx % CT, y = (idx / CT) | 0;
+    const nd = dist[idx] + 1;
+    if (nd >= 4) continue; // only propagate up to 3 tiles deep
+    for (const [dy, dx] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || nx >= CT || ny < 0 || ny >= CT) continue;
+      if (!tiles[ny * CT + nx]) continue;
+      const ni = ny * CT + nx;
+      if (dist[ni] <= nd) continue;
+      dist[ni] = nd;
+      queue.push(ni);
+    }
+  }
+  return dist;
+}
+
+// ── CHUNK CACHE ────────────────────────────────────────────────────────────────
+const chunkCache = new Map();
+const CACHE_MAX  = 400;
+
+function getChunk(cx, cy) {
+  const k = `${cx},${cy}`;
+  if (!chunkCache.has(k)) {
+    if (chunkCache.size >= CACHE_MAX) {
+      chunkCache.delete(chunkCache.keys().next().value);
+    }
+    const { tiles, flickerZones } = genChunk(cx, cy);
+    const wallDist = computeWallDist(tiles);
+    chunkCache.set(k, { tiles, wallDist, flickerZones });
+  }
+  return chunkCache.get(k);
+}
+
+// Returns 0 (on) → 0.85 (off) — fluorescent tube dying cycle
+function flickerAlpha(now, seed) {
+  const t = (now * 0.001 + seed * 31.7) % 14; // 14s cycle, phase-shifted by seed
+  if (t < 10.0) return 0;                               // 71% of time: stable on
+  if (t < 10.6) return (Math.floor(t * 24) % 2) * 0.80; // rapid stutter
+  if (t < 12.2) return 0.82;                            // lights out
+  if (t < 12.8) return (Math.floor(t * 18) % 3 === 0) ? 0.10 : 0.82; // restart
+  return 0;                                              // back on
+}
+
+// ── CAMERA ─────────────────────────────────────────────────────────────────────
+let camX = 0, camY = 0, zoom = 1;
+const ZOOM_MIN = 0.2, ZOOM_MAX = 4.5;
+
+let W = 0, H = 0;
+
+function w2s(wx, wy) { return [(wx - camX) * zoom + W / 2, (wy - camY) * zoom + H / 2]; }
+function s2w(sx, sy) { return [(sx - W / 2) / zoom + camX, (sy - H / 2) / zoom + camY]; }
+
+function zoomAt(sx, sy, factor) {
+  const [wx, wy] = s2w(sx, sy);
+  zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom * factor));
+  camX = wx - (sx - W / 2) / zoom;
+  camY = wy - (sy - H / 2) / zoom;
+}
+
+// ── FLOOR TEXTURE (offscreen canvas, tiled) ────────────────────────────────────
+// Build a 128×128 carpet-noise texture once, reuse as pattern
+function buildFloorPattern(ctx) {
+  const sz = 128;
+  const oc = document.createElement('canvas');
+  oc.width = oc.height = sz;
+  const oc2 = oc.getContext('2d');
+  const id = oc2.createImageData(sz, sz);
+  const d  = id.data;
+  const rng = mulberry32(0xCAFE_B4BE);
+  for (let i = 0; i < sz * sz; i++) {
+    const n = rng();
+    // Sickly yellow-green base: R≈138 G≈128 B≈72, with ±20 noise
+    const j = (n - 0.5) * 40;
+    d[i * 4]     = Math.max(0, Math.min(255, 138 + j));
+    d[i * 4 + 1] = Math.max(0, Math.min(255, 128 + j * 0.85));
+    d[i * 4 + 2] = Math.max(0, Math.min(255,  72 + j * 0.5));
+    d[i * 4 + 3] = 255;
+  }
+  oc2.putImageData(id, 0, 0);
+  return ctx.createPattern(oc, 'repeat');
+}
+
+// Aged yellow wallpaper: vertical dark stripes, faint horizontal crease, noise
+function buildWallPattern(ctx) {
+  const sz = 96;
+  const oc = document.createElement('canvas');
+  oc.width = oc.height = sz;
+  const oc2 = oc.getContext('2d');
+  const id  = oc2.createImageData(sz, sz);
+  const d   = id.data;
+  const rng = mulberry32(0xBA771337);
+  for (let y = 0; y < sz; y++) {
+    for (let x = 0; x < sz; x++) {
+      const i = (y * sz + x) * 4;
+      const n = (rng() - 0.5) * 26;
+      let r = 194 + n, g = 172 + n * 0.85, b = 82 + n * 0.45;
+      // Vertical stripe every 10 px (2 px wide, darker)
+      if (x % 10 < 2) { r -= 42; g -= 36; b -= 14; }
+      // Faint horizontal crease every 24 px
+      if (y % 24 === 0) { r -= 14; g -= 11; b -= 5; }
+      d[i]   = Math.max(0, Math.min(255, r));
+      d[i+1] = Math.max(0, Math.min(255, g));
+      d[i+2] = Math.max(0, Math.min(255, b));
+      d[i+3] = 255;
+    }
+  }
+  oc2.putImageData(id, 0, 0);
+  return ctx.createPattern(oc, 'repeat');
+}
+
+// ── STAINS ─────────────────────────────────────────────────────────────────────
+const stainCache = new Map();
+
+function getStains(cx, cy, tiles) {
+  const k = `s${cx},${cy}`;
+  if (stainCache.has(k)) return stainCache.get(k);
+
+  const rng   = mulberry32(chunkHash(cx, cy) ^ 0x57A1B100);
+  const list  = [];
+  const want  = 3 + Math.floor(rng() * 5);
+  let   tries = 0;
+
+  while (list.length < want && tries < 80) {
+    tries++;
+    const tx = Math.floor(rng() * CT);
+    const ty = Math.floor(rng() * CT);
+    if (!tiles[ty * CT + tx]) continue;
+    // Must border a wall tile
+    const adj =
+      (tx > 0    && !tiles[ty*CT + tx-1]) ||
+      (tx < CT-1 && !tiles[ty*CT + tx+1]) ||
+      (ty > 0    && !tiles[(ty-1)*CT + tx]) ||
+      (ty < CT-1 && !tiles[(ty+1)*CT + tx]);
+    if (!adj) continue;
+    list.push({
+      // World-pixel centre (sub-tile random offset)
+      wx: (cx * CT + tx + 0.15 + rng() * 0.7) * TS,
+      wy: (cy * CT + ty + 0.15 + rng() * 0.7) * TS,
+      rx: (0.28 + rng() * 0.48) * TS,  // x-radius in world px
+      ry: (0.45 + rng() * 0.85) * TS,  // y-radius (taller = drip)
+      a:  0.10 + rng() * 0.22,          // peak opacity
+    });
+  }
+
+  if (stainCache.size >= 400) stainCache.delete(stainCache.keys().next().value);
+  stainCache.set(k, list);
+  return list;
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let floorPat = null;
+let wallPat  = null;
+
+// Per-chunk slightly different floor tint (seeded by chunk position)
+function chunkFloorTint(cx, cy) {
+  const rng = mulberry32(chunkHash(cx, cy) ^ 0xF100);
+  const bias = (rng() - 0.5) * 18;
+  // Returns an rgba overlay to give each chunk subtle hue variation
+  const r = Math.round(bias > 0 ? bias : 0);
+  const b = Math.round(bias < 0 ? -bias * 0.5 : 0);
+  return `rgba(${r},0,${b},0.12)`;
+}
+
+function render() {
+  const now = performance.now();
+  if (!floorPat) floorPat = buildFloorPattern(ctx);
+  if (!wallPat)  wallPat  = buildWallPattern(ctx);
+
+  // Pin both patterns to world-space so they scroll/scale with the geometry
+  const worldMat = new DOMMatrix([zoom, 0, 0, zoom, W/2 - camX*zoom, H/2 - camY*zoom]);
+  floorPat.setTransform(worldMat);
+  wallPat.setTransform(worldMat);
+
+  // Dark warm-brown background — deep void reads as "dark wallpaper" not void
+  ctx.fillStyle = '#130e06';
+  ctx.fillRect(0, 0, W, H);
+
+  const tpx = TS * zoom; // tile pixel size on screen
+
+  // Visible chunk range
+  const [wx0, wy0] = s2w(0, 0);
+  const [wx1, wy1] = s2w(W, H);
+  const cx0 = Math.floor(wx0 / CPX) - 1;
+  const cy0 = Math.floor(wy0 / CPX) - 1;
+  const cx1 = Math.ceil(wx1  / CPX) + 1;
+  const cy1 = Math.ceil(wy1  / CPX) + 1;
+
+  for (let cy = cy0; cy <= cy1; cy++) {
+    for (let cx = cx0; cx <= cx1; cx++) {
+      const { tiles, wallDist, flickerZones } = getChunk(cx, cy);
+      const [ox, oy] = w2s(cx * CPX, cy * CPX);
+
+      const tw = tpx + 0.5;
+
+      // ── Main pass: walls + floor + damp + shadow (single loop) ───────────
+      for (let ty = 0; ty < CT; ty++) {
+        for (let tx = 0; tx < CT; tx++) {
+          const t  = tiles[ty * CT + tx];
+          const sx = ox + tx * tpx, sy = oy + ty * tpx;
+
+          if (!t) {
+            // All void gets wallpaper; non-wall-face tiles get a heavy dark overlay
+            ctx.fillStyle = wallPat;
+            ctx.fillRect(sx, sy, tw, tw);
+            const isWallFace =
+              (tx > 0    && tiles[ty*CT+tx-1]) ||
+              (tx < CT-1 && tiles[ty*CT+tx+1]) ||
+              (ty > 0    && tiles[(ty-1)*CT+tx]) ||
+              (ty < CT-1 && tiles[(ty+1)*CT+tx]);
+            if (!isWallFace) {
+              ctx.fillStyle = 'rgba(0,0,0,0.86)';
+              ctx.fillRect(sx, sy, tw, tw);
+            }
+            continue;
+          }
+
+          // Floor carpet
+          ctx.fillStyle = floorPat;
+          ctx.fillRect(sx, sy, tw, tw);
+
+          // Wall shadow — one value per tile from nearest wall, no compounding
+          const d = wallDist[ty * CT + tx];
+          if (d === 0) { ctx.fillStyle = 'rgba(0,0,0,0.42)'; ctx.fillRect(sx, sy, tw, tw); }
+          else if (d === 1) { ctx.fillStyle = 'rgba(0,0,0,0.20)'; ctx.fillRect(sx, sy, tw, tw); }
+          else if (d === 2) { ctx.fillStyle = 'rgba(0,0,0,0.07)'; ctx.fillRect(sx, sy, tw, tw); }
+        }
+      }
+
+      // ── Per-chunk tint (one fillStyle set for entire chunk) ──────────────
+      ctx.fillStyle = chunkFloorTint(cx, cy);
+      for (let ty = 0; ty < CT; ty++) {
+        for (let tx = 0; tx < CT; tx++) {
+          if (!tiles[ty * CT + tx]) continue;
+          ctx.fillRect(ox + tx * tpx, oy + ty * tpx, tw, tw);
+        }
+      }
+
+      // ── Water stains (radial blobs on floor near walls) ──────────────────
+      if (zoom > 0.25) {
+        for (const s of getStains(cx, cy, tiles)) {
+          const [ssx, ssy] = w2s(s.wx, s.wy);
+          const rx = s.rx * zoom;
+          const ry = s.ry * zoom;
+          if (rx < 1.5) continue;
+          ctx.save();
+          ctx.translate(ssx, ssy);
+          ctx.scale(1, ry / rx);
+          const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+          g.addColorStop(0,    `rgba(12,8,2,${s.a})`);
+          g.addColorStop(0.55, `rgba(12,8,2,${(s.a * 0.45).toFixed(3)})`);
+          g.addColorStop(1,    'rgba(12,8,2,0)');
+          ctx.beginPath();
+          ctx.arc(0, 0, rx, 0, Math.PI * 2);
+          ctx.fillStyle = g;
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // ── Flicker overlay (invisible dying fluorescent tubes) ───────────────
+      for (const fz of flickerZones) {
+        const alpha = flickerAlpha(now, fz.seed);
+        if (alpha <= 0) continue;
+        const [fzsx, fzsy] = w2s(fz.wx, fz.wy);
+        ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(3)})`;
+        ctx.fillRect(fzsx, fzsy, fz.ww * zoom, fz.wh * zoom);
+      }
+    }
+  }
+}
+
+// ── INPUT ──────────────────────────────────────────────────────────────────────
+let dragging = false, dragX = 0, dragY = 0;
+let velX = 0, velY = 0;
+let rafFling = null;
+let lastMoveAt = 0;
+
+function stopFling() {
+  if (rafFling) { cancelAnimationFrame(rafFling); rafFling = null; }
+}
+
+function startFling() {
+  function step() {
+    const spd = Math.hypot(velX, velY);
+    if (spd < 0.08) { velX = velY = 0; return; }
+    camX -= velX / zoom;
+    camY -= velY / zoom;
+    velX *= 0.88;
+    velY *= 0.88;
+    render();
+    rafFling = requestAnimationFrame(step);
+  }
+  rafFling = requestAnimationFrame(step);
+}
+
+// Mouse
+canvas.addEventListener('mousedown', e => {
+  stopFling(); velX = velY = 0;
+  dragging = true; dragX = e.clientX; dragY = e.clientY;
+  canvas.classList.add('drag');
+});
+canvas.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const dx = e.clientX - dragX, dy = e.clientY - dragY;
+  camX -= dx / zoom; camY -= dy / zoom;
+  velX = dx; velY = dy;
+  dragX = e.clientX; dragY = e.clientY;
+  lastMoveAt = performance.now();
+  render();
+});
+canvas.addEventListener('mouseup', () => {
+  dragging = false; canvas.classList.remove('drag');
+  if (performance.now() - lastMoveAt < 120) startFling();
+});
+canvas.addEventListener('mouseleave', () => {
+  dragging = false; canvas.classList.remove('drag');
+});
+
+// Wheel zoom
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+  render();
+}, { passive: false });
+
+// Touch
+let lastTouches = null, lastPinchD = 0;
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault(); stopFling(); velX = velY = 0;
+  if (e.touches.length === 2) {
+    lastPinchD = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  }
+  lastTouches = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }));
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const ts = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }));
+  if (ts.length === 1 && lastTouches?.length >= 1) {
+    const dx = ts[0].x - lastTouches[0].x, dy = ts[0].y - lastTouches[0].y;
+    camX -= dx / zoom; camY -= dy / zoom;
+    velX = dx; velY = dy;
+  } else if (ts.length === 2 && lastTouches?.length >= 2) {
+    const d  = Math.hypot(ts[0].x - ts[1].x, ts[0].y - ts[1].y);
+    const cx = (ts[0].x + ts[1].x) / 2, cy_ = (ts[0].y + ts[1].y) / 2;
+    zoomAt(cx, cy_, d / lastPinchD);
+    lastPinchD = d;
+  }
+  lastTouches = ts; render();
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  lastTouches = null;
+  if (e.touches.length === 0) startFling();
+}, { passive: false });
+
+// Keyboard pan + zoom
+const keysDown = new Set();
+window.addEventListener('keydown', e => keysDown.add(e.key));
+window.addEventListener('keyup',   e => keysDown.delete(e.key));
+
+setInterval(() => {
+  let moved = false;
+  const spd = 5 / zoom;
+  if (keysDown.has('ArrowLeft')  || keysDown.has('a') || keysDown.has('A')) { camX -= spd; moved = true; }
+  if (keysDown.has('ArrowRight') || keysDown.has('d') || keysDown.has('D')) { camX += spd; moved = true; }
+  if (keysDown.has('ArrowUp')    || keysDown.has('w') || keysDown.has('W')) { camY -= spd; moved = true; }
+  if (keysDown.has('ArrowDown')  || keysDown.has('s') || keysDown.has('S')) { camY += spd; moved = true; }
+  if (keysDown.has('+') || keysDown.has('=')) { zoomAt(W / 2, H / 2, 1.03); moved = true; }
+  if (keysDown.has('-'))                      { zoomAt(W / 2, H / 2, 0.97); moved = true; }
+  if (moved) render();
+}, 16);
+
+// ── HUD ─────────────────────────────────────────────────────────────────────
+const hudEl = document.getElementById('hud');
+function hudLoop() {
+  const depth  = Math.round(Math.hypot(camX, camY) / CPX);
+  const zi     = (Math.abs(Math.floor(camX / CPX)) + Math.abs(Math.floor(camY / CPX))) % ZONES.length;
+  hudEl.textContent = `DEPTH ${depth} · ZONE ${ZONES[zi]}`;
+  requestAnimationFrame(hudLoop);
+}
+
+// ── RESIZE + BOOT ───────────────────────────────────────────────────────────
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  render();
+}
+window.addEventListener('resize', resize);
+resize();
+requestAnimationFrame(hudLoop);
+
+// Flicker animation — redraws at ~16fps so flickering rooms animate
+setInterval(() => render(), 60);
+</script>
+</body>
+</html>

@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-R7MJHBKJVY');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=0.85, maximum-scale=5">
+<meta name="description" content="VHS Processor — transform any video into authentic analog horror. VHS tracking errors, CRT scanlines, tape noise, found footage effects — fully in-browser.">
+<meta property="og:title" content="VHS Processor — HostLab">
+<meta property="og:description" content="Turn any video into found footage. VHS effects, CRT scanlines, tape noise — all in your browser.">
+<meta property="og:type" content="website">
+<title>VHS PROCESSOR — Analog Horror</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../other/backbutton.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #010802;
+  --surface: #020e04;
+  --border:  #0a2010;
+  --red:     #1f9e3a;
+  --dim:     #0d5e1c;
+  --dimmer:  #072e0e;
+  --text:    #b8d8bc;
+  --muted:   #1a5a22;
+  --dark:    #010401;
+  --font:    'Share Tech Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* CRT scanlines */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 3px,
+    rgba(0,0,0,0.13) 3px, rgba(0,0,0,0.13) 4px
+  );
+  pointer-events: none;
+  z-index: 300;
+}
+
+/* Vignette */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.78) 100%);
+  pointer-events: none;
+  z-index: 299;
+}
+
+@keyframes flicker {
+  0%,89%,100%{opacity:1}
+  90%{opacity:.93}92%{opacity:1}94%{opacity:.96}96%{opacity:1}
+}
+@keyframes blink   { 0%,100%{opacity:1}50%{opacity:0} }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+@keyframes pulse   { 0%,100%{opacity:1}50%{opacity:.3} }
+
+body { animation: flicker 10s infinite; }
+
+/* ── CONTAINER ── */
+.container {
+  width: 100%;
+  max-width: 640px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow:
+    0 0 80px rgba(31,158,58,0.05),
+    0 0 30px rgba(0,0,0,0.7),
+    inset 0 0 60px rgba(0,0,0,0.5);
+  position: relative;
+  animation: fadeUp 0.5s ease;
+}
+
+.container::before {
+  content: '';
+  position: absolute; inset: 5px;
+  border: 1px solid rgba(31,158,58,0.07);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── TOP BAR ── */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.badge {
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  color: var(--red);
+  background: rgba(31,158,58,0.07);
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--dimmer);
+}
+
+.sys-status {
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+.sys-status span { color: var(--red); animation: blink 1.8s step-end infinite; }
+
+/* ── HEADER ── */
+.header {
+  text-align: center;
+  padding: 2rem 1.5rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+h1 {
+  font-size: 3rem;
+  color: var(--red);
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 30px rgba(31,158,58,0.35);
+  line-height: 1;
+}
+h1::after { content: '_'; animation: blink 1s step-end infinite; }
+
+.subtitle {
+  color: var(--muted);
+  font-size: 0.6rem;
+  letter-spacing: 0.28em;
+  margin-top: 0.65rem;
+}
+
+/* ── BODY SECTIONS ── */
+.body { padding: 1.8rem 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+
+.field-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.3em;
+  color: var(--dim);
+  margin-bottom: 0.55rem;
+}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone {
+  border: 1px solid var(--border);
+  padding: 2.2rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--dim);
+  background: rgba(31,158,58,0.03);
+}
+.upload-zone input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.upload-main {
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+.upload-sub {
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+
+/* ── PREVIEW ── */
+.preview-wrap {
+  border: 1px solid var(--border);
+  background: #000;
+  line-height: 0;
+  position: relative;
+}
+.preview-wrap canvas { width: 100%; height: auto; display: block; image-rendering: pixelated; }
+
+.tape-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  padding: 0.55rem 0 0;
+}
+
+/* ── STATUS LINE ── */
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0;
+}
+.dot.active { background: var(--red); animation: pulse 1s ease-in-out infinite; }
+.dot.done   { background: #22cc55; }
+
+/* ── BUTTONS ── */
+.btn {
+  font-family: var(--font);
+  font-size: 0.85rem;
+  letter-spacing: 0.22em;
+  padding: 0.85rem 1.2rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  width: 100%;
+  transition: all .15s;
+  text-transform: uppercase;
+}
+.btn:hover:not(:disabled) {
+  border-color: var(--dim);
+  color: var(--text);
+  background: rgba(31,158,58,0.03);
+}
+.btn:disabled { opacity: .25; cursor: not-allowed; }
+
+.btn-process { border-color: var(--dim); color: var(--dim); }
+.btn-process:hover:not(:disabled) {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(31,158,58,0.05);
+}
+
+.btn-dl { border-color: #145e28; color: #22cc55; }
+.btn-dl:hover { background: rgba(34,204,85,0.04); border-color: #22cc55; color: #44ee77; }
+
+/* ── PROGRESS ── */
+.progress-track {
+  background: #0d0003;
+  border: 1px solid var(--border);
+  height: 4px;
+  margin-top: 0.65rem;
+}
+.progress-fill { height: 100%; background: var(--red); width: 0%; transition: width .12s; }
+.progress-txt  { font-size: 0.58rem; letter-spacing: 0.15em; color: var(--muted); margin-top: 0.5rem; }
+
+/* ── WARN NOTE ── */
+.warn-note {
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  line-height: 1.8;
+}
+.warn-note span { color: var(--dimmer); }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="back-button-container">
+  <a href="../index.html" class="back-button">← BACK</a>
+</div>
+
+<div class="container">
+
+  <div class="top-bar">
+    <div class="badge">VHS-PROC v1.0</div>
+    <div class="sys-status">STATUS: <span id="sysStatus">STANDBY</span></div>
+  </div>
+
+  <div class="header">
+    <h1>VHS.PROC</h1>
+    <p class="subtitle">ANALOG HORROR &nbsp;·&nbsp; FOUND FOOTAGE MODE &nbsp;·&nbsp; [TAPE DEGRADED]</p>
+  </div>
+
+  <div class="body">
+
+    <!-- Upload -->
+    <div>
+      <div class="field-label">// INPUT TAPE</div>
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-main">DROP VIDEO FILE HERE</div>
+        <div class="upload-sub">OR CLICK TO BROWSE &nbsp;·&nbsp; MP4 · MOV · WEBM · AVI</div>
+        <input type="file" id="fileInput" accept="video/*">
+      </div>
+    </div>
+
+    <!-- Preview frame -->
+    <div class="hidden" id="previewSection">
+      <div class="field-label">// TAPE PREVIEW — SINGLE EXTRACTED FRAME</div>
+      <div class="preview-wrap">
+        <canvas id="previewCanvas"></canvas>
+      </div>
+      <div class="tape-meta">
+        <span id="tapeIdEl">TAPE: —</span>
+        <span id="tapeDurEl">DURATION: —</span>
+      </div>
+    </div>
+
+    <!-- Status + process -->
+    <div>
+      <div class="status-line">
+        <div class="dot" id="statusDot"></div>
+        <span id="statusText">AWAITING TAPE INPUT</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:.65rem;margin-top:.9rem;">
+        <button class="btn btn-process" id="processBtn" disabled>
+          ◀◀ &nbsp; PROCESS TAPE &nbsp; ▶▶
+        </button>
+
+        <div class="hidden" id="progressWrap">
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="progress-txt" id="progressTxt">ENCODING... 0%</div>
+        </div>
+
+        <button class="btn btn-dl hidden" id="downloadBtn">
+          ↓ &nbsp; DOWNLOAD TAPE &nbsp; ↓
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <div class="warn-note">
+    <span>⚠</span> VIEWING THIS TAPE IS NOT RECOMMENDED &nbsp;·&nbsp;
+    ALL PROCESSING IS LOCAL — NO UPLOAD &nbsp;·&nbsp;
+    <span>OUTPUT: MP4 / WEBM</span>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let videoFile = null;
+let tapeDate  = null;
+let tapeId    = null;
+let rafHandle = null;
+
+const glitchSM  = { active: false, timer: 2.5, band: null, heavy: false };
+const tsGlitch  = { active: false, timer: 12 + Math.random() * 15 };
+const outroState = { running: false };
+let shakeX = 0, shakeY = 0, joltX = 0, joltY = 0;
+
+// DOM
+const uploadZone    = document.getElementById('uploadZone');
+const fileInput     = document.getElementById('fileInput');
+const previewSection= document.getElementById('previewSection');
+const previewCanvas = document.getElementById('previewCanvas');
+const statusDot     = document.getElementById('statusDot');
+const statusText    = document.getElementById('statusText');
+const sysStatus     = document.getElementById('sysStatus');
+const processBtn    = document.getElementById('processBtn');
+const progressWrap  = document.getElementById('progressWrap');
+const progressFill  = document.getElementById('progressFill');
+const progressTxt   = document.getElementById('progressTxt');
+const downloadBtn   = document.getElementById('downloadBtn');
+const tapeIdEl      = document.getElementById('tapeIdEl');
+const tapeDurEl     = document.getElementById('tapeDurEl');
+
+// ═══════════════════════════════════════════════════════
+// UPLOAD
+// ═══════════════════════════════════════════════════════
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('video/')) handleFile(f);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file) {
+  videoFile = file;
+  tapeDate  = makeTapeDate();
+  tapeId    = 'TAPE_' + String(Math.floor(Math.random() * 9999)).padStart(4, '0');
+  downloadBtn.classList.add('hidden');
+  processBtn.disabled = true;
+  setStatus('READING TAPE...', 'active', 'READING');
+  extractPreview();
+}
+
+// ═══════════════════════════════════════════════════════
+// TAPE METADATA
+// ═══════════════════════════════════════════════════════
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+function makeTapeDate() {
+  const years = [1991,1992,1993,1994,1995,1996,1997];
+  return {
+    y: years[Math.floor(Math.random() * years.length)],
+    m: Math.floor(Math.random() * 12),
+    d: Math.floor(Math.random() * 28) + 1,
+    h: Math.floor(Math.random() * 12) + 1,
+    min: Math.floor(Math.random() * 60),
+    sec: Math.floor(Math.random() * 60),
+    pm: Math.random() > .5,
+  };
+}
+
+function stampTime(td, extra) {
+  let s  = td.sec + (Math.floor(extra) % 60);
+  let mi = td.min + Math.floor(extra / 60);
+  let h  = td.h;
+  if (s  >= 60) { s  -= 60; mi++; }
+  if (mi >= 60) { mi -= 60; h++;  }
+  if (h  > 12)   h = 1;
+  const p = n => String(n).padStart(2, '0');
+  return `${MONTHS[td.m]} ${p(td.d)} ${td.y}  ${String(h).padStart(2,' ')}:${p(mi)}:${p(s)} ${td.pm?'PM':'AM'}`;
+}
+
+function fmtDur(s) {
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = Math.floor(s%60);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// PREVIEW
+// ═══════════════════════════════════════════════════════
+function extractPreview() {
+  const vid = document.createElement('video');
+  vid.src = URL.createObjectURL(videoFile);
+  vid.muted = true; vid.preload = 'metadata';
+  vid.setAttribute('playsinline', '');
+  vid.setAttribute('webkit-playsinline', '');
+
+  vid.addEventListener('loadedmetadata', () => {
+    tapeDurEl.textContent = 'DURATION: ' + fmtDur(vid.duration);
+    tapeIdEl.textContent  = 'TAPE: ' + tapeId;
+    vid.currentTime = Math.min(vid.duration * 0.12, Math.max(0, vid.duration - 0.5));
+  }, { once: true });
+
+  vid.addEventListener('seeked', () => {
+    const sz = squareSize(vid.videoWidth, vid.videoHeight, 480);
+    previewCanvas.width = sz; previewCanvas.height = sz;
+    const ctx = previewCanvas.getContext('2d');
+    drawCropped(ctx, vid, sz);
+    const vig = buildVignette(sz, sz);
+    applyPixels(ctx, sz, sz, 0, 0.04, vig, true);
+    drawOverlay(ctx, sz, sz, tapeDate, 0, true);
+    previewSection.classList.remove('hidden');
+    setStatus('TAPE LOADED — READY TO PROCESS', '', 'READY');
+    processBtn.disabled = false;
+    URL.revokeObjectURL(vid.src);
+  }, { once: true });
+
+  vid.load();
+}
+
+function squareSize(vw, vh, max) {
+  return Math.min(vw, vh, max);
+}
+
+function drawCropped(ctx, vid, size, ox = 0, oy = 0) {
+  const vw = vid.videoWidth, vh = vid.videoHeight;
+  const src = Math.min(vw, vh);
+  const sx  = (vw - src) / 2;
+  const sy  = (vh - src) / 2;
+  // Ghost echo — faint double image (worn tape ghosting)
+  ctx.globalAlpha = 0.09;
+  ctx.drawImage(vid, sx, sy, src, src, ox + 7, oy + 2, size, size);
+  ctx.globalAlpha = 1.0;
+  // Main image with camera shake offset
+  ctx.drawImage(vid, sx, sy, src, src, ox, oy, size, size);
+}
+
+// ═══════════════════════════════════════════════════════
+// VIGNETTE TABLE
+// ═══════════════════════════════════════════════════════
+function buildVignette(w, h) {
+  const t = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const vy = (y / h - .5) * 2;
+    for (let x = 0; x < w; x++) {
+      const vx = (x / w - .5) * 2;
+      t[y * w + x] = Math.max(0, 1 - (vx*vx + vy*vy) * .44);
+    }
+  }
+  return t;
+}
+
+// ═══════════════════════════════════════════════════════
+// FAST XORSHIFT RNG
+// ═══════════════════════════════════════════════════════
+let xSeed = 0xDEADBEEF;
+function xrand() {
+  xSeed ^= xSeed << 13;
+  xSeed ^= xSeed >>> 17;
+  xSeed ^= xSeed << 5;
+  return (xSeed >>> 0) / 0xFFFFFFFF;
+}
+
+// ═══════════════════════════════════════════════════════
+// GLITCH STATE MACHINE
+// ═══════════════════════════════════════════════════════
+function tickGlitch(h) {
+  glitchSM.timer -= 1/30;
+  if (glitchSM.active) {
+    if (glitchSM.timer <= 0) {
+      glitchSM.active = false;
+      glitchSM.heavy  = false;
+      glitchSM.timer  = 3 + xrand() * 8; // longer quiet stretches
+    }
+  } else {
+    if (glitchSM.timer <= 0) {
+      glitchSM.active = true;
+      glitchSM.heavy  = xrand() < .10; // 10% chance — rare heavy episode
+      glitchSM.timer  = glitchSM.heavy ? (.15 + xrand() * .6) : (.04 + xrand() * .22);
+      glitchSM.band   = {
+        y:        Math.floor(xrand() * h),
+        height:   glitchSM.heavy ? (40 + Math.floor(xrand() * 140)) : (12 + Math.floor(xrand() * 70)),
+        strength: glitchSM.heavy ? (60 + xrand() * 120) : (10 + xrand() * 45),
+      };
+    }
+  }
+}
+
+function trackingOffsets(h, t) {
+  const out = new Int16Array(h);
+  for (let y = 0; y < h; y++) {
+    let off = Math.sin(y * .025 + t * 1.6) * 1.3 + Math.sin(y * .07 + t * .9) * .4;
+    if (glitchSM.active && glitchSM.band) {
+      const b = glitchSM.band, dist = Math.abs(y - b.y);
+      if (dist < b.height) off += (xrand() - .5) * b.strength * (1 - dist / b.height) * 2;
+    }
+    if (y < h * .055) {
+      off += (xrand() - .5) * 10 * (1 - y / (h * .055));
+    } else if (y > h * .92) {
+      off += (xrand() - .5) * 8 * ((y - h * .92) / (h * .08));
+    }
+    out[y] = Math.round(off);
+  }
+  return out;
+}
+
+function tickTsGlitch() {
+  tsGlitch.timer -= 1/30;
+  if (tsGlitch.active) {
+    if (tsGlitch.timer <= 0) { tsGlitch.active = false; tsGlitch.timer = 12 + xrand() * 18; }
+  } else {
+    if (tsGlitch.timer <= 0) { tsGlitch.active = true;  tsGlitch.timer = .15 + xrand() * .4; }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// CORE PIXEL EFFECTS
+// ═══════════════════════════════════════════════════════
+function applyPixels(ctx, w, h, time, noiseLevel, vig, isPreview) {
+  xSeed = (xSeed + Date.now()) | 1;
+
+  const isHeavy = !isPreview && glitchSM.active && glitchSM.heavy;
+  const img = ctx.getImageData(0, 0, w, h);
+  const src = img.data;
+  const dst = new Uint8ClampedArray(src.length);
+  // Heavy glitch amplifies chromatic aberration 4x
+  const ca  = isPreview ? 2 : (isHeavy ? (8 + Math.floor(noiseLevel * 20)) : (2 + Math.floor(noiseLevel * 6)));
+  const nStr= noiseLevel * 255;
+  const tOff= isPreview ? new Int16Array(h) : trackingOffsets(h, time);
+
+  for (let y = 0; y < h; y++) {
+    const tx      = tOff[y];
+    const row     = y * w;
+    // Softer scanlines — less harsh dimming
+    const scanDim = (y & 1) === 0 ? .80 : 1.0;
+
+    for (let x = 0; x < w; x++) {
+      const sx  = Math.max(0, Math.min(w-1, x + tx));
+      const rsx = Math.max(0, Math.min(w-1, sx + ca));
+      const bsx = Math.max(0, Math.min(w-1, sx - ca));
+
+      const ri = (row + rsx) << 2;
+      const gi = (row + sx)  << 2;
+      const bi = (row + bsx) << 2;
+      const di = (row + x)   << 2;
+
+      let r = src[ri];
+      let g = src[gi + 1];
+      let b = src[bi + 2];
+
+      // Subtle noise — much less than before
+      const n = (xrand() - .5) * nStr;
+      r += n; g += n; b += n;
+
+      // Heavy desaturation + dull VHS palette
+      const luma = r * .299 + g * .587 + b * .114;
+      const ds   = .52;
+      r = r * (1-ds) + luma * 1.02 * ds;
+      g = g * (1-ds) + luma * 0.94 * ds;
+      b = b * (1-ds) + luma * 0.68 * ds;
+
+      // VHS pedestal — lift blacks, compress highlights (real VHS doesn't go full black)
+      r = r * .84 + 18;
+      g = g * .84 + 18;
+      b = b * .84 + 18;
+
+      r *= scanDim; g *= scanDim; b *= scanDim;
+
+      const v = vig[row + x];
+      r *= v; g *= v; b *= v;
+
+      dst[di]   = r;
+      dst[di+1] = g;
+      dst[di+2] = b;
+      dst[di+3] = 255;
+    }
+  }
+
+  // Head-switching noise band (bottom ~6%)
+  const headY = Math.floor(h * .935);
+  for (let y = headY; y < h; y++) {
+    const blend = (y - headY) / (h - headY);
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) << 2;
+      const n = xrand() * 255;
+      dst[i]   = dst[i]   * (1-blend) + n * blend;
+      dst[i+1] = dst[i+1] * (1-blend) + n * blend;
+      dst[i+2] = dst[i+2] * (1-blend) + n * blend;
+    }
+  }
+
+  ctx.putImageData(new ImageData(dst, w, h), 0, 0);
+
+  // Digital block corruption — copy a strip from elsewhere (heavy glitch only)
+  if (!isPreview && isHeavy && xrand() < .22) {
+    const strips = 1 + Math.floor(xrand() * 3);
+    for (let s = 0; s < strips; s++) {
+      const srcY  = Math.floor(xrand() * (h - 12));
+      const dstY  = Math.floor(xrand() * (h - 12));
+      const rows  = 2 + Math.floor(xrand() * 10);
+      const shift = Math.floor((xrand() - .5) * 30);
+      try {
+        const strip = ctx.getImageData(0, srcY, w, rows);
+        ctx.putImageData(strip, shift, dstY);
+      } catch(_) {}
+    }
+  }
+
+  // Tape dropout
+  if (!isPreview && xrand() < .016) {
+    const dy   = Math.floor(xrand() * h * .85) + h * .07;
+    const dlen = Math.floor(xrand() * w * .55) + w * .08;
+    const dx   = Math.floor(xrand() * (w - dlen));
+    ctx.fillStyle = `rgba(${210+xrand()*45|0},${200+xrand()*55|0},${170+xrand()*85|0},${.65+xrand()*.35})`;
+    ctx.fillRect(dx, dy, dlen, 1 + (xrand() < .3 ? 1 : 0));
+  }
+
+  // Heavy static on silence
+  if (!isPreview && noiseLevel > .35) {
+    const blend = Math.min(1, (noiseLevel - .35) * 5.5);
+    const si = ctx.getImageData(0, 0, w, h);
+    const sd = si.data;
+    for (let i = 0; i < sd.length; i += 4) {
+      const n = xrand() * 255;
+      sd[i]   = sd[i]   * (1-blend) + n * blend;
+      sd[i+1] = sd[i+1] * (1-blend) + n * blend;
+      sd[i+2] = sd[i+2] * (1-blend) + n * blend;
+    }
+    ctx.putImageData(si, 0, 0);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// VHS TEXT OVERLAY (canvas, uses VT323 font)
+// ═══════════════════════════════════════════════════════
+const HORROR_MSGS = [
+  'DO NOT COPY','TAPE PROTECTED','*** WARNING ***',
+  'TRACKING ERROR','HEAD DIRTY','NO SIGNAL',
+  'AUTHORIZED PERSONNEL ONLY','DO NOT REWIND',
+];
+
+function drawOverlay(ctx, w, h, td, videoTime, isPreview) {
+  const fs = Math.max(14, Math.floor(w / 28));
+  ctx.font = `${fs}px 'VT323', monospace`;
+
+  const showRec = isPreview || (Math.floor(Date.now() / 750) % 2 === 0);
+  if (showRec) {
+    ctx.fillStyle = 'rgba(220,28,28,.93)';
+    ctx.fillText('● REC', Math.floor(fs * .5), Math.floor(fs * 1.4));
+  }
+
+  // Timestamp — occasionally glitch digits
+  let tsStr = stampTime(td, videoTime);
+  if (!isPreview && tsGlitch.active) {
+    const gc = '0123456789???  ';
+    tsStr = tsStr.split('').map(c => /[0-9]/.test(c) && xrand() < .55
+      ? gc[Math.floor(xrand() * gc.length)] : c).join('');
+  }
+  ctx.fillStyle = 'rgba(218,212,170,.88)';
+  ctx.fillText(tsStr, Math.floor(fs * .5), h - Math.floor(fs * .7));
+
+  const counter = 'SP  ' + fmtDur(videoTime);
+  const cw = ctx.measureText(counter).width;
+  ctx.fillText(counter, w - cw - Math.floor(fs * .5), h - Math.floor(fs * .7));
+
+  ctx.fillStyle = 'rgba(170,164,146,.45)';
+  const ch = 'CH 3';
+  const chw = ctx.measureText(ch).width;
+  ctx.fillText(ch, w - chw - Math.floor(fs * .5), Math.floor(fs * 1.4));
+
+  if (!isPreview && xrand() < .004) {
+    const msg = HORROR_MSGS[Math.floor(xrand() * HORROR_MSGS.length)];
+    ctx.font = `${Math.floor(fs*1.5)}px 'VT323', monospace`;
+    ctx.fillStyle = 'rgba(220,20,20,.9)';
+    const mw = ctx.measureText(msg).width;
+    ctx.fillText(msg, (w - mw) / 2, h / 2);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// COLOR BARS INTRO
+// ═══════════════════════════════════════════════════════
+const BAR_COLORS = [
+  [191,191,191],[191,191,0],[0,191,191],[0,191,0],
+  [191,0,191],[191,0,0],[0,0,191]
+];
+
+function runIntro(ctx, sz) {
+  return new Promise(resolve => {
+    const t0  = Date.now();
+    const DUR = 2600;
+    const bw  = sz / 7;
+
+    function draw() {
+      const elapsed = Date.now() - t0;
+      if (elapsed >= DUR) { resolve(); return; }
+      xSeed = (xSeed + elapsed) | 1;
+
+      for (let i = 0; i < 7; i++) {
+        const [r,g,b] = BAR_COLORS[i];
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(Math.floor(i * bw), 0, Math.ceil(bw) + 1, sz);
+      }
+
+      // Noise over bars
+      const img = ctx.getImageData(0, 0, sz, sz);
+      const d   = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const n = (xrand() - .5) * 22;
+        d[i]   = Math.max(0, Math.min(255, d[i]   + n));
+        d[i+1] = Math.max(0, Math.min(255, d[i+1] + n));
+        d[i+2] = Math.max(0, Math.min(255, d[i+2] + n));
+      }
+      ctx.putImageData(img, 0, 0);
+
+      // Scanlines
+      for (let y = 0; y < sz; y += 4) {
+        ctx.fillStyle = 'rgba(0,0,0,.09)';
+        ctx.fillRect(0, y, sz, 2);
+      }
+
+      // Label
+      const fs  = Math.max(12, Math.floor(sz / 22));
+      ctx.font  = `${fs}px 'VT323', monospace`;
+      const lbl = 'COLOR BARS  —  DO NOT ADJUST YOUR SET';
+      const lw  = ctx.measureText(lbl).width;
+      const ly  = sz * .88;
+      ctx.fillStyle = 'rgba(0,0,0,.72)';
+      ctx.fillRect((sz-lw)/2 - 8, ly - fs * 1.1, lw + 16, fs * 1.5);
+      ctx.fillStyle = 'rgba(238,234,210,.93)';
+      ctx.fillText(lbl, (sz-lw)/2, ly);
+
+      // Occasional glitch line
+      if (xrand() < .025) {
+        const gy = Math.floor(xrand() * sz);
+        ctx.fillStyle = `rgba(${xrand()*255|0},${xrand()*255|0},${xrand()*255|0},.65)`;
+        ctx.fillRect(0, gy, sz, 1);
+      }
+
+      rafHandle = requestAnimationFrame(draw);
+    }
+    draw();
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// AUDIO HELPERS
+// ═══════════════════════════════════════════════════════
+function makeDistortionCurve(amount) {
+  const n = 256, c = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i * 2) / n - 1;
+    c[i] = ((Math.PI + amount) * x) / (Math.PI + amount * Math.abs(x));
+  }
+  return c;
+}
+
+function makeNoiseBuffer(actx, secs = 1.5) {
+  const sr  = actx.sampleRate;
+  const buf = actx.createBuffer(1, Math.floor(sr * secs), sr);
+  const d   = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * .35;
+  return buf;
+}
+
+// ═══════════════════════════════════════════════════════
+// PROCESSING
+// ═══════════════════════════════════════════════════════
+processBtn.addEventListener('click', () => startProcessing());
+
+async function startProcessing() {
+  if (!videoFile) return;
+
+  // Feature detection — canvas.captureStream + MediaRecorder required
+  const testCanvas = document.createElement('canvas');
+  if (typeof testCanvas.captureStream !== 'function' || typeof MediaRecorder === 'undefined') {
+    setStatus('BROWSER NOT SUPPORTED — USE CHROME ON DESKTOP OR ANDROID', '', 'ERROR');
+    processBtn.disabled = false;
+    progressWrap.classList.add('hidden');
+    return;
+  }
+
+  processBtn.disabled = true;
+  downloadBtn.classList.add('hidden');
+  progressWrap.classList.remove('hidden');
+  setStatus('PROCESSING TAPE...', 'active', 'ENCODING');
+
+  const vid = document.createElement('video');
+  vid.src = URL.createObjectURL(videoFile);
+  vid.muted = false; vid.preload = 'auto';
+  vid.setAttribute('playsinline', '');
+  vid.setAttribute('webkit-playsinline', '');
+
+  await new Promise(r => vid.addEventListener('loadedmetadata', r, { once: true }));
+  await new Promise(r => vid.addEventListener('canplay', r, { once: true }));
+
+  const sz     = squareSize(vid.videoWidth, vid.videoHeight, 480);
+  const cw = sz, ch = sz;
+  const canvas = document.createElement('canvas');
+  canvas.width = sz; canvas.height = sz;
+  const ctx = canvas.getContext('2d');
+  const vig = buildVignette(sz, sz);
+
+  // Audio chain
+  const actx = new AudioContext();
+  try { await actx.resume(); } catch(_) {}
+  try { await document.fonts.load(`16px 'VT323'`); } catch(_) {}
+
+  const mediaSrc  = actx.createMediaElementSource(vid);
+  const analyser  = actx.createAnalyser();
+  analyser.fftSize = 256;
+  analyser.smoothingTimeConstant = .75;
+  const tdBuf = new Uint8Array(analyser.fftSize);
+
+  const lpf = actx.createBiquadFilter();
+  lpf.type = 'lowpass'; lpf.frequency.value = 7200; lpf.Q.value = .6;
+  const hpf = actx.createBiquadFilter();
+  hpf.type = 'highpass'; hpf.frequency.value = 90;
+
+  const shaper = actx.createWaveShaper();
+  shaper.curve = makeDistortionCurve(14); shaper.oversample = '2x';
+
+  const masterGain = actx.createGain();
+  masterGain.gain.value = .82;
+
+  const noiseBuf = makeNoiseBuffer(actx);
+  const noiseSrc = actx.createBufferSource();
+  noiseSrc.buffer = noiseBuf; noiseSrc.loop = true;
+  const noiseGain = actx.createGain();
+  noiseGain.gain.value = .012;
+  noiseSrc.connect(noiseGain);
+
+  const dest = actx.createMediaStreamDestination();
+  mediaSrc.connect(hpf); hpf.connect(lpf); lpf.connect(shaper);
+  shaper.connect(analyser); analyser.connect(masterGain);
+  masterGain.connect(dest); noiseGain.connect(dest);
+  noiseSrc.start();
+
+  const vidStream = canvas.captureStream(30);
+  const combined  = new MediaStream([
+    ...vidStream.getVideoTracks(),
+    ...dest.stream.getAudioTracks(),
+  ]);
+
+  // Try MP4 first (Chrome 130+, Safari), fall back to WebM
+  let mime = 'video/mp4;codecs=avc1,mp4a.40.2';
+  if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/mp4;codecs=avc1';
+  if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/mp4';
+  if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm;codecs=vp9,opus';
+  if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm;codecs=vp8,opus';
+  if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
+
+  const recorder = new MediaRecorder(combined, { mimeType: mime, videoBitsPerSecond: 3_000_000 });
+  const chunks   = [];
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: mime });
+    const url  = URL.createObjectURL(blob);
+    downloadBtn.onclick = () => {
+      const a = document.createElement('a');
+      const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+      a.href = url; a.download = `${tapeId}_PROCESSED.${ext}`;
+      a.click();
+    };
+    downloadBtn.classList.remove('hidden');
+    progressWrap.classList.add('hidden');
+    setStatus('TAPE READY — DOWNLOAD BELOW', 'done', 'DONE');
+    processBtn.disabled = false;
+    actx.close();
+    URL.revokeObjectURL(vid.src);
+  };
+
+  const duration = vid.duration;
+  let noiseLevel = .09;
+
+  const OUTRO_MSGS = [
+    'RECORDING STOPPED UNEXPECTEDLY',
+    'TAPE DAMAGED',
+    '** DO NOT CONTINUE VIEWING **',
+    'ERROR CODE: 0x3A1F',
+    'SIGNAL LOST',
+  ];
+
+  vid.addEventListener('ended', () => {
+    if (rafHandle) cancelAnimationFrame(rafHandle);
+    outroState.running = true;
+    const outroStart = Date.now();
+    const STATIC_MS  = 2200; // phase 1: static + horror messages
+    const TOTAL_MS   = 4000; // phase 2: footage cut card (1800ms)
+
+    function outroFrame() {
+      const elapsed = Date.now() - outroStart;
+      if (elapsed >= TOTAL_MS) {
+        outroState.running = false;
+        recorder.stop();
+        return;
+      }
+
+      xSeed = (xSeed + elapsed) | 1;
+
+      if (elapsed < STATIC_MS) {
+        // ── Phase 1: static + horror messages ───────────
+        const si = ctx.getImageData(0, 0, sz, sz);
+        const sd = si.data;
+        const blend = Math.min(1, elapsed / 100);
+        for (let i = 0; i < sd.length; i += 4) {
+          const n = xrand() * 255;
+          sd[i]   = sd[i]   * (1-blend) + n * blend;
+          sd[i+1] = sd[i+1] * (1-blend) + n * blend;
+          sd[i+2] = sd[i+2] * (1-blend) + n * blend;
+          sd[i+3] = 255;
+        }
+        ctx.putImageData(si, 0, 0);
+
+        const msgIdx   = Math.floor(elapsed / 550) % OUTRO_MSGS.length;
+        const showText = Math.floor(elapsed / 180) % 3 !== 0;
+        if (elapsed > 150 && showText) {
+          const fs  = Math.max(14, Math.floor(sz / 18));
+          ctx.font  = `${fs}px 'VT323', monospace`;
+          const msg = OUTRO_MSGS[msgIdx];
+          const mw  = ctx.measureText(msg).width;
+          const pad = fs * 0.5;
+          // Dark backing so text is readable over static
+          ctx.fillStyle = 'rgba(0,0,0,.72)';
+          ctx.fillRect((sz - mw) / 2 - pad, sz / 2 - fs * 1.1, mw + pad * 2, fs * 1.4);
+          ctx.fillStyle = 'rgba(220,18,18,.96)';
+          ctx.fillText(msg, (sz - mw) / 2, sz / 2);
+          if (elapsed > 700) {
+            ctx.font = `${Math.floor(fs*.7)}px 'VT323', monospace`;
+            const sub = '[ TAPE ' + tapeId + ' ]';
+            const sw  = ctx.measureText(sub).width;
+            ctx.fillStyle = 'rgba(0,0,0,.6)';
+            ctx.fillRect((sz - sw) / 2 - pad, sz / 2 + fs * 0.4, sw + pad * 2, fs * 1.1);
+            ctx.fillStyle = 'rgba(200,190,160,.85)';
+            ctx.fillText(sub, (sz - sw) / 2, sz / 2 + fs * 1.4);
+          }
+        }
+
+      } else {
+        // ── Phase 2: FOOTAGE CUT card ────────────────────
+        const cut = elapsed - STATIC_MS;            // 0..1800
+        const cutTotal = TOTAL_MS - STATIC_MS;      // 1800
+
+        // Near-black background with faint grain
+        const si = ctx.getImageData(0, 0, sz, sz);
+        const sd = si.data;
+        for (let i = 0; i < sd.length; i += 4) {
+          const n = xrand() * 22;
+          sd[i] = n; sd[i+1] = n; sd[i+2] = n; sd[i+3] = 255;
+        }
+        ctx.putImageData(si, 0, 0);
+
+        // Occasional horizontal glitch tears across the black
+        if (xrand() < .45) {
+          const gy  = Math.floor(xrand() * sz);
+          const gw  = Math.floor(xrand() * sz * .65) + sz * .15;
+          const gx  = Math.floor(xrand() * (sz - gw));
+          const bri = 35 + xrand() * 70;
+          ctx.fillStyle = `rgba(${bri|0},${bri|0},${bri|0},.75)`;
+          ctx.fillRect(gx, gy, gw, 1 + (xrand() < .35 ? 1 : 0));
+        }
+
+        // "FOOTAGE CUT" text — blinks rapidly then holds
+        const holdPhase  = cut > cutTotal * .55;
+        const showCut    = holdPhase || (Math.floor(cut / 130) % 2 === 0);
+        if (showCut) {
+          const fs  = Math.max(18, Math.floor(sz / 10));
+          const gx  = (xrand() - .5) * (holdPhase ? 3 : 7);
+          const gy  = (xrand() - .5) * (holdPhase ? 2 : 5);
+
+          ctx.font = `${fs}px 'VT323', monospace`;
+          const label = 'FOOTAGE CUT';
+          const lw    = ctx.measureText(label).width;
+          const cx    = (sz - lw) / 2;
+          const cy    = sz / 2;
+
+          // Colour-bleed ghost (green channel offset, VHS colour fringing)
+          ctx.fillStyle = 'rgba(0,200,60,.25)';
+          ctx.fillText(label, cx + gx + 4, cy + gy - 2);
+          ctx.fillStyle = 'rgba(200,0,0,.18)';
+          ctx.fillText(label, cx + gx - 3, cy + gy + 1);
+
+          // Main white text
+          ctx.fillStyle = `rgba(228,224,210,${holdPhase ? .97 : .85})`;
+          ctx.fillText(label, cx + gx, cy + gy);
+
+          // Sub-line
+          if (cut > cutTotal * .25) {
+            const subFs = Math.floor(fs * .44);
+            ctx.font = `${subFs}px 'VT323', monospace`;
+            ctx.fillStyle = 'rgba(155,150,130,.52)';
+            const sub = '— END OF RECORDING —';
+            const sw  = ctx.measureText(sub).width;
+            ctx.fillText(sub, (sz - sw) / 2 + gx * .5, cy + fs * 1.35);
+          }
+        }
+
+        // Hard blink flashes near very end
+        if (cut > cutTotal * .82 && xrand() < .45) {
+          ctx.fillStyle = 'rgba(0,0,0,.95)';
+          ctx.fillRect(0, 0, sz, sz);
+        }
+      }
+
+      rafHandle = requestAnimationFrame(outroFrame);
+    }
+
+    outroFrame();
+  }, { once: true });
+
+  function frame() {
+    if (vid.ended) return;
+
+    analyser.getByteTimeDomainData(tdBuf);
+    let sum = 0;
+    for (let i = 0; i < tdBuf.length; i++) { const v = tdBuf[i]/128 - 1; sum += v*v; }
+    const rms    = Math.sqrt(sum / tdBuf.length);
+    const target = rms < .025 ? .32 : (rms < .08 ? .08 : .04);
+    noiseLevel  += (target - noiseLevel) * .07;
+
+    noiseGain.gain.value = .012 + (1 - Math.min(rms * 7, 1)) * .055;
+
+    // Wow & flutter — subtle tape pitch wobble
+    vid.playbackRate = 1 + Math.sin(vid.currentTime * 0.6) * 0.012 + (xrand() - .5) * 0.004;
+
+    // Camera shake — slow drift + rare jolt
+    shakeX = Math.sin(vid.currentTime * 0.38) * 1.6 + Math.sin(vid.currentTime * 1.2) * 0.6;
+    shakeY = Math.sin(vid.currentTime * 0.31 + 1.1) * 1.3 + Math.sin(vid.currentTime * 0.85) * 0.4;
+    if (xrand() < .002) { joltX = (xrand() - .5) * 7; joltY = (xrand() - .5) * 5; }
+    joltX *= .80; joltY *= .80;
+    const ox = Math.round(shakeX + joltX);
+    const oy = Math.round(shakeY + joltY);
+
+    if (!vid.ended) { tickGlitch(ch); tickTsGlitch(); }
+    drawCropped(ctx, vid, sz, ox, oy);
+    applyPixels(ctx, cw, ch, vid.currentTime, noiseLevel, vig, false);
+    drawOverlay(ctx, cw, ch, tapeDate, vid.currentTime, false);
+
+    if (duration > 0) {
+      const p = (vid.currentTime / duration) * 100;
+      progressFill.style.width = p.toFixed(1) + '%';
+      progressTxt.textContent  = `ENCODING... ${p.toFixed(0)}%  ·  ${fmtDur(vid.currentTime)} / ${fmtDur(duration)}`;
+    }
+
+    rafHandle = requestAnimationFrame(frame);
+  }
+
+  recorder.start(100);
+  setStatus('PLAYING COLOR BARS...', 'active', 'BARS');
+  await runIntro(ctx, sz);
+  setStatus('PROCESSING TAPE...', 'active', 'ENCODING');
+  vid.play();
+  frame();
+}
+
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
+function setStatus(msg, state, sys) {
+  statusText.textContent = msg;
+  sysStatus.textContent  = sys || 'STANDBY';
+  statusDot.className    = 'dot' + (state === 'active' ? ' active' : state === 'done' ? ' done' : '');
+}
+</script>
+</body>
+</html>
