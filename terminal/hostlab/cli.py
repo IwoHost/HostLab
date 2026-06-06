@@ -370,6 +370,106 @@ def _do_burn(args: list[str]):
     console.print("  usage: burn enc <message>  ·  burn dec <token>")
 
 
+# ── port lookup ──────────────────────────────────────────────────────────────
+# (name, proto, desc, used, secure: True/False/None, tip)
+_PORTS: dict[int, tuple] = {
+    20:    ('FTP Data',         'TCP',     'FTP file transfer data channel',              'vsftpd · FileZilla',            False, 'use SFTP on port 22 instead'),
+    21:    ('FTP',              'TCP',     'FTP control channel — login + commands',       'vsftpd · FileZilla · WinSCP',   False, 'unencrypted — prefer SFTP (22)'),
+    22:    ('SSH / SFTP',       'TCP',     'Secure remote shell and file transfer',        'OpenSSH · PuTTY · all servers', True,  None),
+    23:    ('Telnet',           'TCP',     'Unencrypted remote shell — legacy',            'legacy routers · old gear',     False, 'completely insecure — use SSH (22)'),
+    25:    ('SMTP',             'TCP',     'Email relay between mail servers',             'Postfix · Sendmail · Exim',     False, 'server-to-server only; clients use 587'),
+    53:    ('DNS',              'TCP+UDP', 'Translates domain names to IP addresses',      'BIND · Unbound · dnsmasq',      None,  None),
+    67:    ('DHCP Server',      'UDP',     'Assigns IP addresses to devices',              'ISC DHCP · dnsmasq',            None,  None),
+    68:    ('DHCP Client',      'UDP',     'Client side of DHCP IP assignment',            'all OS network stacks',         None,  None),
+    69:    ('TFTP',             'UDP',     'Trivial file transfer — no auth, no encrypt',  'PXE boot · network devices',    False, 'no authentication whatsoever'),
+    80:    ('HTTP',             'TCP',     'Unencrypted web traffic',                      'nginx · Apache · Caddy',        False, 'use HTTPS (443)'),
+    88:    ('Kerberos',         'TCP+UDP', 'Network authentication protocol',              'Active Directory · MIT Kerberos',True, None),
+    110:   ('POP3',             'TCP',     'Download email from server (older)',           'Thunderbird · Outlook',         False, 'use POP3S (995)'),
+    111:   ('RPCBind',          'TCP+UDP', 'Maps RPC services to ports',                  'NFS stack · Sun RPC',           None,  None),
+    123:   ('NTP',              'UDP',     'Syncs system clocks over the network',        'ntpd · chrony · timesyncd',     None,  None),
+    135:   ('RPC',              'TCP',     'Windows remote procedure calls',              'Windows services',              None,  'often targeted — firewall externally'),
+    137:   ('NetBIOS-NS',       'UDP',     'NetBIOS name service',                        'Windows networking',            None,  None),
+    139:   ('NetBIOS-SSN',      'TCP',     'NetBIOS session service',                    'Windows file sharing',          None,  None),
+    143:   ('IMAP',             'TCP',     'Access email on server (keeps messages)',      'Thunderbird · Outlook',         False, 'use IMAPS (993)'),
+    161:   ('SNMP',             'UDP',     'Monitor and manage network devices',          'Nagios · Zabbix · routers',     False, 'use SNMPv3 with auth'),
+    179:   ('BGP',              'TCP',     'Routes traffic between internet networks',    'ISP routers · Quagga · FRR',    None,  None),
+    194:   ('IRC',              'TCP',     'Internet Relay Chat',                         'ircd · InspIRCd',               False, None),
+    389:   ('LDAP',             'TCP+UDP', 'Directory services — users and groups',       'OpenLDAP · Active Directory',   False, 'use LDAPS (636)'),
+    443:   ('HTTPS',            'TCP',     'Encrypted web traffic over TLS',             'nginx · Apache · Caddy',        True,  None),
+    445:   ('SMB',              'TCP',     'Windows file and printer sharing',           'Windows · Samba',               None,  'block on internet-facing firewalls'),
+    465:   ('SMTPS',            'TCP',     'SMTP wrapped in TLS (implicit)',              'mail servers',                  True,  None),
+    500:   ('IKE / IPSec',      'UDP',     'IPSec VPN key exchange',                     'Cisco VPN · StrongSwan',        True,  None),
+    514:   ('Syslog',           'UDP',     'Send system log messages to a log server',   'rsyslog · syslog-ng',           None,  None),
+    587:   ('SMTP Submission',  'TCP',     'Client sends email to outgoing mail server', 'Thunderbird · Outlook',         True,  'use this + STARTTLS, not port 25'),
+    636:   ('LDAPS',            'TCP',     'LDAP over TLS — secure directory access',    'OpenLDAP · Active Directory',   True,  None),
+    853:   ('DNS-over-TLS',     'TCP',     'Encrypted DNS queries',                      'Unbound · Cloudflare 1.1.1.1',  True,  None),
+    873:   ('rsync',            'TCP',     'Fast file sync and backup',                  'rsync daemon',                  None,  'use over SSH tunnel for encryption'),
+    993:   ('IMAPS',            'TCP',     'IMAP over TLS — secure email access',        'all mail clients',              True,  None),
+    995:   ('POP3S',            'TCP',     'POP3 over TLS — secure email download',      'all mail clients',              True,  None),
+    1080:  ('SOCKS',            'TCP',     'Generic proxy protocol',                     'proxies · Tor · SSH tunnels',   None,  None),
+    1194:  ('OpenVPN',          'TCP+UDP', 'Open-source VPN protocol',                   'OpenVPN client/server',         True,  None),
+    1433:  ('MSSQL',            'TCP',     'Microsoft SQL Server database',              'SQL Server · SSMS',             None,  'never expose to internet'),
+    1521:  ('Oracle DB',        'TCP',     'Oracle Database listener',                   'Oracle DB · SQL*Plus',          None,  'never expose to internet'),
+    1723:  ('PPTP',             'TCP',     'Point-to-Point Tunneling Protocol',          'Windows VPN (legacy)',          False, 'broken encryption — do not use'),
+    1883:  ('MQTT',             'TCP',     'Lightweight IoT messaging protocol',          'Mosquitto · Home Assistant',    False, 'use MQTT over TLS (8883)'),
+    2049:  ('NFS',              'TCP+UDP', 'Network file system — share drives',         'Linux/Unix file servers',       None,  None),
+    2181:  ('ZooKeeper',        'TCP',     'Distributed coordination service',            'Kafka · Hadoop · HBase',        None,  None),
+    2375:  ('Docker',           'TCP',     'Docker daemon API — no TLS',                 'Docker',                        False, 'never expose — full root access'),
+    2376:  ('Docker TLS',       'TCP',     'Docker daemon API over TLS',                 'Docker',                        True,  None),
+    3000:  ('Dev Server',       'TCP',     'Common dev server port',                     'Node.js · Rails · Grafana',     None,  None),
+    3306:  ('MySQL',            'TCP',     'MySQL and MariaDB database',                 'MySQL · MariaDB',               None,  'never expose to internet'),
+    3389:  ('RDP',              'TCP',     'Windows Remote Desktop Protocol',            'Windows Remote Desktop',        None,  'brute-forced heavily — use VPN'),
+    5000:  ('Flask / UPnP',     'TCP',     'Flask dev server · UPnP control',            'Flask · Docker registry',       None,  None),
+    5432:  ('PostgreSQL',       'TCP',     'PostgreSQL database',                        'PostgreSQL',                    None,  'never expose to internet'),
+    5601:  ('Kibana',           'TCP',     'Elasticsearch visualization UI',             'Kibana · ELK stack',            None,  None),
+    5900:  ('VNC',              'TCP',     'Virtual Network Computing — remote desktop', 'TigerVNC · RealVNC',            False, 'use over SSH tunnel'),
+    5984:  ('CouchDB',          'TCP',     'CouchDB database HTTP API',                  'CouchDB',                       None,  None),
+    6379:  ('Redis',            'TCP',     'Redis in-memory cache and data store',       'Redis',                         False, 'no auth by default — bind to localhost'),
+    6443:  ('Kubernetes API',   'TCP',     'Kubernetes API server',                      'kubectl · k8s control plane',   True,  None),
+    6881:  ('BitTorrent',       'TCP+UDP', 'BitTorrent peer-to-peer file transfer',      'qBittorrent · Transmission',    None,  None),
+    8000:  ('HTTP Alt',         'TCP',     'Alternate HTTP — common dev port',           'Django dev · Python http.server',None, None),
+    8080:  ('HTTP Proxy / Alt', 'TCP',     'Common HTTP alt and proxy port',             'Tomcat · Jenkins · proxies',    None,  None),
+    8443:  ('HTTPS Alt',        'TCP',     'Alternate HTTPS — Tomcat · panels',          'Tomcat · cPanel',               True,  None),
+    8883:  ('MQTT TLS',         'TCP',     'MQTT over TLS — secure IoT messaging',       'Mosquitto · AWS IoT',           True,  None),
+    8888:  ('Jupyter',          'TCP',     'Jupyter Notebook web interface',             'Jupyter · JupyterLab',          None,  'bind to localhost only'),
+    9000:  ('PHP-FPM',          'TCP',     'PHP FastCGI process manager',               'PHP-FPM · SonarQube',           None,  None),
+    9090:  ('Prometheus',       'TCP',     'Prometheus metrics server · Cockpit UI',     'Prometheus · Cockpit',          None,  None),
+    9092:  ('Kafka',            'TCP',     'Apache Kafka message broker',               'Kafka',                         None,  None),
+    9200:  ('Elasticsearch',    'TCP',     'Elasticsearch REST API',                    'Elasticsearch · ELK stack',     False, 'no auth by default — never expose'),
+    11211: ('Memcached',        'TCP+UDP', 'Memcached distributed memory cache',        'Memcached',                     False, 'no auth — bind to localhost only'),
+    15672: ('RabbitMQ UI',      'TCP',     'RabbitMQ management web interface',         'RabbitMQ',                      None,  None),
+    27017: ('MongoDB',          'TCP',     'MongoDB database',                          'MongoDB',                       False, 'no auth by default — bind to localhost'),
+    51820: ('WireGuard',        'UDP',     'Modern fast VPN protocol',                  'WireGuard',                     True,  None),
+}
+
+def _do_port(args: list[str]):
+    if not args:
+        console.print("  usage: port <number>  e.g. port 443")
+        console.print("  tip:   port 443 80 22  for multiple at once")
+        return
+    nums = []
+    for a in args:
+        try: nums.append(int(a))
+        except ValueError: console.print(f"  [red]✗[/red]  not a number: {a}")
+    for idx, num in enumerate(nums):
+        if idx: console.print()
+        p = _PORTS.get(num)
+        _header(f"PORT {num}")
+        if not p:
+            console.print("  [dim]not in database — may be unassigned or custom[/dim]")
+            console.print(); continue
+        name, proto, desc, used, secure, tip = p
+        sec_str = "[bright_green]✓ encrypted[/bright_green]" if secure is True else \
+                  "[red]✗ unencrypted[/red]" if secure is False else "[dim]—[/dim]"
+        console.print(f"  [bright_green]{name:<24}[/bright_green][dim]{proto}[/dim]")
+        console.print(f"  {desc}")
+        console.print()
+        if used: console.print(f"  [dim]used by  [/dim]{used}")
+        console.print(f"  [dim]secure   [/dim]{sec_str}")
+        if tip:  console.print(f"  [dim]note     [/dim][yellow]{tip}[/yellow]")
+        console.print()
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # REPL DISPATCHER
 # ═══════════════════════════════════════════════════════════════════════════
@@ -432,6 +532,9 @@ def _dispatch(raw: str):
 
     if cmd == "qr":
         _do_qr(rest); return
+
+    if cmd == "port":
+        _do_port(rest); return
 
     console.print(f"  [red]✗[/red]  unknown command: [bold]{cmd}[/bold]  [dim](type help)[/dim]")
 
@@ -530,6 +633,11 @@ def burn_dec(token: str = typer.Argument(...)):
 def qr_cmd(text: list[str] = typer.Argument(...)):
     """Generate a QR code in the terminal"""
     _do_qr(list(text))
+
+@app.command("port")
+def port_cmd(numbers: list[str] = typer.Argument(...)):
+    """Look up what a port number is used for"""
+    _do_port(list(numbers))
 
 
 def main():
