@@ -81,27 +81,27 @@ html, body {
 
 /* ── PAPER ── */
 .paper-wrap {
+  --rot: 0deg;
   width: 530px;
-  transform: rotate(15deg);
+  transform: perspective(700px) rotateX(18deg) rotate(var(--rot));
   animation: dropIn 0.8s cubic-bezier(0.34, 1.4, 0.64, 1) both;
   will-change: transform, opacity;
-  filter: drop-shadow(0 24px 64px rgba(0,0,0,0.6)) drop-shadow(0 8px 20px rgba(0,0,0,0.5));
 }
 
 @keyframes dropIn {
   from {
-    transform: rotate(15deg) translateY(-120vh);
+    transform: perspective(700px) rotateX(18deg) rotate(var(--rot)) translateY(-120vh);
     opacity: 0;
   }
   to {
-    transform: rotate(15deg) translateY(0);
+    transform: perspective(700px) rotateX(18deg) rotate(var(--rot)) translateY(0);
     opacity: 1;
   }
 }
 
 @keyframes dropOut {
   to {
-    transform: rotate(15deg) translateY(130vh);
+    transform: perspective(700px) rotateX(18deg) rotate(var(--rot)) translateY(130vh);
     opacity: 0;
   }
 }
@@ -110,6 +110,10 @@ html, body {
   background: var(--paper);
   position: relative;
   padding: 10px;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.25),
+    0 12px 32px rgba(0,0,0,0.55),
+    0 40px 80px rgba(0,0,0,0.5);
 }
 
 /* Paper grain texture overlay */
@@ -578,6 +582,7 @@ function generateContract() {
     id: Math.random().toString(36).slice(2, 8).toUpperCase(),
     tier, title: data.title, desc: data.desc, reward,
     accepted: false,
+    rotation: rand(-9, 9),
     date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase(),
   };
 }
@@ -609,6 +614,10 @@ function save() {
 // ── DOM ───────────────────────────────────────────────────────────────────────
 
 const $ = id => document.getElementById(id);
+
+function applyRotation(deg) {
+  $('paper-wrap').style.setProperty('--rot', deg + 'deg');
+}
 
 function flash(id) {
   const el = $(id);
@@ -648,6 +657,7 @@ function renderContract(c) {
   $('c-mission').textContent = c.desc;
   $('c-pts').textContent = c.reward.points;
   $('c-pay').textContent = '$' + c.reward.money;
+  applyRotation(c.rotation || 0);
 
   const stamp = $('stamp');
   stamp.className = 'stamp' + (c.accepted ? ' visible' : '');
