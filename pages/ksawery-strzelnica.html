@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-R7MJHBKJVY');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HostLab · Strzelnica Ksawego</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
+<link rel="stylesheet" href="../other/backbutton.css">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0c0c0c;
+  --surface: #111110;
+  --surface2: #161614;
+  --text-primary: #f0f0ee;
+  --text-secondary: #888884;
+  --text-muted: #3a3a38;
+  --border: #222220;
+  --border-dim: #1a1a18;
+  --accent: #f0f0ee;
+  --tag-bg: #1a1a18;
+  --gold: #c9a227;
+  --gold-dim: #2a2010;
+  --silver: #8a8a8a;
+  --silver-dim: #1a1a1a;
+  --bronze: #8c5e3c;
+  --bronze-dim: #1e160e;
+  --green: #3a6b3a;
+  --green-text: #5db85d;
+  --red: #6b2020;
+  --red-text: #d46060;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Syne Mono', monospace;
+}
+
+html.light {
+  --bg: #f0ede6;
+  --surface: #ffffff;
+  --surface2: #f7f5f0;
+  --text-primary: #0f0f0f;
+  --text-secondary: #6b6b6b;
+  --text-muted: #b0b0b0;
+  --border: #d8d5ce;
+  --border-dim: #e8e5de;
+  --accent: #0f0f0f;
+  --tag-bg: #e8e5de;
+  --gold-dim: #fdf6dc;
+  --silver-dim: #f0f0f0;
+  --bronze-dim: #faf0e8;
+  --green: #c8eec8;
+  --green-text: #1a5c1a;
+  --red: #fde8e8;
+  --red-text: #8b1a1a;
+}
+
+html, body { transition: background 0.35s ease, color 0.35s ease; }
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 48px 64px 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+}
+
+.logo {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.logo span { color: var(--text-muted); }
+.logo .sub { color: var(--text-secondary); padding-left: 2px; }
+
+.header-right { display: flex; align-items: center; gap: 24px; }
+
+.header-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+/* ── HERO ── */
+.hero {
+  padding: 80px 64px 64px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.hero-bg-symbol {
+  position: absolute;
+  right: 56px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 180px;
+  font-weight: 700;
+  color: var(--border-dim);
+  line-height: 1;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  user-select: none;
+}
+
+.hero-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.hero h1 {
+  font-size: clamp(44px, 6.5vw, 82px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  color: var(--text-primary);
+}
+
+.hero h1 em { font-style: normal; color: var(--text-muted); }
+
+.hero-sub {
+  margin-top: 28px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 440px;
+  line-height: 1.6;
+}
+
+.hero-meta {
+  margin-top: 20px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.hero-meta-item {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.hero-meta-item span {
+  color: var(--text-secondary);
+  margin-left: 6px;
+}
+
+/* ── TABS ── */
+.tabs-bar {
+  padding: 24px 64px 0;
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+}
+
+.tab-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  margin-bottom: -1px;
+}
+
+.tab-btn:hover { color: var(--text-secondary); }
+.tab-btn.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
+
+/* ── PODIUM ── */
+.podium-section {
+  padding: 48px 64px 32px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+}
+
+.podium-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 32px;
+}
+
+.podium {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 2px;
+  max-width: 700px;
+}
+
+.podium-card {
+  padding: 24px 20px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeUp 0.5s ease both;
+  position: relative;
+  overflow: hidden;
+}
+
+.podium-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.podium-card.gold   { background: var(--gold-dim); border-color: var(--gold); }
+.podium-card.silver { background: var(--silver-dim); border-color: var(--silver); }
+.podium-card.bronze { background: var(--bronze-dim); border-color: var(--bronze); }
+.podium-card.gold::before   { background: var(--gold); }
+.podium-card.silver::before { background: var(--silver); }
+.podium-card.bronze::before { background: var(--bronze); }
+
+.podium-card:nth-child(1) { animation-delay: 0.05s; }
+.podium-card:nth-child(2) { animation-delay: 0.10s; }
+.podium-card:nth-child(3) { animation-delay: 0.15s; }
+
+.podium-rank {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.podium-card.gold   .podium-rank { color: var(--gold); }
+.podium-card.silver .podium-rank { color: var(--silver); }
+.podium-card.bronze .podium-rank { color: var(--bronze); }
+
+.podium-name {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.podium-score {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
+.podium-score-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.podium-bilans {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+/* ── LEADERBOARD ── */
+.lb-section {
+  padding: 32px 64px 80px;
+  position: relative;
+  z-index: 1;
+}
+
+.lb-header {
+  display: grid;
+  grid-template-columns: 48px 1fr 80px 70px 70px 80px 90px;
+  gap: 8px;
+  padding: 0 20px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+
+.lb-col-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.lb-col-label.right { text-align: right; }
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 80px 70px 70px 80px 90px;
+  gap: 8px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  margin-bottom: 2px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, border-color 0.2s;
+  animation: fadeUp 0.5s ease both;
+  position: relative;
+}
+
+.lb-row:hover {
+  background: var(--surface2);
+  border-color: var(--text-muted);
+  transform: translateX(3px);
+}
+
+.lb-row:nth-child(1) { animation-delay: 0.05s; }
+.lb-row:nth-child(2) { animation-delay: 0.10s; }
+.lb-row:nth-child(3) { animation-delay: 0.15s; }
+.lb-row:nth-child(4) { animation-delay: 0.20s; }
+.lb-row:nth-child(5) { animation-delay: 0.25s; }
+.lb-row:nth-child(6) { animation-delay: 0.30s; }
+.lb-row:nth-child(7) { animation-delay: 0.35s; }
+.lb-row:nth-child(8) { animation-delay: 0.40s; }
+
+.lb-place {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.lb-place.gold   { color: var(--gold); }
+.lb-place.silver { color: var(--silver); }
+.lb-place.bronze { color: var(--bronze); }
+
+.lb-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lb-name .birthday-badge {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  background: var(--gold-dim);
+  border: 1px solid var(--gold);
+  padding: 2px 7px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+.lb-val {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.lb-val.primary {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.lb-bilans {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.lb-bilans.positive { color: var(--green-text); }
+.lb-bilans.negative { color: var(--red-text); }
+
+.lb-efekt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* ── EXPANDED DETAIL ── */
+.lb-detail {
+  display: none;
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  gap: 20px;
+}
+
+.lb-row.open .lb-detail { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+
+.detail-block { display: flex; flex-direction: column; gap: 3px; }
+
+.detail-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.detail-val {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.detail-val.highlight { color: var(--text-primary); }
+
+/* ── STAT BAR ── */
+.stat-bar-wrap { margin-top: 4px; }
+.stat-bar-bg {
+  height: 3px;
+  background: var(--tag-bg);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.stat-bar-fill {
+  height: 100%;
+  background: var(--text-muted);
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+
+/* ── GALLERY ── */
+.gallery-section {
+  padding: 48px 64px;
+  border-top: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+}
+
+.gallery-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.gallery-img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease, filter 0.4s ease;
+  filter: grayscale(20%);
+  cursor: zoom-in;
+}
+
+.gallery-img:hover {
+  transform: scale(1.02);
+  filter: grayscale(0%);
+  z-index: 2;
+  position: relative;
+}
+
+/* ── LIGHTBOX ── */
+.lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+
+.lightbox.open { display: flex; }
+
+.lightbox img {
+  max-width: 92vw;
+  max-height: 90vh;
+  object-fit: contain;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.8);
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-left { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; }
+.footer-right { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
+
+/* ── THEME SWITCH ── */
+.theme-switch { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.switch-label { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase; }
+.switch-track { width: 36px; height: 20px; background: #2a2a28; border-radius: 100px; border: 1px solid var(--border); position: relative; flex-shrink: 0; transition: background 0.35s, border-color 0.35s; }
+.switch-thumb { position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%; background: #555550; transition: transform 0.3s, background 0.35s; }
+html.light .switch-thumb { transform: translateX(16px); background: #0f0f0f; }
+html.light .switch-track { background: #d0ceca; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  header, .hero, .tabs-bar, .podium-section, .lb-section, .gallery-section, footer {
+    padding-left: 24px; padding-right: 24px;
+  }
+  .hero h1 { font-size: 42px; }
+  .hero-bg-symbol { display: none; }
+  .lb-header, .lb-row {
+    grid-template-columns: 36px 1fr 70px 60px;
+  }
+  .lb-header :nth-child(n+5), .lb-row > *:nth-child(n+5) {
+    display: none;
+  }
+  .podium { max-width: 100%; }
+  .gallery-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 520px) {
+  .podium { grid-template-columns: 1fr; }
+  .gallery-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="../index.html" class="logo">HOST<span>·</span>LAB<span class="sub"> / STRZELNICA</span></a>
+  <div class="header-right">
+    <div class="header-meta">KWATERA GŁÓWNA — 2025</div>
+    <div class="theme-switch" id="theme-switch" title="Przełącz motyw">
+      <span class="switch-label" id="switch-label">LIGHT</span>
+      <div class="switch-track"><div class="switch-thumb"></div></div>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-bg-symbol">🎯</div>
+  <div class="hero-label">Urodziny Ksawego · Kwatera Główna</div>
+  <h1>Strzel<em>nica</em></h1>
+  <p class="hero-sub">Wyniki z paintballowej strzelnicy na urodzinach Ksawego. 8 zawodników, jedna szansa na chwałę.</p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">ZAWODNICY<span>8</span></div>
+    <div class="hero-meta-item">ZWYCIĘZCA<span id="hero-winner">—</span></div>
+    <div class="hero-meta-item">MAX WYNIK<span id="hero-max">—</span></div>
+  </div>
+</section>
+
+<div class="tabs-bar">
+  <button class="tab-btn active" data-tab="wynik">WG WYNIKU</button>
+  <button class="tab-btn" data-tab="bilans">WG BILANSU</button>
+</div>
+
+<section class="podium-section">
+  <div class="podium-label">Podium</div>
+  <div class="podium" id="podium"></div>
+</section>
+
+<section class="lb-section">
+  <div class="lb-header">
+    <div class="lb-col-label">#</div>
+    <div class="lb-col-label">Zawodnik</div>
+    <div class="lb-col-label right">Wynik</div>
+    <div class="lb-col-label right">Trafił</div>
+    <div class="lb-col-label right">Zginął</div>
+    <div class="lb-col-label right">Bilans</div>
+    <div class="lb-col-label right">Efektywność</div>
+  </div>
+  <div id="leaderboard"></div>
+</section>
+
+<section class="gallery-section">
+  <div class="gallery-label">Zdjęcia z tablicy wyników</div>
+  <div class="gallery-grid">
+    <img class="gallery-img" src="../other/events/strzelnica-1.jpg" alt="Tablica wyników — Kwatera Główna">
+    <img class="gallery-img" src="../other/events/strzelnica-2.jpg" alt="Zestawienie wg wyniku i bilansu">
+    <img class="gallery-img" src="../other/events/strzelnica-3.jpg" alt="Pełna tablica wyników">
+  </div>
+</section>
+
+<footer>
+  <div class="footer-left">HOSTLAB · STRZELNICA KSAWEGO</div>
+  <div class="footer-right" id="footer-date"></div>
+</footer>
+
+<div class="lightbox" id="lightbox">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<script>
+const PLAYERS = [
+  {
+    name: 'Szymon', birthday: false,
+    zginal: 60.75, trafil: 102.00, bilans: 41.25,
+    brzuch: 63.75, ramie: 67.50, plecy: 11.25,
+    uzi: 5535.00, dd: 12.00, mhgun: 0.00, shg: 0.00, snp: 0.00, atank: 0.00,
+    efekt: 1.839, wynik: 102.00
+  },
+  {
+    name: 'Ksawery', birthday: true,
+    zginal: 57.75, trafil: 63.75, bilans: 6.00,
+    brzuch: 45.00, ramie: 17.25, plecy: 9.00,
+    uzi: 2205.00, dd: 15.00, mhgun: 0.00, shg: 0.00, snp: 0.00, atank: 0.00,
+    efekt: 2.872, wynik: 63.75
+  },
+  {
+    name: 'Kuba', birthday: false,
+    zginal: 64.50, trafil: 58.50, bilans: -6.00,
+    brzuch: 39.00, ramie: 31.50, plecy: 9.00,
+    uzi: 652.50, dd: 15.00, mhgun: 180.00, shg: 0.00, snp: 0.75, atank: 2.25,
+    efekt: 6.878, wynik: 58.50
+  },
+  {
+    name: 'Iwo', birthday: false,
+    zginal: 51.75, trafil: 55.50, bilans: 3.75,
+    brzuch: 40.50, ramie: 29.25, plecy: 6.00,
+    uzi: 2092.50, dd: 26.25, mhgun: 0.00, shg: 0.00, snp: 0.00, atank: 0.00,
+    efekt: 2.619, wynik: 55.50
+  },
+  {
+    name: 'Jakub', birthday: false,
+    zginal: 54.75, trafil: 47.25, bilans: -7.50,
+    brzuch: 24.75, ramie: 28.50, plecy: 6.75,
+    uzi: 945.00, dd: 2.25, mhgun: 247.50, shg: 0.00, snp: 0.00, atank: 0.00,
+    efekt: 3.955, wynik: 47.25
+  },
+  {
+    name: 'Olek', birthday: false,
+    zginal: 30.00, trafil: 32.25, bilans: 2.25,
+    brzuch: 22.50, ramie: 15.75, plecy: 5.25,
+    uzi: 675.00, dd: 1.50, mhgun: 112.50, shg: 0.00, snp: 1.50, atank: 0.00,
+    efekt: 4.080, wynik: 32.25
+  },
+  {
+    name: 'Patryk', birthday: false,
+    zginal: 48.75, trafil: 30.75, bilans: -18.00,
+    brzuch: 19.50, ramie: 13.50, plecy: 4.50,
+    uzi: 1057.50, dd: 0.00, mhgun: 135.00, shg: 0.00, snp: 3.00, atank: 0.00,
+    efekt: 2.572, wynik: 30.75
+  },
+  {
+    name: 'Norbert', birthday: false,
+    zginal: 52.50, trafil: 30.00, bilans: -22.50,
+    brzuch: 18.00, ramie: 17.25, plecy: 6.75,
+    uzi: 427.50, dd: 12.75, mhgun: 360.00, shg: 5.25, snp: 12.75, atank: 7.50,
+    efekt: 3.633, wynik: 30.00
+  }
+];
+
+const WEAPONS = [
+  { key: 'uzi',   label: 'UZI' },
+  { key: 'dd',    label: 'D-D' },
+  { key: 'mhgun', label: 'M.HGun' },
+  { key: 'shg',   label: 'SHG' },
+  { key: 'snp',   label: 'SNP' },
+  { key: 'atank', label: 'aTank' },
+];
+
+let currentTab = 'wynik';
+
+function sortedByTab(tab) {
+  return [...PLAYERS].sort((a, b) =>
+    tab === 'wynik' ? b.wynik - a.wynik : b.bilans - a.bilans
+  );
+}
+
+function fmt(n) {
+  return n % 1 === 0 ? n.toFixed(0) : n.toFixed(2);
+}
+
+function bilansCls(n) {
+  return n > 0 ? 'positive' : n < 0 ? 'negative' : '';
+}
+
+function bilansFmt(n) {
+  return (n > 0 ? '+' : '') + fmt(n);
+}
+
+function placeCls(i) {
+  return i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+}
+
+function placeMedal(i) {
+  return i === 0 ? '🥇 01' : i === 1 ? '🥈 02' : i === 2 ? '🥉 03' : String(i + 1).padStart(2, '0');
+}
+
+const maxWynik  = Math.max(...PLAYERS.map(p => p.wynik));
+const maxTrafil = Math.max(...PLAYERS.map(p => p.trafil));
+
+function renderPodium(sorted) {
+  const podium = document.getElementById('podium');
+  podium.innerHTML = '';
+  const top3 = sorted.slice(0, 3);
+  const cls = ['gold', 'silver', 'bronze'];
+  const rank = ['#1 — Złoto', '#2 — Srebro', '#3 — Brąz'];
+  top3.forEach((p, i) => {
+    const scoreVal = currentTab === 'wynik' ? p.wynik : p.bilans;
+    const scoreLabel = currentTab === 'wynik' ? 'WYNIK' : 'BILANS';
+    const bilansStr = bilansFmt(p.bilans);
+    const bilansCl = bilansCls(p.bilans);
+    const card = document.createElement('div');
+    card.className = `podium-card ${cls[i]}`;
+    card.innerHTML = `
+      <div class="podium-rank">${rank[i]}</div>
+      <div class="podium-name">${p.name}${p.birthday ? ' 🎂' : ''}</div>
+      <div class="podium-score">${fmt(scoreVal)}</div>
+      <div class="podium-score-label">${scoreLabel}</div>
+      <div class="podium-bilans ${bilansCl}">BILANS ${bilansStr}</div>
+    `;
+    podium.appendChild(card);
+  });
+}
+
+function renderLeaderboard(sorted) {
+  const lb = document.getElementById('leaderboard');
+  lb.innerHTML = '';
+
+  const allBilans = PLAYERS.map(p => Math.abs(p.bilans));
+  const maxBilans = Math.max(...allBilans);
+  const allUzi = PLAYERS.map(p => p.uzi);
+  const maxUzi = Math.max(...allUzi);
+
+  sorted.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = `lb-row`;
+
+    const weaponBars = WEAPONS.map(w => {
+      const val = p[w.key];
+      const maxVal = Math.max(...PLAYERS.map(x => x[w.key]));
+      const pct = maxVal > 0 ? Math.round((val / maxVal) * 100) : 0;
+      if (val === 0) return '';
+      return `
+        <div class="detail-block">
+          <div class="detail-label">${w.label}</div>
+          <div class="detail-val">${fmt(val)}</div>
+          <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+      `;
+    }).join('');
+
+    const hitPct = Math.round((p.trafil / maxTrafil) * 100);
+    const wynikPct = Math.round((p.wynik / maxWynik) * 100);
+
+    row.innerHTML = `
+      <div class="lb-place ${placeCls(i)}">${placeMedal(i)}</div>
+      <div class="lb-name">
+        ${p.name}
+        ${p.birthday ? '<span class="birthday-badge">URODZINY</span>' : ''}
+      </div>
+      <div class="lb-val primary">${fmt(p.wynik)}</div>
+      <div class="lb-val">${fmt(p.trafil)}</div>
+      <div class="lb-val">${fmt(p.zginal)}</div>
+      <div class="lb-bilans ${bilansCls(p.bilans)}">${bilansFmt(p.bilans)}</div>
+      <div class="lb-efekt">${p.efekt.toFixed(3)}%</div>
+      <div class="lb-detail">
+        <div class="detail-block">
+          <div class="detail-label">Brzuch</div>
+          <div class="detail-val highlight">${fmt(p.brzuch)}</div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-label">Ramię</div>
+          <div class="detail-val">${fmt(p.ramie)}</div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-label">Plecy</div>
+          <div class="detail-val">${fmt(p.plecy)}</div>
+        </div>
+        ${weaponBars}
+      </div>
+    `;
+
+    row.addEventListener('click', () => {
+      row.classList.toggle('open');
+    });
+
+    lb.appendChild(row);
+  });
+}
+
+function render() {
+  const sorted = sortedByTab(currentTab);
+  renderPodium(sorted);
+  renderLeaderboard(sorted);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTab = btn.dataset.tab;
+    render();
+  });
+});
+
+const winner = PLAYERS.reduce((a, b) => a.wynik > b.wynik ? a : b);
+document.getElementById('hero-winner').textContent = winner.name;
+document.getElementById('hero-max').textContent = fmt(winner.wynik);
+
+document.getElementById('footer-date').textContent =
+  new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
+
+const themeSwitch = document.getElementById('theme-switch');
+const switchLabel = document.getElementById('switch-label');
+themeSwitch.addEventListener('click', () => {
+  const isLight = document.documentElement.classList.toggle('light');
+  switchLabel.textContent = isLight ? 'DARK' : 'LIGHT';
+  localStorage.setItem('hostlab-theme', isLight ? 'light' : 'dark');
+});
+if (localStorage.getItem('hostlab-theme') === 'light') {
+  document.documentElement.classList.add('light');
+  switchLabel.textContent = 'DARK';
+}
+
+document.querySelectorAll('.gallery-img').forEach(img => {
+  img.addEventListener('click', () => {
+    document.getElementById('lightbox-img').src = img.src;
+    document.getElementById('lightbox').classList.add('open');
+  });
+});
+
+document.getElementById('lightbox').addEventListener('click', () => {
+  document.getElementById('lightbox').classList.remove('open');
+});
+
+render();
+</script>
+</body>
+</html>
