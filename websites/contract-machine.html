@@ -705,8 +705,8 @@ function calcLevel(pts) {
 
 function generateContract() {
   const roll = Math.random();
-  const isRare = roll < 0.05;
-  const tier   = isRare ? 'rare' : roll < 0.52 ? 1 : roll < 0.87 ? 2 : 3;
+  const isRare = roll < 0.25;
+  const tier   = isRare ? 'rare' : roll < 0.58 ? 1 : roll < 0.87 ? 2 : 3;
   const data   = isRare ? pick(RARE_TEMPLATES)() : pick(TEMPLATES[tier])();
   const reward = REWARDS[tier]();
   return {
