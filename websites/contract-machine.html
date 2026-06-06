@@ -231,6 +231,22 @@ html, body {
 
 .c-star.dim { color: var(--paper-mid); }
 
+.rare-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 4px 14px;
+  text-transform: uppercase;
+  animation: rarePulse 2s ease-in-out infinite;
+}
+
+@keyframes rarePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* ── MISSION ── */
 .c-mission-label {
   font-family: var(--font-mono);
@@ -486,6 +502,70 @@ const MELEE = {
   Heavy: 'Fists', Engineer: 'Wrench', Medic: 'Bonesaw', Sniper: 'Kukri', Spy: 'Knife',
 };
 
+// ~5% chance — absurd, meme, or near-impossible tasks
+const RARE_TEMPLATES = [
+  () => ({
+    title: 'SHOWTIME',
+    desc: `Land a taunt kill on an enemy. Any class, any taunt. They will never see it coming.`,
+  }),
+  () => ({
+    title: 'LIQUID WARFARE',
+    desc: `As the Sniper, hit ${rand(8, 13)} different enemies with Jarate in a single match. Soak them all.`,
+  }),
+  () => ({
+    title: 'PACIFIST RUN',
+    desc: `Spend ${rand(4, 6)} consecutive minutes as a friendly Heavy — Minigun spinning, Sandviches distributed. Do NOT die.`,
+  }),
+  () => ({
+    title: 'PSYCHOLOGICAL OPERATIONS',
+    desc: `Get ${rand(3, 5)} enemies to kill bind in a single match. Winning is a state of mind.`,
+  }),
+  () => ({
+    title: 'MARKET GARDENER MOMENT',
+    desc: `As the Soldier, rocket jump and kill an enemy with the Shovel while airborne. Just once. We believe in you.`,
+  }),
+  () => ({
+    title: 'FISH SLAP',
+    desc: `As the Scout, get ${rand(2, 4)} kills using the Holy Mackerel in a single match. Make every hit count.`,
+  }),
+  () => ({
+    title: 'COMMITTED TO THE BIT',
+    desc: `Spend an entire match as the Heavy without firing your weapon once. Dance. Eat. Spin. Survive if you can.`,
+  }),
+  () => ({
+    title: 'BIRD STRIKE',
+    desc: `As the Sniper, kill ${rand(2, 3)} airborne enemies with the Huntsman in a single match.`,
+  }),
+  () => ({
+    title: 'GRAVITY ASSISTED',
+    desc: `Get ${rand(2, 4)} kills using environmental hazards — pits, trains, or fall damage — in a single match. Let the map do the work.`,
+  }),
+  () => ({
+    title: 'SAXXY AWARD PERFORMANCE',
+    desc: `Complete a full match without dealing any damage, capturing any point, or leaving early. Just exist out there.`,
+  }),
+  () => ({
+    title: 'THE LONG CON',
+    desc: `As the Spy, spend ${rand(6, 10)} minutes disguised in a single match without breaking cover once. Commitment is everything.`,
+  }),
+  () => ({
+    title: 'RESPECT THE PROCESS',
+    desc: `As the Medic, pocket a Heavy for an entire round without switching targets. Loyalty above all.`,
+  }),
+  () => ({
+    title: 'FLYING GUILLOTINE',
+    desc: `As the Scout, hit ${rand(3, 5)} enemies with the Flying Guillotine in a single match — all while they are bleeding.`,
+  }),
+  () => ({
+    title: 'URINE SAMPLE',
+    desc: `As the Sniper, cover ${rand(4, 7)} enemies in Jarate simultaneously using a single throw. One jar. Maximum damage.`,
+  }),
+  () => ({
+    title: 'HAT ECONOMY MOMENT',
+    desc: `Trade a weapon with a teammate mid-match. That's it. That's the contract. The economy never stops.`,
+  }),
+];
+
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
 function otherClass(c) { return pick(CLASSES.filter(x => x !== c)); }
@@ -608,9 +688,10 @@ const TEMPLATES = {
 };
 
 const REWARDS = {
-  1: () => ({ points: rand(50, 90),   money: rand(25, 50)  }),
-  2: () => ({ points: rand(130, 210), money: rand(70, 120) }),
-  3: () => ({ points: rand(380, 560), money: rand(200, 320) }),
+  1:    () => ({ points: rand(50, 90),    money: rand(25, 50)   }),
+  2:    () => ({ points: rand(130, 210),  money: rand(70, 120)  }),
+  3:    () => ({ points: rand(380, 560),  money: rand(200, 320) }),
+  rare: () => ({ points: rand(700, 1200), money: rand(400, 700) }),
 };
 
 const LEVEL_XP = [0, 500, 1200, 2500, 4500, 7500, 12000, 18000, 27000, 40000, Infinity];
@@ -624,12 +705,13 @@ function calcLevel(pts) {
 
 function generateContract() {
   const roll = Math.random();
-  const tier = roll < 0.50 ? 1 : roll < 0.85 ? 2 : 3;
-  const data = pick(TEMPLATES[tier])();
+  const isRare = roll < 0.05;
+  const tier   = isRare ? 'rare' : roll < 0.52 ? 1 : roll < 0.87 ? 2 : 3;
+  const data   = isRare ? pick(RARE_TEMPLATES)() : pick(TEMPLATES[tier])();
   const reward = REWARDS[tier]();
   return {
     id: Math.random().toString(36).slice(2, 8).toUpperCase(),
-    tier, title: data.title, desc: data.desc, reward,
+    tier, rare: isRare, title: data.title, desc: data.desc, reward,
     accepted: false,
     rotation: rand(-9, 9),
     date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase(),
@@ -696,11 +778,18 @@ function renderContract(c) {
 
   const starsEl = $('c-stars');
   starsEl.innerHTML = '';
-  for (let i = 1; i <= 3; i++) {
-    const s = document.createElement('span');
-    s.className = 'c-star' + (i <= c.tier ? '' : ' dim');
-    s.textContent = '★';
-    starsEl.appendChild(s);
+  if (c.rare) {
+    const badge = document.createElement('span');
+    badge.className = 'rare-badge';
+    badge.textContent = '✦ Rare Contract ✦';
+    starsEl.appendChild(badge);
+  } else {
+    for (let i = 1; i <= 3; i++) {
+      const s = document.createElement('span');
+      s.className = 'c-star' + (i <= c.tier ? '' : ' dim');
+      s.textContent = '★';
+      starsEl.appendChild(s);
+    }
   }
 
   $('c-mission').textContent = c.desc;
