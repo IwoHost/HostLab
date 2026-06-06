@@ -30,14 +30,12 @@
   --accent: #f0f0ee;
   --tag-bg: #1a1a18;
   --gold: #c9a227;
-  --gold-dim: #2a2010;
+  --gold-dim: #1e1608;
   --silver: #8a8a8a;
-  --silver-dim: #1a1a1a;
+  --silver-dim: #141414;
   --bronze: #8c5e3c;
-  --bronze-dim: #1e160e;
-  --green: #3a6b3a;
+  --bronze-dim: #150e08;
   --green-text: #5db85d;
-  --red: #6b2020;
   --red-text: #d46060;
   --font-display: 'Syne', sans-serif;
   --font-mono: 'Syne Mono', monospace;
@@ -57,13 +55,11 @@ html.light {
   --gold-dim: #fdf6dc;
   --silver-dim: #f0f0f0;
   --bronze-dim: #faf0e8;
-  --green: #c8eec8;
-  --green-text: #1a5c1a;
-  --red: #fde8e8;
-  --red-text: #8b1a1a;
+  --green-text: #1a6c1a;
+  --red-text: #9b2020;
 }
 
-html, body { transition: background 0.35s ease, color 0.35s ease; }
+html, body { transition: background 0.35s, color 0.35s; }
 
 body {
   background: var(--bg);
@@ -71,130 +67,147 @@ body {
   font-family: var(--font-display);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
+/* scanline */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: repeating-linear-gradient(
-    0deg, transparent, transparent 2px,
-    rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
-  );
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.025) 2px, rgba(0,0,0,0.025) 4px);
   pointer-events: none;
   z-index: 0;
 }
 
+/* ── PAGE TRANSITION ── */
+#page-cover {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+#page-cover.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.cover-inner {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.cover-bar-wrap {
+  width: 200px;
+  height: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+.cover-bar {
+  height: 100%;
+  background: var(--text-muted);
+  width: 0%;
+  transition: width 0.6s ease;
+}
+
 /* ── HEADER ── */
 header {
-  padding: 48px 64px 24px;
+  padding: 40px 64px 24px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   border-bottom: 1px solid var(--border);
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.5s ease 0.3s, transform 0.5s ease 0.3s;
 }
+header.visible { opacity: 1; transform: translateY(0); }
 
-.logo {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: 0.12em;
-  color: var(--text-primary);
-  text-decoration: none;
-}
+.logo { font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.12em; color: var(--text-primary); text-decoration: none; }
 .logo span { color: var(--text-muted); }
 .logo .sub { color: var(--text-secondary); padding-left: 2px; }
-
 .header-right { display: flex; align-items: center; gap: 24px; }
-
-.header-meta {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-muted);
-  letter-spacing: 0.08em;
-}
+.header-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); letter-spacing: 0.08em; }
 
 /* ── HERO ── */
 .hero {
-  padding: 80px 64px 64px;
+  padding: 72px 64px 56px;
   border-bottom: 1px solid var(--border);
   position: relative;
   z-index: 1;
   overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease 0.5s, transform 0.6s ease 0.5s;
 }
+.hero.visible { opacity: 1; transform: translateY(0); }
 
-.hero-bg-symbol {
+.hero-bg-text {
   position: absolute;
-  right: 56px;
-  top: 50%;
+  right: -10px; top: 50%;
   transform: translateY(-50%);
-  font-size: 180px;
+  font-size: clamp(120px, 18vw, 220px);
   font-weight: 700;
   color: var(--border-dim);
   line-height: 1;
   pointer-events: none;
   font-family: var(--font-mono);
   user-select: none;
+  letter-spacing: -0.04em;
 }
 
-.hero-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin-bottom: 20px;
-}
+.hero-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.22em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 18px; }
 
 .hero h1 {
-  font-size: clamp(44px, 6.5vw, 82px);
+  font-size: clamp(46px, 7vw, 88px);
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 0.95;
-  color: var(--text-primary);
 }
-
 .hero h1 em { font-style: normal; color: var(--text-muted); }
 
-.hero-sub {
-  margin-top: 28px;
-  font-size: 14px;
-  color: var(--text-secondary);
-  max-width: 440px;
-  line-height: 1.6;
-}
+.hero-sub { margin-top: 24px; font-size: 14px; color: var(--text-secondary); max-width: 420px; line-height: 1.65; }
 
-.hero-meta {
-  margin-top: 20px;
+.hero-stats {
+  margin-top: 32px;
   display: flex;
-  gap: 24px;
+  gap: 2px;
   flex-wrap: wrap;
 }
 
-.hero-meta-item {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  color: var(--text-muted);
-  text-transform: uppercase;
+.hero-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 14px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 110px;
 }
-
-.hero-meta-item span {
-  color: var(--text-secondary);
-  margin-left: 6px;
-}
+.hero-stat-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; color: var(--text-muted); text-transform: uppercase; }
+.hero-stat-val { font-family: var(--font-mono); font-size: 20px; font-weight: 700; color: var(--text-primary); }
 
 /* ── TABS ── */
 .tabs-bar {
-  padding: 24px 64px 0;
+  padding: 0 64px;
   display: flex;
-  gap: 0;
   border-bottom: 1px solid var(--border);
-  position: relative;
-  z-index: 1;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+  backdrop-filter: blur(8px);
 }
-
 .tab-btn {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -204,186 +217,144 @@ header {
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  padding: 12px 20px;
+  padding: 18px 20px;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s;
   margin-bottom: -1px;
 }
-
 .tab-btn:hover { color: var(--text-secondary); }
 .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
 
 /* ── PODIUM ── */
 .podium-section {
-  padding: 48px 64px 32px;
+  padding: 52px 64px 40px;
   border-bottom: 1px solid var(--border);
   position: relative;
   z-index: 1;
 }
+.section-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 28px; }
 
-.podium-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin-bottom: 32px;
-}
-
-.podium {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 2px;
-  max-width: 700px;
-}
+.podium { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; max-width: 740px; }
 
 .podium-card {
-  padding: 24px 20px;
+  padding: 28px 22px;
   border: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  animation: fadeUp 0.5s ease both;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.3s ease;
 }
+.podium-card.visible { opacity: 1; transform: translateY(0); }
+.podium-card:hover { box-shadow: 0 16px 48px rgba(0,0,0,0.5); z-index: 1; transform: translateY(-4px) !important; }
+
+.podium-card.gold   { background: var(--gold-dim);   border-color: var(--gold); }
+.podium-card.silver { background: var(--silver-dim); border-color: var(--silver); }
+.podium-card.bronze { background: var(--bronze-dim); border-color: var(--bronze); }
 
 .podium-card::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 2px;
+  height: 3px;
 }
+.podium-card.gold::before   { background: linear-gradient(90deg, var(--gold), #f0d060, var(--gold)); }
+.podium-card.silver::before { background: linear-gradient(90deg, var(--silver), #c0c0c0, var(--silver)); }
+.podium-card.bronze::before { background: linear-gradient(90deg, var(--bronze), #c08050, var(--bronze)); }
 
-.podium-card.gold   { background: var(--gold-dim); border-color: var(--gold); }
-.podium-card.silver { background: var(--silver-dim); border-color: var(--silver); }
-.podium-card.bronze { background: var(--bronze-dim); border-color: var(--bronze); }
-.podium-card.gold::before   { background: var(--gold); }
-.podium-card.silver::before { background: var(--silver); }
-.podium-card.bronze::before { background: var(--bronze); }
-
-.podium-card:nth-child(1) { animation-delay: 0.05s; }
-.podium-card:nth-child(2) { animation-delay: 0.10s; }
-.podium-card:nth-child(3) { animation-delay: 0.15s; }
-
-.podium-rank {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
+.podium-medal { font-size: 32px; margin-bottom: 4px; }
+.podium-rank { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; }
 .podium-card.gold   .podium-rank { color: var(--gold); }
 .podium-card.silver .podium-rank { color: var(--silver); }
 .podium-card.bronze .podium-rank { color: var(--bronze); }
-
-.podium-name {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-}
+.podium-name { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-top: 4px; }
 
 .podium-score {
   font-family: var(--font-mono);
-  font-size: 28px;
+  font-size: 36px;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-  margin-top: 4px;
+  letter-spacing: -0.03em;
+  margin-top: 6px;
+  line-height: 1;
 }
+.podium-score-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
+.podium-bilans { font-family: var(--font-mono); font-size: 11px; margin-top: 8px; }
+.podium-bilans.pos { color: var(--green-text); }
+.podium-bilans.neg { color: var(--red-text); }
 
-.podium-score-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-
-.podium-bilans {
-  font-family: var(--font-mono);
+.podium-roast {
   font-size: 11px;
-  margin-top: 4px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-style: italic;
 }
+html.light .podium-roast { border-top-color: rgba(0,0,0,0.08); }
 
 /* ── LEADERBOARD ── */
-.lb-section {
-  padding: 32px 64px 80px;
-  position: relative;
-  z-index: 1;
-}
+.lb-section { padding: 32px 64px 80px; position: relative; z-index: 1; }
 
 .lb-header {
   display: grid;
-  grid-template-columns: 48px 1fr 80px 70px 70px 80px 90px;
+  grid-template-columns: 52px 1fr 90px 70px 70px 80px;
   gap: 8px;
   padding: 0 20px 12px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
-
-.lb-col-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-
-.lb-col-label.right { text-align: right; }
+.lb-col { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; color: var(--text-muted); text-transform: uppercase; }
+.lb-col.r { text-align: right; }
 
 .lb-row {
   display: grid;
-  grid-template-columns: 48px 1fr 80px 70px 70px 80px 90px;
+  grid-template-columns: 52px 1fr 90px 70px 70px 80px;
   gap: 8px;
-  padding: 16px 20px;
+  padding: 18px 20px;
   border: 1px solid var(--border);
   margin-bottom: 2px;
   background: var(--surface);
   cursor: pointer;
-  transition: background 0.2s, transform 0.2s, border-color 0.2s;
-  animation: fadeUp 0.5s ease both;
+  transition: background 0.2s, border-color 0.2s, transform 0.25s ease;
   position: relative;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(-20px);
 }
 
-.lb-row:hover {
-  background: var(--surface2);
-  border-color: var(--text-muted);
-  transform: translateX(3px);
+.lb-row.visible {
+  opacity: 1;
+  transform: translateX(0);
 }
 
-.lb-row:nth-child(1) { animation-delay: 0.05s; }
-.lb-row:nth-child(2) { animation-delay: 0.10s; }
-.lb-row:nth-child(3) { animation-delay: 0.15s; }
-.lb-row:nth-child(4) { animation-delay: 0.20s; }
-.lb-row:nth-child(5) { animation-delay: 0.25s; }
-.lb-row:nth-child(6) { animation-delay: 0.30s; }
-.lb-row:nth-child(7) { animation-delay: 0.35s; }
-.lb-row:nth-child(8) { animation-delay: 0.40s; }
-
-.lb-place {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
+.lb-row::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.2s;
 }
+.lb-row:hover::after { opacity: 1; }
+.lb-row.gold-row::after  { background: var(--gold); }
+.lb-row.silver-row::after { background: var(--silver); }
+.lb-row.bronze-row::after { background: var(--bronze); }
 
-.lb-place.gold   { color: var(--gold); }
-.lb-place.silver { color: var(--silver); }
-.lb-place.bronze { color: var(--bronze); }
+.lb-row:hover { background: var(--surface2); border-color: var(--text-muted); }
 
-.lb-name {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.lb-place { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); display: flex; align-items: center; }
+.lb-place.gold-row { color: var(--gold); }
+.lb-place.silver-row { color: var(--silver); }
+.lb-place.bronze-row { color: var(--bronze); }
 
-.lb-name .birthday-badge {
+.lb-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.bday-badge {
   font-family: var(--font-mono);
   font-size: 8px;
   letter-spacing: 0.1em;
@@ -393,148 +364,149 @@ header {
   padding: 2px 7px;
   border-radius: 2px;
   text-transform: uppercase;
+  animation: pulse-gold 2s ease infinite;
 }
 
-.lb-val {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
+@keyframes pulse-gold {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
-.lb-val.primary {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
+.lb-val { font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; justify-content: flex-end; }
+.lb-val.big { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.lb-bilans { font-family: var(--font-mono); font-size: 13px; display: flex; align-items: center; justify-content: flex-end; }
+.lb-bilans.pos { color: var(--green-text); }
+.lb-bilans.neg { color: var(--red-text); }
 
-.lb-bilans {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.lb-bilans.positive { color: var(--green-text); }
-.lb-bilans.negative { color: var(--red-text); }
-
-.lb-efekt {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-/* ── EXPANDED DETAIL ── */
-.lb-detail {
+/* ── EXPAND DETAIL ── */
+.lb-expand {
   display: none;
   grid-column: 1 / -1;
-  margin-top: 10px;
-  padding-top: 14px;
+  margin-top: 14px;
+  padding-top: 16px;
   border-top: 1px solid var(--border);
-  gap: 20px;
+  flex-direction: column;
+  gap: 14px;
 }
+.lb-row.open .lb-expand { display: flex; }
 
-.lb-row.open .lb-detail { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
-
-.detail-block { display: flex; flex-direction: column; gap: 3px; }
-
-.detail-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-
-.detail-val {
-  font-family: var(--font-mono);
-  font-size: 14px;
+.expand-roast {
+  font-size: 13px;
   color: var(--text-secondary);
-}
-
-.detail-val.highlight { color: var(--text-primary); }
-
-/* ── STAT BAR ── */
-.stat-bar-wrap { margin-top: 4px; }
-.stat-bar-bg {
-  height: 3px;
+  line-height: 1.6;
+  padding: 12px 16px;
   background: var(--tag-bg);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-top: 4px;
+  border-left: 3px solid var(--text-muted);
 }
-.stat-bar-fill {
-  height: 100%;
-  background: var(--text-muted);
-  border-radius: 2px;
-  transition: width 0.6s ease;
+
+.expand-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
 }
+
+.stat-block { display: flex; flex-direction: column; gap: 4px; }
+.stat-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; color: var(--text-muted); text-transform: uppercase; }
+.stat-val { font-family: var(--font-mono); font-size: 15px; color: var(--text-secondary); }
+.stat-val.hi { color: var(--text-primary); }
+.stat-bar { height: 2px; background: var(--tag-bg); border-radius: 2px; overflow: hidden; margin-top: 3px; }
+.stat-bar-fill { height: 100%; background: var(--text-muted); border-radius: 2px; width: 0%; transition: width 0.7s cubic-bezier(0.4,0,0.2,1) 0.1s; }
+
+.expand-chevron {
+  position: absolute;
+  right: 20px; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.3s;
+  pointer-events: none;
+}
+.lb-row.open .expand-chevron { transform: translateY(-50%) rotate(180deg); }
 
 /* ── GALLERY ── */
 .gallery-section {
-  padding: 48px 64px;
+  padding: 52px 64px;
   border-top: 1px solid var(--border);
   position: relative;
   z-index: 1;
-}
-
-.gallery-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin-bottom: 24px;
 }
 
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2px;
+  margin-top: 0;
 }
+
+.gallery-item {
+  overflow: hidden;
+  position: relative;
+  cursor: zoom-in;
+  opacity: 0;
+  transform: scale(0.97);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.gallery-item.visible { opacity: 1; transform: scale(1); }
+
+.gallery-item::after {
+  content: 'ZOOM';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: white;
+  background: rgba(0,0,0,0.5);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.gallery-item:hover::after { opacity: 1; }
 
 .gallery-img {
   width: 100%;
   aspect-ratio: 4/3;
   object-fit: cover;
   display: block;
-  transition: transform 0.4s ease, filter 0.4s ease;
-  filter: grayscale(20%);
-  cursor: zoom-in;
+  transition: transform 0.5s ease, filter 0.4s ease;
+  filter: grayscale(30%) brightness(0.9);
 }
-
-.gallery-img:hover {
-  transform: scale(1.02);
-  filter: grayscale(0%);
-  z-index: 2;
-  position: relative;
-}
+.gallery-item:hover .gallery-img { transform: scale(1.05); filter: grayscale(0%) brightness(1); }
 
 /* ── LIGHTBOX ── */
 .lightbox {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.92);
-  z-index: 1000;
+  background: rgba(0,0,0,0);
+  z-index: 9000;
   align-items: center;
   justify-content: center;
+  transition: background 0.3s;
   cursor: zoom-out;
 }
+.lightbox.open { display: flex; background: rgba(0,0,0,0.92); }
+.lightbox img { max-width: 90vw; max-height: 88vh; object-fit: contain; transform: scale(0.9); opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease; }
+.lightbox.open img { transform: scale(1); opacity: 1; }
 
-.lightbox.open { display: flex; }
-
-.lightbox img {
-  max-width: 92vw;
-  max-height: 90vh;
-  object-fit: contain;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.8);
+/* ── CONFETTI ── */
+.confetti-piece {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  top: -10px;
+  border-radius: 1px;
+  animation: confetti-fall linear forwards;
+  pointer-events: none;
+  z-index: 9998;
+}
+@keyframes confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
 
 /* ── FOOTER ── */
@@ -547,7 +519,6 @@ footer {
   position: relative;
   z-index: 1;
 }
-
 .footer-left { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; }
 .footer-right { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
 
@@ -559,56 +530,68 @@ footer {
 html.light .switch-thumb { transform: translateX(16px); background: #0f0f0f; }
 html.light .switch-track { background: #d0ceca; }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 /* ── RESPONSIVE ── */
-@media (max-width: 900px) {
-  header, .hero, .tabs-bar, .podium-section, .lb-section, .gallery-section, footer {
-    padding-left: 24px; padding-right: 24px;
-  }
-  .hero h1 { font-size: 42px; }
-  .hero-bg-symbol { display: none; }
-  .lb-header, .lb-row {
-    grid-template-columns: 36px 1fr 70px 60px;
-  }
-  .lb-header :nth-child(n+5), .lb-row > *:nth-child(n+5) {
-    display: none;
-  }
+@media (max-width: 860px) {
+  header, .hero, .tabs-bar, .podium-section, .lb-section, .gallery-section, footer { padding-left: 20px; padding-right: 20px; }
+  .hero h1 { font-size: 40px; }
+  .hero-bg-text { display: none; }
+  .lb-header, .lb-row { grid-template-columns: 44px 1fr 80px 72px; }
+  .lb-header > *:nth-child(n+5), .lb-row > *:nth-child(n+5) { display: none; }
   .podium { max-width: 100%; }
   .gallery-grid { grid-template-columns: 1fr 1fr; }
 }
-
 @media (max-width: 520px) {
   .podium { grid-template-columns: 1fr; }
   .gallery-grid { grid-template-columns: 1fr; }
+  .hero-stats { flex-direction: column; }
+  .hero-stat { min-width: unset; }
 }
 </style>
 </head>
 <body>
 
-<header>
+<!-- PAGE COVER / LOADER -->
+<div id="page-cover">
+  <div class="cover-inner">
+    <div>KWATERA GŁÓWNA</div>
+    <div class="cover-bar-wrap"><div class="cover-bar" id="cover-bar"></div></div>
+    <div id="cover-txt">ŁADOWANIE WYNIKÓW...</div>
+  </div>
+</div>
+
+<header id="header">
   <a href="../index.html" class="logo">HOST<span>·</span>LAB<span class="sub"> / STRZELNICA</span></a>
   <div class="header-right">
-    <div class="header-meta">KWATERA GŁÓWNA — 2025</div>
-    <div class="theme-switch" id="theme-switch" title="Przełącz motyw">
+    <div class="header-meta">KWATERA GŁÓWNA · URODZINY KSAWEGO</div>
+    <div class="theme-switch" id="theme-switch">
       <span class="switch-label" id="switch-label">LIGHT</span>
       <div class="switch-track"><div class="switch-thumb"></div></div>
     </div>
   </div>
 </header>
 
-<section class="hero">
-  <div class="hero-bg-symbol">🎯</div>
-  <div class="hero-label">Urodziny Ksawego · Kwatera Główna</div>
-  <h1>Strzel<em>nica</em></h1>
-  <p class="hero-sub">Wyniki z paintballowej strzelnicy na urodzinach Ksawego. 8 zawodników, jedna szansa na chwałę.</p>
-  <div class="hero-meta">
-    <div class="hero-meta-item">ZAWODNICY<span>8</span></div>
-    <div class="hero-meta-item">ZWYCIĘZCA<span id="hero-winner">—</span></div>
-    <div class="hero-meta-item">MAX WYNIK<span id="hero-max">—</span></div>
+<section class="hero" id="hero">
+  <div class="hero-bg-text">🎯</div>
+  <div class="hero-label">Paintball · Kwatera Główna · 2025</div>
+  <h1>Strzel<em>nica</em><br>Ksa<em>wego</em></h1>
+  <p class="hero-sub">8 zawodników. Jeden zwycięzca. Kilka osób które powinny wziąć urlop od strzelaniny.</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-label">Zawodnicy</div>
+      <div class="hero-stat-val">8</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-label">Zwycięzca</div>
+      <div class="hero-stat-val" id="hero-winner">—</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-label">Max wynik</div>
+      <div class="hero-stat-val" id="hero-max">—</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-label">Najgorszy bilans</div>
+      <div class="hero-stat-val" id="hero-worst">—</div>
+    </div>
   </div>
 </section>
 
@@ -618,29 +601,34 @@ html.light .switch-track { background: #d0ceca; }
 </div>
 
 <section class="podium-section">
-  <div class="podium-label">Podium</div>
+  <div class="section-label">Podium</div>
   <div class="podium" id="podium"></div>
 </section>
 
 <section class="lb-section">
   <div class="lb-header">
-    <div class="lb-col-label">#</div>
-    <div class="lb-col-label">Zawodnik</div>
-    <div class="lb-col-label right">Wynik</div>
-    <div class="lb-col-label right">Trafił</div>
-    <div class="lb-col-label right">Zginął</div>
-    <div class="lb-col-label right">Bilans</div>
-    <div class="lb-col-label right">Efektywność</div>
+    <div class="lb-col">#</div>
+    <div class="lb-col">Zawodnik</div>
+    <div class="lb-col r">Wynik</div>
+    <div class="lb-col r">Trafił</div>
+    <div class="lb-col r">Zginął</div>
+    <div class="lb-col r">Bilans</div>
   </div>
   <div id="leaderboard"></div>
 </section>
 
 <section class="gallery-section">
-  <div class="gallery-label">Zdjęcia z tablicy wyników</div>
+  <div class="section-label">Tablica wyników</div>
   <div class="gallery-grid">
-    <img class="gallery-img" src="../other/events/strzelnica-1.jpg" alt="Tablica wyników — Kwatera Główna">
-    <img class="gallery-img" src="../other/events/strzelnica-2.jpg" alt="Zestawienie wg wyniku i bilansu">
-    <img class="gallery-img" src="../other/events/strzelnica-3.jpg" alt="Pełna tablica wyników">
+    <div class="gallery-item" data-src="../other/events/strzelnica-1.jpg">
+      <img class="gallery-img" src="../other/events/strzelnica-1.jpg" alt="Wyniki">
+    </div>
+    <div class="gallery-item" data-src="../other/events/strzelnica-2.jpg">
+      <img class="gallery-img" src="../other/events/strzelnica-2.jpg" alt="Zestawienie">
+    </div>
+    <div class="gallery-item" data-src="../other/events/strzelnica-3.jpg">
+      <img class="gallery-img" src="../other/events/strzelnica-3.jpg" alt="Pełna tablica">
+    </div>
   </div>
 </section>
 
@@ -649,67 +637,74 @@ html.light .switch-track { background: #d0ceca; }
   <div class="footer-right" id="footer-date"></div>
 </footer>
 
-<div class="lightbox" id="lightbox">
-  <img id="lightbox-img" src="" alt="">
-</div>
+<div class="lightbox" id="lightbox"><img id="lightbox-img" src="" alt=""></div>
 
 <script>
+/* ── DATA ── */
 const PLAYERS = [
   {
     name: 'Szymon', birthday: false,
     zginal: 60.75, trafil: 102.00, bilans: 41.25,
     brzuch: 63.75, ramie: 67.50, plecy: 11.25,
     uzi: 5535.00, dd: 12.00, mhgun: 0.00, shg: 0.00, snp: 0.00, atank: 0.00,
-    efekt: 1.839, wynik: 102.00
+    efekt: 1.839, wynik: 102.00,
+    roast: 'Wcisnął spust UZI i już nie puścił. 5535 nabojów UZI — to nie strzelanie, to psychoterapia z lufą.'
   },
   {
     name: 'Ksawery', birthday: true,
     zginal: 57.75, trafil: 63.75, bilans: 6.00,
     brzuch: 45.00, ramie: 17.25, plecy: 9.00,
     uzi: 2205.00, dd: 15.00, mhgun: 0.00, shg: 0.00, snp: 0.00, atank: 0.00,
-    efekt: 2.872, wynik: 63.75
+    efekt: 2.872, wynik: 63.75,
+    roast: 'Solenizant. Na własnych urodzinach zajął drugie miejsce. Nie był to jego najlepszy dzień urodzinowy — ale tort był dobry.'
   },
   {
     name: 'Kuba', birthday: false,
     zginal: 64.50, trafil: 58.50, bilans: -6.00,
     brzuch: 39.00, ramie: 31.50, plecy: 9.00,
     uzi: 652.50, dd: 15.00, mhgun: 180.00, shg: 0.00, snp: 0.75, atank: 2.25,
-    efekt: 6.878, wynik: 58.50
+    efekt: 6.878, wynik: 58.50,
+    roast: 'Brązowy medal i ujemny bilans. Umarł częściej niż zabił, ale brąz to brąz. Przynajmniej próbował wszystkiego — nawet czołgu.'
   },
   {
     name: 'Iwo', birthday: false,
     zginal: 51.75, trafil: 55.50, bilans: 3.75,
     brzuch: 40.50, ramie: 29.25, plecy: 6.00,
     uzi: 2092.50, dd: 26.25, mhgun: 0.00, shg: 0.00, snp: 0.00, atank: 0.00,
-    efekt: 2.619, wynik: 55.50
+    efekt: 2.619, wynik: 55.50,
+    roast: 'Cichy, skupiony, na plusie. Nie błyszczał, nie zawalił. Solid. Taki typ co wchodzi, robi robotę i wychodzi.'
   },
   {
     name: 'Jakub', birthday: false,
     zginal: 54.75, trafil: 47.25, bilans: -7.50,
     brzuch: 24.75, ramie: 28.50, plecy: 6.75,
     uzi: 945.00, dd: 2.25, mhgun: 247.50, shg: 0.00, snp: 0.00, atank: 0.00,
-    efekt: 3.955, wynik: 47.25
+    efekt: 3.955, wynik: 47.25,
+    roast: '247 punktów z maszyngunera i dalej na minusie. Może następnym razem strzelać do przeciwników, nie w powietrze.'
   },
   {
     name: 'Olek', birthday: false,
     zginal: 30.00, trafil: 32.25, bilans: 2.25,
     brzuch: 22.50, ramie: 15.75, plecy: 5.25,
     uzi: 675.00, dd: 1.50, mhgun: 112.50, shg: 0.00, snp: 1.50, atank: 0.00,
-    efekt: 4.080, wynik: 32.25
+    efekt: 4.080, wynik: 32.25,
+    roast: 'Strzelał mało, przeżywał w miarę. Ekonomista strzelnicy — najmniej śmierci z dolnej połowy tabeli. Gra na przeżycie.'
   },
   {
     name: 'Patryk', birthday: false,
     zginal: 48.75, trafil: 30.75, bilans: -18.00,
     brzuch: 19.50, ramie: 13.50, plecy: 4.50,
     uzi: 1057.50, dd: 0.00, mhgun: 135.00, shg: 0.00, snp: 3.00, atank: 0.00,
-    efekt: 2.572, wynik: 30.75
+    efekt: 2.572, wynik: 30.75,
+    roast: 'Bilans -18. Zginął prawie 49 razy, trafił 31. Chyba szedł bez kamizelki. Respekt za odwagę — zero za taktykę.'
   },
   {
     name: 'Norbert', birthday: false,
     zginal: 52.50, trafil: 30.00, bilans: -22.50,
     brzuch: 18.00, ramie: 17.25, plecy: 6.75,
     uzi: 427.50, dd: 12.75, mhgun: 360.00, shg: 5.25, snp: 12.75, atank: 7.50,
-    efekt: 3.633, wynik: 30.00
+    efekt: 3.633, wynik: 30.00,
+    roast: 'Próbował snajperki, maszyngunera, karabinu szturmowego, czołgu... i tak zajął ostatnie miejsce. Kudos za kreatywność.'
   }
 ];
 
@@ -722,133 +717,177 @@ const WEAPONS = [
   { key: 'atank', label: 'aTank' },
 ];
 
+const MAX_WYNIK  = Math.max(...PLAYERS.map(p => p.wynik));
+const MAX_TRAFIL = Math.max(...PLAYERS.map(p => p.trafil));
+
 let currentTab = 'wynik';
 
-function sortedByTab(tab) {
-  return [...PLAYERS].sort((a, b) =>
-    tab === 'wynik' ? b.wynik - a.wynik : b.bilans - a.bilans
-  );
+/* ── HELPERS ── */
+function fmt(n) { return (n % 1 === 0 ? n.toFixed(0) : n.toFixed(2)); }
+function bfmt(n) { return (n > 0 ? '+' : '') + fmt(n); }
+function bcls(n) { return n > 0 ? 'pos' : n < 0 ? 'neg' : ''; }
+function placeCls(i) { return ['gold-row', 'silver-row', 'bronze-row'][i] || ''; }
+function sorted() { return [...PLAYERS].sort((a, b) => currentTab === 'wynik' ? b.wynik - a.wynik : b.bilans - a.bilans); }
+
+/* ── COUNTER ANIMATION ── */
+function animateCount(el, target, duration = 900, decimals = 2) {
+  const start = performance.now();
+  const update = (now) => {
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    const val = target * ease;
+    el.textContent = decimals === 0 ? Math.round(val) : val.toFixed(decimals);
+    if (p < 1) requestAnimationFrame(update);
+    else el.textContent = decimals === 0 ? target : fmt(target);
+  };
+  requestAnimationFrame(update);
 }
 
-function fmt(n) {
-  return n % 1 === 0 ? n.toFixed(0) : n.toFixed(2);
-}
-
-function bilansCls(n) {
-  return n > 0 ? 'positive' : n < 0 ? 'negative' : '';
-}
-
-function bilansFmt(n) {
-  return (n > 0 ? '+' : '') + fmt(n);
-}
-
-function placeCls(i) {
-  return i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-}
-
-function placeMedal(i) {
-  return i === 0 ? '🥇 01' : i === 1 ? '🥈 02' : i === 2 ? '🥉 03' : String(i + 1).padStart(2, '0');
-}
-
-const maxWynik  = Math.max(...PLAYERS.map(p => p.wynik));
-const maxTrafil = Math.max(...PLAYERS.map(p => p.trafil));
-
-function renderPodium(sorted) {
-  const podium = document.getElementById('podium');
-  podium.innerHTML = '';
-  const top3 = sorted.slice(0, 3);
-  const cls = ['gold', 'silver', 'bronze'];
-  const rank = ['#1 — Złoto', '#2 — Srebro', '#3 — Brąz'];
-  top3.forEach((p, i) => {
-    const scoreVal = currentTab === 'wynik' ? p.wynik : p.bilans;
-    const scoreLabel = currentTab === 'wynik' ? 'WYNIK' : 'BILANS';
-    const bilansStr = bilansFmt(p.bilans);
-    const bilansCl = bilansCls(p.bilans);
-    const card = document.createElement('div');
-    card.className = `podium-card ${cls[i]}`;
-    card.innerHTML = `
-      <div class="podium-rank">${rank[i]}</div>
-      <div class="podium-name">${p.name}${p.birthday ? ' 🎂' : ''}</div>
-      <div class="podium-score">${fmt(scoreVal)}</div>
-      <div class="podium-score-label">${scoreLabel}</div>
-      <div class="podium-bilans ${bilansCl}">BILANS ${bilansStr}</div>
+/* ── CONFETTI ── */
+function fireConfetti() {
+  const colors = ['#c9a227', '#f0d060', '#ffffff', '#aaaaaa', '#8c5e3c'];
+  for (let i = 0; i < 80; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `
+      left: ${Math.random() * 100}vw;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      width: ${4 + Math.random() * 8}px;
+      height: ${4 + Math.random() * 8}px;
+      border-radius: ${Math.random() > 0.5 ? '50%' : '1px'};
+      animation-duration: ${1.5 + Math.random() * 2.5}s;
+      animation-delay: ${Math.random() * 1}s;
     `;
-    podium.appendChild(card);
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+
+/* ── PODIUM ── */
+function renderPodium(s) {
+  const el = document.getElementById('podium');
+  el.innerHTML = '';
+  const medals  = ['🥇', '🥈', '🥉'];
+  const ranks   = ['#1 — Złoto', '#2 — Srebro', '#3 — Brąz'];
+  const classes = ['gold', 'silver', 'bronze'];
+
+  s.slice(0, 3).forEach((p, i) => {
+    const val = currentTab === 'wynik' ? p.wynik : p.bilans;
+    const lbl = currentTab === 'wynik' ? 'WYNIK' : 'BILANS';
+    const card = document.createElement('div');
+    card.className = `podium-card ${classes[i]}`;
+    card.innerHTML = `
+      <div class="podium-medal">${medals[i]}</div>
+      <div class="podium-rank">${ranks[i]}</div>
+      <div class="podium-name">${p.name}${p.birthday ? ' 🎂' : ''}</div>
+      <div class="podium-score" data-target="${val}" data-dec="2">—</div>
+      <div class="podium-score-label">${lbl}</div>
+      <div class="podium-bilans ${bcls(p.bilans)}">BILANS ${bfmt(p.bilans)}</div>
+      <div class="podium-roast">${p.roast}</div>
+    `;
+    el.appendChild(card);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        card.classList.add('visible');
+        const scoreEl = card.querySelector('[data-target]');
+        animateCount(scoreEl, val, 800, 2);
+      }, i * 120);
+    });
   });
 }
 
-function renderLeaderboard(sorted) {
+/* ── LEADERBOARD ── */
+function renderLeaderboard(s) {
   const lb = document.getElementById('leaderboard');
   lb.innerHTML = '';
 
-  const allBilans = PLAYERS.map(p => Math.abs(p.bilans));
-  const maxBilans = Math.max(...allBilans);
-  const allUzi = PLAYERS.map(p => p.uzi);
-  const maxUzi = Math.max(...allUzi);
-
-  sorted.forEach((p, i) => {
+  s.forEach((p, i) => {
     const row = document.createElement('div');
-    row.className = `lb-row`;
+    row.className = `lb-row ${placeCls(i)}`;
 
-    const weaponBars = WEAPONS.map(w => {
+    const weaponHTML = WEAPONS.map(w => {
       const val = p[w.key];
-      const maxVal = Math.max(...PLAYERS.map(x => x[w.key]));
-      const pct = maxVal > 0 ? Math.round((val / maxVal) * 100) : 0;
       if (val === 0) return '';
+      const maxV = Math.max(...PLAYERS.map(x => x[w.key]));
+      const pct  = maxV > 0 ? Math.round((val / maxV) * 100) : 0;
       return `
-        <div class="detail-block">
-          <div class="detail-label">${w.label}</div>
-          <div class="detail-val">${fmt(val)}</div>
-          <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${pct}%"></div></div>
-        </div>
-      `;
+        <div class="stat-block">
+          <div class="stat-label">${w.label}</div>
+          <div class="stat-val">${fmt(val)}</div>
+          <div class="stat-bar"><div class="stat-bar-fill" data-pct="${pct}"></div></div>
+        </div>`;
     }).join('');
 
-    const hitPct = Math.round((p.trafil / maxTrafil) * 100);
-    const wynikPct = Math.round((p.wynik / maxWynik) * 100);
+    const medal = ['🥇', '🥈', '🥉'][i] || '';
+    const num   = String(i + 1).padStart(2, '0');
 
     row.innerHTML = `
-      <div class="lb-place ${placeCls(i)}">${placeMedal(i)}</div>
+      <div class="lb-place ${placeCls(i)}">${medal || num}</div>
       <div class="lb-name">
         ${p.name}
-        ${p.birthday ? '<span class="birthday-badge">URODZINY</span>' : ''}
+        ${p.birthday ? '<span class="bday-badge">URODZINY 🎂</span>' : ''}
       </div>
-      <div class="lb-val primary">${fmt(p.wynik)}</div>
+      <div class="lb-val big" data-target="${p.wynik}">—</div>
       <div class="lb-val">${fmt(p.trafil)}</div>
       <div class="lb-val">${fmt(p.zginal)}</div>
-      <div class="lb-bilans ${bilansCls(p.bilans)}">${bilansFmt(p.bilans)}</div>
-      <div class="lb-efekt">${p.efekt.toFixed(3)}%</div>
-      <div class="lb-detail">
-        <div class="detail-block">
-          <div class="detail-label">Brzuch</div>
-          <div class="detail-val highlight">${fmt(p.brzuch)}</div>
+      <div class="lb-bilans ${bcls(p.bilans)}">${bfmt(p.bilans)}</div>
+      <div class="expand-chevron">▲</div>
+      <div class="lb-expand">
+        <div class="expand-roast">${p.roast}</div>
+        <div class="expand-stats">
+          <div class="stat-block">
+            <div class="stat-label">Brzuch</div>
+            <div class="stat-val hi">${fmt(p.brzuch)}</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-label">Ramię</div>
+            <div class="stat-val">${fmt(p.ramie)}</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-label">Plecy</div>
+            <div class="stat-val">${fmt(p.plecy)}</div>
+          </div>
+          ${weaponHTML}
+          <div class="stat-block">
+            <div class="stat-label">Efektywność</div>
+            <div class="stat-val">${p.efekt.toFixed(3)}%</div>
+          </div>
         </div>
-        <div class="detail-block">
-          <div class="detail-label">Ramię</div>
-          <div class="detail-val">${fmt(p.ramie)}</div>
-        </div>
-        <div class="detail-block">
-          <div class="detail-label">Plecy</div>
-          <div class="detail-val">${fmt(p.plecy)}</div>
-        </div>
-        ${weaponBars}
       </div>
     `;
 
     row.addEventListener('click', () => {
-      row.classList.toggle('open');
+      const wasOpen = row.classList.contains('open');
+      document.querySelectorAll('.lb-row.open').forEach(r => r.classList.remove('open'));
+      if (!wasOpen) {
+        row.classList.add('open');
+        row.querySelectorAll('.stat-bar-fill').forEach(bar => {
+          const pct = bar.dataset.pct;
+          setTimeout(() => { bar.style.width = pct + '%'; }, 50);
+        });
+      }
     });
 
     lb.appendChild(row);
   });
+
+  /* stagger rows visible */
+  lb.querySelectorAll('.lb-row').forEach((r, i) => {
+    setTimeout(() => {
+      r.classList.add('visible');
+      const countEl = r.querySelector('.lb-val.big');
+      if (countEl) animateCount(countEl, s[i].wynik, 700, 2);
+    }, i * 60);
+  });
 }
 
 function render() {
-  const sorted = sortedByTab(currentTab);
-  renderPodium(sorted);
-  renderLeaderboard(sorted);
+  const s = sorted();
+  renderPodium(s);
+  renderLeaderboard(s);
 }
 
+/* ── TABS ── */
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -858,13 +897,14 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+/* ── HERO STATS ── */
 const winner = PLAYERS.reduce((a, b) => a.wynik > b.wynik ? a : b);
+const worst  = PLAYERS.reduce((a, b) => a.bilans < b.bilans ? a : b);
 document.getElementById('hero-winner').textContent = winner.name;
 document.getElementById('hero-max').textContent = fmt(winner.wynik);
+document.getElementById('hero-worst').textContent = bfmt(worst.bilans) + ' (' + worst.name + ')';
 
-document.getElementById('footer-date').textContent =
-  new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
-
+/* ── THEME ── */
 const themeSwitch = document.getElementById('theme-switch');
 const switchLabel = document.getElementById('switch-label');
 themeSwitch.addEventListener('click', () => {
@@ -877,18 +917,54 @@ if (localStorage.getItem('hostlab-theme') === 'light') {
   switchLabel.textContent = 'DARK';
 }
 
-document.querySelectorAll('.gallery-img').forEach(img => {
-  img.addEventListener('click', () => {
-    document.getElementById('lightbox-img').src = img.src;
-    document.getElementById('lightbox').classList.add('open');
+/* ── FOOTER DATE ── */
+document.getElementById('footer-date').textContent =
+  new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
+
+/* ── GALLERY LIGHTBOX ── */
+const lightbox = document.getElementById('lightbox');
+const lbImg    = document.getElementById('lightbox-img');
+document.querySelectorAll('.gallery-item').forEach(item => {
+  item.addEventListener('click', () => {
+    lbImg.src = item.dataset.src;
+    lightbox.classList.add('open');
   });
 });
+lightbox.addEventListener('click', () => lightbox.classList.remove('open'));
 
-document.getElementById('lightbox').addEventListener('click', () => {
-  document.getElementById('lightbox').classList.remove('open');
-});
+/* ── INTERSECTION OBSERVER (gallery) ── */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+}, { threshold: 0.15 });
+document.querySelectorAll('.gallery-item').forEach(el => io.observe(el));
 
-render();
+/* ── PAGE INTRO SEQUENCE ── */
+const cover    = document.getElementById('page-cover');
+const bar      = document.getElementById('cover-bar');
+const coverTxt = document.getElementById('cover-txt');
+const msgs     = ['ŁADOWANIE WYNIKÓW...', 'OBLICZANIE BILANSU...', 'PRZYZNAWANIE MEDALI...', 'GOTOWE.'];
+let msgIdx = 0;
+
+bar.style.width = '0%';
+let pct = 0;
+const tick = setInterval(() => {
+  pct += 4 + Math.random() * 6;
+  if (pct > 100) pct = 100;
+  bar.style.width = pct + '%';
+  if (pct >= 35 && msgIdx === 0) { msgIdx++; coverTxt.textContent = msgs[1]; }
+  if (pct >= 65 && msgIdx === 1) { msgIdx++; coverTxt.textContent = msgs[2]; }
+  if (pct >= 90 && msgIdx === 2) { msgIdx++; coverTxt.textContent = msgs[3]; }
+  if (pct >= 100) {
+    clearInterval(tick);
+    setTimeout(() => {
+      cover.classList.add('gone');
+      document.getElementById('header').classList.add('visible');
+      document.getElementById('hero').classList.add('visible');
+      render();
+      setTimeout(fireConfetti, 1200);
+    }, 350);
+  }
+}, 60);
 </script>
 </body>
 </html>
