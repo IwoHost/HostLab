@@ -465,6 +465,10 @@ const KEY = 'contractMachine_v1';
 
 const CLASSES = ['Scout','Soldier','Pyro','Demoman','Heavy','Engineer','Medic','Sniper','Spy'];
 
+// Classes that can reasonably be assigned kill-based tasks
+const KILLERS     = ['Scout','Soldier','Pyro','Demoman','Heavy','Sniper'];
+const EASY_KILL   = ['Soldier','Pyro','Demoman','Heavy'];
+
 const WEAPONS = {
   Scout:    ['Scattergun','Force-A-Nature','Shortstop','Pistol','Sandman','Bat'],
   Soldier:  ['Rocket Launcher','Direct Hit','Black Box','Shotgun','Shovel','Equalizer'],
@@ -488,73 +492,118 @@ function otherClass(c) { return pick(CLASSES.filter(x => x !== c)); }
 
 const TEMPLATES = {
   1: [
-    () => { const c = pick(CLASSES);
+    // Kill tasks → only for combat classes
+    () => { const c = pick(KILLERS);
       return { title: 'FRONTLINE DUTY',
         desc: `As the ${c}, eliminate ${rand(5, 10)} enemies in a single match.` }; },
-    () => { const c = pick(CLASSES);
+    () => { const c = pick(KILLERS);
       return { title: 'DAMAGE REPORT',
-        desc: `Deal at least ${rand(2, 5) * 1000} damage as the ${c} in a single match.` }; },
+        desc: `Deal at least ${rand(2, 4) * 1000} damage as the ${c} in a single match.` }; },
+    // Objective → any class, it's just capping points
     () => { const c = pick(CLASSES);
       return { title: 'OBJECTIVE SECURED',
         desc: `As the ${c}, capture or contest ${rand(2, 5)} objectives in a single match.` }; },
+    // Assists → universal, works for every class
     () => ({
       title: 'OPERATIONAL SUPPORT',
       desc: `Assist in eliminating ${rand(8, 16)} enemies in a single match, any class.` }),
+    // Win → any class
     () => { const c = pick(CLASSES);
       return { title: 'WIN CONDITION',
         desc: `Win ${rand(2, 4)} rounds while playing exclusively as the ${c}.` }; },
+    // Medic-specific
+    () => ({
+      title: 'FIELD MEDIC',
+      desc: `As the Medic, heal ${rand(3, 6) * 1000} health points in a single match.` }),
+    // Engineer-specific
+    () => ({
+      title: 'FORTIFICATION',
+      desc: `As the Engineer, build and upgrade a Sentry to level 3 in ${rand(2, 3)} separate matches.` }),
+    // Spy-specific — backstabs, not kills
+    () => ({
+      title: 'SHADOW PROTOCOL',
+      desc: `As the Spy, backstab ${rand(3, 5)} enemies in a single match.` }),
+    // Survival → any class
     () => { const c = pick(CLASSES);
       return { title: 'SURVIVAL INSTINCT',
         desc: `As the ${c}, complete a full round without dying.` }; },
-    () => { const c = pick(CLASSES);
-      return { title: 'POINT PRESSURE',
-        desc: `As the ${c}, spend at least ${rand(3, 6)} minutes on the active objective in a match.` }; },
   ],
   2: [
-    () => { const c = pick(CLASSES);
+    // Kill streak → only easy killers
+    () => { const c = pick(EASY_KILL);
       return { title: 'PREDATOR PROTOCOL',
         desc: `As the ${c}, eliminate ${rand(3, 5)} enemies in a single life.` }; },
-    () => { const c = pick(CLASSES); const w = pick(WEAPONS[c]);
+    // Weapon restriction → kill classes only
+    () => { const c = pick(KILLERS); const w = pick(WEAPONS[c]);
       return { title: 'RESTRICTED ARMAMENT',
-        desc: `As the ${c}, eliminate ${rand(5, 10)} enemies using only the ${w} in a single match.` }; },
-    () => { const c = pick(CLASSES); const c2 = otherClass(c);
+        desc: `As the ${c}, eliminate ${rand(5, 9)} enemies using only the ${w} in a single match.` }; },
+    // Target specific class → kill classes
+    () => { const c = pick(KILLERS); const c2 = otherClass(c);
       return { title: 'HIGH VALUE TARGET',
         desc: `As the ${c}, eliminate ${rand(4, 8)} ${c2}s over the course of a single match.` }; },
-    () => { const c = pick(CLASSES);
+    // Buildings → Demoman, Soldier, Spy (via sapper), Engineer (destroy enemy buildings)
+    () => { const c = pick(['Demoman','Soldier','Spy']);
+      const method = c === 'Spy' ? 'using your Sapper' : 'with explosives';
       return { title: 'DEMOLITION ORDER',
-        desc: `Destroy ${rand(4, 9)} enemy buildings as the ${c} in a single match.` }; },
-    () => { const c = pick(CLASSES);
+        desc: `Destroy ${rand(4, 8)} enemy buildings as the ${c} ${method} in a single match.` }; },
+    // Medic — uber deploys
+    () => ({
+      title: 'OVERHEAL OPERATOR',
+      desc: `As the Medic, deploy ${rand(4, 7)} ÜberCharges in a single match.` }),
+    // Sniper — headshots
+    () => ({
+      title: 'PRECISION STRIKE',
+      desc: `As the Sniper, land ${rand(5, 10)} headshots in a single match.` }),
+    // Spy — clean backstabs
+    () => ({
+      title: 'SILENT BLADE',
+      desc: `As the Spy, backstab ${rand(4, 7)} enemies without being killed in a single match.` }),
+    // Kill streak → any killer class
+    () => { const c = pick(KILLERS);
       return { title: 'RELENTLESS',
-        desc: `As the ${c}, achieve ${rand(3, 6)} kills in a row without dying.` }; },
-    () => { const c = pick(CLASSES); const w = pick(WEAPONS[c]);
-      return { title: 'SPECIALIST',
-        desc: `As the ${c}, land ${rand(5, 10)} kills with the ${w} across ${rand(2, 3)} matches.` }; },
-    () => { const c = pick(CLASSES); const c2 = otherClass(c);
-      return { title: 'NEMESIS IN TRAINING',
-        desc: `As the ${c}, dominate a ${c2} — earn the domination ribbon by killing them ${rand(3, 4)} times.` }; },
+        desc: `As the ${c}, achieve ${rand(3, 5)} kills in a row without dying.` }; },
+    // Scout — objective pressure
+    () => ({
+      title: 'RAPID ASSAULT',
+      desc: `As the Scout, eliminate ${rand(3, 5)} enemies while they stand on a control point in a single match.` }),
   ],
   3: [
-    () => { const c = pick(CLASSES); const w = pick(WEAPONS[c]);
+    // Weapon-locked, no-die → only combat classes that can realistically do it
+    () => { const c = pick(EASY_KILL); const w = pick(WEAPONS[c]);
       return { title: 'CLASSIFIED OPERATION',
         desc: `As the ${c}, eliminate ${rand(4, 7)} enemies using only the ${w} — without dying more than once.` }; },
-    () => { const c = pick(CLASSES);
+    // No damage taken → easy kill classes only
+    () => { const c = pick(EASY_KILL);
       return { title: 'APEX PREDATOR',
-        desc: `As the ${c}, eliminate ${rand(3, 5)} enemies in a single life without taking any damage whatsoever.` }; },
-    () => { const c = pick(CLASSES);
+        desc: `As the ${c}, eliminate ${rand(3, 5)} enemies in a single life without taking any damage.` }; },
+    // Overtime → any killer
+    () => { const c = pick(KILLERS);
       return { title: 'OVERTIME EXECUTION',
         desc: `Eliminate ${rand(4, 8)} enemies during overtime as the ${c} — all in a single match.` }; },
-    () => { const c = pick(CLASSES);
+    // Melee only → easy kill classes, where melee is at least viable
+    () => { const c = pick(EASY_KILL);
       return { title: 'MELEE ONLY',
         desc: `As the ${c}, eliminate ${rand(5, 9)} enemies using exclusively the ${MELEE[c]} in a single match.` }; },
-    () => { const c = pick(CLASSES); const c2 = otherClass(c);
+    // Domination → kill classes
+    () => { const c = pick(KILLERS); const c2 = otherClass(c);
       return { title: 'NEMESIS PROTOCOL',
-        desc: `As the ${c}, dominate a ${c2} — then eliminate them ${rand(3, 5)} additional times in the same match.` }; },
-    () => { const c = pick(CLASSES);
+        desc: `As the ${c}, dominate a ${c2} — then eliminate them ${rand(3, 5)} more times in the same match.` }; },
+    // Medic hard — uber + healing combo
+    () => ({
+      title: 'DIVINE INTERVENTION',
+      desc: `As the Medic, deploy ${rand(6, 10)} ÜberCharges while healing over ${rand(10, 16) * 1000} total health in a single match.` }),
+    // Spy hard — backstab + sap without dying
+    () => ({
+      title: 'GHOST OPERATIVE',
+      desc: `As the Spy, backstab ${rand(5, 8)} enemies and sap ${rand(4, 6)} buildings in a single match — without being killed.` }),
+    // Engineer hard — sentry kills
+    () => ({
+      title: 'IRON FORTRESS',
+      desc: `As the Engineer, have your Sentry accumulate ${rand(20, 35)} kills over the course of a single match.` }),
+    // Combined combat — easy killers
+    () => { const c = pick(EASY_KILL);
       return { title: 'SCORCHED EARTH',
         desc: `As the ${c}, eliminate ${rand(6, 10)} enemies and destroy ${rand(3, 6)} buildings in a single match.` }; },
-    () => { const c = pick(CLASSES);
-      return { title: 'GHOST RUN',
-        desc: `As the ${c}, win a match while achieving top score on your team — without dying more than ${rand(2, 3)} times.` }; },
   ],
 };
 
@@ -731,6 +780,13 @@ function completeContract() {
 }
 
 function abandonContract() {
+  // Fine: lose 15% of the contract's point reward, minimum 10
+  const fine = Math.max(10, Math.floor(state.contract.reward.points * 0.15));
+  state.points = Math.max(0, state.points - fine);
+  state.money  = Math.max(0, state.money - Math.floor(state.contract.reward.money * 0.10));
+  state.level  = calcLevel(state.points);
+  updateHUD();
+  showToast(`Contract abandoned — fined ${fine} pts`);
   transition(() => {
     state.contract = generateContract();
     save();
