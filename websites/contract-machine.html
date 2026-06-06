@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Contract Machine — Random TF2 field contracts. Accept, complete, earn.">
+<title>Contract Machine — HostLab</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../other/backbutton.css">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:           #0c0c0c;
+  --paper:        #f0e5cc;
+  --paper-mid:    #e2d3b4;
+  --paper-border: #c4aa7e;
+  --ink:          #18100a;
+  --ink-mid:      #3c2b18;
+  --ink-faded:    #7a6040;
+  --red:          #8b1c1c;
+  --gold:         #c8a050;
+  --font-serif:   'IM Fell English', Georgia, serif;
+  --font-mono:    'Syne Mono', monospace;
+  --font-sans:    'Syne', sans-serif;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HUD ── */
+.hud {
+  position: fixed;
+  top: 28px; left: 36px;
+  z-index: 100;
+  display: flex;
+  gap: 36px;
+}
+
+.hud-item {}
+
+.hud-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  color: #282826;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.hud-value {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  color: #f0f0ee;
+  transition: color 0.5s;
+}
+
+.hud-value.flash {
+  color: var(--gold);
+}
+
+.hud-completed {
+  position: fixed;
+  top: 28px; right: 90px;
+  z-index: 100;
+}
+
+/* ── ARENA ── */
+.arena {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── PAPER ── */
+.paper-wrap {
+  width: 530px;
+  transform: rotate(15deg);
+  animation: dropIn 0.8s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 24px 64px rgba(0,0,0,0.6)) drop-shadow(0 8px 20px rgba(0,0,0,0.5));
+}
+
+@keyframes dropIn {
+  from {
+    transform: rotate(15deg) translateY(-120vh);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(15deg) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes dropOut {
+  to {
+    transform: rotate(15deg) translateY(130vh);
+    opacity: 0;
+  }
+}
+
+.paper {
+  background: var(--paper);
+  position: relative;
+  padding: 10px;
+}
+
+/* Paper grain texture overlay */
+.paper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  border-radius: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+}
+
+/* Outer thin border */
+.paper-frame {
+  border: 2px solid var(--ink);
+  padding: 6px;
+}
+
+/* Inner decorative border */
+.paper-inner {
+  border: 1px solid var(--paper-border);
+  padding: 26px 30px 24px;
+  position: relative;
+}
+
+/* Corner marks */
+.paper-inner::before,
+.paper-inner::after {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  border-color: var(--paper-border);
+  border-style: solid;
+}
+.paper-inner::before { top: -1px; left: -1px; border-width: 1.5px 0 0 1.5px; }
+.paper-inner::after  { bottom: -1px; right: -1px; border-width: 0 1.5px 1.5px 0; }
+
+/* ── ACCEPTED STAMP ── */
+.stamp {
+  position: absolute;
+  top: 22px; right: 28px;
+  z-index: 30;
+  border: 3px solid var(--red);
+  padding: 6px 14px;
+  transform: rotate(-9deg);
+  color: var(--red);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.stamp.visible {
+  opacity: 0.72;
+  animation: stampIn 0.35s cubic-bezier(0.34, 1.6, 0.64, 1) both;
+}
+
+@keyframes stampIn {
+  from { transform: rotate(-9deg) scale(2.2); opacity: 0; }
+  to   { transform: rotate(-9deg) scale(1);   opacity: 0.72; }
+}
+
+/* ── HEADER ── */
+.c-header {
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 0.75px solid var(--paper-border);
+  margin-bottom: 16px;
+}
+
+.c-org {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  letter-spacing: 0.32em;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.c-title {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+.c-meta {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  color: var(--ink-faded);
+}
+
+/* ── STARS ── */
+.c-stars {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+
+.c-star {
+  font-size: 22px;
+  color: var(--red);
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.c-star.dim { color: var(--paper-mid); }
+
+/* ── MISSION ── */
+.c-mission-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.28em;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.c-mission {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--ink);
+  min-height: 80px;
+}
+
+/* ── DIVIDER ── */
+.c-divider {
+  border: none;
+  border-top: 0.75px solid var(--paper-border);
+  margin: 18px 0;
+}
+
+/* ── REWARD ── */
+.c-reward {
+  display: flex;
+}
+
+.c-reward-item {
+  flex: 1;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.c-reward-item + .c-reward-item {
+  border-left: 0.75px solid var(--paper-border);
+}
+
+.c-reward-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.c-reward-value {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  color: var(--ink);
+}
+
+/* ── SIGNATURE ── */
+.c-sig {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 0.75px solid var(--paper-border);
+}
+
+.c-sig-line {
+  flex: 1;
+  border-bottom: 0.75px solid var(--paper-border);
+  height: 22px;
+}
+
+.c-sig-label {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: 0.18em;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── ACTIONS ── */
+.c-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.btn {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 11px 8px;
+  border: 1px solid var(--ink-mid);
+  background: transparent;
+  color: var(--ink-mid);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.btn:hover {
+  background: var(--ink-mid);
+  color: var(--paper);
+}
+
+.btn.primary {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.btn.primary:hover {
+  background: var(--ink-mid);
+  border-color: var(--ink-mid);
+}
+
+/* ── LEVEL UP TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  border: 1px solid #3a2e18;
+  background: #0c0c0c;
+  padding: 10px 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 200;
+  text-transform: uppercase;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+</style>
+</head>
+<body>
+
+<!-- HUD -->
+<div class="hud">
+  <div class="hud-item">
+    <div class="hud-label">Level</div>
+    <div class="hud-value" id="hud-level">1</div>
+  </div>
+  <div class="hud-item">
+    <div class="hud-label">Points</div>
+    <div class="hud-value" id="hud-points">0</div>
+  </div>
+  <div class="hud-item">
+    <div class="hud-label">Money</div>
+    <div class="hud-value" id="hud-money">$0</div>
+  </div>
+</div>
+
+<div class="hud-completed">
+  <div class="hud-label">Done</div>
+  <div class="hud-value" id="hud-done">0</div>
+</div>
+
+<!-- Level-up toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Arena -->
+<div class="arena">
+  <div class="paper-wrap" id="paper-wrap">
+    <div class="paper">
+
+      <div class="stamp" id="stamp">Accepted</div>
+
+      <div class="paper-frame">
+        <div class="paper-inner">
+
+          <!-- Header -->
+          <div class="c-header">
+            <div class="c-org">Reliable Excavation &amp; Demolition · Field Contract Bureau</div>
+            <div class="c-title" id="c-title">FRONTLINE DUTY</div>
+            <div class="c-meta" id="c-meta">CONTRACT NO. —— · ——</div>
+          </div>
+
+          <!-- Stars -->
+          <div class="c-stars" id="c-stars"></div>
+
+          <!-- Mission -->
+          <div class="c-mission-label">Assigned Mission</div>
+          <div class="c-mission" id="c-mission">Awaiting dispatch...</div>
+
+          <hr class="c-divider">
+
+          <!-- Reward -->
+          <div class="c-reward">
+            <div class="c-reward-item">
+              <div class="c-reward-label">Points</div>
+              <div class="c-reward-value" id="c-pts">—</div>
+            </div>
+            <div class="c-reward-item">
+              <div class="c-reward-label">Payment</div>
+              <div class="c-reward-value" id="c-pay">$—</div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="c-actions" id="c-actions"></div>
+
+          <!-- Signature -->
+          <div class="c-sig">
+            <div class="c-sig-line"></div>
+            <div class="c-sig-label">Field Agent Signature</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Back button -->
+<a href="../index.html" class="back-home" title="Back to HostLab">
+  <img src="../other/logo/HLab_Logo.png" alt="HostLab">
+</a>
+
+<script>
+const KEY = 'contractMachine_v1';
+
+// ── DATA ─────────────────────────────────────────────────────────────────────
+
+const CLASSES = ['Scout','Soldier','Pyro','Demoman','Heavy','Engineer','Medic','Sniper','Spy'];
+
+const WEAPONS = {
+  Scout:    ['Scattergun','Force-A-Nature','Shortstop','Pistol','Sandman','Bat'],
+  Soldier:  ['Rocket Launcher','Direct Hit','Black Box','Shotgun','Shovel','Equalizer'],
+  Pyro:     ['Flamethrower','Backburner','Degreaser','Flare Gun','Fire Axe','Axtinguisher'],
+  Demoman:  ['Grenade Launcher','Loch-n-Load','Stickybomb Launcher','Scottish Resistance','Bottle','Ullapool Caber'],
+  Heavy:    ['Minigun','Natascha','Brass Beast','Shotgun','Fists','Gloves of Running Urgently'],
+  Engineer: ['Frontier Justice','Shotgun','Pistol','Widowmaker','Wrench'],
+  Medic:    ['Syringe Gun','Blutsauger','Medi Gun','Kritzkrieg','Bonesaw','Ubersaw'],
+  Sniper:   ['Sniper Rifle','Huntsman','Machina','SMG','Kukri','Tribalman\'s Shiv'],
+  Spy:      ['Revolver','Ambassador','L\'Etranger','Knife','Eternal Reward','Dead Ringer'],
+};
+
+const MELEE = {
+  Scout: 'Bat', Soldier: 'Shovel', Pyro: 'Fire Axe', Demoman: 'Bottle',
+  Heavy: 'Fists', Engineer: 'Wrench', Medic: 'Bonesaw', Sniper: 'Kukri', Spy: 'Knife',
+};
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+function otherClass(c) { return pick(CLASSES.filter(x => x !== c)); }
+
+const TEMPLATES = {
+  1: [
+    () => { const c = pick(CLASSES);
+      return { title: 'FRONTLINE DUTY',
+        desc: `As the ${c}, eliminate ${rand(5, 10)} enemies in a single match.` }; },
+    () => { const c = pick(CLASSES);
+      return { title: 'DAMAGE REPORT',
+        desc: `Deal at least ${rand(2, 5) * 1000} damage as the ${c} in a single match.` }; },
+    () => { const c = pick(CLASSES);
+      return { title: 'OBJECTIVE SECURED',
+        desc: `As the ${c}, capture or contest ${rand(2, 5)} objectives in a single match.` }; },
+    () => ({
+      title: 'OPERATIONAL SUPPORT',
+      desc: `Assist in eliminating ${rand(8, 16)} enemies in a single match, any class.` }),
+    () => { const c = pick(CLASSES);
+      return { title: 'WIN CONDITION',
+        desc: `Win ${rand(2, 4)} rounds while playing exclusively as the ${c}.` }; },
+    () => { const c = pick(CLASSES);
+      return { title: 'SURVIVAL INSTINCT',
+        desc: `As the ${c}, complete a full round without dying.` }; },
+    () => { const c = pick(CLASSES);
+      return { title: 'POINT PRESSURE',
+        desc: `As the ${c}, spend at least ${rand(3, 6)} minutes on the active objective in a match.` }; },
+  ],
+  2: [
+    () => { const c = pick(CLASSES);
+      return { title: 'PREDATOR PROTOCOL',
+        desc: `As the ${c}, eliminate ${rand(3, 5)} enemies in a single life.` }; },
+    () => { const c = pick(CLASSES); const w = pick(WEAPONS[c]);
+      return { title: 'RESTRICTED ARMAMENT',
+        desc: `As the ${c}, eliminate ${rand(5, 10)} enemies using only the ${w} in a single match.` }; },
+    () => { const c = pick(CLASSES); const c2 = otherClass(c);
+      return { title: 'HIGH VALUE TARGET',
+        desc: `As the ${c}, eliminate ${rand(4, 8)} ${c2}s over the course of a single match.` }; },
+    () => { const c = pick(CLASSES);
+      return { title: 'DEMOLITION ORDER',
+        desc: `Destroy ${rand(4, 9)} enemy buildings as the ${c} in a single match.` }; },
+    () => { const c = pick(CLASSES);
+      return { title: 'RELENTLESS',
+        desc: `As the ${c}, achieve ${rand(3, 6)} kills in a row without dying.` }; },
+    () => { const c = pick(CLASSES); const w = pick(WEAPONS[c]);
+      return { title: 'SPECIALIST',
+        desc: `As the ${c}, land ${rand(5, 10)} kills with the ${w} across ${rand(2, 3)} matches.` }; },
+    () => { const c = pick(CLASSES); const c2 = otherClass(c);
+      return { title: 'NEMESIS IN TRAINING',
+        desc: `As the ${c}, dominate a ${c2} — earn the domination ribbon by killing them ${rand(3, 4)} times.` }; },
+  ],
+  3: [
+    () => { const c = pick(CLASSES); const w = pick(WEAPONS[c]);
+      return { title: 'CLASSIFIED OPERATION',
+        desc: `As the ${c}, eliminate ${rand(4, 7)} enemies using only the ${w} — without dying more than once.` }; },
+    () => { const c = pick(CLASSES);
+      return { title: 'APEX PREDATOR',
+        desc: `As the ${c}, eliminate ${rand(3, 5)} enemies in a single life without taking any damage whatsoever.` }; },
+    () => { const c = pick(CLASSES);
+      return { title: 'OVERTIME EXECUTION',
+        desc: `Eliminate ${rand(4, 8)} enemies during overtime as the ${c} — all in a single match.` }; },
+    () => { const c = pick(CLASSES);
+      return { title: 'MELEE ONLY',
+        desc: `As the ${c}, eliminate ${rand(5, 9)} enemies using exclusively the ${MELEE[c]} in a single match.` }; },
+    () => { const c = pick(CLASSES); const c2 = otherClass(c);
+      return { title: 'NEMESIS PROTOCOL',
+        desc: `As the ${c}, dominate a ${c2} — then eliminate them ${rand(3, 5)} additional times in the same match.` }; },
+    () => { const c = pick(CLASSES);
+      return { title: 'SCORCHED EARTH',
+        desc: `As the ${c}, eliminate ${rand(6, 10)} enemies and destroy ${rand(3, 6)} buildings in a single match.` }; },
+    () => { const c = pick(CLASSES);
+      return { title: 'GHOST RUN',
+        desc: `As the ${c}, win a match while achieving top score on your team — without dying more than ${rand(2, 3)} times.` }; },
+  ],
+};
+
+const REWARDS = {
+  1: () => ({ points: rand(50, 90),   money: rand(25, 50)  }),
+  2: () => ({ points: rand(130, 210), money: rand(70, 120) }),
+  3: () => ({ points: rand(380, 560), money: rand(200, 320) }),
+};
+
+const LEVEL_XP = [0, 500, 1200, 2500, 4500, 7500, 12000, 18000, 27000, 40000, Infinity];
+
+function calcLevel(pts) {
+  for (let i = LEVEL_XP.length - 2; i >= 0; i--) {
+    if (pts >= LEVEL_XP[i]) return i + 1;
+  }
+  return 1;
+}
+
+function generateContract() {
+  const roll = Math.random();
+  const tier = roll < 0.50 ? 1 : roll < 0.85 ? 2 : 3;
+  const data = pick(TEMPLATES[tier])();
+  const reward = REWARDS[tier]();
+  return {
+    id: Math.random().toString(36).slice(2, 8).toUpperCase(),
+    tier, title: data.title, desc: data.desc, reward,
+    accepted: false,
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase(),
+  };
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+
+let state;
+
+function loadState() {
+  const hash = location.hash.slice(1);
+  if (hash.startsWith('s=')) {
+    try {
+      const d = JSON.parse(atob(hash.slice(2)));
+      if (typeof d.points === 'number') return d;
+    } catch {}
+  }
+  try {
+    const r = localStorage.getItem(KEY);
+    if (r) return JSON.parse(r);
+  } catch {}
+  return { points: 0, money: 0, level: 1, done: 0, contract: null };
+}
+
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(state));
+  try { history.replaceState(null, '', '#s=' + btoa(JSON.stringify(state))); } catch {}
+}
+
+// ── DOM ───────────────────────────────────────────────────────────────────────
+
+const $ = id => document.getElementById(id);
+
+function flash(id) {
+  const el = $(id);
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 700);
+}
+
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function updateHUD() {
+  $('hud-level').textContent = state.level;
+  $('hud-points').textContent = state.points.toLocaleString();
+  $('hud-money').textContent = '$' + state.money.toLocaleString();
+  $('hud-done').textContent = state.done;
+}
+
+function renderContract(c) {
+  $('c-title').textContent = c.title;
+  $('c-meta').textContent = `Contract No. ${c.id}  ·  ${c.date}`;
+
+  const starsEl = $('c-stars');
+  starsEl.innerHTML = '';
+  for (let i = 1; i <= 3; i++) {
+    const s = document.createElement('span');
+    s.className = 'c-star' + (i <= c.tier ? '' : ' dim');
+    s.textContent = '★';
+    starsEl.appendChild(s);
+  }
+
+  $('c-mission').textContent = c.desc;
+  $('c-pts').textContent = c.reward.points;
+  $('c-pay').textContent = '$' + c.reward.money;
+
+  const stamp = $('stamp');
+  stamp.className = 'stamp' + (c.accepted ? ' visible' : '');
+
+  const actions = $('c-actions');
+  if (c.accepted) {
+    actions.innerHTML =
+      '<button class="btn" id="btn-abandon">Abandon</button>' +
+      '<button class="btn primary" id="btn-complete">Mark Complete</button>';
+    $('btn-complete').onclick = completeContract;
+    $('btn-abandon').onclick = abandonContract;
+  } else {
+    actions.innerHTML =
+      '<button class="btn" id="btn-skip">Skip</button>' +
+      '<button class="btn primary" id="btn-accept">Accept</button>';
+    $('btn-accept').onclick = acceptContract;
+    $('btn-skip').onclick = skipContract;
+  }
+}
+
+// ── TRANSITIONS ───────────────────────────────────────────────────────────────
+
+function transition(callback) {
+  const wrap = $('paper-wrap');
+  wrap.style.animation = 'dropOut 0.4s cubic-bezier(0.55,0.05,1,0.45) forwards';
+  wrap.addEventListener('animationend', () => {
+    callback();
+    wrap.style.animation = 'none';
+    void wrap.offsetWidth;
+    wrap.style.animation = 'dropIn 0.8s cubic-bezier(0.34,1.4,0.64,1) both';
+  }, { once: true });
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+
+function acceptContract() {
+  state.contract.accepted = true;
+  save();
+  const stamp = $('stamp');
+  stamp.className = 'stamp visible';
+  renderContract(state.contract);
+}
+
+function skipContract() {
+  transition(() => {
+    state.contract = generateContract();
+    save();
+    renderContract(state.contract);
+  });
+}
+
+function completeContract() {
+  const prevLevel = state.level;
+  const r = state.contract.reward;
+  state.points += r.points;
+  state.money += r.money;
+  state.level = calcLevel(state.points);
+  state.done++;
+  state.contract = null;
+  updateHUD();
+  flash('hud-points');
+  flash('hud-money');
+  if (state.level > prevLevel) {
+    setTimeout(() => showToast(`Level up — now level ${state.level}`), 500);
+  }
+  transition(() => {
+    state.contract = generateContract();
+    save();
+    renderContract(state.contract);
+  });
+}
+
+function abandonContract() {
+  transition(() => {
+    state.contract = generateContract();
+    save();
+    renderContract(state.contract);
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+
+state = loadState();
+if (!state.contract) state.contract = generateContract();
+if (!state.done) state.done = 0;
+updateHUD();
+renderContract(state.contract);
+save();
+</script>
+</body>
+</html>
