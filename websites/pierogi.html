@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
 <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
 <script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
@@ -11,7 +11,7 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Przepis na pierogi ruskie — kompletna instrukcja krok po kroku. HostLab.">
+<meta name="description" content="Pierogi Ruskie recipe — a complete step-by-step guide. HostLab.">
 <title>Pierogi — HostLab</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../other/backbutton.css">
@@ -171,9 +171,7 @@ main {
 
 .ingredient-row:first-of-type { border-top: 1px solid var(--border); }
 
-.ingredient-row.checked {
-  opacity: 0.35;
-}
+.ingredient-row.checked { opacity: 0.35; }
 
 .ingredient-row.checked .ingredient-name {
   text-decoration: line-through;
@@ -245,9 +243,7 @@ main {
   transition: color 0.15s;
 }
 
-.step-row.checked .step-num {
-  color: var(--done-color);
-}
+.step-row.checked .step-num { color: var(--done-color); }
 
 .step-body { flex: 1; }
 
@@ -308,8 +304,8 @@ main {
   <div class="header-label">HostLab — Recipes</div>
   <h1>Pierogi<br>Ruskie</h1>
   <p class="header-sub">
-    Klasyczny polski przepis. Twaróg, ziemniaki, cebula — to jedyne słuszne nadzienie.
-    Kliknij składniki i kroki, żeby odhaczać podczas gotowania.
+    The classic. Farmer's cheese, potatoes, onion — the only legitimate filling.
+    Click ingredients and steps to check them off as you cook.
   </p>
 </header>
 
@@ -323,196 +319,196 @@ main {
 </div>
 
 <main>
-  <!-- ── LEFT: SKŁADNIKI ── -->
+  <!-- ── LEFT: INGREDIENTS ── -->
   <section class="recipe-section">
-    <div class="section-label">Składniki</div>
+    <div class="section-label">Ingredients</div>
 
     <div class="subsection">
-      <div class="subsection-title">Ciasto</div>
+      <div class="subsection-title">Dough</div>
 
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <span class="ingredient-amount">500 g</span>
-        <span class="ingredient-name">mąka pszenna (typ 500)</span>
+        <span class="ingredient-name">all-purpose flour</span>
       </div>
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <span class="ingredient-amount">200 ml</span>
-        <span class="ingredient-name">ciepła woda</span>
+        <span class="ingredient-name">warm water</span>
       </div>
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <span class="ingredient-amount">1 szt.</span>
-        <span class="ingredient-name">jajko (rozmiar L)</span>
+        <span class="ingredient-amount">1</span>
+        <span class="ingredient-name">egg (large)</span>
       </div>
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <span class="ingredient-amount">1 łyżeczka</span>
-        <span class="ingredient-name">sól</span>
+        <span class="ingredient-amount">1 tsp</span>
+        <span class="ingredient-name">salt</span>
       </div>
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <span class="ingredient-amount">1 łyżka</span>
-        <span class="ingredient-name">masło (roztopione)</span>
+        <span class="ingredient-amount">1 tbsp</span>
+        <span class="ingredient-name">butter (melted)</span>
       </div>
     </div>
 
     <div class="subsection">
-      <div class="subsection-title">Nadzienie</div>
+      <div class="subsection-title">Filling</div>
 
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <span class="ingredient-amount">700 g</span>
-        <span class="ingredient-name">ziemniaki (mączyste)</span>
+        <span class="ingredient-name">starchy potatoes</span>
       </div>
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <span class="ingredient-amount">300 g</span>
-        <span class="ingredient-name">twaróg półtłusty (zmielony)</span>
+        <span class="ingredient-name">farmer's cheese (twaróg)</span>
       </div>
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <span class="ingredient-amount">2 duże</span>
-        <span class="ingredient-name">cebule</span>
+        <span class="ingredient-amount">2 large</span>
+        <span class="ingredient-name">onions</span>
       </div>
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <span class="ingredient-amount">2 łyżki</span>
-        <span class="ingredient-name">masło</span>
+        <span class="ingredient-amount">2 tbsp</span>
+        <span class="ingredient-name">butter</span>
       </div>
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <span class="ingredient-amount">do smaku</span>
-        <span class="ingredient-name">sól i pieprz</span>
+        <span class="ingredient-amount">to taste</span>
+        <span class="ingredient-name">salt and pepper</span>
       </div>
     </div>
 
     <div class="subsection">
-      <div class="subsection-title">Do podania</div>
+      <div class="subsection-title">To serve</div>
 
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <span class="ingredient-amount">3 łyżki</span>
-        <span class="ingredient-name">masło + cebula (do podsmażenia)</span>
+        <span class="ingredient-amount">3 tbsp</span>
+        <span class="ingredient-name">butter + onion (for pan-frying)</span>
       </div>
       <div class="ingredient-row" onclick="toggle(this)">
         <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <span class="ingredient-amount">opcjonalnie</span>
-        <span class="ingredient-name">kwaśna śmietana</span>
+        <span class="ingredient-amount">optional</span>
+        <span class="ingredient-name">sour cream</span>
       </div>
     </div>
 
     <div class="tip-box">
-      <div class="tip-label">Wydajność</div>
-      <div class="tip-text">Przepis daje ok. 40–50 sztuk, zależy od wielkości wykrawanych kółek. Na 4 porty w zupełności wystarczy. Jak robisz na 2 osoby — zrób połowę ciasta, ale pełne nadzienie, bo i tak zjesz za dużo.</div>
+      <div class="tip-label">Yield</div>
+      <div class="tip-text">This recipe makes roughly 40–50 pieces depending on how large you cut the rounds. Plenty for 4 servings. Making it for 2? Halve the dough but keep the full filling — you'll eat more than you think.</div>
     </div>
   </section>
 
-  <!-- ── RIGHT: INSTRUKCJA ── -->
+  <!-- ── RIGHT: INSTRUCTIONS ── -->
   <section class="recipe-section">
-    <div class="section-label">Instrukcja</div>
+    <div class="section-label">Instructions</div>
 
     <div class="subsection">
-      <div class="subsection-title">Nadzienie</div>
+      <div class="subsection-title">Filling</div>
 
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">01</div>
         <div class="step-body">
-          <div class="step-text">Ziemniaki obierz, pokrój i gotuj w osolonej wodzie do miękkości.</div>
-          <div class="step-note">~20 min. Sprawdź widelcem — mają się rozpadać, nie stawiać oporu.</div>
+          <div class="step-text">Peel and chop the potatoes. Boil in salted water until fully tender.</div>
+          <div class="step-note">~20 min. Check with a fork — they should fall apart, not resist.</div>
         </div>
       </div>
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">02</div>
         <div class="step-body">
-          <div class="step-text">Cebulę pokrój w drobną kostkę i podsmaż na maśle na złoty kolor.</div>
-          <div class="step-note">Wolny ogień, ~10 min. Cebula ma być miękka i słodka, nie przypalona.</div>
+          <div class="step-text">Dice the onions finely and fry in butter over low heat until golden.</div>
+          <div class="step-note">~10 min. You want them soft and sweet, not browned or bitter.</div>
         </div>
       </div>
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">03</div>
         <div class="step-body">
-          <div class="step-text">Ziemniaki odcedź i rozgnieć na gładkie purée. Dodaj twaróg i podsmażoną cebulę.</div>
-          <div class="step-note">Bez elektrycznego miksera — wychodzi kleiste. Gniotka albo praska.</div>
+          <div class="step-text">Drain the potatoes and mash until smooth. Add the farmer's cheese and fried onion.</div>
+          <div class="step-note">Use a masher or ricer — not a mixer. It turns gluey.</div>
         </div>
       </div>
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">04</div>
         <div class="step-body">
-          <div class="step-text">Dopraw solą i pieprzem. Wymieszaj na jednolitą masę, odstaw do ostygnięcia.</div>
-          <div class="step-note">Zimne nadzienie nie paruje ciasta przy lepieniu. Ważne.</div>
+          <div class="step-text">Season with salt and pepper. Mix into a uniform mass and let it cool completely.</div>
+          <div class="step-note">Cold filling won't steam the dough while you seal the edges. Important.</div>
         </div>
       </div>
     </div>
 
     <div class="subsection">
-      <div class="subsection-title">Ciasto</div>
+      <div class="subsection-title">Dough</div>
 
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">05</div>
         <div class="step-body">
-          <div class="step-text">Na stolnicę wsyp mąkę, zrób wgłębienie. Wbij jajko, dodaj sól, roztopione masło i ciepłą wodę.</div>
-          <div class="step-note">Wody dodawaj stopniowo — ciasto nie może być ani suche, ani lepkie.</div>
+          <div class="step-text">Mound the flour on a work surface and make a well. Add the egg, salt, melted butter, and warm water.</div>
+          <div class="step-note">Add water gradually — the dough should be neither dry nor sticky.</div>
         </div>
       </div>
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">06</div>
         <div class="step-body">
-          <div class="step-text">Wyrabiaj ciasto przez 8–10 minut aż stanie się gładkie i elastyczne.</div>
-          <div class="step-note">Dobra robota — to najważniejszy krok. Niewyrobione ciasto będzie się rwać przy lepieniu.</div>
+          <div class="step-text">Knead for 8–10 minutes until the dough is smooth and elastic.</div>
+          <div class="step-note">This is the most important step. Under-kneaded dough tears while sealing.</div>
         </div>
       </div>
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">07</div>
         <div class="step-body">
-          <div class="step-text">Owiń ciasto folią lub przykryj ściereczką. Zostaw na 30 minut w temperaturze pokojowej.</div>
-          <div class="step-note">Gluten musi odpocząć. Pomiń ten krok → ciasto skurczy się przy wałkowaniu.</div>
+          <div class="step-text">Wrap in cling film or cover with a cloth. Rest at room temperature for 30 minutes.</div>
+          <div class="step-note">The gluten needs to relax. Skip this and the dough springs back when you roll it.</div>
         </div>
       </div>
     </div>
 
     <div class="subsection">
-      <div class="subsection-title">Lepienie i gotowanie</div>
+      <div class="subsection-title">Shaping and cooking</div>
 
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">08</div>
         <div class="step-body">
-          <div class="step-text">Ciasto podziel na 4 części. Każdą cienko rozwałkuj (2–3 mm) i wykrawaj kółka ~8 cm.</div>
-          <div class="step-note">Szklanka albo foremka. Resztki zbieraj i wałkuj ponownie.</div>
+          <div class="step-text">Divide the dough into 4 parts. Roll each thin (2–3 mm) and cut rounds ~8 cm across.</div>
+          <div class="step-note">Use a glass or a round cutter. Gather and re-roll the scraps.</div>
         </div>
       </div>
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">09</div>
         <div class="step-body">
-          <div class="step-text">Na każde kółko nałóż łyżeczkę nadzienia. Złóż na pół i zlep brzegi — najpierw palcami, potem tradycyjnie zakładaj fałdki.</div>
-          <div class="step-note">Nie przesadzaj z nadzieniem. Brzegi muszą być suche żeby dobrze się kleiły.</div>
+          <div class="step-text">Place a teaspoon of filling on each round. Fold in half and seal the edges — first press with fingers, then crimp traditionally.</div>
+          <div class="step-note">Don't overfill. The edges need to be dry to seal properly.</div>
         </div>
       </div>
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">10</div>
         <div class="step-body">
-          <div class="step-text">Gotuj partiami w dużej ilości osolonej wody. Po wypłynięciu gotuj jeszcze 3–4 minuty.</div>
-          <div class="step-note">Nie wrzucaj wszystkich naraz — zlepiają się. Ostrożnie mieszaj na początku.</div>
+          <div class="step-text">Boil in batches in a large pot of salted water. Once they float, cook 3–4 minutes more.</div>
+          <div class="step-note">Don't crowd the pot — they'll stick together. Stir gently at the start.</div>
         </div>
       </div>
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">11</div>
         <div class="step-body">
-          <div class="step-text">Wyjmij łyżką cedzakową. Opcjonalnie: podsmaż na maśle z cebulą do zarumienienia.</div>
-          <div class="step-note">Gotowane są dobre. Podsmażone są lepsze. To nie jest opinia, to fakt.</div>
+          <div class="step-text">Remove with a slotted spoon. Optionally: pan-fry in butter with onion until golden on both sides.</div>
+          <div class="step-note">Boiled is good. Pan-fried is better. This is not an opinion, it is a fact.</div>
         </div>
       </div>
       <div class="step-row" onclick="toggle(this)">
         <div class="step-num">12</div>
         <div class="step-body">
-          <div class="step-text">Podaj ze śmietaną lub smażoną cebulą. Albo bez niczego — też jest dobrze.</div>
+          <div class="step-text">Serve with sour cream or fried onion on top. Or just plain — also fine.</div>
         </div>
       </div>
     </div>
 
     <div class="tip-box">
-      <div class="tip-label">Mrożenie</div>
-      <div class="tip-text">Surowe pierogi mroź rozłożone na desce (żeby się nie skleiły), potem przekładaj do woreczka. Gotuj bezpośrednio z zamrożenia — wrzucasz na wrzątek i czekasz aż wypłyną + 4 minuty. Żadnego rozmrażania.</div>
+      <div class="tip-label">Freezing</div>
+      <div class="tip-text">Freeze raw pierogi spread out on a tray so they don't stick, then transfer to a bag. Cook straight from frozen — drop into boiling water, wait until they float, then 4 more minutes. No thawing needed.</div>
     </div>
   </section>
 </main>
