@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-R7MJHBKJVY');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Przepis na pierogi ruskie — kompletna instrukcja krok po kroku. HostLab.">
+<title>Pierogi — HostLab</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../other/backbutton.css">
+<link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0c0c0c;
+  --surface: #141414;
+  --text-primary: #f0f0ee;
+  --text-secondary: #888884;
+  --text-muted: #3a3a38;
+  --border: #222220;
+  --accent: #f0f0ee;
+  --tag-bg: #1a1a18;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Syne Mono', monospace;
+  --done-color: #3a3a38;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 48px 64px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+header h1 {
+  font-size: clamp(48px, 7vw, 80px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+
+.header-sub {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 480px;
+  line-height: 1.6;
+}
+
+/* ── PROGRESS ── */
+.progress-bar-wrap {
+  padding: 0 64px;
+  border-bottom: 1px solid var(--border);
+}
+
+.progress-inner {
+  padding: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.progress-track {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--text-primary);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: right;
+}
+
+/* ── MAIN LAYOUT ── */
+main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 64px 120px;
+}
+
+/* ── SECTION ── */
+.recipe-section {
+  padding-top: 48px;
+  padding-right: 48px;
+}
+
+.recipe-section:last-child {
+  padding-right: 0;
+  padding-left: 48px;
+  border-left: 1px solid var(--border);
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+/* ── SUBSECTION ── */
+.subsection {
+  margin-bottom: 40px;
+}
+
+.subsection-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+/* ── INGREDIENT ROW ── */
+.ingredient-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+
+.ingredient-row:first-of-type { border-top: 1px solid var(--border); }
+
+.ingredient-row.checked {
+  opacity: 0.35;
+}
+
+.ingredient-row.checked .ingredient-name {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-muted);
+}
+
+.ingredient-check {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  margin-top: 2px;
+}
+
+.ingredient-row.checked .ingredient-check {
+  background: var(--text-muted);
+  border-color: var(--text-muted);
+}
+
+.ingredient-check svg { display: none; }
+.ingredient-row.checked .ingredient-check svg { display: block; }
+
+.ingredient-amount {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 72px;
+  letter-spacing: 0.05em;
+}
+
+.ingredient-name {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+/* ── STEP ── */
+.step-row {
+  display: flex;
+  gap: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+
+.step-row:first-of-type { border-top: 1px solid var(--border); }
+
+.step-row.checked { opacity: 0.35; }
+
+.step-row.checked .step-text {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-muted);
+}
+
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  padding-top: 3px;
+  min-width: 24px;
+  transition: color 0.15s;
+}
+
+.step-row.checked .step-num {
+  color: var(--done-color);
+}
+
+.step-body { flex: 1; }
+
+.step-text {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.55;
+}
+
+.step-note {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ── TIP BOX ── */
+.tip-box {
+  margin-top: 32px;
+  padding: 18px 20px;
+  background: var(--tag-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.tip-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.tip-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  header, .progress-bar-wrap { padding-left: 24px; padding-right: 24px; }
+  main { grid-template-columns: 1fr; padding: 0 24px 80px; }
+  .recipe-section { padding-right: 0; }
+  .recipe-section:last-child { padding-left: 0; border-left: none; border-top: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home" title="Back to HostLab">
+  <img src="../other/logo/HLab_Logo.png" alt="HostLab">
+</a>
+
+<header>
+  <div class="header-label">HostLab — Recipes</div>
+  <h1>Pierogi<br>Ruskie</h1>
+  <p class="header-sub">
+    Klasyczny polski przepis. Twaróg, ziemniaki, cebula — to jedyne słuszne nadzienie.
+    Kliknij składniki i kroki, żeby odhaczać podczas gotowania.
+  </p>
+</header>
+
+<div class="progress-bar-wrap">
+  <div class="progress-inner">
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="progress-label" id="progress-label">0 / 0</div>
+  </div>
+</div>
+
+<main>
+  <!-- ── LEFT: SKŁADNIKI ── -->
+  <section class="recipe-section">
+    <div class="section-label">Składniki</div>
+
+    <div class="subsection">
+      <div class="subsection-title">Ciasto</div>
+
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">500 g</span>
+        <span class="ingredient-name">mąka pszenna (typ 500)</span>
+      </div>
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">200 ml</span>
+        <span class="ingredient-name">ciepła woda</span>
+      </div>
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">1 szt.</span>
+        <span class="ingredient-name">jajko (rozmiar L)</span>
+      </div>
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">1 łyżeczka</span>
+        <span class="ingredient-name">sól</span>
+      </div>
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">1 łyżka</span>
+        <span class="ingredient-name">masło (roztopione)</span>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Nadzienie</div>
+
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">700 g</span>
+        <span class="ingredient-name">ziemniaki (mączyste)</span>
+      </div>
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">300 g</span>
+        <span class="ingredient-name">twaróg półtłusty (zmielony)</span>
+      </div>
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">2 duże</span>
+        <span class="ingredient-name">cebule</span>
+      </div>
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">2 łyżki</span>
+        <span class="ingredient-name">masło</span>
+      </div>
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">do smaku</span>
+        <span class="ingredient-name">sól i pieprz</span>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Do podania</div>
+
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">3 łyżki</span>
+        <span class="ingredient-name">masło + cebula (do podsmażenia)</span>
+      </div>
+      <div class="ingredient-row" onclick="toggle(this)">
+        <div class="ingredient-check"><svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="#0c0c0c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="ingredient-amount">opcjonalnie</span>
+        <span class="ingredient-name">kwaśna śmietana</span>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-label">Wydajność</div>
+      <div class="tip-text">Przepis daje ok. 40–50 sztuk, zależy od wielkości wykrawanych kółek. Na 4 porty w zupełności wystarczy. Jak robisz na 2 osoby — zrób połowę ciasta, ale pełne nadzienie, bo i tak zjesz za dużo.</div>
+    </div>
+  </section>
+
+  <!-- ── RIGHT: INSTRUKCJA ── -->
+  <section class="recipe-section">
+    <div class="section-label">Instrukcja</div>
+
+    <div class="subsection">
+      <div class="subsection-title">Nadzienie</div>
+
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <div class="step-text">Ziemniaki obierz, pokrój i gotuj w osolonej wodzie do miękkości.</div>
+          <div class="step-note">~20 min. Sprawdź widelcem — mają się rozpadać, nie stawiać oporu.</div>
+        </div>
+      </div>
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <div class="step-text">Cebulę pokrój w drobną kostkę i podsmaż na maśle na złoty kolor.</div>
+          <div class="step-note">Wolny ogień, ~10 min. Cebula ma być miękka i słodka, nie przypalona.</div>
+        </div>
+      </div>
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <div class="step-text">Ziemniaki odcedź i rozgnieć na gładkie purée. Dodaj twaróg i podsmażoną cebulę.</div>
+          <div class="step-note">Bez elektrycznego miksera — wychodzi kleiste. Gniotka albo praska.</div>
+        </div>
+      </div>
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">04</div>
+        <div class="step-body">
+          <div class="step-text">Dopraw solą i pieprzem. Wymieszaj na jednolitą masę, odstaw do ostygnięcia.</div>
+          <div class="step-note">Zimne nadzienie nie paruje ciasta przy lepieniu. Ważne.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Ciasto</div>
+
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">05</div>
+        <div class="step-body">
+          <div class="step-text">Na stolnicę wsyp mąkę, zrób wgłębienie. Wbij jajko, dodaj sól, roztopione masło i ciepłą wodę.</div>
+          <div class="step-note">Wody dodawaj stopniowo — ciasto nie może być ani suche, ani lepkie.</div>
+        </div>
+      </div>
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">06</div>
+        <div class="step-body">
+          <div class="step-text">Wyrabiaj ciasto przez 8–10 minut aż stanie się gładkie i elastyczne.</div>
+          <div class="step-note">Dobra robota — to najważniejszy krok. Niewyrobione ciasto będzie się rwać przy lepieniu.</div>
+        </div>
+      </div>
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">07</div>
+        <div class="step-body">
+          <div class="step-text">Owiń ciasto folią lub przykryj ściereczką. Zostaw na 30 minut w temperaturze pokojowej.</div>
+          <div class="step-note">Gluten musi odpocząć. Pomiń ten krok → ciasto skurczy się przy wałkowaniu.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Lepienie i gotowanie</div>
+
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">08</div>
+        <div class="step-body">
+          <div class="step-text">Ciasto podziel na 4 części. Każdą cienko rozwałkuj (2–3 mm) i wykrawaj kółka ~8 cm.</div>
+          <div class="step-note">Szklanka albo foremka. Resztki zbieraj i wałkuj ponownie.</div>
+        </div>
+      </div>
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">09</div>
+        <div class="step-body">
+          <div class="step-text">Na każde kółko nałóż łyżeczkę nadzienia. Złóż na pół i zlep brzegi — najpierw palcami, potem tradycyjnie zakładaj fałdki.</div>
+          <div class="step-note">Nie przesadzaj z nadzieniem. Brzegi muszą być suche żeby dobrze się kleiły.</div>
+        </div>
+      </div>
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">10</div>
+        <div class="step-body">
+          <div class="step-text">Gotuj partiami w dużej ilości osolonej wody. Po wypłynięciu gotuj jeszcze 3–4 minuty.</div>
+          <div class="step-note">Nie wrzucaj wszystkich naraz — zlepiają się. Ostrożnie mieszaj na początku.</div>
+        </div>
+      </div>
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">11</div>
+        <div class="step-body">
+          <div class="step-text">Wyjmij łyżką cedzakową. Opcjonalnie: podsmaż na maśle z cebulą do zarumienienia.</div>
+          <div class="step-note">Gotowane są dobre. Podsmażone są lepsze. To nie jest opinia, to fakt.</div>
+        </div>
+      </div>
+      <div class="step-row" onclick="toggle(this)">
+        <div class="step-num">12</div>
+        <div class="step-body">
+          <div class="step-text">Podaj ze śmietaną lub smażoną cebulą. Albo bez niczego — też jest dobrze.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-label">Mrożenie</div>
+      <div class="tip-text">Surowe pierogi mroź rozłożone na desce (żeby się nie skleiły), potem przekładaj do woreczka. Gotuj bezpośrednio z zamrożenia — wrzucasz na wrzątek i czekasz aż wypłyną + 4 minuty. Żadnego rozmrażania.</div>
+    </div>
+  </section>
+</main>
+
+<script>
+const allRows = document.querySelectorAll('.ingredient-row, .step-row');
+const fill = document.getElementById('progress-fill');
+const label = document.getElementById('progress-label');
+const total = allRows.length;
+
+function updateProgress() {
+  const done = document.querySelectorAll('.ingredient-row.checked, .step-row.checked').length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  fill.style.width = pct + '%';
+  label.textContent = done + ' / ' + total;
+}
+
+function toggle(el) {
+  el.classList.toggle('checked');
+  updateProgress();
+}
+
+updateProgress();
+</script>
+</body>
+</html>
