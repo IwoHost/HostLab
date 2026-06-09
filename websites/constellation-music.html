@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Constellation Music Box — HostLab</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne+Mono&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #03030e;
+  overflow: hidden;
+  font-family: 'Syne Mono', monospace;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+canvas { display: block; cursor: crosshair; }
+
+#hint {
+  position: fixed;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(140, 160, 255, 0.5);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 0.8s;
+  white-space: nowrap;
+}
+
+#panel {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(6, 6, 20, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(70, 90, 200, 0.22);
+  border-radius: 40px;
+  padding: 9px 20px;
+  z-index: 10;
+}
+
+.btn {
+  background: none;
+  border: 1px solid rgba(110, 140, 255, 0.28);
+  color: rgba(150, 170, 255, 0.8);
+  padding: 6px 13px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: 'Syne Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn:hover {
+  background: rgba(70, 100, 255, 0.18);
+  border-color: rgba(140, 165, 255, 0.55);
+  color: rgba(200, 215, 255, 1);
+}
+.btn.on {
+  background: rgba(70, 100, 255, 0.32);
+  border-color: rgba(140, 165, 255, 0.75);
+  color: #fff;
+}
+
+.sep { width: 1px; height: 18px; background: rgba(70, 90, 180, 0.2); flex-shrink: 0; }
+
+select {
+  background: rgba(6, 6, 20, 0.7);
+  border: 1px solid rgba(110, 140, 255, 0.28);
+  color: rgba(150, 170, 255, 0.8);
+  padding: 6px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: 'Syne Mono', monospace;
+  font-size: 11px;
+  outline: none;
+}
+
+.lbl { font-size: 10px; color: rgba(90, 110, 190, 0.5); letter-spacing: 0.07em; }
+
+input[type=range] {
+  width: 74px;
+  height: 3px;
+  accent-color: rgba(120, 155, 255, 0.85);
+  cursor: pointer;
+}
+
+#starCount { font-size: 10px; color: rgba(90, 120, 190, 0.45); min-width: 46px; text-align: center; }
+
+#back {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  font-family: 'Syne Mono', monospace;
+  font-size: 11px;
+  color: rgba(100, 120, 200, 0.4);
+  text-decoration: none;
+  letter-spacing: 0.07em;
+  transition: color 0.2s;
+  z-index: 10;
+}
+#back:hover { color: rgba(150, 170, 255, 0.75); }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<a id="back" href="../index.html">← HOSTLAB</a>
+
+<div id="hint">Click to place stars &ensp;·&ensp; Higher = higher pitch &ensp;·&ensp; Stars play in sequence &ensp;·&ensp; Press Play</div>
+
+<div id="panel">
+  <button class="btn" id="btnPlay">▶ Play</button>
+  <div class="sep"></div>
+  <button class="btn" id="btnUndo">↩ Undo</button>
+  <button class="btn" id="btnRandom">✦ Random</button>
+  <button class="btn" id="btnClear">✕ Clear</button>
+  <div class="sep"></div>
+  <select id="scaleSelect">
+    <option value="pentatonic">Pentatonic</option>
+    <option value="major">Major</option>
+    <option value="minor">Minor</option>
+  </select>
+  <div class="sep"></div>
+  <span class="lbl">TEMPO</span>
+  <input type="range" id="tempoSlider" min="0.4" max="4" step="0.1" value="1.4">
+  <div class="sep"></div>
+  <span id="starCount">0 stars</span>
+</div>
+
+<script>
+'use strict';
+
+// ── Canvas ───────────────────────────────────────────────
+const cv = document.getElementById('c');
+const cx = cv.getContext('2d');
+let W, H;
+
+function resize() {
+  W = cv.width  = window.innerWidth;
+  H = cv.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', () => { resize(); makeBgStars(); });
+
+// ── Audio ────────────────────────────────────────────────
+let ac = null, reverbNode = null;
+
+function audio() {
+  if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+  return ac;
+}
+
+function getReverb() {
+  if (reverbNode) return reverbNode;
+  const a = audio();
+  const conv = a.createConvolver();
+  const sr = a.sampleRate, len = Math.floor(sr * 2.8);
+  const buf = a.createBuffer(2, len, sr);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4);
+  }
+  conv.buffer = buf;
+  conv.connect(a.destination);
+  reverbNode = conv;
+  return reverbNode;
+}
+
+function playNote(freq, vol) {
+  vol = vol || 0.46;
+  const a   = audio();
+  const rev = getReverb();
+  const o1  = a.createOscillator();
+  const o2  = a.createOscillator();
+  const g   = a.createGain();
+  const dry = a.createGain();
+  const wet = a.createGain();
+
+  o1.type = 'sine'; o1.frequency.value = freq;
+  o2.type = 'sine'; o2.frequency.value = freq * 2.003;
+
+  o1.connect(g); o2.connect(g);
+  g.connect(dry); g.connect(wet);
+  dry.connect(a.destination);
+  wet.connect(rev);
+
+  dry.gain.value = 0.58;
+  wet.gain.value = 0.42;
+
+  const t = a.currentTime;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.016);
+  g.gain.exponentialRampToValueAtTime(vol * 0.2, t + 0.5);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+
+  o1.start(t); o2.start(t);
+  o1.stop(t + 2.4); o2.stop(t + 2.4);
+}
+
+// ── Scales ───────────────────────────────────────────────
+const SCALES = {
+  pentatonic: {
+    f: [65.41,73.42,82.41,98.00,110.00, 130.81,146.83,164.81,196.00,220.00,
+        261.63,293.66,329.63,392.00,440.00, 523.25,587.33,659.26,783.99,880.00],
+    n: ['C','D','E','G','A','C','D','E','G','A','C','D','E','G','A','C','D','E','G','A'],
+  },
+  major: {
+    f: [65.41,73.42,82.41,87.31,98.00,110.00,123.47,
+        130.81,146.83,164.81,174.61,196.00,220.00,246.94,
+        261.63,293.66,329.63,349.23,392.00,440.00,493.88,523.25],
+    n: ['C','D','E','F','G','A','B','C','D','E','F','G','A','B','C','D','E','F','G','A','B','C'],
+  },
+  minor: {
+    f: [65.41,73.42,77.78,87.31,98.00,103.83,116.54,
+        130.81,146.83,155.56,174.61,196.00,207.65,233.08,
+        261.63,293.66,311.13,349.23,392.00,415.30,466.16,523.25],
+    n: ['C','D','E♭','F','G','A♭','B♭','C','D','E♭','F','G','A♭','B♭','C','D','E♭','F','G','A♭','B♭','C'],
+  },
+};
+
+let scaleName = 'pentatonic';
+
+function yToNote(y) {
+  const sc = SCALES[scaleName];
+  const t  = Math.max(0, Math.min(1, 1 - y / H));
+  const i  = Math.round(t * (sc.f.length - 1));
+  return { freq: sc.f[i], name: sc.n[i] };
+}
+
+// ── Color ────────────────────────────────────────────────
+function freqColor(freq) {
+  const lo = Math.log(65), hi = Math.log(900);
+  const t  = Math.max(0, Math.min(1, (Math.log(freq) - lo) / (hi - lo)));
+  const h  = Math.round(240 - t * 240);
+  return { h, css: `hsl(${h},100%,68%)` };
+}
+
+function hsla(h, a) { return `hsla(${h},100%,68%,${a})`; }
+
+// ── Background stars ─────────────────────────────────────
+let bgStars = [];
+
+function makeBgStars() {
+  bgStars = Array.from({ length: 300 }, () => ({
+    x: Math.random() * W, y: Math.random() * H,
+    r: 0.25 + Math.random() * 1.1,
+    base: 0.12 + Math.random() * 0.5,
+    sp: 0.35 + Math.random() * 2.8,
+    ph: Math.random() * Math.PI * 2,
+  }));
+}
+makeBgStars();
+
+// ── User stars ───────────────────────────────────────────
+let stars = []; // { x, y, freq, name, color, pulse }
+
+function addStar(x, y) {
+  const { freq, name } = yToNote(y);
+  const color = freqColor(freq);
+  stars.push({ x, y, freq, name, color, pulse: 0.85 });
+  playNote(freq, 0.35);
+  updateCount();
+}
+
+function updateCount() {
+  const n = stars.length;
+  document.getElementById('starCount').textContent = n === 1 ? '1 star' : `${n} stars`;
+}
+
+// ── Comet ────────────────────────────────────────────────
+let playing = false;
+let comet   = null; // { from, to, t }
+let trail   = [];   // { x, y, age, h }
+let tempo   = 1.4;
+
+function startPlay() {
+  if (stars.length < 2) { flashHint('Place at least 2 stars first!'); return; }
+  audio().resume();
+  playing = true;
+  comet = { from: 0, to: 1, t: 0 };
+  triggerStar(0);
+  document.getElementById('btnPlay').textContent = '⏸ Pause';
+  document.getElementById('btnPlay').classList.add('on');
+}
+
+function stopPlay() {
+  playing = false;
+  comet = null;
+  trail = [];
+  document.getElementById('btnPlay').textContent = '▶ Play';
+  document.getElementById('btnPlay').classList.remove('on');
+}
+
+function triggerStar(i) {
+  stars[i].pulse = 1;
+  playNote(stars[i].freq);
+}
+
+function advanceComet(dt) {
+  if (!playing || !comet || stars.length < 2) return;
+  comet.t += dt * tempo;
+  if (comet.t >= 1) {
+    comet.t -= Math.floor(comet.t);
+    comet.from = comet.to;
+    comet.to   = (comet.to + 1) % stars.length;
+    triggerStar(comet.from);
+  }
+  const a = stars[comet.from], b = stars[comet.to];
+  const et = ease(comet.t);
+  trail.push({ x: a.x + (b.x - a.x) * et, y: a.y + (b.y - a.y) * et, age: 0, h: a.color.h });
+}
+
+function ease(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+// ── Glow helper ──────────────────────────────────────────
+function drawGlow(x, y, r, h, alpha) {
+  const g = cx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, hsla(h, alpha));
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  cx.fillStyle = g;
+  cx.beginPath();
+  cx.arc(x, y, r, 0, Math.PI * 2);
+  cx.fill();
+}
+
+// ── Pitch guide ──────────────────────────────────────────
+function drawGuide() {
+  const sc = SCALES[scaleName];
+  cx.save();
+  cx.font = '9px "Syne Mono", monospace';
+  cx.textAlign = 'left';
+  for (let i = 0; i < sc.f.length; i++) {
+    const t  = i / (sc.f.length - 1);
+    const y  = H * (1 - t);
+    const cl = freqColor(sc.f[i]);
+    cx.globalAlpha = 0.07;
+    cx.strokeStyle = cl.css;
+    cx.lineWidth   = 0.5;
+    cx.setLineDash([2, 12]);
+    cx.beginPath(); cx.moveTo(0, y); cx.lineTo(W, y); cx.stroke();
+    cx.setLineDash([]);
+    cx.globalAlpha = 0.18;
+    cx.fillStyle   = cl.css;
+    cx.fillText(sc.n[i], 10, y - 3);
+  }
+  cx.restore();
+}
+
+// ── Hint ─────────────────────────────────────────────────
+const hintEl = document.getElementById('hint');
+let hintTimer = null;
+
+function hideHint() {
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => { hintEl.style.opacity = '0'; }, 2600);
+}
+
+function flashHint(msg) {
+  hintEl.textContent = msg;
+  hintEl.style.opacity = '1';
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => { hintEl.style.opacity = '0'; }, 2000);
+}
+
+// ── Main loop ────────────────────────────────────────────
+let prev = 0;
+
+function frame(ts) {
+  requestAnimationFrame(frame);
+  const dt = Math.min((ts - prev) / 1000, 0.05);
+  prev = ts;
+
+  cx.fillStyle = '#03030e';
+  cx.fillRect(0, 0, W, H);
+
+  // Twinkling background stars
+  for (const s of bgStars) {
+    const a = s.base * (0.5 + 0.5 * Math.sin(ts * 0.001 * s.sp + s.ph));
+    cx.globalAlpha = a;
+    cx.fillStyle = '#ffffff';
+    cx.beginPath();
+    cx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    cx.fill();
+  }
+  cx.globalAlpha = 1;
+
+  drawGuide();
+
+  // Connections (draw as glowing lines, loop back to first)
+  if (stars.length > 1) {
+    for (let i = 0; i < stars.length; i++) {
+      const a = stars[i], b = stars[(i + 1) % stars.length];
+      const active = playing && comet && (comet.from === i || comet.to === i);
+      const base   = active ? 1 : 0;
+      for (const [lw, al] of [[14, 0.03 + base * 0.05], [5, 0.07 + base * 0.1], [1.5, 0.2 + base * 0.2]]) {
+        cx.globalAlpha = al;
+        cx.strokeStyle = a.color.css;
+        cx.lineWidth   = lw;
+        cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
+      }
+    }
+    cx.globalAlpha = 1;
+  }
+
+  advanceComet(dt);
+
+  // Comet trail
+  trail = trail.filter(p => p.age < 1);
+  for (const p of trail) {
+    p.age += dt * 2.8;
+    cx.globalAlpha = (1 - p.age) * 0.5;
+    cx.fillStyle   = `hsl(${p.h},100%,70%)`;
+    cx.beginPath();
+    cx.arc(p.x, p.y, (1 - p.age) * 5.5, 0, Math.PI * 2);
+    cx.fill();
+  }
+  cx.globalAlpha = 1;
+
+  // Comet head
+  if (playing && comet && stars.length >= 2) {
+    const a = stars[comet.from], b = stars[comet.to];
+    const et = ease(comet.t);
+    const x  = a.x + (b.x - a.x) * et;
+    const y  = a.y + (b.y - a.y) * et;
+    drawGlow(x, y, 32, a.color.h, 0.5);
+    drawGlow(x, y, 12, a.color.h, 0.85);
+    cx.fillStyle = '#ffffff';
+    cx.beginPath(); cx.arc(x, y, 4.5, 0, Math.PI * 2); cx.fill();
+  }
+
+  // User stars
+  cx.font      = '10px "Syne Mono", monospace';
+  cx.textAlign = 'center';
+  for (let i = 0; i < stars.length; i++) {
+    const s = stars[i];
+    if (s.pulse > 0) s.pulse -= dt * 2.4;
+    const p = Math.max(0, s.pulse);
+
+    if (p > 0) drawGlow(s.x, s.y, 60 + p * 30, s.color.h, p * 0.35);
+    drawGlow(s.x, s.y, 20 + p * 22, s.color.h, 0.3 + p * 0.45);
+
+    cx.fillStyle = '#fff';
+    cx.beginPath(); cx.arc(s.x, s.y, 4 + p * 2.5, 0, Math.PI * 2); cx.fill();
+
+    // 4-point sparkle
+    cx.strokeStyle = `rgba(255,255,255,${0.4 + p * 0.35})`;
+    cx.lineWidth   = 0.75;
+    for (let a = 0; a < Math.PI; a += Math.PI / 2) {
+      const ca = Math.cos(a), sa = Math.sin(a);
+      cx.beginPath();
+      cx.moveTo(s.x + ca * 2.5, s.y + sa * 2.5);
+      cx.lineTo(s.x + ca * (9 + p * 7), s.y + sa * (9 + p * 7));
+      cx.stroke();
+    }
+
+    // Note name above star
+    cx.globalAlpha = 0.65 + p * 0.3;
+    cx.fillStyle   = s.color.css;
+    cx.fillText(s.name, s.x, s.y - 15);
+
+    // Order number below star
+    cx.globalAlpha = 0.3 + p * 0.2;
+    cx.fillStyle   = `hsl(${s.color.h},60%,60%)`;
+    cx.fillText(i + 1, s.x, s.y + 20);
+
+    cx.globalAlpha = 1;
+  }
+}
+
+requestAnimationFrame(frame);
+
+// ── Events ───────────────────────────────────────────────
+cv.addEventListener('click', e => {
+  addStar(e.clientX, e.clientY);
+  hideHint();
+});
+
+cv.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  addStar(t.clientX, t.clientY);
+  hideHint();
+}, { passive: false });
+
+document.getElementById('btnPlay').addEventListener('click', () => {
+  audio().resume();
+  playing ? stopPlay() : startPlay();
+});
+
+document.getElementById('btnUndo').addEventListener('click', () => {
+  if (!stars.length) return;
+  stars.pop();
+  updateCount();
+  if (stars.length < 2 && playing) stopPlay();
+});
+
+document.getElementById('btnRandom').addEventListener('click', () => {
+  stars = [];
+  const n = 5 + Math.floor(Math.random() * 6);
+  for (let i = 0; i < n; i++) {
+    const x = 90 + Math.random() * (W - 180);
+    const y = 100 + Math.random() * (H - 220);
+    const { freq, name } = yToNote(y);
+    stars.push({ x, y, freq, name, color: freqColor(freq), pulse: 0 });
+  }
+  updateCount();
+  hintEl.style.opacity = '0';
+  clearTimeout(hintTimer);
+  if (playing) { stopPlay(); startPlay(); }
+});
+
+document.getElementById('btnClear').addEventListener('click', () => {
+  stars = [];
+  stopPlay();
+  updateCount();
+  hintEl.textContent = 'Click to place stars  ·  Higher = higher pitch  ·  Stars play in sequence  ·  Press Play';
+  hintEl.style.opacity = '1';
+  clearTimeout(hintTimer);
+});
+
+document.getElementById('scaleSelect').addEventListener('change', e => {
+  scaleName = e.target.value;
+  for (const s of stars) {
+    const { freq, name } = yToNote(s.y);
+    s.freq = freq; s.name = name; s.color = freqColor(freq);
+  }
+});
+
+document.getElementById('tempoSlider').addEventListener('input', e => {
+  tempo = parseFloat(e.target.value);
+});
+</script>
+</body>
+</html>
