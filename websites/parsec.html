@@ -218,6 +218,19 @@
   .memorial-card{border:1px solid var(--red-dim);border-radius:3px;background:#1a0e0a;padding:8px 10px}
   .memorial-card .mname{font-size:12px;color:var(--red)}
   .memorial-card .mdetail{font-size:10.5px;color:var(--ink-dim);margin-top:2px}
+
+  .contract{border:1px solid var(--line);border-radius:3px;background:var(--panel);padding:9px 11px;margin-bottom:8px}
+  .ct-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+  .ct-title{font-size:12.5px;color:var(--wall)}
+  .ct-eta{font-size:9.5px;color:var(--ink-dim)}
+  .ct-desc{font-size:11px;color:var(--ink-dim);margin-bottom:7px;line-height:1.5}
+  .ct-row{display:flex;align-items:center;gap:8px}
+  .ct-prog{flex:1;height:4px;background:#0b0a07;border-radius:2px;overflow:hidden}
+  .ct-prog i{display:block;height:100%;background:var(--amber-dim);transition:width .3s}
+  .ct-pct{font-size:9.5px;color:var(--ink-dim);white-space:nowrap;min-width:36px;text-align:right}
+  .ct-reward{font-size:10.5px;color:var(--green);margin-top:5px}
+  .contract.done{border-color:var(--green-dim);background:#131d0c}
+  .contract.done .ct-prog i{background:var(--green)}
 </style>
 </head>
 <body>
@@ -230,6 +243,7 @@
     <div class="tagline">Anomalous Asset Recovery — Dispatch Console</div>
   </div>
   <div class="spacer"></div>
+  <button id="sfxBtn" class="hbtn">SFX OFF</button>
   <button id="statsBtn" class="hbtn">STATS</button>
   <button id="notifBtn" class="hbtn">ALERTS OFF</button>
   <div class="clearance" id="clearance">CLEARANCE · TIER 0</div>
@@ -251,6 +265,8 @@
   <div class="col">
     <h2 class="section">Active expeditions <span class="cnt" id="activeCnt"></span></h2>
     <div id="active"><div class="muted tiny">No teams in the field.</div></div>
+    <h2 class="section" style="margin-top:22px">Contracts <span class="cnt" id="contractCnt"></span></h2>
+    <div id="contracts"></div>
     <h2 class="section" style="margin-top:22px">Levels</h2>
     <div id="levels"></div>
   </div>
@@ -360,11 +376,45 @@
   </div>
 </div>
 
+<!-- Spec modal -->
+<div class="modal-bg" id="specBg">
+  <div class="modal">
+    <div class="mhead" id="specTitle">Field Promotion</div>
+    <div class="mbody">
+      <div class="mflav" id="specFlav"></div>
+      <div class="mq" style="font-size:13px">Choose a specialization. This choice is permanent.</div>
+      <div id="specChoices"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 "use strict";
 const SAVE_KEY="parsec_save_v3";
+
+let SFX=false,_ac=null;
+function getAC(){if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();return _ac;}
+function tone(freq,dur,type,vol){
+  try{
+    const ctx=getAC();
+    if(ctx.state==="suspended")ctx.resume();
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.type=type||"sine";o.frequency.value=freq;
+    g.gain.setValueAtTime(vol||0.07,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    o.start();o.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+function sfxDispatch(){if(!SFX)return;tone(440,.07,"square",.04);}
+function sfxReturn(){if(!SFX)return;tone(330,.12,"sine",.06);setTimeout(()=>tone(500,.1,"sine",.05),140);}
+function sfxBad(){if(!SFX)return;tone(180,.35,"sawtooth",.05);}
+function sfxAchieve(){if(!SFX)return;[440,554,659].forEach((f,i)=>setTimeout(()=>tone(f,.18,"sine",.07),i*90));}
+function sfxEvent(){if(!SFX)return;tone(200,.25,"triangle",.04);}
+function sfxUpgrade(){if(!SFX)return;tone(330,.1,"sine",.05);setTimeout(()=>tone(440,.12,"sine",.05),110);}
+
 const FIRST=["Vance","Okoye","Reyes","Halloran","Sato","Mbeki","Kovac","Lindqvist","Ferreira","Adeyemi","Novak","Petrov","Chen","Dubois","Aaltonen","Marek","Iqbal","Sorensen","Romano","Bauer","Costa","Ng","Haddad","Ortega","Yakimov","Thorne","Mwangi","Sundaram","Voss","Papadopoulos"];
 const LAST=["D.","M.","R.","K.","T.","L.","S.","V.","E.","N.","J.","P.","A.","B.","O.","W.","C.","F.","H.","I."];
 const ENTITIES=["a Hound","a Smiler","a Skin-Stealer","a Clump","a Death Moth swarm","a Wretch","a Partygoer","something wearing a colleague's face","a Bacterium bloom","a Faceling","a Hunting Frenzy","a Crawler","a Blur","something that doesn't cast a shadow"];
@@ -406,6 +456,13 @@ const TRAITS={
   path: {name:"Pathfinder",desc:"Rarely lost; reduces team noclip risk."},
   swift:{name:"Swift",     desc:"−15% expedition duration for their team."},
   mule: {name:"Pack Mule", desc:"+20% almond water yield for their team."},
+};
+
+const SPECS={
+  scout:   {name:"Scout",    icon:"◈",desc:"Team runs 20% faster. Noclip risk −40%.",        color:"var(--green)"},
+  enforcer:{name:"Enforcer", icon:"◆",desc:"Self injury risk −50%. +2 Grit vs encounters.", color:"var(--red)"},
+  salvager:{name:"Salvager", icon:"⚙",desc:"Team earns +30% credits & salvage.",            color:"var(--amber)"},
+  medic:   {name:"Medic",    icon:"✚",desc:"Team recovery time −60%.",                      color:"var(--blue)"},
 };
 
 function levelById(id){return LEVELS.find(l=>l.id===id);}
@@ -518,6 +575,7 @@ function newGame(){
     startTime:Date.now(),playTime:0,
     endCleared:false,rfylCleared:false,
     memorial:[],tutorialStep:0,conditionCounts:{quiet:0,clear:0,active:0,hot:0},
+    contracts:[],cleanStreak:0,intel:[],
   };
   G.ops=[mkOp(),mkOp()];
   return G;
@@ -527,7 +585,7 @@ function mkOp(){
   let grit=2+(G?G.fac.train:0);
   let trait=null;
   if(Math.random()<0.45){trait=pick(Object.keys(TRAITS));if(trait==="vet")grit+=2;}
-  return{id:OP_SEQ++,name:pick(FIRST)+" "+pick(LAST),grit,xp:0,cond:100,status:"idle",recover:0,trait,runs:0};
+  return{id:OP_SEQ++,name:pick(FIRST)+" "+pick(LAST),grit,xp:0,cond:100,status:"idle",recover:0,trait,runs:0,spec:null};
 }
 function opById(id){return G.ops.find(o=>o.id===id);}
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
@@ -556,7 +614,7 @@ function creditsPerSec(){return has("contain")?0.7:0;}
 function supplyPerOp(L){return Math.max(2,Math.round(L.time/30)+1);}
 function supplyCost(L,n){return Math.max(1,Math.ceil(n*supplyPerOp(L)*(has("logistics")?0.6:1)));}
 function speedMult(){return has("drones")?0.75:1;}
-function speedMultTeam(ops){let m=speedMult();if(ops.some(o=>o.trait==="swift"))m*=0.85;return m;}
+function speedMultTeam(ops){let m=speedMult();if(ops.some(o=>o.trait==="swift"))m*=0.85;if(ops.some(o=>o.spec==="scout"))m*=0.8;return m;}
 function severityMult(){let m=1;if(has("gear1"))m*=0.7;if(has("gear2"))m*=0.7;return m;}
 function recoverMult(){return has("med")?0.5:1;}
 function lootMultBase(){return has("gear1")?1.12:1;}
@@ -639,6 +697,11 @@ function openDispatch(id){
   document.getElementById("dispatchInfo").innerHTML=
     "<b>Duration</b> ~"+dur+"s · <b>Danger</b> <span style='color:var(--red)'>"+Math.round(L.danger*100)+"%</span>"
     +" · <span class='muted'>Supply cost updates as you pick operatives.</span>";
+  const activeIntel=G.intel.find(x=>x.levelId===id&&x.expires>Date.now());
+  if(activeIntel){
+    const mins=Math.ceil((activeIntel.expires-Date.now())/60000);
+    document.getElementById("dispatchInfo").innerHTML+=" <span style='color:var(--green);font-size:10.5px'>● Intel active — +25% haul ("+mins+"m left)</span>";
+  }
   document.getElementById("autoToggle").classList.remove("on");
   document.getElementById("autoBox").textContent="";
   renderPicker();updateDispatchCost();
@@ -679,6 +742,7 @@ function confirmDispatch(){
   for(const id of DS.sel){const o=opById(id);if(o)o.status="deployed";}
   G.active.push({id:G.expSeq++,level:L.id,ops:[...DS.sel],end:Date.now()+dur*1000,dur,auto:DS.auto,noclipResolved:false,waiting:false,condition:condId});
   log("Team deployed to "+levelTag(L)+" — "+L.name+". "+DS.sel.length+" in the field"+(DS.auto?" (auto-repeat).":".")+" ["+condId.toUpperCase()+"]","report");
+  sfxDispatch();
   document.getElementById("dispatchBg").classList.remove("show");
   advanceTutorial(0);
   renderAll();
@@ -702,6 +766,7 @@ function quickDispatch(levelId){
   G.active.push({id:G.expSeq++,level:L.id,ops:ids,end:Date.now()+dur*1000,dur,auto:false,noclipResolved:false,waiting:false,condition:condId});
   toast("Sent "+idle.length+" to "+L.name+" ["+condId.toUpperCase()+"].");
   log("Quick dispatch: "+idle.length+" operatives sent to "+levelTag(L)+" — "+L.name+". ["+condId.toUpperCase()+"]","report");
+  sfxDispatch();
   advanceTutorial(0);
   renderAll();
 }
@@ -722,7 +787,8 @@ function beginResolve(exp){
   const team=exp.ops.map(opById).filter(Boolean);
   if(!exp.noclipResolved&&team.length>=2){
     const pathers=team.filter(o=>o.trait==="path").length;
-    const chance=0.16*(pathers?0.4:1)*(has("psi")?0.4:1);
+    const scouts=team.filter(o=>o.spec==="scout").length;
+    const chance=0.16*(pathers?0.4:1)*(has("psi")?0.4:1)*(scouts?0.6:1);
     const cand=team.filter(o=>o.trait!=="path");
     if(cand.length&&Math.random()<chance){openNoclip(exp,pick(cand).id);return true;}
   }
@@ -769,36 +835,45 @@ function finishResolve(exp){
   const sev=L.danger*severityMult()*cond.dangerMult;
   const teamFactor=clamp(1-(teamGrit-team.length)*0.06-(team.length-1)*0.05,0.22,1);
 
+  let hurt=[],lost_ops=[];
   if(Math.random()<sev*1.3){
-    const ent=pick(ENTITIES);let hurt=[],lost=[];
+    const ent=pick(ENTITIES);
     for(const o of team){
-      let risk=sev*teamFactor*(1-o.grit*0.04);
+      let risk=sev*teamFactor*(1-(o.grit+(o.spec==="enforcer"?2:0))*0.04);
       if(o.trait==="tough")risk*=0.5;
+      if(o.spec==="enforcer")risk*=0.5;
       const roll=Math.random();
-      if(roll<risk*0.22&&L.danger>0.35&&o.trait!=="path")lost.push(o);
+      if(roll<risk*0.22&&L.danger>0.35&&o.trait!=="path")lost_ops.push(o);
       else if(roll<risk)hurt.push(o);
     }
-    for(const o of lost){
+    for(const o of lost_ops){
       if(!G.memorial)G.memorial=[];
       G.memorial.push({name:o.name,grit:o.grit,runs:o.runs||0,trait:o.trait,level:L.name,when:new Date().toLocaleTimeString()});
       G.ops=G.ops.filter(x=>x.id!==o.id);G.lost++;
     }
-    for(const o of hurt){o.cond=clamp(o.cond-rand(25,55),0,100);o.status="injured";o.recover=Date.now()+rand(40,95)*1000*recoverMult();}
-    if(lost.length)log(levelTag(L)+": contact with "+ent+". Lost "+lost.map(o=>o.name).join(", ")+".","bad");
-    if(hurt.length)log(levelTag(L)+": contact with "+ent+". Injured "+hurt.map(o=>o.name).join(", ")+".","bad");
-    if(!lost.length&&!hurt.length)log(levelTag(L)+": brief contact with "+ent+", broke line of sight.","report");
+    for(const o of hurt){
+      o.cond=clamp(o.cond-rand(25,55),0,100);o.status="injured";
+      o.recover=Date.now()+rand(40,95)*1000*recoverMult()*(team.some(t=>t.spec==="medic")?0.4:1);
+    }
+    if(lost_ops.length){log(levelTag(L)+": contact with "+ent+". Lost "+lost_ops.map(o=>o.name).join(", ")+".","bad");sfxBad();}
+    if(hurt.length){log(levelTag(L)+": contact with "+ent+". Injured "+hurt.map(o=>o.name).join(", ")+".","bad");sfxBad();}
+    if(!lost_ops.length&&!hurt.length)log(levelTag(L)+": brief contact with "+ent+", broke line of sight.","report");
   }
 
   const survivors=team.filter(o=>opById(o.id));
   let lm=lootMultBase()*deepBonus(L)*(1+teamGrit*0.05)*cond.lootMult;
   lm+=survivors.filter(o=>o.trait==="lucky").length*0.15;
   lm*=(0.5+0.5*(survivors.length/Math.max(1,team.length)));
+  // Intel boost
+  const intelIdx=(G.intel||[]).findIndex(x=>x.levelId===L.id&&x.expires>Date.now());
+  if(intelIdx>=0){lm*=G.intel[intelIdx].boost;G.intel.splice(intelIdx,1);log("Intel acted on — "+L.name+" haul boosted.","good");}
   const mules=survivors.filter(o=>o.trait==="mule").length;
   const gained={};
   for(const k in L.loot){
     let[a,b]=L.loot[k];
     let v=Math.round(rand(a,b)*lm);
     if(k==="aw"&&mules)v=Math.round(v*(1+mules*0.2));
+    if((k==="credits"||k==="salvage")&&survivors.some(o=>o.spec==="salvager"))v=Math.round(v*1.3);
     if(v>0){gain(k,v);gained[k]=v;}
   }
   if(survivors.length&&Math.random()<0.07){
@@ -817,11 +892,11 @@ function finishResolve(exp){
   for(const o of survivors){
     if(o.status==="injured")continue;
     o.status="idle";o.xp+=4+L.id*2;o.runs=(o.runs||0)+1;
-    if(o.xp>=o.grit*12){o.xp-=o.grit*12;o.grit++;log(o.name+" promoted to Grit "+o.grit+".","good");}
+    if(o.xp>=o.grit*12){o.xp-=o.grit*12;o.grit++;log(o.name+" promoted to Grit "+o.grit+".","good");if(o.grit===4&&!o.spec)setTimeout(()=>openSpecModal(o.id),400);}
   }
 
   const back=survivors.filter(o=>o.status==="idle");
-  if(back.length)log(levelTag(L)+" — "+L.name+": extracted. Back: "+back.map(o=>o.name).join(", ")+".","report");
+  if(back.length){log(levelTag(L)+" — "+L.name+": extracted. Back: "+back.map(o=>o.name).join(", ")+".","report");sfxReturn();}
   else log(levelTag(L)+" — "+L.name+": expedition closed.","report");
   if(gained.aw)log("Hauled back +"+gained.aw+" 🥛 almond water.","good");
   const other=[];
@@ -833,6 +908,19 @@ function finishResolve(exp){
   const r=Math.random();
   if(r<0.32)log(pick(DISCOVERIES),"report");
   else if(r<0.55)log(pick(DREAD),"dread");
+
+  // Intel generation
+  if(survivors.length&&Math.random()<0.18){
+    const candidates=LEVELS.filter(l=>l.id!==L.id&&levelUnlocked(l));
+    if(candidates.length){
+      const target=pick(candidates);
+      const flavours=["running unusually quiet","showing dense salvage readings","reporting active entity movement","holding steady — good window to move"];
+      const fl=pick(flavours);
+      G.intel=(G.intel||[]).filter(x=>x.levelId!==target.id);
+      G.intel.push({levelId:target.id,boost:1.25,expires:Date.now()+180000});
+      log("Field intel: "+target.name+" is "+fl+". +25% haul if you move in the next 3 minutes.","report");
+    }
+  }
 
   if(exp.auto){
     const reSel=survivors.filter(o=>o.status==="idle").map(o=>o.id);
@@ -849,6 +937,9 @@ function finishResolve(exp){
       G.autoRuns=(G.autoRuns||0)+1;
     }else if(reSel.length)log("Auto-repeat halted: insufficient supplies.","report");
   }
+
+  const hadInjury=hurt.length>0||lost_ops.length>0;
+  trackContracts(gained,hadInjury);
 
   advanceTutorial(1);
   maybeNotify(L,back);
@@ -876,7 +967,7 @@ function buyTech(t){
   for(const r of t.req){if(!G.tech[r]){toast("Requires "+TECH.find(x=>x.id===r).name+".");return;}}
   if(!spend(t.cost)){toast("Insufficient resources.");return;}
   G.tech[t.id]=true;if(t.id==="contain")G.cap.credits+=400;
-  log("Research complete: "+t.name+".","good");checkAchievements();renderAll();
+  log("Research complete: "+t.name+".","good");sfxUpgrade();checkAchievements();renderAll();
 }
 function facCost(f){const l=G.fac[f.id];const c={};for(const k in f.base)c[k]=Math.round(f.base[k]*Math.pow(f.mult,l));return c;}
 function buyFac(f){
@@ -884,7 +975,7 @@ function buyFac(f){
   G.fac[f.id]++;
   if(f.id==="cap"){G.cap.aw=Math.round(G.cap.aw*1.5);G.cap.credits=Math.round(G.cap.credits*1.5);G.cap.salvage=Math.round(G.cap.salvage*1.5);G.cap.data=Math.round(G.cap.data*1.5);}
   if(f.id==="barracks")G.maxOps++;
-  log(f.name+" upgraded to level "+G.fac[f.id]+".","good");renderAll();
+  log(f.name+" upgraded to level "+G.fac[f.id]+".","good");sfxUpgrade();renderAll();
 }
 
 /* ---- events ---- */
@@ -974,6 +1065,7 @@ function fireEvent(){
     box.appendChild(b);
   }
   document.getElementById("eventBg").classList.add("show");
+  sfxEvent();
 }
 
 /* ---- achievements ---- */
@@ -983,6 +1075,7 @@ function checkAchievements(){
       G.achievements[a.id]=Date.now();
       log("ACHIEVEMENT UNLOCKED: "+a.name+" — "+a.desc,"achieve");
       toast("❆ "+a.name,"good-t");
+      sfxAchieve();
     }
   }
 }
@@ -994,6 +1087,7 @@ function doGameOver(reason){
   document.getElementById("goStats").textContent="Expeditions: "+G.runs+" · Lost: "+G.lost+" · Clearance: "+G.clearance+" · Time: "+Math.round((G.playTime||0)/60)+"m";
   document.getElementById("gameoverBg").classList.add("show");
   log("CONTAINMENT LOST. "+reason,"bad");
+  sfxBad();
 }
 
 /* ---- tick ---- */
@@ -1003,6 +1097,7 @@ function tick(){
   let dt=(now-G.lastTick)/1000;if(dt<0)dt=0;if(dt>2)dt=2;
   G.playTime=(G.playTime||0)+dt;
   if(dt>0){gain("aw",awPerSec()*dt);gain("credits",creditsPerSec()*dt);G.lastTick=now;}
+  G.intel=(G.intel||[]).filter(x=>x.expires>now);
 
   if(G.res.aw<=0.01){
     if(!G.dryUntil){G.dryUntil=now+35000;log("⚠ Almond water empty. Site can hold ~35s. Get water fast.","bad");}
@@ -1020,7 +1115,7 @@ function tick(){
   }
   if(now>=G.nextEvent){G.nextEvent=now+rand(50,100)*1000;if(!modalOpen("eventBg")&&!modalOpen("dispatchBg")&&!modalOpen("noclipBg"))fireEvent();}
 
-  renderResbar();renderWarn();renderActive();updateSuggestBar();
+  renderResbar();renderWarn();renderActive();renderContracts();updateSuggestBar();
   if(changed)renderRoster();
   checkAchievements();
 }
@@ -1073,7 +1168,7 @@ function renderRoster(){
     const barCls=o.cond<30?"low":o.cond<60?"mid":"";
     div.innerHTML=
       "<div class='avatar'>"+(o.status==="injured"?"✚":o.name.replace(/^\(found\) /,"")[0].toUpperCase())+"</div>"+
-      "<div class='meta'><div class='nm'>"+o.name+(o.trait?"<span class='tt'>"+TRAITS[o.trait].name+"</span>":"")+"</div>"+
+      "<div class='meta'><div class='nm'>"+o.name+(o.trait?"<span class='tt'>"+TRAITS[o.trait].name+"</span>":"")+(o.spec?"<span class='tt' style='color:"+SPECS[o.spec].color+"'>"+SPECS[o.spec].icon+" "+SPECS[o.spec].name+"</span>":"")+"</div>"+
       "<div class='sub'>"+sub+"</div>"+
       "<div class='bar "+barCls+"'><i style='width:"+o.cond+"%'></i></div></div>"+
       "<div class='stat'>G "+o.grit+"<br><span class='muted' style='font-size:9.5px'>xp "+o.xp+"/"+(o.grit*12)+"</span></div>";
@@ -1257,13 +1352,93 @@ function openOpDetail(id){
       "<div class='ds'>XP <b>"+o.xp+"/"+(o.grit*12)+"</b></div>"+
       "<div class='ds'>Condition <b>"+o.cond+"%</b></div>"+
       "<div class='ds'>Runs <b>"+(o.runs||0)+"</b></div>"+
+      "<div class='ds'>Spec <b>"+(o.spec?SPECS[o.spec].icon+" "+SPECS[o.spec].name:"none")+"</b></div>"+
     "</div>"+
     "<div class='bar "+(o.cond<30?"low":o.cond<60?"mid":"")+"' style='height:6px;margin:8px 0 16px'><i style='width:"+o.cond+"%'></i></div>"+
     "<div class='tiny muted'>Click outside to close.</div>";
   document.getElementById("opDetailClose").onclick=()=>document.getElementById("opDetailBg").classList.remove("show");
   document.getElementById("opDetailBg").classList.add("show");
 }
-function renderAll(){renderResbar();renderWarn();renderRoster();renderFacility();renderActive();renderLevels();renderResearch();renderFeed();updateSuggestBar();}
+/* ---- contracts ---- */
+function genContract(){
+  const tier=Math.max(0,Math.floor((G.runs||0)/8));
+  const templates=[
+    {title:"Field Exercise",  type:"runs",    make:()=>{const g=rand(2,3+Math.floor(tier/2));return{goal:g,desc:"Complete "+g+" expedition"+(g>1?"s":"")+"."};},              reward:()=>({credits:22+tier*10,salvage:4+tier*3})},
+    {title:"Water Detail",   type:"aw",      make:()=>{const g=rand(18,35+tier*14);return{goal:g,desc:"Haul "+g+" almond water from the field."};},                        reward:()=>({credits:18+tier*8,data:2+tier*2})},
+    {title:"Credit Run",     type:"credits", make:()=>{const g=rand(28,50+tier*18);return{goal:g,desc:"Earn "+g+" credits from expeditions."};},                           reward:()=>({salvage:10+tier*6,data:2+tier*2})},
+    {title:"Clean Operation",type:"clean",   make:()=>{const g=rand(1,1+Math.floor(tier/3));return{goal:g,desc:"Complete "+g+" expedition"+(g>1?"s":"")+" without injuries."};},reward:()=>({aw:18+tier*8,credits:22+tier*10})},
+    {title:"Data Harvest",   type:"data",    make:()=>{const g=rand(4,9+tier*3);return{goal:g,desc:"Recover "+g+" data from the field."};},                                reward:()=>({credits:28+tier*12,salvage:8+tier*5})},
+    {title:"Salvage Drive",  type:"salvage", make:()=>{const g=rand(10,22+tier*10);return{goal:g,desc:"Recover "+g+" salvage."};},                                         reward:()=>({aw:12+tier*7,data:2+tier*3})},
+  ];
+  const t=pick(templates);const m=t.make();
+  return{id:(G.expSeq||0)+Math.floor(Math.random()*9999),title:t.title,type:t.type,desc:m.desc,goal:m.goal,progress:0,reward:t.reward(),expires:Date.now()+200000};
+}
+function renderContracts(){
+  if(!G.contracts)G.contracts=[];
+  while(G.contracts.length<2)G.contracts.push(genContract());
+  const now=Date.now();
+  for(let i=0;i<G.contracts.length;i++){
+    const c=G.contracts[i];
+    if(c.progress>=c.goal){
+      for(const k in c.reward)gain(k,c.reward[k]);
+      const rStr=Object.entries(c.reward).map(([k,v])=>"+"+v+({credits:"¤",salvage:"⚙",data:"▦",aw:"🥛"}[k]||k)).join(" ");
+      log('Contract complete: "'+c.title+'". Reward: '+rStr+'.','good');
+      sfxUpgrade();
+      G.contracts[i]=genContract();
+    }else if(now>c.expires){
+      log('Contract expired: "'+c.title+'".','report');
+      G.contracts[i]=genContract();
+    }
+  }
+  const box=document.getElementById("contracts");if(!box)return;
+  const active=G.contracts.filter(c=>c.progress<c.goal).length;
+  document.getElementById("contractCnt").textContent="("+active+")";
+  box.innerHTML="";
+  for(const c of G.contracts){
+    const done=c.progress>=c.goal;
+    const pct=Math.min(100,c.goal>0?Math.round(c.progress/c.goal*100):0);
+    const left=Math.max(0,Math.ceil((c.expires-now)/1000));
+    const mins=Math.floor(left/60);const secs=left%60;
+    const eta=mins>0?mins+"m "+String(secs).padStart(2,"0")+"s":left+"s";
+    const rStr=Object.entries(c.reward).map(([k,v])=>"+"+v+({credits:"¤",salvage:"⚙",data:"▦",aw:"🥛"}[k]||k)).join(" ");
+    const div=document.createElement("div");div.className="contract"+(done?" done":"");
+    div.innerHTML=`<div class="ct-top"><span class="ct-title">${c.title}</span><span class="ct-eta">${done?"✓ done":eta}</span></div>`+
+      `<div class="ct-desc">${c.desc}</div>`+
+      `<div class="ct-row"><div class="ct-prog"><i style="width:${pct}%"></i></div><span class="ct-pct">${c.progress}/${c.goal}</span></div>`+
+      `<div class="ct-reward">${rStr}</div>`;
+    box.appendChild(div);
+  }
+}
+function trackContracts(gained,hadInjury){
+  if(!G.contracts)return;
+  if(hadInjury)G.cleanStreak=0;else G.cleanStreak=(G.cleanStreak||0)+1;
+  for(const c of G.contracts){
+    if(c.progress>=c.goal)continue;
+    if(c.type==="runs")c.progress=Math.min(c.goal,c.progress+1);
+    if(c.type==="aw"&&gained.aw)c.progress=Math.min(c.goal,c.progress+(gained.aw||0));
+    if(c.type==="credits"&&gained.credits)c.progress=Math.min(c.goal,c.progress+(gained.credits||0));
+    if(c.type==="salvage"&&gained.salvage)c.progress=Math.min(c.goal,c.progress+(gained.salvage||0));
+    if(c.type==="data"&&gained.data)c.progress=Math.min(c.goal,c.progress+(gained.data||0));
+    if(c.type==="clean"){if(hadInjury)c.progress=0;else c.progress=Math.min(c.goal,c.progress+1);}
+  }
+}
+
+/* ---- specializations ---- */
+function openSpecModal(opId){
+  const o=opById(opId);if(!o||o.spec)return;
+  document.getElementById("specTitle").textContent="Field Promotion — "+o.name;
+  document.getElementById("specFlav").textContent="After "+(o.runs||0)+" runs at Grit "+o.grit+", "+o.name+" has earned a specialization.";
+  const box=document.getElementById("specChoices");box.innerHTML="";
+  for(const[key,sp]of Object.entries(SPECS)){
+    const b=document.createElement("button");b.className="choice";
+    b.innerHTML=`<span style="color:${sp.color}">${sp.icon} ${sp.name}</span><span class="rk">${sp.desc}</span>`;
+    b.onclick=()=>{o.spec=key;log(o.name+" specialised as "+sp.name+".","good");document.getElementById("specBg").classList.remove("show");sfxAchieve();renderAll();};
+    box.appendChild(b);
+  }
+  document.getElementById("specBg").classList.add("show");
+}
+
+function renderAll(){renderResbar();renderWarn();renderRoster();renderFacility();renderActive();renderContracts();renderLevels();renderResearch();renderFeed();updateSuggestBar();}
 
 /* ---- save / load ---- */
 function save(silent){
@@ -1285,6 +1460,9 @@ function load(){
     if(G.tutorialStep===undefined)G.tutorialStep=G.runs>0?3:0;
     if(!G.conditionCounts)G.conditionCounts={quiet:0,clear:0,active:0,hot:0};
     for(const o of G.ops)if(!o.runs)o.runs=0;
+    if(!G.contracts)G.contracts=[];if(G.cleanStreak===undefined)G.cleanStreak=0;
+    if(!G.intel)G.intel=[];
+    for(const o of G.ops)if(o.spec===undefined)o.spec=null;
     return true;
   }catch(e){return false;}
 }
@@ -1299,7 +1477,7 @@ function startFresh(){
 /* ---- keyboard shortcuts ---- */
 document.addEventListener("keydown",e=>{
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.isContentEditable)return;
-  if(e.key==="Escape"){["dispatchBg","eventBg","statsBg","opDetailBg"].forEach(id=>document.getElementById(id).classList.remove("show"));return;}
+  if(e.key==="Escape"){["dispatchBg","eventBg","statsBg","opDetailBg","specBg"].forEach(id=>document.getElementById(id).classList.remove("show"));return;}
   if(e.key==="h"||e.key==="H"){document.getElementById("hireBtn").click();return;}
   if((e.key==="r"||e.key==="R")&&!G.gameOver){openDispatch(0);return;}
   if(e.key==="s"||e.key==="S"){save(false);return;}
@@ -1328,6 +1506,13 @@ function boot(){
   setInterval(()=>{if(!G.gameOver){save(true);document.getElementById("saveStatus").textContent="Autosaved · "+new Date().toLocaleTimeString();}},8000);
   window.addEventListener("beforeunload",()=>{if(!G.gameOver)save(true);});
 
+  document.getElementById("sfxBtn").onclick=()=>{
+    SFX=!SFX;
+    const btn=document.getElementById("sfxBtn");
+    btn.textContent=SFX?"SFX ON":"SFX OFF";
+    btn.classList.toggle("active",SFX);
+    if(SFX)sfxAchieve();
+  };
   document.getElementById("hireBtn").onclick=recruit;
   document.getElementById("dispatchGo").onclick=confirmDispatch;
   document.getElementById("dispatchCancel").onclick=()=>document.getElementById("dispatchBg").classList.remove("show");
@@ -1346,6 +1531,7 @@ function boot(){
   document.getElementById("dispatchBg").addEventListener("click",e=>{if(e.target.id==="dispatchBg")e.currentTarget.classList.remove("show");});
   document.getElementById("statsBg").addEventListener("click",e=>{if(e.target.id==="statsBg")e.currentTarget.classList.remove("show");});
   document.getElementById("opDetailBg").addEventListener("click",e=>{if(e.target.id==="opDetailBg")e.currentTarget.classList.remove("show");});
+  document.getElementById("specBg").addEventListener("click",e=>{if(e.target.id==="specBg")e.currentTarget.classList.remove("show");});
   document.querySelectorAll(".feed-tab").forEach(tab=>{
     tab.onclick=()=>{feedFilter=tab.dataset.f;document.querySelectorAll(".feed-tab").forEach(t=>t.classList.toggle("active",t===tab));renderFeed();};
   });
