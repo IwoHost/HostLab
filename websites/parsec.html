@@ -245,6 +245,7 @@
   <div class="spacer"></div>
   <button id="sfxBtn" class="hbtn">SFX OFF</button>
   <button id="statsBtn" class="hbtn">STATS</button>
+  <button id="loreBtn" class="hbtn">ARCHIVE</button>
   <button id="notifBtn" class="hbtn">ALERTS OFF</button>
   <div class="clearance" id="clearance">CLEARANCE · TIER 0</div>
 </header>
@@ -265,7 +266,8 @@
   <div class="col">
     <h2 class="section">Active expeditions <span class="cnt" id="activeCnt"></span></h2>
     <div id="active"><div class="muted tiny">No teams in the field.</div></div>
-    <h2 class="section" style="margin-top:22px">Contracts <span class="cnt" id="contractCnt"></span></h2>
+    <canvas id="fieldCanvas" width="420" height="110" style="width:100%;height:110px;display:block;margin:10px 0;border:1px solid var(--border);image-rendering:crisp-edges"></canvas>
+    <h2 class="section" style="margin-top:4px">Contracts <span class="cnt" id="contractCnt"></span></h2>
     <div id="contracts"></div>
     <h2 class="section" style="margin-top:22px">Levels</h2>
     <div id="levels"></div>
@@ -293,6 +295,30 @@
   <button class="btn small" id="saveBtn">Save</button>
   <button class="btn small danger" id="resetBtn">Wipe site</button>
 </footer>
+
+<!-- Lore popup modal -->
+<div class="modal-bg" id="loreBg">
+  <div class="modal" style="max-width:480px">
+    <div class="mhead" id="lorePopupTitle">DOCUMENT RECOVERED</div>
+    <div class="mbody">
+      <div style="font-size:10px;color:var(--amber-dim);letter-spacing:.12em;margin-bottom:10px">◈ NEW FIELD DOCUMENT DISCOVERED</div>
+      <div id="lorePopupBody" style="font-size:11px;line-height:1.75;white-space:pre-wrap;color:var(--ink);max-height:280px;overflow-y:auto;font-family:'Share Tech Mono',monospace;border:1px solid var(--border);padding:12px;background:var(--bg-mid)"></div>
+      <button class="btn full primary" style="margin-top:12px" id="loreAckBtn">ACKNOWLEDGE</button>
+      <button class="btn full" style="margin-top:5px" id="loreToArchiveBtn">OPEN FULL ARCHIVE →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lore archive modal -->
+<div class="modal-bg" id="loreArchiveBg">
+  <div class="modal" style="max-width:580px">
+    <div class="mhead">PARSEC FIELD ARCHIVE <span id="loreCntBadge" style="color:var(--amber-dim);font-size:11px;font-weight:normal"></span> <button class="btn small" id="loreArchiveClose" style="font-size:10px;padding:2px 8px">CLOSE</button></div>
+    <div class="mbody" style="display:flex;gap:14px;padding-top:6px">
+      <div id="loreList" style="width:168px;flex-shrink:0;border-right:1px solid var(--border);padding-right:12px;max-height:380px;overflow-y:auto"></div>
+      <div id="loreReader" style="flex:1;max-height:380px;overflow-y:auto;font-size:11px;line-height:1.75;white-space:pre-wrap;color:var(--ink);font-family:'Share Tech Mono',monospace;padding:2px 4px"></div>
+    </div>
+  </div>
+</div>
 
 <!-- Dispatch modal -->
 <div class="modal-bg" id="dispatchBg">
@@ -506,7 +532,7 @@ const LEVELS=[
 ];
 
 const TECH=[
-  {id:"hydro",    name:"Hydroponics Bay",       tag:"facility",desc:"Almond water condensers. +0.5 AW / sec, always running.",                        cost:{credits:35,salvage:12,data:3},  req:[]},
+  {id:"hydro",    name:"Hydroponics Bay",       tag:"facility",desc:"Water reclamation loop. Boosts AW yield from all expeditions by +25%.",          cost:{credits:35,salvage:12,data:3},  req:[]},
   {id:"gear1",    name:"Reinforced Kit",         tag:"safety",  desc:"Field armour and beacons. −30% encounter severity, +12% loot.",                  cost:{credits:45,salvage:18,data:5},  req:[]},
   {id:"drones",   name:"Recon Drones",           tag:"speed",   desc:"Scout ahead. Expeditions resolve 25% faster.",                                    cost:{credits:60,salvage:24,data:7},  req:[]},
   {id:"med",      name:"Field Medicine",         tag:"safety",  desc:"Injured operatives recover twice as fast.",                                       cost:{credits:50,salvage:16,data:6},  req:[]},
@@ -524,6 +550,19 @@ const FACILITY=[
   {id:"cap",     name:"Storage Expansion", desc:"Raise all resource caps by 50%.", base:{credits:25,salvage:8},  mult:1.6},
   {id:"barracks",name:"Barracks",          desc:"+1 max operatives on site.",       base:{credits:40,salvage:15}, mult:1.7},
   {id:"train",   name:"Training Sims",     desc:"New recruits start with +1 Grit.",base:{credits:38,data:5},     mult:1.8},
+];
+
+const LORE=[
+  {id:"memo001",title:"PARSEC Founding Memo — 1997",body:`TO: All Personnel\nFROM: Director Harrow, Site Operations\nDATE: [REDACTED]\n\nPARSEC was established with one mandate: RECOVERY. The Backrooms represent the largest untapped resource environment in recorded history. Almond water is not a curiosity. It is a substrate. It is what holds the space together.\n\nOperatives are to treat every level as a working environment, not a hazard zone. We go in. We take what we can. We come back.\n\nSome won't come back. That's in the contract.\n\n— Director Harrow`},
+  {id:"entity01",title:"Field Guide — Entity Classification",body:`ENTITY FIELD GUIDE — CLEARANCE 5+\n\nPartygoers: high-speed ambush predators. Do not make eye contact. Run laterally, not away.\n\nSkin-Stealers: mimics. If a colleague behaves 'off' after entering a hot zone, follow quarantine protocol immediately.\n\nSmilers: ambient threat. Constant low-grade psychic pressure. Do NOT look directly at the smile.\n\nThe Camo Crawler: visually indistinct from standard Backrooms carpet. Operatives have been lost stepping on them.\n\nNOTE: All entity classifications are provisional. New variants are logged monthly.`},
+  {id:"awrep01",title:"AW Properties — Internal Report",body:`ALMOND WATER — PHYSICAL PROPERTIES SUMMARY\n\nChemical composition: No match. Not water. Not almond. The name was coined by the first recovery team and stuck.\n\nObserved properties:\n— Suppresses noclip probability by 20-40% when consumed regularly\n— Slows cellular degradation in prolonged Backrooms exposure\n— Induces mild euphoria. Some operatives drink recreationally. Discouraged but not prohibited.\n— Causes hallucinations above 2L/day in ~30% of subjects\n\nConclusion: Mandatory ration is 0.4L/operative/day on-site. Increase ration during high-danger operations.`},
+  {id:"journal1",title:"Operative Journal — K. Morrow",body:`Day 1 in the field: it smells like a hotel corridor. Clean carpet smell. It's everywhere.\n\nDay 4: I stopped needing to sleep as much. The medic says that's normal.\n\nDay 9: Found a room full of chairs facing a wall. Sat in one for a while. Felt like waiting for something. Left when I realized the wall had been painted recently.\n\nDay 14: New level. The wallpaper was peeling in spirals. Someone had written names on the backs of the strips. One of them was mine.\n\nI'm filing for extended leave. The Director is not approving requests this quarter.`},
+  {id:"level0s",title:"Level 0 Survey — PARSEC Cartography",body:`LEVEL 0 — THE LOBBY\n\nProfile: Infinite office corridor. Fluorescent hum, constant. Yellow-beige wallpaper, consistent. Wet carpet (source undetermined).\n\nEntity density: LOW. Ambient entities rarely manifest above Clearance 0 thresholds.\n\nHazards: Disorientation. New operatives lose directional sense within 2-4 hours. Buddy protocol is MANDATORY.\n\nAlmond water: Vending machines present. Functional at ~40% rate. Carry backup.\n\nNote from Carto Lead: Level 0 is calm because something in there chooses to let it be calm. Don't get comfortable.`},
+  {id:"incid01",title:"Incident Report — Expedition 44-C",body:`INCIDENT REPORT — Expedition 44-C\nLevel: The Poolrooms\nStatus: CLOSED\n\nTeam entered Level 37 via standard threshold. At the 90-minute mark, operative Vance reported the pool water level was rising. Measurements confirmed: 11cm rise in 8 minutes.\n\nOperatives began extraction. Vance did not follow.\n\n[Helmet cam review]\nVance: "I know this place. I've been here before."\nOps. Chen: "Vance, we're going."\nVance [looks at the camera]: "You should go."\n\nVance was not recovered. The water had risen 2.3 metres by the time the team cleared the threshold.\n\nRecommendation: Level 37 reclassified AMBER. Minimum team size 3.`},
+  {id:"trans01",title:"Cryptic Transmission — Signal Log",body:`[SIGNAL RECEIVED ON PARSEC COMMS BAND — SOURCE UNLOCATED]\n\n...if anyone is reading this, the route through The End isn't an exit. It's a reset. You come back. You don't know you came back, but you do.\n\nThe desk is always there. The door is always locked. The EXIT sign is always on.\n\nWe found a memo the third time through. Same memo, same desk. Director Harrow's memo. But the date was different. The third time it said 2003. The second time it said 2003. The first time — we never checked. We should have checked.\n\n[END OF TRANSMISSION — 14 min, 29 sec — ORIGIN: UNKNOWN]`},
+  {id:"endrep1",title:"Notes on The End — Level 6",body:`LEVEL 6 — "THE END" — RESTRICTED\n\nA small office. One desk. One lamp. Papers describe this office. They describe the operative reading them. Page 7 is redacted — always, regardless of which copy you find.\n\nOne door. Marked EXIT in green. All recording equipment malfunctions within 4 metres of the door.\n\nNo team has passed through it and reported back.\n\nThree teams have gone through it. All three reappeared at the lobby threshold two hours later with no memory of the other side.\n\nThis is considered a success by current standards.`},
+  {id:"awshort",title:"Almond Water Shortage Protocol",body:`PARSEC INTERNAL PROTOCOL — AW SHORTAGE RESPONSE\n\nIf almond water reserves fall below CRITICAL threshold, apply immediately:\n\n1. ALL non-essential personnel to minimum ration: 0.2L/day\n2. No new expeditions until reserves exceed 20%\n3. LEVEL 0 priority dispatch — fastest AW recovery\n4. Director authority only: mandatory extraction of all field teams\n\nNote: Operatives left on-site during a dry period deteriorate. After 35 seconds without supply, field coherence begins to fail.\n\nAfter 35 seconds, they stop being operatives in any meaningful sense.\n\nDo not let the water run out.`},
+  {id:"pers001",title:"Personal Note — 'The Window'",body:`This is not an official document.\n\nI found a window in Level 11. That shouldn't be possible — Level 11 is underground. There shouldn't be anything outside a window.\n\nThere was a street. I know that street. It's the street I grew up on. The sun was setting. My mother was in the yard.\n\nI was in there for six hours before Reyes pulled me out. I don't remember any of it except the window.\n\nI've requested reassignment to administrative. The Director has approved it.\n\nThere's a window in the break room that faces the parking lot. I don't look at it anymore.\n\n— R.`},
 ];
 
 const ACHIEVEMENTS=[
@@ -575,7 +614,7 @@ function newGame(){
     startTime:Date.now(),playTime:0,
     endCleared:false,rfylCleared:false,
     memorial:[],tutorialStep:0,conditionCounts:{quiet:0,clear:0,active:0,hot:0},
-    contracts:[],cleanStreak:0,intel:[],
+    contracts:[],cleanStreak:0,intel:[],discoveredLore:[],
   };
   G.ops=[mkOp(),mkOp()];
   return G;
@@ -609,7 +648,7 @@ function toast(m,cls){
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2000);
 }
 
-function awPerSec(){return has("hydro")?0.5:0;}
+function awPerSec(){return 0;}
 function creditsPerSec(){return has("contain")?0.7:0;}
 function supplyPerOp(L){return Math.max(2,Math.round(L.time/30)+1);}
 function supplyCost(L,n){return Math.max(1,Math.ceil(n*supplyPerOp(L)*(has("logistics")?0.6:1)));}
@@ -651,7 +690,7 @@ function updateSuggestBar(){
   }
   if(G.tutorialStep===2&&G.active.length===0&&G.runs>0){
     bar.style.display="block";
-    bar.textContent="Step 3 — Use credits and salvage in Research to build Hydroponics Bay for passive AW income.";
+    bar.textContent="Step 3 — Use credits and salvage in Research to build Hydroponics Bay for a +25% AW expedition yield boost.";
     return;
   }
   // Contextual hints
@@ -873,6 +912,7 @@ function finishResolve(exp){
     let[a,b]=L.loot[k];
     let v=Math.round(rand(a,b)*lm);
     if(k==="aw"&&mules)v=Math.round(v*(1+mules*0.2));
+    if(k==="aw"&&has("hydro"))v=Math.round(v*1.25);
     if((k==="credits"||k==="salvage")&&survivors.some(o=>o.spec==="salvager"))v=Math.round(v*1.3);
     if(v>0){gain(k,v);gained[k]=v;}
   }
@@ -920,6 +960,15 @@ function finishResolve(exp){
       G.intel.push({levelId:target.id,boost:1.25,expires:Date.now()+180000});
       log("Field intel: "+target.name+" is "+fl+". +25% haul if you move in the next 3 minutes.","report");
     }
+  }
+
+  // Lore discovery
+  if(!G.discoveredLore)G.discoveredLore=[];
+  const undiscoveredLore=LORE.filter(l=>!G.discoveredLore.includes(l.id));
+  if(undiscoveredLore.length&&Math.random()<0.08){
+    const loreDoc=pick(undiscoveredLore);
+    G.discoveredLore.push(loreDoc.id);
+    setTimeout(()=>openLore(loreDoc.id,true),900);
   }
 
   if(exp.auto){
@@ -1292,7 +1341,7 @@ function renderFeed(){
     let msg="";
     if(G.tutorialStep===0&&G.runs===0)msg="Step 1 — Expand LEVEL 0 in the Levels column and click Dispatch to send your first team.";
     else if(G.tutorialStep===1&&G.runs===0&&G.active.length>0)msg="Step 2 — Watch the expedition complete. Your team will haul back almond water and other resources.";
-    else if(G.tutorialStep===2&&G.active.length===0&&G.runs>0)msg="Step 3 — Use credits and salvage in Research to build Hydroponics Bay for passive AW income.";
+    else if(G.tutorialStep===2&&G.active.length===0&&G.runs>0)msg="Step 3 — Use credits and salvage in Research to build Hydroponics Bay for a +25% AW expedition yield boost.";
     if(msg)tutorialEntry={stamp:"--:--:--",msg,cls:"guide",fresh:false};
   }
   let entries=feedFilter?G.feed.filter(e=>e.cls===feedFilter):G.feed;
@@ -1438,6 +1487,163 @@ function openSpecModal(opId){
   document.getElementById("specBg").classList.add("show");
 }
 
+/* ---- lore system ---- */
+function openLore(id,isNew){
+  const doc=LORE.find(l=>l.id===id);if(!doc)return;
+  document.getElementById("lorePopupTitle").textContent="RECOVERED: "+doc.title;
+  document.getElementById("lorePopupBody").textContent=doc.body;
+  if(isNew){log("Field team found a document: \""+doc.title+"\". Check the archive.","report");sfxAchieve();}
+  document.getElementById("loreBg").classList.add("show");
+}
+function closeLorePopup(){document.getElementById("loreBg").classList.remove("show");}
+function openLoreArchive(){
+  closeLorePopup();
+  renderLoreArchive();
+  document.getElementById("loreArchiveBg").classList.add("show");
+}
+function renderLoreArchive(){
+  const list=document.getElementById("loreList");
+  const reader=document.getElementById("loreReader");
+  const discovered=G.discoveredLore||[];
+  document.getElementById("loreCntBadge").textContent="("+discovered.length+"/"+LORE.length+" recovered)";
+  list.innerHTML="";
+  if(!discovered.length){
+    list.innerHTML="<div class='tiny muted' style='padding:4px'>No documents recovered yet. Complete expeditions to find them.</div>";
+    reader.textContent="";return;
+  }
+  let first=true;
+  for(const id of discovered){
+    const doc=LORE.find(l=>l.id===id);if(!doc)continue;
+    const btn=document.createElement("button");
+    btn.className="btn small full";
+    btn.style.cssText="text-align:left;font-size:10px;margin-bottom:4px;padding:5px 8px;white-space:normal;line-height:1.3";
+    btn.textContent=doc.title;
+    btn.onclick=()=>{reader.textContent=doc.body;list.querySelectorAll(".btn").forEach(b=>b.classList.remove("active"));btn.classList.add("active");};
+    list.appendChild(btn);
+    if(first){reader.textContent=doc.body;btn.classList.add("active");first=false;}
+  }
+}
+
+/* ---- field canvas animation ---- */
+let _fieldAF=null,_figPhase=0,_catX=30,_catDir=1,_catBlink=0,_flickT=0;
+const _flickS=[1,0.95,1,0.9,1];
+function startFieldAnim(){
+  const c=document.getElementById("fieldCanvas");if(!c)return;
+  if(_fieldAF)cancelAnimationFrame(_fieldAF);
+  const ctx=c.getContext("2d");let last=0;
+  function frame(ts){
+    const dt=Math.min((ts-last)/1000,0.1);last=ts;
+    drawField(ctx,dt,c.width,c.height);
+    _fieldAF=requestAnimationFrame(frame);
+  }
+  _fieldAF=requestAnimationFrame(frame);
+}
+function drawField(ctx,dt,W,H){
+  // Background — yellow wallpaper
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,"#1e1b00");bg.addColorStop(0.18,"#161500");bg.addColorStop(1,"#1a1800");
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  // Wallpaper diamonds
+  ctx.save();ctx.globalAlpha=0.055;ctx.strokeStyle="#d4b800";ctx.lineWidth=0.5;
+  const ps=18;
+  for(let x=-ps;x<W+ps;x+=ps)for(let y=0;y<H+ps;y+=ps){
+    ctx.beginPath();ctx.moveTo(x,y+ps/2);ctx.lineTo(x+ps/2,y);ctx.lineTo(x+ps,y+ps/2);ctx.lineTo(x+ps/2,y+ps);ctx.closePath();ctx.stroke();
+  }
+  ctx.restore();
+  // Ceiling & floor strips
+  ctx.fillStyle="#0d0c00";ctx.fillRect(0,0,W,10);
+  ctx.fillStyle="#2a2500";ctx.fillRect(0,H-10,W,10);
+  ctx.fillStyle="#100f00";ctx.fillRect(0,H-11,W,1);
+  // Perspective wall line
+  ctx.save();ctx.globalAlpha=0.1;ctx.strokeStyle="#c8a800";ctx.lineWidth=0.7;
+  ctx.beginPath();ctx.moveTo(0,H*0.22);ctx.lineTo(W,H*0.22);ctx.stroke();
+  ctx.restore();
+  // Flicker update
+  _flickT+=dt;
+  if(_flickT>0.07+Math.random()*0.14){
+    _flickT=0;
+    for(let i=0;i<_flickS.length;i++){if(Math.random()<0.12)_flickS[i]=0.25+Math.random()*0.45;else _flickS[i]=Math.min(1,_flickS[i]+0.35);}
+  }
+  // Ceiling lights
+  const lx=[55,140,230,315,395];
+  for(let li=0;li<lx.length;li++){
+    const lp=lx[li];const fl=_flickS[li]||1;
+    const cone=ctx.createRadialGradient(lp,10,1,lp,10,55);
+    cone.addColorStop(0,"rgba(255,238,150,"+(0.16*fl)+")");
+    cone.addColorStop(1,"rgba(255,238,100,0)");
+    ctx.fillStyle=cone;
+    ctx.beginPath();ctx.moveTo(lp-38,H);ctx.lineTo(lp+38,H);ctx.lineTo(lp+7,10);ctx.lineTo(lp-7,10);ctx.closePath();ctx.fill();
+    ctx.fillStyle="rgba(255,240,200,"+(0.65*fl)+")";
+    ctx.fillRect(lp-9,7,18,4);
+    if(fl<0.55){ctx.fillStyle="rgba(255,180,0,0.85)";ctx.beginPath();ctx.arc(lp,10,1.5,0,Math.PI*2);ctx.fill();}
+  }
+  // Active expedition figures
+  const exps=typeof G!=="undefined"?G.active:[];
+  _figPhase+=dt*2.2;
+  const isHot=exps.some(e=>(e.condition||"clear")==="hot");
+  const isQuiet=exps.length===0;
+  if(!isQuiet){
+    const n=Math.min(exps.length*2,6);
+    for(let fi=0;fi<n;fi++){
+      const bx=(70+fi*58)%(W-44)+22;
+      drawFig(ctx,bx,H-10,fi,_figPhase);
+    }
+  }
+  // Entity shadow in HOT
+  if(isHot){
+    const sx=W-48+Math.sin(_figPhase*0.35)*10;
+    ctx.save();
+    ctx.globalAlpha=0.28+Math.sin(_figPhase*0.8)*0.07;
+    // Body shadow
+    ctx.fillStyle="#8b0000";
+    ctx.beginPath();ctx.ellipse(sx,H-16,22,52,0,0,Math.PI*2);ctx.fill();
+    // Eyes
+    ctx.globalAlpha=0.8;ctx.fillStyle="#ff2200";
+    ctx.beginPath();ctx.ellipse(sx-7,H-58,3,4,0.1,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(sx+7,H-58,3,4,-0.1,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+  // Cat when quiet
+  if(isQuiet){
+    _catBlink+=dt;_catX+=_catDir*16*dt;
+    if(_catX>W-24)_catDir=-1;if(_catX<24)_catDir=1;
+    drawCat(ctx,_catX,H-10,_catBlink,_catDir);
+  }
+}
+function drawFig(ctx,x,baseY,idx,ph){
+  ctx.save();
+  const p=ph*1.3+idx*1.1;const sway=Math.sin(p)*1.2;
+  const st=Math.sin(p)*5;const st2=Math.sin(p+Math.PI)*5;
+  ctx.strokeStyle="rgba(200,180,110,0.7)";ctx.lineWidth=1.5;ctx.lineCap="round";
+  ctx.beginPath();ctx.arc(x+sway,baseY-28,4.5,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+sway,baseY-23);ctx.lineTo(x+sway,baseY-10);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+sway,baseY-10);ctx.lineTo(x+sway+st,baseY);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+sway,baseY-10);ctx.lineTo(x+sway+st2,baseY);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+sway,baseY-20);ctx.lineTo(x+sway+st2*0.4-3,baseY-14);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+sway,baseY-20);ctx.lineTo(x+sway+st*0.4+3,baseY-14);ctx.stroke();
+  ctx.restore();
+}
+function drawCat(ctx,x,baseY,ph,dir){
+  ctx.save();
+  if(dir<0){ctx.scale(-1,1);x=-x;}
+  ctx.strokeStyle="rgba(160,140,70,0.6)";ctx.fillStyle="rgba(40,38,0,0.85)";ctx.lineWidth=1;
+  // Body
+  ctx.beginPath();ctx.ellipse(x,baseY-5,7,4,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  // Head
+  ctx.beginPath();ctx.arc(x+8,baseY-8,4,0,Math.PI*2);ctx.fill();ctx.stroke();
+  // Ears
+  ctx.beginPath();ctx.moveTo(x+5,baseY-11);ctx.lineTo(x+7,baseY-15);ctx.lineTo(x+10,baseY-11);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+10,baseY-11);ctx.lineTo(x+12,baseY-15);ctx.lineTo(x+14,baseY-11);ctx.stroke();
+  // Eyes
+  const blink=Math.floor(ph*1.2)%9===0;
+  if(blink){ctx.beginPath();ctx.moveTo(x+7,baseY-8);ctx.lineTo(x+9,baseY-8);ctx.stroke();}
+  else{ctx.fillStyle="rgba(220,180,0,0.9)";ctx.beginPath();ctx.arc(x+8,baseY-8,1.5,0,Math.PI*2);ctx.fill();}
+  // Tail
+  const tw=Math.sin(ph*1.8)*5;
+  ctx.beginPath();ctx.moveTo(x-7,baseY-5);ctx.quadraticCurveTo(x-14,baseY-14+tw,x-11,baseY-20+tw);ctx.stroke();
+  ctx.restore();
+}
+
 function renderAll(){renderResbar();renderWarn();renderRoster();renderFacility();renderActive();renderContracts();renderLevels();renderResearch();renderFeed();updateSuggestBar();}
 
 /* ---- save / load ---- */
@@ -1462,6 +1668,7 @@ function load(){
     for(const o of G.ops)if(!o.runs)o.runs=0;
     if(!G.contracts)G.contracts=[];if(G.cleanStreak===undefined)G.cleanStreak=0;
     if(!G.intel)G.intel=[];
+    if(!G.discoveredLore)G.discoveredLore=[];
     for(const o of G.ops)if(o.spec===undefined)o.spec=null;
     return true;
   }catch(e){return false;}
@@ -1477,7 +1684,7 @@ function startFresh(){
 /* ---- keyboard shortcuts ---- */
 document.addEventListener("keydown",e=>{
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.isContentEditable)return;
-  if(e.key==="Escape"){["dispatchBg","eventBg","statsBg","opDetailBg","specBg"].forEach(id=>document.getElementById(id).classList.remove("show"));return;}
+  if(e.key==="Escape"){["dispatchBg","eventBg","statsBg","opDetailBg","specBg","loreBg","loreArchiveBg"].forEach(id=>document.getElementById(id).classList.remove("show"));return;}
   if(e.key==="h"||e.key==="H"){document.getElementById("hireBtn").click();return;}
   if((e.key==="r"||e.key==="R")&&!G.gameOver){openDispatch(0);return;}
   if(e.key==="s"||e.key==="S"){save(false);return;}
@@ -1532,6 +1739,13 @@ function boot(){
   document.getElementById("statsBg").addEventListener("click",e=>{if(e.target.id==="statsBg")e.currentTarget.classList.remove("show");});
   document.getElementById("opDetailBg").addEventListener("click",e=>{if(e.target.id==="opDetailBg")e.currentTarget.classList.remove("show");});
   document.getElementById("specBg").addEventListener("click",e=>{if(e.target.id==="specBg")e.currentTarget.classList.remove("show");});
+  document.getElementById("loreBtn").onclick=()=>{openLoreArchive();};
+  document.getElementById("loreAckBtn").onclick=closeLorePopup;
+  document.getElementById("loreToArchiveBtn").onclick=openLoreArchive;
+  document.getElementById("loreArchiveClose").onclick=()=>document.getElementById("loreArchiveBg").classList.remove("show");
+  document.getElementById("loreBg").addEventListener("click",e=>{if(e.target.id==="loreBg")e.currentTarget.classList.remove("show");});
+  document.getElementById("loreArchiveBg").addEventListener("click",e=>{if(e.target.id==="loreArchiveBg")e.currentTarget.classList.remove("show");});
+  startFieldAnim();
   document.querySelectorAll(".feed-tab").forEach(tab=>{
     tab.onclick=()=>{feedFilter=tab.dataset.f;document.querySelectorAll(".feed-tab").forEach(t=>t.classList.toggle("active",t===tab));renderFeed();};
   });
