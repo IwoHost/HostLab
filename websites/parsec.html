@@ -1887,6 +1887,41 @@ let _fieldAF=null,
     _panelBgOff=[0,0],_panelWalkF=[0,0],
     _panelFlickS=[[1,0.95,1,0.9,1,0.88,1,0.92],[1,0.95,1,0.9,1,0.88,1,0.92]];
 
+// Per-slot personality: [swingMult, yOffset, lookBackPeriod(s,0=never), bobAmp, lag(s)]
+const _OPP=[
+  {sw:1.0,yo:0, lb:0, bob:1.0,lag:0  }, // leader
+  {sw:1.3,yo:-1,lb:0, bob:1.4,lag:0.4}, // bouncy
+  {sw:0.7,yo:0, lb:14,bob:0.8,lag:0.8}, // looks back periodically
+  {sw:0.9,yo:1, lb:0, bob:0.6,lag:1.5}, // tired, drags feet
+  {sw:1.1,yo:0, lb:8, bob:1.1,lag:0.2}, // alert, glances back often
+  {sw:1.4,yo:-2,lb:0, bob:1.5,lag:0  }, // excitable, pushes to front
+];
+
+function drawOpSocial(ctx,fi,nTotal,W,H,walkF,t,standing,drawFn){
+  const p=_OPP[fi%_OPP.length];
+  // Spacing: fit all ops with min 34px gap, max 52px
+  const spacing=Math.min(52,Math.max(34,(W-70)/Math.max(nTotal-1,1)));
+  const baseX=22+fi*spacing;
+  // Lag offset: lagging ops are slightly behind (lower x)
+  const lagX=p.lag*20;
+  const x=baseX-lagX;
+  // Subtle y bob (bouncy types bob more)
+  const yBob=standing?0:Math.sin(walkF*0.22*p.bob+fi)*p.yo;
+  const y=H-10+yBob;
+  // Look-back: if lb period set, face backwards for 1s every lb seconds
+  let dir=1;
+  if(!standing&&p.lb>0){
+    const phase=(t%p.lb)/p.lb;
+    if(phase>0.88)dir=-1; // turn around for ~12% of the period
+  }
+  // Stumble: slot 3 (tired) stumbles briefly every ~18s
+  const stumble=(fi===3)&&(Math.floor(t/18)%2===0)&&(t%18>16.5);
+  const adjWalkF=stumble?walkF*0.1:walkF;
+  // Shoulder-bump: slots 1+2 are close, slot 1 occasionally nudges slot 2
+  const nudge=(fi===1)&&(Math.sin(t*0.9)>0.97)?3:0;
+  drawFn(ctx,x+nudge,y,adjWalkF+fi*28,dir,standing||stumble);
+}
+
 function _getLevelScene(lid){
   if(lid===9)return'pool';
   if(lid===2||lid===10)return'dark';
@@ -1967,8 +2002,9 @@ function drawPanel(ctx,pi,W,H,exp,isEventOpen,isNoclipOpen){
   const scene=_getLevelScene(exp.level);
   const isDark=scene==='dark'||scene==='cave'||scene==='end';
   const isHot=(exp.condition||"clear")==="hot";
-  const nOps=Math.min((exp.ops||[]).length,4);
+  const nOps=(exp.ops||[]).length; // no cap — show them all
   const drawFn=isDark?drawOpDark:drawOp;
+  const t=Date.now()*0.001;
 
   switch(scene){
     case'lobby':   drawBgLobby(ctx,W,H,bgOff,flickS);break;
@@ -1987,7 +2023,7 @@ function drawPanel(ctx,pi,W,H,exp,isEventOpen,isNoclipOpen){
   if(isNoclipOpen){
     if(!_noclipStart)_noclipStart=Date.now();
     const sink=Math.min(1,(Date.now()-_noclipStart)/3500);
-    for(let fi=0;fi<Math.min(nOps-1,4);fi++)drawFn(ctx,40+fi*50,H-10,walkF+fi*28,1,true);
+    for(let fi=0;fi<nOps-1;fi++)drawOpSocial(ctx,fi,nOps,W,H,walkF,t,true,drawFn);
     ctx.save();ctx.globalAlpha=Math.max(0.1,0.95-sink*0.9);
     drawFn(ctx,W*0.55,H-10+sink*38,0,1,true);ctx.restore();
     if(sink<0.85){
@@ -1999,7 +2035,7 @@ function drawPanel(ctx,pi,W,H,exp,isEventOpen,isNoclipOpen){
     ctx.fillText("⚠ NOCLIP",W*0.55,H-54);ctx.restore();
   } else if(isEventOpen){
     if(_noclipStart)_noclipStart=0;
-    for(let fi=0;fi<nOps;fi++)drawFn(ctx,40+fi*50,H-10,walkF+fi*28,1,true);
+    for(let fi=0;fi<nOps;fi++)drawOpSocial(ctx,fi,nOps,W,H,walkF,t,true,drawFn);
     const bounce=Math.sin(Date.now()*0.0042)*3;
     ctx.save();ctx.globalAlpha=0.85+Math.sin(Date.now()*0.0065)*0.12;
     ctx.fillStyle="#d4a830";ctx.font="bold 13px monospace";ctx.textAlign="center";
@@ -2009,7 +2045,7 @@ function drawPanel(ctx,pi,W,H,exp,isEventOpen,isNoclipOpen){
       drawWanderer(ctx,W-50,H-10,Date.now()*0.001);
   } else {
     if(_noclipStart)_noclipStart=0;
-    for(let fi=0;fi<nOps;fi++)drawFn(ctx,40+fi*50,H-10,walkF+fi*28,1,false);
+    for(let fi=0;fi<nOps;fi++)drawOpSocial(ctx,fi,nOps,W,H,walkF,t,false,drawFn);
     if(isHot){
       const sx=W-38+Math.sin(walkF*0.011)*8;
       ctx.save();ctx.globalAlpha=0.28+Math.sin(walkF*0.013)*0.07;
@@ -2222,11 +2258,22 @@ function drawBase(ctx,W,H){
   cone.addColorStop(0,"rgba(255,238,150,0.12)");cone.addColorStop(1,"rgba(255,238,100,0)");
   ctx.fillStyle=cone;ctx.beginPath();ctx.moveTo(lx-38,H);ctx.lineTo(lx+38,H);ctx.lineTo(lx+7,10);ctx.lineTo(lx-7,10);ctx.closePath();ctx.fill();
   ctx.fillStyle="rgba(255,240,200,0.5)";ctx.fillRect(lx-9,7,18,4);
-  // Idle ops standing at base
+  // Idle ops standing at base — all of them, with personalities
   const idle=typeof G!=="undefined"?G.ops.filter(o=>o.status==="idle"):[];
-  const n=Math.min(idle.length,4);
-  const spacing=Math.min(65,W/(n+1));
-  for(let i=0;i<n;i++)drawOp(ctx,W/2+(i-n/2+0.5)*spacing,H-10,i*18,1,true);
+  const n=idle.length;
+  if(n>0){
+    const spacing=Math.min(58,Math.max(32,(W-50)/Math.max(n-1,1)));
+    const t=Date.now()*0.001;
+    for(let i=0;i<n;i++){
+      const p=_OPP[i%_OPP.length];
+      const x=26+i*spacing;
+      // At base: ops have slight fidget — weight shift, look around
+      const fidget=Math.sin(t*0.6+i*2.1)*p.yo;
+      // Some ops face each other at base (social pairs)
+      const dir=(i%2===1&&i<n-1)?-1:1; // alternating for adjacent pairs
+      drawOp(ctx,x,H-10+fidget,i*18,dir,true);
+    }
+  }
   // Research label
   if(typeof G!=="undefined"&&G.researchTarget){
     const t=TECH.find(x=>x.id===G.researchTarget);
