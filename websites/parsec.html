@@ -348,6 +348,7 @@
       <div class="mflav" id="eventFlav"></div>
       <div class="mq" id="eventQ"></div>
       <div id="eventChoices"></div>
+      <div id="eventCountdown" style="margin-top:8px;font-size:10px;color:var(--ink-dim);letter-spacing:.08em;text-align:right"></div>
     </div>
   </div>
 </div>
@@ -1101,18 +1102,40 @@ const EVENTS=[
     {label:"Isolate the circuit",rk:"Safe · nothing lost",run(){log("Circuit isolated. The lights returned to normal. No one investigated further.","dread");}}]},
 ];
 
+let _evAutoTimer=null,_evCdTimer=null;
+function clearEventTimers(){
+  if(_evAutoTimer)clearTimeout(_evAutoTimer);
+  if(_evCdTimer)clearInterval(_evCdTimer);
+  _evAutoTimer=null;_evCdTimer=null;
+  const cd=document.getElementById("eventCountdown");if(cd)cd.textContent="";
+}
 function fireEvent(){
   const ev=pick(EVENTS);
   document.getElementById("eventTitle").textContent="Field event · "+ev.title;
   document.getElementById("eventFlav").textContent=ev.flav;
   document.getElementById("eventQ").textContent=ev.q;
   const box=document.getElementById("eventChoices");box.innerHTML="";
+  const btns=[];
   for(const c of ev.choices){
     const b=document.createElement("button");b.className="choice";
     b.innerHTML=c.label+"<span class='rk'>"+c.rk+"</span>";
-    b.onclick=()=>{c.run();document.getElementById("eventBg").classList.remove("show");checkAchievements();renderAll();};
-    box.appendChild(b);
+    b.onclick=()=>{clearEventTimers();c.run();document.getElementById("eventBg").classList.remove("show");checkAchievements();renderAll();};
+    box.appendChild(b);btns.push(b);
   }
+  // Auto-choose last (safer) option after 10 seconds
+  clearEventTimers();
+  let remaining=10;
+  const cd=document.getElementById("eventCountdown");
+  if(cd)cd.textContent="Auto: "+remaining+"s";
+  _evCdTimer=setInterval(()=>{
+    remaining--;
+    if(cd)cd.textContent=remaining>0?"Auto: "+remaining+"s":"";
+    if(remaining<=0)clearInterval(_evCdTimer);
+  },1000);
+  _evAutoTimer=setTimeout(()=>{
+    clearEventTimers();
+    if(btns.length)btns[btns.length-1].click();
+  },10000);
   document.getElementById("eventBg").classList.add("show");
   sfxEvent();
 }
@@ -1525,8 +1548,8 @@ function renderLoreArchive(){
 }
 
 /* ---- field canvas animation ---- */
-let _fieldAF=null,_figWalkF=0,_catX=30,_catDir=1,_catBlink=0,_flickT=0,_bgOff=0;
-const _flickS=[1,0.95,1,0.9,1];
+let _fieldAF=null,_figWalkF=0,_catX=30,_catDir=1,_catBlink=0,_flickT=0,_bgOff=0,_noclipStart=0;
+const _flickS=[1,0.95,1,0.9,1,0.88,1,0.92];
 
 function rrOp(ctx,x,y,w,h,r){
   ctx.beginPath();
@@ -1551,12 +1574,17 @@ function startFieldAnim(){
 function drawField(ctx,dt,W,H){
   const exps=typeof G!=="undefined"?G.active:[];
   const numActive=exps.length;
-  // Scroll background when operatives are active
-  const scrollSpeed=numActive>0?40:0;
-  _bgOff=(_bgOff+scrollSpeed*dt)%36;
-  _figWalkF+=dt*(numActive>0?60:14);
+  const isEventOpen=typeof modalOpen==="function"&&modalOpen("eventBg");
+  const isNoclipOpen=typeof modalOpen==="function"&&modalOpen("noclipBg");
+  const isPaused=isEventOpen||isNoclipOpen;
 
-  // Background gradient
+  // Scroll only when ops are out and no modal is blocking
+  const scrollSpeed=(!isPaused&&numActive>0)?42:0;
+  _bgOff+=scrollSpeed*dt;
+  if(_bgOff>90000)_bgOff-=90000;
+  if(!isPaused&&numActive>0)_figWalkF+=dt*62;
+
+  // Background
   const bg=ctx.createLinearGradient(0,0,0,H);
   bg.addColorStop(0,"#1e1b00");bg.addColorStop(0.18,"#161500");bg.addColorStop(1,"#1a1800");
   ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
@@ -1571,7 +1599,7 @@ function drawField(ctx,dt,W,H){
 
   // Scrolling baseboard dash
   ctx.save();ctx.globalAlpha=0.1;ctx.strokeStyle="#c8a800";ctx.lineWidth=0.7;
-  ctx.setLineDash([14,20]);ctx.lineDashOffset=-(_bgOff*0.6)%34;
+  ctx.setLineDash([14,20]);ctx.lineDashOffset=-(_bgOff*0.62)%34;
   ctx.beginPath();ctx.moveTo(0,H*0.22);ctx.lineTo(W,H*0.22);ctx.stroke();
   ctx.setLineDash([]);ctx.restore();
 
@@ -1580,16 +1608,20 @@ function drawField(ctx,dt,W,H){
   ctx.fillStyle="#2a2500";ctx.fillRect(0,H-10,W,10);
   ctx.fillStyle="#100f00";ctx.fillRect(0,H-11,W,1);
 
-  // Flicker update
+  // Flicker
   _flickT+=dt;
   if(_flickT>0.07+Math.random()*0.13){
     _flickT=0;
     for(let i=0;i<_flickS.length;i++){if(Math.random()<0.12)_flickS[i]=0.2+Math.random()*0.45;else _flickS[i]=Math.min(1,_flickS[i]+0.38);}
   }
-  // Ceiling lights (fixed — structural reference points)
-  const lx=[55,140,230,315,395];
-  for(let li=0;li<lx.length;li++){
-    const lp=lx[li];const fl=_flickS[li]||1;
+
+  // Scrolling ceiling lights — same scroll as wallpaper
+  const lampSp=85;
+  const lampOff=-(_bgOff%lampSp);
+  let lampIdx=0;
+  for(let lp=lampOff-lampSp;lp<W+lampSp;lp+=lampSp,lampIdx++){
+    const fi=((Math.floor(_bgOff/lampSp)+lampIdx)%8+8)%8;
+    const fl=_flickS[fi]||1;
     const cone=ctx.createRadialGradient(lp,10,1,lp,10,55);
     cone.addColorStop(0,"rgba(255,238,150,"+(0.17*fl)+")");
     cone.addColorStop(1,"rgba(255,238,100,0)");
@@ -1600,41 +1632,79 @@ function drawField(ctx,dt,W,H){
     if(fl<0.55){ctx.fillStyle="rgba(255,180,0,0.85)";ctx.beginPath();ctx.arc(lp,10,1.5,0,Math.PI*2);ctx.fill();}
   }
 
-  // Operatives
+  // Count actual deployed operatives
+  const totalDeployed=exps.reduce((s,e)=>s+(e.ops?e.ops.length:0),0);
   const isHot=exps.some(e=>(e.condition||"clear")==="hot");
   const isQuiet=numActive===0;
-  if(!isQuiet){
-    const n=Math.min(numActive*2,6);
-    for(let fi=0;fi<n;fi++){
-      drawOp(ctx,62+fi*56,H-10,_figWalkF+fi*28,1);
-    }
-  }
 
-  // Entity shadow in HOT
-  if(isHot){
-    const sx=W-44+Math.sin(_figWalkF*0.011)*10;
+  if(isNoclipOpen){
+    // — NOCLIP EVENT — one op sinks through the floor —
+    if(!_noclipStart)_noclipStart=Date.now();
+    const sink=Math.min(1,(Date.now()-_noclipStart)/3500);
+    // Remaining ops stand
+    const standing=Math.max(0,totalDeployed-1);
+    for(let fi=0;fi<Math.min(standing,5);fi++)drawOp(ctx,52+fi*52,H-10,_figWalkF+fi*28,1,true);
+    // Sinking op with glitch rings
     ctx.save();
-    ctx.globalAlpha=0.28+Math.sin(_figWalkF*0.013)*0.07;
-    ctx.fillStyle="#8b0000";
-    ctx.beginPath();ctx.ellipse(sx,H-16,22,52,0,0,Math.PI*2);ctx.fill();
-    ctx.globalAlpha=0.8;ctx.fillStyle="#ff2200";
-    ctx.beginPath();ctx.ellipse(sx-7,H-58,3,4,0.1,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.ellipse(sx+7,H-58,3,4,-0.1,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=Math.max(0.1,0.95-sink*0.9);
+    drawOp(ctx,W*0.55,H-10+sink*38,0,1,true);
     ctx.restore();
-  }
+    if(sink<0.85){
+      ctx.save();ctx.globalAlpha=0.5*(1-sink);ctx.strokeStyle="#ff5500";ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.ellipse(W*0.55,H-8,sink*32+4,(sink*32+4)*0.28,0,0,Math.PI*2);ctx.stroke();
+      ctx.restore();
+    }
+    ctx.save();ctx.globalAlpha=0.8;ctx.fillStyle="#ff6600";
+    ctx.font="bold 8px monospace";ctx.textAlign="center";
+    ctx.fillText("⚠ NOCLIP",W*0.55,H-54);ctx.restore();
 
-  // Cat when site is quiet
-  if(isQuiet){
+  } else if(isEventOpen){
+    // — FIELD EVENT — ops freeze —
+    if(_noclipStart)_noclipStart=0;
+    if(!isQuiet){
+      const n=Math.min(totalDeployed,6);
+      for(let fi=0;fi<n;fi++)drawOp(ctx,62+fi*56,H-10,_figWalkF+fi*28,1,true);
+    }
+    // Floating ! marker
+    const bounce=Math.sin(Date.now()*0.0042)*3;
+    ctx.save();ctx.globalAlpha=0.85+Math.sin(Date.now()*0.0065)*0.12;
+    ctx.fillStyle="#d4a830";ctx.font="bold 13px monospace";ctx.textAlign="center";
+    ctx.fillText("!",W/2,H-54+bounce);ctx.restore();
+    // Wanderer special: show a wanderer figure on the right
+    const evTitleEl=document.getElementById("eventTitle");
+    if(evTitleEl&&evTitleEl.textContent.toLowerCase().includes("wanderer")){
+      drawWanderer(ctx,W-52,H-10,Date.now()*0.001);
+    }
+
+  } else if(!isQuiet){
+    if(_noclipStart)_noclipStart=0;
+    // — NORMAL WALK —
+    const n=Math.min(totalDeployed,6);
+    for(let fi=0;fi<n;fi++)drawOp(ctx,62+fi*56,H-10,_figWalkF+fi*28,1,false);
+    // Entity shadow in HOT
+    if(isHot){
+      const sx=W-44+Math.sin(_figWalkF*0.011)*10;
+      ctx.save();
+      ctx.globalAlpha=0.28+Math.sin(_figWalkF*0.013)*0.07;
+      ctx.fillStyle="#8b0000";ctx.beginPath();ctx.ellipse(sx,H-16,22,52,0,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=0.8;ctx.fillStyle="#ff2200";
+      ctx.beginPath();ctx.ellipse(sx-7,H-58,3,4,0.1,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(sx+7,H-58,3,4,-0.1,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+  } else {
+    if(_noclipStart)_noclipStart=0;
+    // — QUIET — cat patrols —
     _catBlink+=dt;_catX+=_catDir*16*dt;
     if(_catX>W-24)_catDir=-1;if(_catX<24)_catDir=1;
     drawCat(ctx,_catX,H-10,_catBlink,_catDir);
   }
 }
 
-function drawOp(ctx,x,baseY,walkF,dir){
+function drawOp(ctx,x,baseY,walkF,dir,standing){
   ctx.save();ctx.translate(x,baseY);if(dir<0)ctx.scale(-1,1);
-  const swing=Math.sin(walkF*0.22)*6;
-  const as=Math.sin(walkF*0.22)*5;
+  const swing=standing?0:Math.sin(walkF*0.22)*6;
+  const as=standing?0:Math.sin(walkF*0.22)*5;
   const skinColor='#c49060';
   const bodyColor='#3d5030';  // field jacket — dark olive
   const legColor='#1e1c14';   // cargo pants
@@ -1727,6 +1797,42 @@ function drawCat(ctx,x,baseY,ph,dir){
   ctx.restore();
 }
 
+function drawWanderer(ctx,x,baseY,t){
+  ctx.save();ctx.translate(x,baseY);ctx.scale(-1,1); // faces left toward the team
+  const sway=Math.sin(t*0.35)*2;
+  ctx.fillStyle="rgba(0,0,0,0.15)";ctx.beginPath();ctx.ellipse(0,1,10,3,0,0,Math.PI*2);ctx.fill();
+  // Legs — standing
+  ctx.fillStyle="#2e2820";
+  rrOp(ctx,-5,-8,5,9,2);ctx.fill();rrOp(ctx,1,-8,5,9,2);ctx.fill();
+  ctx.fillStyle="#1a1614";
+  ctx.beginPath();ctx.ellipse(-2,2,4.5,2.5,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse( 4,2,4.5,2.5,0,0,Math.PI*2);ctx.fill();
+  // Body — worn tan jacket (unmistakably not PARSEC kit)
+  ctx.fillStyle="#7a6234";rrOp(ctx,-6.5,-24,13,16,4);ctx.fill();
+  ctx.fillStyle="rgba(255,255,255,0.04)";rrOp(ctx,-4,-23,8,5,3);ctx.fill();
+  // Arms — slightly raised, uncertain
+  ctx.fillStyle="#7a6234";
+  rrOp(ctx,-13,-21+sway,7,4,2);ctx.fill();rrOp(ctx,7,-21-sway,7,4,2);ctx.fill();
+  ctx.fillStyle="#c8905a";
+  ctx.beginPath();ctx.arc(-9.5,-19+sway,2.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(10.5,-19-sway,2.5,0,Math.PI*2);ctx.fill();
+  // Neck
+  ctx.fillStyle="#c8905a";rrOp(ctx,-2.5,-27,5,4,1);ctx.fill();
+  // Head — no helmet
+  ctx.fillStyle="#c8905a";ctx.beginPath();ctx.arc(0,-33,8,0,Math.PI*2);ctx.fill();
+  // Messy hair
+  ctx.fillStyle="#2e1e0a";
+  rrOp(ctx,-7,-42,6,6,3);ctx.fill();rrOp(ctx,2,-42,6,6,3);ctx.fill();rrOp(ctx,-2,-44,5,5,3);ctx.fill();
+  // Eyes — wide, a bit lost
+  ctx.fillStyle="#1e1008";
+  ctx.beginPath();ctx.arc(-3.5,-33,2.2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc( 3.5,-33,2.2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="rgba(255,255,255,0.55)";
+  ctx.beginPath();ctx.arc(-4,-33.5,1,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc( 3,-33.5,1,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
 function renderAll(){renderResbar();renderWarn();renderRoster();renderFacility();renderActive();renderContracts();renderLevels();renderResearch();renderFeed();updateSuggestBar();}
 
 /* ---- save / load ---- */
@@ -1767,7 +1873,7 @@ function startFresh(){
 /* ---- keyboard shortcuts ---- */
 document.addEventListener("keydown",e=>{
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.isContentEditable)return;
-  if(e.key==="Escape"){["dispatchBg","eventBg","statsBg","opDetailBg","specBg","loreBg","loreArchiveBg"].forEach(id=>document.getElementById(id).classList.remove("show"));return;}
+  if(e.key==="Escape"){clearEventTimers();["dispatchBg","eventBg","statsBg","opDetailBg","specBg","loreBg","loreArchiveBg"].forEach(id=>document.getElementById(id).classList.remove("show"));return;}
   if(e.key==="h"||e.key==="H"){document.getElementById("hireBtn").click();return;}
   if((e.key==="r"||e.key==="R")&&!G.gameOver){openDispatch(0);return;}
   if(e.key==="s"||e.key==="S"){save(false);return;}
