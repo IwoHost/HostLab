@@ -275,7 +275,7 @@
   <div class="col">
     <h2 class="section">Active expeditions <span class="cnt" id="activeCnt"></span></h2>
     <div id="active"><div class="muted tiny">No teams in the field.</div></div>
-    <canvas id="fieldCanvas" width="420" height="110" style="width:100%;height:110px;display:block;margin:10px 0;border:1px solid var(--border);image-rendering:crisp-edges"></canvas>
+    <div id="fieldCanvasWrap" style="margin:10px 0;border:1px solid var(--line);overflow:hidden;border-radius:1px"></div>
     <h2 class="section" style="margin-top:4px">Contracts <span class="cnt" id="contractCnt"></span></h2>
     <div id="contracts"></div>
     <h2 class="section" style="margin-top:22px">Levels</h2>
@@ -1670,70 +1670,54 @@ function rrOp(ctx,x,y,w,h,r){
 }
 
 function startFieldAnim(){
-  const c=document.getElementById("fieldCanvas");if(!c)return;
+  const wrap=document.getElementById("fieldCanvasWrap");if(!wrap)return;
   if(_fieldAF)cancelAnimationFrame(_fieldAF);
-  const ctx=c.getContext("2d");let last=0;
+  let last=0;
   function frame(ts){
     const dt=Math.min((ts-last)/1000,0.1);last=ts;
-    drawField(ctx,dt,c.width,c.height);
+    const exps=(typeof G!=="undefined"?G.active:[]).slice(0,2);
+    const panels=Math.max(exps.length,1);
+    // Sync canvas count
+    while(wrap.children.length<panels){
+      const c=document.createElement("canvas");
+      c.width=420;c.height=110;
+      c.style.cssText="width:100%;height:110px;display:block;image-rendering:crisp-edges";
+      if(wrap.children.length>0)c.style.borderTop="1px solid var(--line)";
+      wrap.appendChild(c);
+    }
+    while(wrap.children.length>panels)wrap.removeChild(wrap.lastChild);
+    // Update flicker (shared)
+    _flickT+=dt;
+    if(_flickT>0.07+Math.random()*0.13){
+      _flickT=0;
+      for(let s=0;s<2;s++)for(let i=0;i<8;i++){
+        if(Math.random()<0.12)_panelFlickS[s][i]=0.2+Math.random()*0.45;
+        else _panelFlickS[s][i]=Math.min(1,_panelFlickS[s][i]+0.38);
+      }
+    }
+    // Draw each canvas
+    for(let pi=0;pi<panels;pi++){
+      const c=wrap.children[pi];
+      if(!c)continue;
+      const ctx=c.getContext("2d");
+      const exp=exps[pi]||null;
+      const isEventOpen=typeof modalOpen==="function"&&modalOpen("eventBg");
+      const isNoclipOpen=typeof modalOpen==="function"&&modalOpen("noclipBg");
+      const isPaused=isEventOpen||isNoclipOpen;
+      if(!exp){
+        _catBlink+=dt;_catX+=_catDir*16*dt;
+        if(_catX>c.width-24)_catDir=-1;if(_catX<24)_catDir=1;
+        drawBase(ctx,c.width,c.height);
+        drawCat(ctx,_catX,c.height-10,_catBlink,_catDir);
+      } else {
+        if(!isPaused){_panelBgOff[pi]+=42*dt;if(_panelBgOff[pi]>90000)_panelBgOff[pi]-=90000;}
+        if(!isPaused)_panelWalkF[pi]+=dt*62;
+        drawPanel(ctx,pi,c.width,c.height,exp,isEventOpen,isNoclipOpen);
+      }
+    }
     _fieldAF=requestAnimationFrame(frame);
   }
   _fieldAF=requestAnimationFrame(frame);
-}
-
-function drawField(ctx,dt,W,H){
-  const exps=(typeof G!=="undefined"?G.active:[]).slice(0,2);
-  const isEventOpen=typeof modalOpen==="function"&&modalOpen("eventBg");
-  const isNoclipOpen=typeof modalOpen==="function"&&modalOpen("noclipBg");
-  const isPaused=isEventOpen||isNoclipOpen;
-
-  // Update flicker
-  _flickT+=dt;
-  if(_flickT>0.07+Math.random()*0.13){
-    _flickT=0;
-    for(let s=0;s<2;s++)for(let i=0;i<8;i++){
-      if(Math.random()<0.12)_panelFlickS[s][i]=0.2+Math.random()*0.45;
-      else _panelFlickS[s][i]=Math.min(1,_panelFlickS[s][i]+0.38);
-    }
-  }
-
-  if(!exps.length){
-    // Base scene — HQ, cat patrols
-    _catBlink+=dt;_catX+=_catDir*16*dt;
-    if(_catX>W-24)_catDir=-1;if(_catX<24)_catDir=1;
-    drawBase(ctx,W,H);
-    drawCat(ctx,_catX,H-10,_catBlink,_catDir);
-    return;
-  }
-
-  // Update per-panel scroll
-  for(let p=0;p<exps.length;p++){
-    if(!isPaused){_panelBgOff[p]+=42*dt;if(_panelBgOff[p]>90000)_panelBgOff[p]-=90000;}
-    if(!isPaused)_panelWalkF[p]+=dt*62;
-  }
-
-  if(exps.length===1){
-    drawPanel(ctx,0,W,H,exps[0],isEventOpen,isNoclipOpen);
-  } else {
-    const PW=Math.floor((W-2)/2);
-    // Left panel
-    ctx.save();ctx.beginPath();ctx.rect(0,0,PW,H);ctx.clip();
-    drawPanel(ctx,0,PW,H,exps[0],isEventOpen,isNoclipOpen);
-    ctx.restore();
-    // Divider
-    ctx.fillStyle="rgba(180,140,30,0.55)";ctx.fillRect(PW,0,2,H);
-    // Right panel
-    ctx.save();ctx.beginPath();ctx.rect(PW+2,0,PW,H);ctx.clip();
-    ctx.translate(PW+2,0);
-    drawPanel(ctx,1,PW,H,exps[1],isEventOpen,isNoclipOpen);
-    ctx.restore();
-    // Level name labels at bottom
-    const L0=levelById(exps[0].level),L1=levelById(exps[1].level);
-    ctx.fillStyle="rgba(180,140,30,0.6)";ctx.font="6px monospace";
-    ctx.textAlign="center";
-    ctx.fillText(L0.name.substring(0,14),PW/2,H-1);
-    ctx.fillText(L1.name.substring(0,14),PW+2+PW/2,H-1);
-  }
 }
 
 function drawPanel(ctx,pi,W,H,exp,isEventOpen,isNoclipOpen){
