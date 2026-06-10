@@ -256,6 +256,7 @@
   <button id="statsBtn" class="hbtn">STATS</button>
   <button id="loreBtn" class="hbtn">ARCHIVE</button>
   <button id="notifBtn" class="hbtn">ALERTS OFF</button>
+  <button id="newFragBtn" class="hbtn" style="display:none;border-color:var(--green-dim);color:var(--green)">NEW FRAGMENT</button>
   <div class="clearance" id="clearance">CLEARANCE · TIER 0</div>
 </header>
 
@@ -292,6 +293,8 @@
       <div class="feed-tab" data-f="dread">DREAD</div>
     </div>
     <div class="feed" id="feed"></div>
+    <h2 class="section" style="margin-top:22px">Anomaly Containment <span class="cnt" id="anomalyCnt"></span></h2>
+    <div id="anomalies"></div>
     <h2 class="section" style="margin-top:22px">Research</h2>
     <div id="research"></div>
   </div>
@@ -299,6 +302,7 @@
 
 <footer>
   <span id="saveStatus">Autosave on.</span>
+  <span id="fragDepth" class="muted tiny" style="color:var(--green-dim)"></span>
   <div class="spacer"></div>
   <span class="muted tiny">[ H ] hire · [ R ] quick-dispatch L0 · [ S ] save · [ Esc ] close</span>
   <button class="btn small" id="saveBtn">Save</button>
@@ -426,6 +430,23 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Fragment prestige modal -->
+<div class="modal-bg" id="fragBg">
+  <div class="modal" style="border-color:var(--green-dim);max-width:480px">
+    <div class="mhead" style="color:var(--green);background:#0d1a0d">◈ ESTABLISH NEW FRAGMENT</div>
+    <div class="mbody">
+      <div class="mflav" id="fragFlav"></div>
+      <div style="font-size:12px;color:var(--ink);margin-bottom:12px" id="fragInfo"></div>
+      <div style="font-size:11px;color:var(--ink-dim);margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase">Transfer one operative to the new base:</div>
+      <div class="picker" id="fragPicker"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn primary full" id="fragConfirm">Establish new base →</button>
+        <button class="btn" id="fragCancel">Not yet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 "use strict";
 const SAVE_KEY="parsec_save_v3";
@@ -540,6 +561,18 @@ const LEVELS=[
   {id:8, name:"Run For Your Life",code:"!", danger:.72,time:300,unlock:24,
    flav:"There is no exploring here. The moment you arrive, it is already chasing. Whatever you grab on the way out is all you get.",
    loot:{aw:[8,18],salvage:[24,44],credits:[120,220],data:[14,28]}},
+  {id:12, name:"The Parking Lot", danger:.21, time:115, unlock:6,
+   flav:"Endless concrete under humming strip lights. Cold cars that haven't moved in decades. The exits are always behind you.",
+   loot:{aw:[5,10],salvage:[9,19],credits:[18,38],data:[2,5]}},
+  {id:13, name:"The Hub", danger:.33, time:165, unlock:10,
+   flav:"The convergence of many levels. Thousands of corridors branch outward from this point. Things use it as a highway. Do not stop moving.",
+   loot:{aw:[3,7],salvage:[13,25],credits:[32,62],data:[5,11]}},
+  {id:15, name:"The Grey Rooms", danger:.40, time:225, unlock:15,
+   flav:"Featureless grey corridors, identical from every angle. The compass doesn't work. The team navigated entirely by memory.",
+   loot:{aw:[4,9],salvage:[15,28],credits:[44,82],data:[6,14]}},
+  {id:14, name:"The False Light", danger:.50, time:270, unlock:18,
+   flav:"Warm amber light from no visible source. The team reported feeling inexplicably safe until they didn't.",
+   loot:{aw:[5,13],salvage:[17,32],credits:[58,108],data:[8,16]}},
 ];
 
 const TECH=[
@@ -574,6 +607,11 @@ const LORE=[
   {id:"endrep1",title:"Notes on The End — Level 6",body:`LEVEL 6 — "THE END" — RESTRICTED\n\nA small office. One desk. One lamp. Papers describe this office. They describe the operative reading them. Page 7 is redacted — always, regardless of which copy you find.\n\nOne door. Marked EXIT in green. All recording equipment malfunctions within 4 metres of the door.\n\nNo team has passed through it and reported back.\n\nThree teams have gone through it. All three reappeared at the lobby threshold two hours later with no memory of the other side.\n\nThis is considered a success by current standards.`},
   {id:"awshort",title:"Almond Water Shortage Protocol",body:`PARSEC INTERNAL PROTOCOL — AW SHORTAGE RESPONSE\n\nIf almond water reserves fall below CRITICAL threshold, apply immediately:\n\n1. ALL non-essential personnel to minimum ration: 0.2L/day\n2. No new expeditions until reserves exceed 20%\n3. LEVEL 0 priority dispatch — fastest AW recovery\n4. Director authority only: mandatory extraction of all field teams\n\nNote: Operatives left on-site during a dry period deteriorate. After 35 seconds without supply, field coherence begins to fail.\n\nAfter 35 seconds, they stop being operatives in any meaningful sense.\n\nDo not let the water run out.`},
   {id:"pers001",title:"Personal Note — 'The Window'",body:`This is not an official document.\n\nI found a window in Level 11. That shouldn't be possible — Level 11 is underground. There shouldn't be anything outside a window.\n\nThere was a street. I know that street. It's the street I grew up on. The sun was setting. My mother was in the yard.\n\nI was in there for six hours before Reyes pulled me out. I don't remember any of it except the window.\n\nI've requested reassignment to administrative. The Director has approved it.\n\nThere's a window in the break room that faces the parking lot. I don't look at it anymore.\n\n— R.`},
+  {id:"frag001",title:"Forward Base Order — Fragment Survey",body:`PARSEC INTERNAL ORDER\nFROM: Director Harrow\nTO: Survey Lead, Cartography Division\n\nThe facility does not end.\n\nWe have established this three times now. Every survey team that pushed past The End returned to find a new corridor. A new wallpaper. A different hum.\n\nWe are calling these fragments. Each one is a new operational environment. Each one is, for all practical purposes, a new facility.\n\nThe protocol is as follows: when a base becomes fully operational and the deepest levels are cleared, we move. We take one person who knows the way. We start over.\n\nThe operatives who agree to the transfer have been informed that they will not be the same people when they arrive.\n\nThey agreed anyway. They always do.\n\n— Director Harrow`},
+  {id:"stress01",title:"Psychological Assessment — Field Teams",body:`PARSEC MEDICAL — PSYCHOLOGICAL DIVISION\n\nAfter reviewing 34 field operatives across 8 active deployments, we have identified a consistent pattern we are calling Cumulative Exposure Syndrome.\n\nSymptoms progress in stages:\n— Stage 1: Heightened alertness, mild sleep disruption, increased productivity (paradoxically)\n— Stage 2: Intrusive geometric visualisation, discomfort in normal lighting, social withdrawal\n— Stage 3: Inability to distinguish internal monologue from external sound\n— Stage 4: Full dissociation. Operative requires immediate extraction and full stand-down.\n\nWe recommend mandatory downtime after high-exposure runs.\n\nNote: operatives in Stage 2 and above are statistically more effective in the field. We have chosen not to include this finding in the summary brief.\n\n— Dr. Vásquez, PARSEC Medical`},
+  {id:"anom001",title:"Anomaly Log — Object Class: Amber",body:`ANOMALY LOG #0044\nObject designation: Amber Shard\nRecovered from: Level 0, corridor 7-C\nRetrieved by: Operative Mwangi, K.\n\nPhysical description: Crystalline fragment, warm to the touch. Does not cool. Emits a faint hum at 38Hz (confirmed via spectrometer). Casts no shadow.\n\nBehavioural notes:\n— Six researchers have reported feeling "watched" in the study room.\n— One researcher left the shard on their desk overnight. The next morning, the shard had moved 3.4cm. No one entered the room.\n— Mwangi refuses to enter the containment lab since retrieval. Will not explain why.\n\nRecommended protocol: continued passive study. Do not expose to almond water.\n\nUpdate: the hum has changed pitch. We are recalibrating.`},
+  {id:"parking",title:"Level 12 Survey — The Parking Lot",body:`LEVEL 12 — THE PARKING LOT — SURVEY NOTES\n\nEnvironment: Concrete multi-storey structure of indeterminate height. Vehicles present (makes: varied, years: 1968-2001, approximately). All vehicles cold. None have fuel. All keys are in the ignition.\n\nOne vehicle had a receipt in the cupholder dated two days ago.\n\nThe exits route back in. We walked through exit C-7 three times before realising we had looped. The entrance to the stairwell on level P3 opens onto P3.\n\nEntity sightings: low. The sound of footsteps has been reported with no visible source. The footsteps sometimes respond to questions by stopping.\n\nHazard rating: moderate. Easier than expected, worse than it looks.\n\n— Carto Team 4`},
+  {id:"hub001",title:"The Hub — Incident Note",body:`This is not a formal report.\n\nI don't know how to write what I saw at The Hub formally. The cartography team can map corridors. I can describe what a corridor looks like. Neither of us can describe why standing at that intersection felt like standing in front of something that was considering us.\n\nThere are things that use The Hub as a transit point. We watched from a high corridor for forty minutes. Most of them moved like things that had learned to move by watching people. Close enough that you'd accept it from a distance.\n\nOne of them stopped in the middle of the intersection. It stood still for six minutes. Then it looked up.\n\nWe had been very quiet.\n\nWe left The Hub and did not go back.\n\n— Unsigned (PARSEC Clearance 8+)`},
 ];
 
 const ACHIEVEMENTS=[
@@ -592,6 +630,14 @@ const ACHIEVEMENTS=[
   {id:"auto5",      name:"Set It, Forget It",   desc:"Run 5 auto-repeat expeditions.",           check:g=>(g.autoRuns||0)>=5},
   {id:"wanderer",   name:"They Know The Walls", desc:"Successfully recruit a wanderer.",         check:g=>(g.wanderersFound||0)>=1},
   {id:"survivor",   name:"Still Standing",      desc:"Accumulate 30 minutes of play time.",      check:g=>(g.playTime||0)>=1800},
+  {id:"stressed",    name:"Fraying",          desc:"Have an operative reach 80 stress.",           check:g=>g.ops.some(o=>(o.stress||0)>=80)},
+  {id:"zen",         name:"Clear Heads",      desc:"Have all operatives at zero stress.",           check:g=>g.ops.length>0&&g.ops.every(o=>(o.stress||0)===0)},
+  {id:"anom3",       name:"Curious Cabinet",  desc:"Contain 3 anomalies simultaneously.",          check:g=>(g.anomalies||[]).length>=3},
+  {id:"anom10",      name:"Museum",           desc:"Complete study on 10 anomalies.",              check:g=>(g.anomStudied||0)>=10},
+  {id:"fragment1",   name:"New Ground",       desc:"Establish a new fragment.",                    check:g=>FRAG.depth>=1},
+  {id:"fragment3",   name:"Endless Facility", desc:"Establish three fragments.",                   check:g=>FRAG.depth>=3},
+  {id:"hub",         name:"Transit Hub",      desc:"Complete an expedition to The Hub.",           check:g=>!!(g.hubCleared)},
+  {id:"parking_lot", name:"Long Term",        desc:"Complete an expedition to The Parking Lot.",   check:g=>!!(g.parkingCleared)},
 ];
 
 // Expedition conditions
@@ -611,6 +657,11 @@ function getCondition(id){return CONDITIONS.find(c=>c.id===id)||CONDITIONS[1];}
 
 let G=null,OP_SEQ=1,feedFilter="",notifEnabled=false;
 
+const FRAG_KEY="parsec_frag_v1";
+let FRAG={depth:0,totalRuns:0,totalLost:0};
+function loadFrag(){try{const r=localStorage.getItem(FRAG_KEY);if(r)FRAG=Object.assign(FRAG,JSON.parse(r));}catch(e){}}
+function saveFrag(){try{localStorage.setItem(FRAG_KEY,JSON.stringify(FRAG));}catch(e){}}
+
 function newGame(){
   OP_SEQ=1;
   G={
@@ -627,6 +678,8 @@ function newGame(){
     memorial:[],tutorialStep:0,conditionCounts:{quiet:0,clear:0,active:0,hot:0},
     contracts:[],cleanStreak:0,intel:[],discoveredLore:[],
     researchTarget:null,researchProgress:0,
+    anomalies:[],anomStudied:0,
+    hubCleared:false,parkingCleared:false,
   };
   G.ops=[mkOp(),mkOp()];
   return G;
@@ -636,7 +689,7 @@ function mkOp(){
   let grit=2+(G?G.fac.train:0);
   let trait=null;
   if(Math.random()<0.45){trait=pick(Object.keys(TRAITS));if(trait==="vet")grit+=2;}
-  return{id:OP_SEQ++,name:pick(FIRST)+" "+pick(LAST),grit,xp:0,cond:100,status:"idle",recover:0,trait,runs:0,spec:null};
+  return{id:OP_SEQ++,name:pick(FIRST)+" "+pick(LAST),grit,xp:0,cond:100,status:"idle",recover:0,trait,runs:0,spec:null,stress:0};
 }
 function opById(id){return G.ops.find(o=>o.id===id);}
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
@@ -673,8 +726,8 @@ function lootMultBase(){return has("gear1")?1.12:1;}
 function deepBonus(L){return(L.id>=5&&has("deep"))?1.25:1;}
 function levelUnlocked(L){
   if(G.clearance<L.unlock)return false;
-  if((L.id===3||L.id===4||L.id===9||L.id===10||L.id===11)&&!has("cart1"))return false;
-  if((L.id===5||L.id===6||L.id===8)&&!has("cart2"))return false;
+  if((L.id===3||L.id===4||L.id===9||L.id===10||L.id===11||L.id===12)&&!has("cart1"))return false;
+  if((L.id===5||L.id===6||L.id===8||L.id===13||L.id===14||L.id===15)&&!has("cart2"))return false;
   return true;
 }
 function highestTier(){let m=0;for(const L of LEVELS)if(levelUnlocked(L))m=Math.max(m,L.id);return m;}
@@ -793,7 +846,7 @@ function confirmDispatch(){
   if(!G.conditionCounts)G.conditionCounts={quiet:0,clear:0,active:0,hot:0};
   G.conditionCounts[condId]=(G.conditionCounts[condId]||0)+1;
   for(const id of DS.sel){const o=opById(id);if(o)o.status="deployed";}
-  G.active.push({id:G.expSeq++,level:L.id,ops:[...DS.sel],end:Date.now()+dur*1000,dur,auto:DS.auto,noclipResolved:false,waiting:false,condition:condId});
+  G.active.push({id:G.expSeq++,level:L.id,ops:[...DS.sel],end:Date.now()+dur*1000,dur,auto:DS.auto,noclipResolved:false,waiting:false,condition:condId,midEventFired:false});
   log("Team deployed to "+levelTag(L)+" — "+L.name+". "+DS.sel.length+" in the field"+(DS.auto?" (auto-repeat).":".")+" ["+condId.toUpperCase()+"]","report");
   sfxDispatch();
   document.getElementById("dispatchBg").classList.remove("show");
@@ -817,7 +870,7 @@ function quickDispatch(levelId){
   if(!G.conditionCounts)G.conditionCounts={quiet:0,clear:0,active:0,hot:0};
   G.conditionCounts[condId]=(G.conditionCounts[condId]||0)+1;
   for(const o of idle)o.status="deployed";
-  G.active.push({id:G.expSeq++,level:L.id,ops:ids,end:Date.now()+dur*1000,dur,auto:false,noclipResolved:false,waiting:false,condition:condId});
+  G.active.push({id:G.expSeq++,level:L.id,ops:ids,end:Date.now()+dur*1000,dur,auto:false,noclipResolved:false,waiting:false,condition:condId,midEventFired:false});
   toast("Sent "+idle.length+" to "+L.name+" ["+condId.toUpperCase()+"].");
   log("Quick dispatch: "+idle.length+" operatives sent to "+levelTag(L)+" — "+L.name+". ["+condId.toUpperCase()+"]","report");
   sfxDispatch();
@@ -896,6 +949,7 @@ function finishResolve(exp){
       let risk=sev*teamFactor*(1-(o.grit+(o.spec==="enforcer"?2:0))*0.04);
       if(o.trait==="tough")risk*=0.5;
       if(o.spec==="enforcer")risk*=0.5;
+      risk*=(1+(o.stress||0)*0.004);
       const roll=Math.random();
       if(roll<risk*0.22&&L.danger>0.35&&o.trait!=="path")lost_ops.push(o);
       else if(roll<risk)hurt.push(o);
@@ -908,16 +962,25 @@ function finishResolve(exp){
     for(const o of hurt){
       o.cond=clamp(o.cond-rand(25,55),0,100);o.status="injured";
       o.recover=Date.now()+rand(40,95)*1000*recoverMult()*(team.some(t=>t.spec==="medic")?0.4:1);
+      o.stress=clamp((o.stress||0)+rand(10,22),0,100);
     }
     if(lost_ops.length){log(levelTag(L)+": contact with "+ent+". Lost "+lost_ops.map(o=>o.name).join(", ")+".","bad");sfxBad();}
     if(hurt.length){log(levelTag(L)+": contact with "+ent+". Injured "+hurt.map(o=>o.name).join(", ")+".","bad");sfxBad();}
     if(!lost_ops.length&&!hurt.length)log(levelTag(L)+": brief contact with "+ent+", broke line of sight.","report");
   }
 
+  // Stress from lost ops and HOT condition
   const survivors=team.filter(o=>opById(o.id));
+  if(lost_ops.length){for(const o of survivors)o.stress=clamp((o.stress||0)+20,0,100);}
+  if(cond.id==="hot"){for(const o of survivors)o.stress=clamp((o.stress||0)+rand(5,12),0,100);}
+  // Log psychological strain
+  for(const o of survivors){if((o.stress||0)>75)log(o.name+" is showing signs of psychological strain.","report");}
+
   let lm=lootMultBase()*deepBonus(L)*(1+teamGrit*0.05)*cond.lootMult;
   lm+=survivors.filter(o=>o.trait==="lucky").length*0.15;
   lm*=(0.5+0.5*(survivors.length/Math.max(1,team.length)));
+  // Stress loot penalty
+  lm*=(1-(G.ops.filter(o=>o.status!=="deployed").reduce((s,o)=>s+(o.stress||0),0)/Math.max(1,G.ops.length))*0.002);
   // Intel boost
   const intelIdx=(G.intel||[]).findIndex(x=>x.levelId===L.id&&x.expires>Date.now());
   if(intelIdx>=0){lm*=G.intel[intelIdx].boost;G.intel.splice(intelIdx,1);log("Intel acted on — "+L.name+" haul boosted.","good");}
@@ -943,6 +1006,8 @@ function finishResolve(exp){
   G.clearance+=1+Math.floor(L.id/2);G.runs++;
   if(L.id===6)G.endCleared=true;
   if(L.id===8)G.rfylCleared=true;
+  if(L.id===13)G.hubCleared=true;
+  if(L.id===12)G.parkingCleared=true;
 
   for(const o of survivors){
     if(o.status==="injured")continue;
@@ -986,6 +1051,20 @@ function finishResolve(exp){
     setTimeout(()=>openLore(loreDoc.id,true),900);
   }
 
+  // Anomaly generation
+  if(survivors.length&&Math.random()<0.11&&G.anomalies.length<3){
+    const anom={
+      id:Date.now(),
+      name:pick(ANOMALY_NAMES),
+      levelId:L.id,
+      progress:0,
+      reward:{data:rand(8,20)+L.id,credits:rand(25,60)+L.id*4},
+      risk:0.08+L.danger*0.12,
+    };
+    G.anomalies.push(anom);
+    log("Team returned with an anomalous object: \""+anom.name+"\". Containment initiated.","dread");
+  }
+
   if(exp.auto){
     const reSel=survivors.filter(o=>o.status==="idle").map(o=>o.id);
     const cost=supplyCost(L,reSel.length);
@@ -997,7 +1076,7 @@ function finishResolve(exp){
       const condId=rollCondition();
       if(!G.conditionCounts)G.conditionCounts={quiet:0,clear:0,active:0,hot:0};
       G.conditionCounts[condId]=(G.conditionCounts[condId]||0)+1;
-      G.active.push({id:G.expSeq++,level:exp.level,ops:reSel,end:Date.now()+dur*1000,dur,auto:true,noclipResolved:false,waiting:false,condition:condId});
+      G.active.push({id:G.expSeq++,level:exp.level,ops:reSel,end:Date.now()+dur*1000,dur,auto:true,noclipResolved:false,waiting:false,condition:condId,midEventFired:false});
       G.autoRuns=(G.autoRuns||0)+1;
     }else if(reSel.length)log("Auto-repeat halted: insufficient supplies.","report");
   }
@@ -1020,7 +1099,10 @@ function recruitCost(){const n=G.ops.length;return{credits:22+n*16,aw:8+n*3};}
 function recruit(){
   if(G.ops.length>=G.maxOps){toast("Site at capacity. Build a Barracks.");return;}
   const c=recruitCost();if(!spend(c)){toast("Not enough resources.");return;}
-  const o=mkOp();G.ops.push(o);
+  const o=mkOp();
+  const input=prompt("Name this operative (blank = random):");
+  if(input&&input.trim())o.name=input.trim();
+  G.ops.push(o);
   log("Recruited "+o.name+" (Grit "+o.grit+(o.trait?", "+TRAITS[o.trait].name:"")+"). Welcome to PARSEC.","good");
   checkAchievements();renderAll();
 }
@@ -1128,6 +1210,61 @@ const EVENTS=[
     {label:"Isolate the circuit",rk:"Safe · nothing lost",run(){log("Circuit isolated. The lights returned to normal. No one investigated further.","dread");}}]},
 ];
 
+const ANOMALY_NAMES=["Resonant Object","Humming Device","Mirrored Fragment","Null Compass","Recursive Map","Pale Transmission","Self-Indexing File","Amber Shard","Phase Object","Breathing Wall Section","Crystallised Static","Inverted Clock","Warm Stone","Signal Loop"];
+
+const LEVEL_EVENTS={
+  9:[{title:"The water is rising",flav:"The pool level climbed three inches while the team wasn't watching. It is still climbing.",q:"Call the extraction?",
+     choices:[
+       {label:"Extract immediately",rk:"Safe · lose 25% haul",run(exp){exp._earlyExtract=true;exp.end=Date.now()+8000;log("Team extracting early from The Poolrooms.","report");}},
+       {label:"Push through",rk:"Risk injury · full haul",run(){if(Math.random()<0.55)hurtRandom("The water took them by surprise.");else log("Team outran the water. Haul intact.","report");}}]}],
+  4:[{title:"Lights out",flav:"The last headlamp failed. The cave is absolutely dark. The team can hear movement.",q:"Navigate blind or retreat?",
+     choices:[
+       {label:"Navigate blind",rk:"High risk · double salvage if successful",run(exp){if(Math.random()<0.45){const v=rand(18,36);gain("salvage",v);log("Navigated blind. Found a cache in the dark: +"+v+" salvage.","good");}else{hurtRandom("couldn't see what they hit.");log("Something in the dark found them first.","bad");}}},
+       {label:"Retreat and regroup",rk:"Safe · end run early",run(exp){exp.end=Date.now()+5000;log("Team retreating — lights failed.","report");}}]}],
+  5:[{title:"They're being too accommodating",flav:"The staff have not left the team alone since they arrived. Smiling. Offering things. The food smells right.",q:"Accept the hospitality?",
+     choices:[
+       {label:"Accept",rk:"Large AW · possible trap",run(){if(Math.random()<0.6){const v=rand(28,55);gain("aw",v);log("The food was fine. This time. +"+v+" almond water.","good");}else{hurtRandom("what was in the food");log("Something was in the food.","bad");}}},
+       {label:"Decline and stay professional",rk:"Safe · small data",run(){const v=rand(4,8);gain("data",v);log("Declined all offers. Team noted routes instead. +"+v+" data.","report");}}]}],
+  6:[{title:"The door is open",flav:"The EXIT door is ajar. No team has passed through it and reported back coherently. There is light on the other side.",q:"Send someone through?",
+     choices:[
+       {label:"One operative steps through",rk:"Unknown · possibly transformative",run(){const v=rand(18,38);gain("data",v);log("They were gone for eleven seconds and came back calm. They won't say what was there. +"+v+" data.","dread");}},
+       {label:"Document from the threshold",rk:"Safe · large data",run(){const v=rand(12,22);gain("data",v);log("The light through the door was documented at 14 lux. Same as a candle. +"+v+" data.","good");}}]}],
+  8:[{title:"It's right behind them",flav:"The team has stopped communicating in full sentences. Short words only. Movement on the comms feed.",q:"",
+     choices:[
+       {label:"Drop the haul and run",rk:"Lose all salvage · everyone home safe",run(exp){exp._dropSalvage=true;log("Team dropped everything. Running on instinct now.","bad");}},
+       {label:"Keep running, keep the haul",rk:"Risk bad injuries · full loot",run(){hurtRandom("couldn't outrun it carrying everything");if(Math.random()<0.4)hurtRandom("second operative tagged");log("They made it out, barely.","bad");}}]}],
+  3:[{title:"All the phones are ringing",flav:"Every phone on every desk, simultaneously. The same ring. The team is frozen.",q:"Answer one?",
+     choices:[
+       {label:"Answer",rk:"Unsettling · data or trauma",run(){if(Math.random()<0.55){const v=rand(8,18);gain("data",v);log("A voice read numbers for four minutes then stopped. +"+v+" data.","good");}else{hurtRandom("what they heard on the line");log("They hung up immediately but it was too late.","bad");}}},
+       {label:"Unplug them all",rk:"Safe · salvage",run(){const v=rand(6,14);gain("salvage",v);log("Unplugged every phone on the floor. Salvaged the copper. +"+v+" salvage.","report");}}]}],
+  11:[{title:"The generators are cycling",flav:"The power output is spiking in a pattern. It looks intentional. Something is communicating.",q:"Try to respond?",
+     choices:[
+       {label:"Mirror the pattern",rk:"Data reward · unknown consequence",run(){const v=rand(10,22);gain("data",v);if(Math.random()<0.25)hurtRandom("the discharge");log("Pattern acknowledged. Something changed in the hum. +"+v+" data.","dread");}},
+       {label:"Kill the power to that bank",rk:"Safe · salvage",run(){const v=rand(8,16);gain("salvage",v);log("Generator bank shut down. Salvaged the components. +"+v+" salvage.","report");}}]}],
+};
+
+function fireLevelEvent(ev,exp){
+  document.getElementById("eventTitle").textContent="Field event · "+ev.title;
+  document.getElementById("eventFlav").textContent=ev.flav;
+  document.getElementById("eventQ").textContent=ev.q||"";
+  const box=document.getElementById("eventChoices");box.innerHTML="";
+  const btns=[];
+  for(const c of ev.choices){
+    const b=document.createElement("button");b.className="choice";
+    b.innerHTML=c.label+"<span class='rk'>"+c.rk+"</span>";
+    b.onclick=()=>{clearEventTimers();c.run(exp);document.getElementById("eventBg").classList.remove("show");checkAchievements();renderAll();};
+    box.appendChild(b);btns.push(b);
+  }
+  clearEventTimers();
+  let remaining=10;
+  const cd=document.getElementById("eventCountdown");
+  if(cd)cd.textContent="Auto: "+remaining+"s";
+  _evCdTimer=setInterval(()=>{remaining--;if(cd)cd.textContent=remaining>0?"Auto: "+remaining+"s":"";if(remaining<=0)clearInterval(_evCdTimer);},1000);
+  _evAutoTimer=setTimeout(()=>{clearEventTimers();if(btns.length)btns[btns.length-1].click();},10000);
+  document.getElementById("eventBg").classList.add("show");
+  sfxEvent();
+}
+
 let _evAutoTimer=null,_evCdTimer=null;
 function clearEventTimers(){
   if(_evAutoTimer)clearTimeout(_evAutoTimer);
@@ -1176,6 +1313,7 @@ function checkAchievements(){
       sfxAchieve();
     }
   }
+  checkFragmentUnlock();
 }
 
 /* ---- gameover ---- */
@@ -1211,7 +1349,61 @@ function tick(){
   for(const o of G.ops){
     if(o.status==="injured"&&now>=o.recover){o.status="idle";o.cond=clamp(o.cond+40,0,100);log(o.name+" cleared by medical and back on the roster.","good");changed=true;}
   }
+  // Stress decrease for idle ops
+  for(const o of G.ops){
+    if(o.status==="idle"&&(o.stress||0)>0){
+      o.stress=Math.max(0,(o.stress||0)-1.5*dt);
+    }
+  }
+  // Stress breakdown
+  const burnout=G.ops.filter(o=>o.status==="idle"&&(o.stress||0)>=90);
+  if(burnout.length&&Math.random()<0.001){
+    const o=pick(burnout);
+    o.status="injured";o.recover=Date.now()+90000;o.stress=clamp((o.stress||0)-30,0,100);
+    log(o.name+" broke down from accumulated stress. Recovering for 90s.","bad");sfxBad();
+    changed=true;
+  }
   if(now>=G.nextEvent){G.nextEvent=now+rand(50,100)*1000;if(!modalOpen("eventBg")&&!modalOpen("dispatchBg")&&!modalOpen("noclipBg"))fireEvent();}
+
+  // Mid-expedition level events
+  if(!modalOpen("eventBg")&&!modalOpen("noclipBg")&&!modalOpen("dispatchBg")){
+    for(const exp of G.active){
+      if(!exp.midEventFired){
+        const elapsed=(exp.dur*1000-(exp.end-Date.now()));
+        const pct=elapsed/(exp.dur*1000);
+        if(pct>0.45&&pct<0.75&&Math.random()<0.0008){
+          const levEvs=LEVEL_EVENTS[exp.level];
+          if(levEvs&&levEvs.length){
+            exp.midEventFired=true;
+            fireLevelEvent(pick(levEvs),exp);
+          }
+        }
+      }
+    }
+  }
+
+  // Anomaly study
+  if(G.anomalies&&G.anomalies.length){
+    const idleCount=G.ops.filter(o=>o.status==="idle").length;
+    const anomRate=idleCount>0?idleCount*0.4:0;
+    for(let i=G.anomalies.length-1;i>=0;i--){
+      G.anomalies[i].progress+=anomRate*dt;
+      if(G.anomalies[i].progress>=100){
+        const a=G.anomalies.splice(i,1)[0];
+        for(const k in a.reward)gain(k,a.reward[k]);
+        const rStr=Object.entries(a.reward).map(([k,v])=>"+"+v+({credits:"¤",data:"▦"}[k]||k)).join(" ");
+        log("Study complete: \""+a.name+"\" — "+rStr+".","good");
+        sfxAchieve();
+        G.anomStudied=(G.anomStudied||0)+1;
+        if(Math.random()<a.risk){
+          hurtRandom("containment breach");
+          log("Containment breach during study. Operative injured.","bad");sfxBad();
+        }
+        checkAchievements();
+        changed=true;
+      }
+    }
+  }
 
   if(G.researchTarget){
     G.researchProgress+=researchRate()*dt;
@@ -1224,7 +1416,7 @@ function tick(){
       checkAchievements();renderResearch();
     }
   }
-  renderResbar();renderWarn();renderActive();renderContracts();updateSuggestBar();
+  renderResbar();renderWarn();renderActive();renderContracts();updateSuggestBar();renderAnomalies();
   if(changed)renderRoster();
   checkAchievements();
 }
@@ -1279,7 +1471,8 @@ function renderRoster(){
       "<div class='avatar'>"+(o.status==="injured"?"✚":o.name.replace(/^\(found\) /,"")[0].toUpperCase())+"</div>"+
       "<div class='meta'><div class='nm'>"+o.name+(o.trait?"<span class='tt'>"+TRAITS[o.trait].name+"</span>":"")+(o.spec?"<span class='tt' style='color:"+SPECS[o.spec].color+"'>"+SPECS[o.spec].icon+" "+SPECS[o.spec].name+"</span>":"")+"</div>"+
       "<div class='sub'>"+sub+"</div>"+
-      "<div class='bar "+barCls+"'><i style='width:"+o.cond+"%'></i></div></div>"+
+      "<div class='bar "+barCls+"'><i style='width:"+o.cond+"%'></i></div>"+
+      ((o.stress||0)>5?"<div class='bar' style='margin-top:2px'><i style='width:"+(o.stress||0)+"%;background:"+((o.stress||0)>75?"var(--red)":"var(--amber-dim)")+"'></i></div>":"")+"</div>"+
       "<div class='stat'>G "+o.grit+"<br><span class='muted' style='font-size:9.5px'>xp "+o.xp+"/"+(o.grit*12)+"</span></div>";
     div.onclick=()=>openOpDetail(o.id);
     box.appendChild(div);
@@ -1640,6 +1833,53 @@ function renderLoreArchive(){
   }
 }
 
+/* ---- fragment prestige ---- */
+let _fragTransferOp=null;
+function openFragModal(){
+  const depth=FRAG.depth;
+  document.getElementById("fragFlav").textContent=depth===0
+    ?"Survey teams have found a new fragment of the facility — uncharted, fresh. Moving the operation there means starting over. But you'd take what you've learned. And one person."
+    :"Fragment "+(depth+1)+". Another section. The facility goes deeper than anyone expected. Each base you've built ends the same way — a door, and a new corridor beyond it.";
+  document.getElementById("fragInfo").innerHTML=
+    "<b style='color:var(--green)'>Fragment depth: "+depth+"</b> · Bonus on arrival: +"+(depth*20)+"% starting AW · Transferred operative gains +"+depth+" Grit<br>"+
+    "<span style='color:var(--ink-dim);font-size:10.5px'>All resources, research, and facility upgrades reset. Achievements and memorial carry over.</span>";
+  const picker=document.getElementById("fragPicker");picker.innerHTML="";
+  _fragTransferOp=null;
+  for(const o of G.ops){
+    const slot=document.createElement("div");slot.className="slot";
+    slot.innerHTML="<b>"+o.name+"</b><span class='muted'> G"+o.grit+(o.spec?" · "+SPECS[o.spec].name:"")+"</span>";
+    slot.onclick=()=>{
+      _fragTransferOp=o.id;
+      picker.querySelectorAll(".slot").forEach(s=>s.classList.remove("sel"));
+      slot.classList.add("sel");
+      document.getElementById("fragConfirm").disabled=false;
+    };
+    picker.appendChild(slot);
+  }
+  document.getElementById("fragConfirm").disabled=true;
+  document.getElementById("fragBg").classList.add("show");
+}
+function doFragment(){
+  const transferredOp=opById(_fragTransferOp);
+  if(!transferredOp)return;
+  FRAG.depth++;FRAG.totalRuns=(FRAG.totalRuns||0)+G.runs;FRAG.totalLost=(FRAG.totalLost||0)+G.lost;
+  saveFrag();
+  const savedMemorial=[...G.memorial];const savedAch={...G.achievements};const savedLore=[...G.discoveredLore];
+  const transferName=transferredOp.name;const transferGrit=transferredOp.grit;const transferTrait=transferredOp.trait;const transferSpec=transferredOp.spec;
+  newGame();
+  G.memorial=savedMemorial;G.achievements=savedAch;G.discoveredLore=savedLore;
+  G.res.aw=Math.round(G.res.aw*(1+FRAG.depth*0.2));
+  G.res.credits=Math.round(G.res.credits*(1+FRAG.depth*0.15));
+  const newOp=G.ops[0];
+  newOp.name="(transfer) "+transferName;
+  newOp.grit=transferGrit+FRAG.depth;
+  newOp.trait=transferTrait;newOp.spec=transferSpec;
+  document.getElementById("fragBg").classList.remove("show");
+  log("PARSEC Fragment "+(FRAG.depth)+" established. Welcome back, "+transferName+".","good");
+  log("Fragment depth: "+FRAG.depth+" · Bonus applied: +"+(FRAG.depth*20)+"% starting resources.","report");
+  sfxAchieve();checkFragmentUnlock();renderAll();save(false);
+}
+
 /* ---- field canvas animation ---- */
 let _fieldAF=null,
     _catX=30,_catDir=1,_catBlink=0,_flickT=0,
@@ -1656,7 +1896,9 @@ function _getLevelScene(lid){
   if(lid===11)return'electric';
   if(lid===5)return'hotel';
   if(lid===3)return'office';
-  if(lid===1)return'warehouse';
+  if(lid===1||lid===12)return'warehouse';
+  if(lid===13||lid===15)return'dark';
+  if(lid===14)return'hotel';
   return'lobby';
 }
 
@@ -2188,7 +2430,40 @@ function drawWanderer(ctx,x,baseY,t){
   ctx.restore();
 }
 
-function renderAll(){renderResbar();renderWarn();renderRoster();renderFacility();renderActive();renderContracts();renderLevels();renderResearch();renderFeed();updateSuggestBar();}
+function renderAnomalies(){
+  let box=document.getElementById("anomalies");if(!box)return;
+  box.innerHTML="";
+  const cnt=document.getElementById("anomalyCnt");
+  if(cnt)cnt.textContent=(G.anomalies&&G.anomalies.length)?"("+G.anomalies.length+")":"";
+  if(!G.anomalies||!G.anomalies.length){box.innerHTML="<div class='muted tiny'>No anomalies in containment.</div>";return;}
+  const idleCount=G.ops.filter(o=>o.status==="idle").length;
+  const rate=idleCount>0?idleCount*0.4:0;
+  for(const a of G.anomalies){
+    const pct=Math.min(100,Math.round(a.progress));
+    const eta=rate>0?Math.ceil((100-a.progress)/rate)+"s":"⏸";
+    const rStr=Object.entries(a.reward).map(([k,v])=>"+"+v+({credits:"¤",data:"▦"}[k]||k)).join(" ");
+    const div=document.createElement("div");
+    div.className="tech";div.style.cssText="border-color:var(--amber-dim);margin-bottom:8px";
+    div.innerHTML=`<div class='tname' style='font-size:11.5px'>${a.name} <span class='tag unlock' style='font-size:8px'>ANOMALY</span></div>`+
+      `<div class='tdesc' style='font-size:10.5px'>From: ${levelById(a.levelId).name} · Risk: ${Math.round(a.risk*100)}%</div>`+
+      `<div class='res-prog'><i style='width:${pct}%;background:var(--amber-dim)'></i></div>`+
+      `<div class='res-prog-lbl'>${pct}% — ${eta} · reward: ${rStr}</div>`;
+    box.appendChild(div);
+  }
+}
+
+function checkFragmentUnlock(){
+  const eligible=G.endCleared&&TECH.every(t=>G.tech[t.id]);
+  const btn=document.getElementById("newFragBtn");
+  if(btn)btn.style.display=eligible?"inline-block":"none";
+}
+
+function fragmentRoman(n){const v=[10,9,5,4,1],s=["X","IX","V","IV","I"];let r="";for(let i=0;i<v.length;i++)while(n>=v[i]){r+=s[i];n-=v[i];}return r;}
+
+function renderAll(){renderResbar();renderWarn();renderRoster();renderFacility();renderActive();renderContracts();renderLevels();renderResearch();renderAnomalies();renderFeed();updateSuggestBar();checkFragmentUnlock();
+  const fd=document.getElementById("fragDepth");
+  if(fd)fd.textContent=FRAG.depth>0?"Fragment "+fragmentRoman(FRAG.depth):"";
+}
 
 /* ---- save / load ---- */
 function save(silent){
@@ -2216,6 +2491,11 @@ function load(){
     if(G.researchTarget===undefined)G.researchTarget=null;
     if(G.researchProgress===undefined)G.researchProgress=0;
     for(const o of G.ops)if(o.spec===undefined)o.spec=null;
+    for(const o of G.ops)if(o.stress===undefined)o.stress=0;
+    if(!G.anomalies)G.anomalies=[];
+    if(!G.anomStudied)G.anomStudied=0;
+    if(!G.hubCleared)G.hubCleared=false;
+    if(!G.parkingCleared)G.parkingCleared=false;
     return true;
   }catch(e){return false;}
 }
@@ -2230,7 +2510,7 @@ function startFresh(){
 /* ---- keyboard shortcuts ---- */
 document.addEventListener("keydown",e=>{
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.isContentEditable)return;
-  if(e.key==="Escape"){clearEventTimers();["dispatchBg","eventBg","statsBg","opDetailBg","specBg","loreBg","loreArchiveBg"].forEach(id=>document.getElementById(id).classList.remove("show"));return;}
+  if(e.key==="Escape"){clearEventTimers();["dispatchBg","eventBg","statsBg","opDetailBg","specBg","loreBg","loreArchiveBg","fragBg"].forEach(id=>document.getElementById(id).classList.remove("show"));return;}
   if(e.key==="h"||e.key==="H"){document.getElementById("hireBtn").click();return;}
   if((e.key==="r"||e.key==="R")&&!G.gameOver){openDispatch(0);return;}
   if(e.key==="s"||e.key==="S"){save(false);return;}
@@ -2251,6 +2531,7 @@ async function toggleNotifs(){
 
 /* ---- boot ---- */
 function boot(){
+  loadFrag();
   if(!load())startFresh();
   else if(G.gameOver){localStorage.removeItem(SAVE_KEY);startFresh();}
   else{offlineCatchup();log("Welcome back. Dispatch console restored.","report");}
@@ -2297,6 +2578,10 @@ function boot(){
   document.getElementById("loreArchiveClose").onclick=()=>document.getElementById("loreArchiveBg").classList.remove("show");
   document.getElementById("loreBg").addEventListener("click",e=>{if(e.target.id==="loreBg")e.currentTarget.classList.remove("show");});
   document.getElementById("loreArchiveBg").addEventListener("click",e=>{if(e.target.id==="loreArchiveBg")e.currentTarget.classList.remove("show");});
+  document.getElementById("newFragBtn").onclick=openFragModal;
+  document.getElementById("fragConfirm").onclick=doFragment;
+  document.getElementById("fragCancel").onclick=()=>document.getElementById("fragBg").classList.remove("show");
+  document.getElementById("fragBg").addEventListener("click",e=>{if(e.target.id==="fragBg")e.currentTarget.classList.remove("show");});
   startFieldAnim();
   document.querySelectorAll(".feed-tab").forEach(tab=>{
     tab.onclick=()=>{feedFilter=tab.dataset.f;document.querySelectorAll(".feed-tab").forEach(t=>t.classList.toggle("active",t===tab));renderFeed();};
