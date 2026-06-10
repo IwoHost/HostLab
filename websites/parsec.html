@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PARSEC // Dispatch Terminal</title>
+<style>
+  :root{
+    --wall:#c2b280;--wall-deep:#a8975f;--amber:#e6b800;--amber-dim:#9c8a2e;
+    --base:#13120d;--panel:#1e1b13;--panel-2:#272318;--line:#38321f;
+    --ink:#ece4cb;--ink-dim:#8f8a72;--red:#c6573b;--red-dim:#7a3526;
+    --green:#7a9c4e;--green-dim:#445830;--blue:#4e7a9c;--blue-dim:#2a4a62;
+    --mono:ui-monospace,"SFMono-Regular","Cascadia Mono","Courier New",monospace;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--base);color:var(--ink);font-family:var(--mono);font-size:14px;line-height:1.45;min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .scanlines{position:fixed;inset:0;pointer-events:none;z-index:49;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+  .flicker-overlay{position:fixed;inset:0;pointer-events:none;z-index:50;background:radial-gradient(120% 90% at 50% -10%,rgba(230,184,0,.05),transparent 60%);mix-blend-mode:screen;animation:flick 8s infinite steps(1)}
+  @keyframes flick{0%,100%{opacity:.95}47%{opacity:.95}48%{opacity:.5}48.6%{opacity:1}71%{opacity:.92}71.5%{opacity:.35}72%{opacity:.96}92%{opacity:.88}92.4%{opacity:1}}
+  @media(prefers-reduced-motion:reduce){.flicker-overlay,.scanlines{animation:none}}
+
+  header{border-bottom:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#1c1912,#13120d);position:sticky;top:0;z-index:30;flex-wrap:wrap}
+  .logo{font-family:var(--sans);font-weight:800;letter-spacing:.42em;color:var(--wall);font-size:15px;text-shadow:0 0 18px rgba(194,178,128,.4)}
+  .logo .dot{color:var(--amber)}
+  .tagline{font-size:11px;color:var(--ink-dim);letter-spacing:.18em;text-transform:uppercase}
+  header .spacer{flex:1}
+  .hbtn{background:none;border:1px solid var(--line);border-radius:2px;color:var(--ink-dim);font-family:var(--mono);font-size:11px;padding:3px 8px;cursor:pointer;letter-spacing:.06em;transition:.12s}
+  .hbtn:hover{border-color:var(--amber-dim);color:var(--amber)}
+  .hbtn.active{border-color:var(--green-dim);color:var(--green)}
+  .clearance{font-size:11px;color:var(--amber-dim);letter-spacing:.08em;border:1px solid var(--line);padding:3px 8px;border-radius:2px}
+
+  .resbar{display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line);background:var(--panel)}
+  .res{flex:1 1 0;min-width:120px;padding:9px 14px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:1px;position:relative;overflow:hidden}
+  .res:last-child{border-right:none}
+  .res::after{content:"";position:absolute;bottom:0;left:0;height:2px;background:var(--amber-dim);width:var(--fill,0%);transition:width .6s ease}
+  .res.r-warn::after{background:var(--red)}
+  .res.r-full::after{background:var(--green-dim)}
+  .res .label{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim)}
+  .res .val{font-size:18px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .res .rate{font-size:10px}
+  @keyframes resflash{0%,100%{background:var(--panel)}50%{background:#2d2814}}
+
+  #warnbar{display:none;background:#2a120c;border-bottom:1px solid var(--red-dim);color:var(--red);padding:7px 16px;font-size:12px;letter-spacing:.06em;text-align:center;animation:pulse 1s infinite}
+  #warnbar.show{display:block}
+  @keyframes pulse{0%,100%{background:#2a120c}50%{background:#3a160d}}
+
+  .wrap{display:grid;grid-template-columns:300px 1fr 360px;gap:1px;background:var(--line);min-height:calc(100vh - 118px)}
+  .col{background:var(--base);padding:14px;min-width:0}
+  @media(max-width:1100px){.wrap{grid-template-columns:1fr 1fr}.col.feed-col{grid-column:1/-1}}
+  @media(max-width:720px){.wrap{grid-template-columns:1fr}.res{min-width:50%;flex:1 1 50%}}
+
+  h2.section{font-family:var(--sans);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--wall);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  h2.section::before{content:"▌";color:var(--amber);margin-right:-2px}
+  h2.section .cnt{font-size:9px;color:var(--ink-dim);font-family:var(--mono);letter-spacing:.04em;margin-left:auto;font-weight:normal}
+
+  .op{display:flex;align-items:center;gap:10px;padding:8px 9px;border:1px solid var(--line);border-radius:3px;margin-bottom:7px;background:var(--panel);cursor:pointer;transition:.12s}
+  .op:hover{border-color:var(--amber-dim);background:var(--panel-2)}
+  .op.deployed{opacity:.85;border-style:dashed}
+  .op.injured{border-color:var(--red-dim);background:#22160e}
+  .op .avatar{width:32px;height:32px;flex:none;border-radius:2px;background:var(--panel-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--wall)}
+  .op.injured .avatar{color:var(--red-dim)}
+  .op .meta{flex:1;min-width:0}
+  .op .nm{font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .op .nm .tt{font-size:9px;color:var(--amber-dim);letter-spacing:.06em;border:1px solid var(--amber-dim);padding:1px 4px;border-radius:1px;margin-left:5px;vertical-align:middle}
+  .op .sub{font-size:10.5px;color:var(--ink-dim)}
+  .op .stat{font-size:10.5px;color:var(--amber-dim);text-align:right;white-space:nowrap}
+  .bar{height:4px;background:#0b0a07;border-radius:2px;overflow:hidden;margin-top:3px}
+  .bar>i{display:block;height:100%;background:var(--green);transition:width .3s ease}
+  .bar.low>i{background:var(--red)}
+  .bar.mid>i{background:var(--amber-dim)}
+
+  .level{border:1px solid var(--line);border-radius:3px;background:var(--panel);margin-bottom:9px;overflow:hidden}
+  .level.locked{opacity:.45}
+  .level .lhead{padding:9px 11px;cursor:pointer;display:flex;align-items:center;gap:9px;transition:.12s}
+  .level .lhead:hover{background:var(--panel-2)}
+  .level .num{font-family:var(--sans);font-weight:800;font-size:14px;color:var(--wall);min-width:50px}
+  .level .lname{flex:1;font-size:13px;color:var(--ink)}
+  .level .danger{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
+  .level .danger.lowd{color:var(--green)}
+  .level .danger.modd{color:var(--amber-dim)}
+  .level .body{padding:0 11px 11px;display:none}
+  .level.open .body{display:block}
+  .level .flav{font-size:11.5px;color:var(--ink-dim);font-style:italic;margin:4px 0 10px;border-left:2px solid var(--amber-dim);padding-left:8px;line-height:1.6}
+  .loot-line{font-size:11px;color:var(--ink-dim);margin-bottom:8px}
+  .loot-line b{color:var(--amber-dim);font-weight:400}
+  .lvl-stats{font-size:10.5px;color:var(--ink-dim);display:flex;gap:14px;margin-bottom:8px}
+  .lvl-stats span{color:var(--ink)}
+
+  .exped{border:1px solid var(--amber-dim);border-radius:3px;background:#1c1910;padding:9px 11px;margin-bottom:8px}
+  .exped.waiting{border-color:var(--red-dim);background:#22160e}
+  .exped .top{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px}
+  .exped .top .e-lvl{color:var(--wall)}
+  .exped .top .e-eta{color:var(--ink-dim);font-variant-numeric:tabular-nums}
+  .exped .pbar{height:5px;background:#0b0a07;border-radius:3px;overflow:hidden}
+  .exped .pbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--amber-dim),var(--amber));transition:width .25s linear}
+  .exped.waiting .pbar>i{background:var(--red)}
+  .exped .team{font-size:10px;color:var(--ink-dim);margin-top:5px}
+
+  .tech{border:1px solid var(--line);border-radius:3px;background:var(--panel);padding:9px 11px;margin-bottom:8px}
+  .tech.bought{border-color:var(--green-dim);background:#161d0e;opacity:.88}
+  .tech.locked-dep{opacity:.5}
+  .tech .tname{font-size:12.5px;color:var(--ink);display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .tech .tname .tag{font-size:9px;letter-spacing:.08em;text-transform:uppercase;border:1px solid;padding:1px 5px;border-radius:1px}
+  .tech .tname .tag.facility{color:var(--wall);border-color:var(--wall-deep)}
+  .tech .tname .tag.safety{color:var(--blue);border-color:var(--blue-dim)}
+  .tech .tname .tag.speed{color:var(--green);border-color:var(--green-dim)}
+  .tech .tname .tag.unlock{color:var(--amber-dim);border-color:var(--amber-dim)}
+  .tech .tdesc{font-size:11px;color:var(--ink-dim);margin:4px 0 8px;line-height:1.5}
+  .cost{font-size:10.5px;color:var(--amber-dim);display:flex;gap:10px;flex-wrap:wrap}
+  .cost span.no{color:var(--red)}
+
+  .feed-tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+  .feed-tab{font-size:10px;padding:2px 8px;border:1px solid var(--line);border-radius:2px;cursor:pointer;background:var(--panel);color:var(--ink-dim);letter-spacing:.06em;transition:.12s}
+  .feed-tab:hover{border-color:var(--amber-dim)}
+  .feed-tab.active{border-color:var(--amber-dim);color:var(--amber);background:#1e1a0e}
+  .feed{border:1px solid var(--line);background:#0e0d09;border-radius:3px;padding:10px;height:430px;overflow-y:auto;font-size:11.5px;line-height:1.55}
+  @media(max-width:1100px){.feed{height:270px}}
+  .feed .e{margin-bottom:6px;border-left:2px solid var(--line);padding-left:8px}
+  .feed .e .t{color:var(--amber-dim);font-size:9.5px;font-variant-numeric:tabular-nums}
+  .feed .e.report{border-color:var(--amber-dim)}
+  .feed .e.good{border-color:var(--green-dim)}
+  .feed .e.good .msg{color:var(--green)}
+  .feed .e.bad{border-color:var(--red-dim)}
+  .feed .e.bad .msg{color:var(--red)}
+  .feed .e.dread{border-color:#5a4a2a}
+  .feed .e.dread .msg{color:#caa37a;font-style:italic}
+  .feed .e.achieve{border-color:var(--amber);background:#1a1608}
+  .feed .e.achieve .msg{color:var(--amber)}
+  .feed .e .msg{color:var(--ink)}
+  .feed .e.new-entry{animation:feedin .4s ease}
+  @keyframes feedin{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:none}}
+
+  button{font-family:var(--mono);cursor:pointer}
+  .btn{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:2px;padding:6px 12px;font-size:12px;letter-spacing:.04em;transition:.12s}
+  .btn:hover:not(:disabled){border-color:var(--amber-dim);color:var(--amber)}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .btn.primary{background:var(--amber-dim);color:#13120d;border-color:var(--amber)}
+  .btn.primary:hover:not(:disabled){background:var(--amber);color:#13120d}
+  .btn.small{padding:3px 9px;font-size:11px}
+  .btn.danger:hover:not(:disabled){border-color:var(--red);color:var(--red)}
+  .btn.full{width:100%;margin-top:6px}
+
+  .muted{color:var(--ink-dim)}
+  .tiny{font-size:10.5px}
+
+  .picker .slot{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:2px;padding:4px 9px;margin:3px 5px 3px 0;font-size:11px;background:var(--panel);cursor:pointer;transition:.12s}
+  .picker .slot:hover:not(.disabled){border-color:var(--amber-dim)}
+  .picker .slot.sel{border-color:var(--amber);color:var(--amber);background:#221d10}
+  .picker .slot.disabled{opacity:.35;cursor:not-allowed}
+
+  .autorow{display:flex;align-items:center;gap:8px;margin:12px 0 4px;font-size:12px;color:var(--ink);cursor:pointer;user-select:none}
+  .autorow .box{width:16px;height:16px;border:1px solid var(--line);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--amber);transition:.12s}
+  .autorow.on .box{border-color:var(--amber);background:#221d10}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(6,5,3,.88);z-index:60;display:none;align-items:center;justify-content:center;padding:18px}
+  .modal-bg.show{display:flex}
+  .modal{max-width:500px;width:100%;background:var(--panel);border:1px solid var(--amber-dim);border-radius:4px;box-shadow:0 0 60px rgba(0,0,0,.8);overflow:hidden;max-height:90vh;overflow-y:auto}
+  .modal.bad{border-color:var(--red)}
+  .modal.info{border-color:var(--blue-dim)}
+  .modal .mhead{padding:11px 16px;border-bottom:1px solid var(--line);font-family:var(--sans);letter-spacing:.2em;text-transform:uppercase;font-size:11px;color:var(--amber);background:#1c1910;display:flex;justify-content:space-between;align-items:center}
+  .modal.bad .mhead{color:var(--red);background:#221410}
+  .modal.info .mhead{color:var(--blue);background:#10161f}
+  .modal .mbody{padding:16px}
+  .modal .mflav{font-size:12.5px;color:var(--ink-dim);font-style:italic;border-left:2px solid var(--line);padding-left:10px;margin-bottom:14px;line-height:1.6}
+  .modal .mq{font-size:13.5px;color:var(--ink);margin-bottom:14px}
+  .modal .choice{display:block;width:100%;text-align:left;margin-bottom:8px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:2px;padding:10px 12px;font-size:12.5px;transition:.12s;cursor:pointer;font-family:var(--mono)}
+  .modal .choice:hover{border-color:var(--amber-dim);background:#241f13}
+  .modal .choice .rk{font-size:10.5px;color:var(--ink-dim);display:block;margin-top:3px}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .stat-card{background:var(--panel-2);border:1px solid var(--line);border-radius:3px;padding:10px}
+  .stat-card .slabel{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:4px}
+  .stat-card .sval{font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+
+  .ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  @media(max-width:500px){.ach-grid{grid-template-columns:1fr}}
+  .ach{border:1px solid var(--line);border-radius:3px;background:var(--panel-2);padding:8px 10px}
+  .ach.unlocked{border-color:var(--amber-dim);background:#1e1a0d}
+  .ach .aname{font-size:12px;color:var(--ink-dim)}
+  .ach.unlocked .aname{color:var(--amber)}
+  .ach .adesc{font-size:10.5px;color:var(--ink-dim);margin-top:2px}
+
+  .op-dstat{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}
+  .op-dstat .ds{font-size:11px;color:var(--ink-dim)}
+  .op-dstat .ds b{color:var(--ink);font-weight:normal}
+
+  footer{border-top:1px solid var(--line);padding:9px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:10.5px;color:var(--ink-dim);background:var(--panel)}
+  footer .spacer{flex:1}
+
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:#0a0908}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--amber-dim)}
+
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--amber-dim);color:var(--ink);padding:9px 18px;border-radius:3px;font-size:12px;z-index:70;box-shadow:0 8px 30px rgba(0,0,0,.7);opacity:0;transition:opacity .2s,bottom .2s;pointer-events:none;white-space:nowrap}
+  .toast.show{opacity:1;bottom:24px}
+  .toast.good-t{border-color:var(--green);color:var(--green)}
+  .toast.bad-t{border-color:var(--red);color:var(--red)}
+
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+  .blink{animation:blink 1.2s infinite}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="flicker-overlay"></div>
+
+<header>
+  <div>
+    <div class="logo">PARSEC<span class="dot">·</span>INITIATIVE</div>
+    <div class="tagline">Anomalous Asset Recovery — Dispatch Console</div>
+  </div>
+  <div class="spacer"></div>
+  <button id="statsBtn" class="hbtn">STATS</button>
+  <button id="notifBtn" class="hbtn">ALERTS OFF</button>
+  <div class="clearance" id="clearance">CLEARANCE · TIER 0</div>
+</header>
+
+<div class="resbar" id="resbar"></div>
+<div id="warnbar"></div>
+
+<div class="wrap">
+  <div class="col">
+    <h2 class="section">Roster <span class="cnt" id="rosterCnt"></span></h2>
+    <div id="roster"></div>
+    <button class="btn full" id="hireBtn">Recruit operative</button>
+    <h2 class="section" style="margin-top:22px">Facility</h2>
+    <div id="facility"></div>
+  </div>
+
+  <div class="col">
+    <h2 class="section">Active expeditions <span class="cnt" id="activeCnt"></span></h2>
+    <div id="active"><div class="muted tiny">No teams in the field.</div></div>
+    <h2 class="section" style="margin-top:22px">Levels</h2>
+    <div id="levels"></div>
+  </div>
+
+  <div class="col feed-col">
+    <h2 class="section">Field log</h2>
+    <div class="feed-tabs">
+      <div class="feed-tab active" data-f="">ALL</div>
+      <div class="feed-tab" data-f="report">OPS</div>
+      <div class="feed-tab" data-f="good">HAULS</div>
+      <div class="feed-tab" data-f="bad">INCIDENTS</div>
+      <div class="feed-tab" data-f="dread">DREAD</div>
+    </div>
+    <div class="feed" id="feed"></div>
+    <h2 class="section" style="margin-top:22px">Research</h2>
+    <div id="research"></div>
+  </div>
+</div>
+
+<footer>
+  <span id="saveStatus">Autosave on.</span>
+  <div class="spacer"></div>
+  <span class="muted tiny">[ H ] hire · [ R ] quick-dispatch L0 · [ S ] save · [ Esc ] close</span>
+  <button class="btn small" id="saveBtn">Save</button>
+  <button class="btn small danger" id="resetBtn">Wipe site</button>
+</footer>
+
+<!-- Dispatch modal -->
+<div class="modal-bg" id="dispatchBg">
+  <div class="modal">
+    <div class="mhead" id="dispatchTitle">Dispatch team</div>
+    <div class="mbody">
+      <div class="mflav" id="dispatchFlav"></div>
+      <div id="dispatchInfo" class="tiny" style="margin-bottom:10px"></div>
+      <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px">Assign operatives</div>
+      <div class="picker" id="dispatchPicker"></div>
+      <div class="autorow" id="autoToggle"><div class="box" id="autoBox"></div><div>Auto-repeat while supplies last</div></div>
+      <div id="dispatchCost" class="cost" style="margin:12px 0"></div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button class="btn primary" id="dispatchGo" style="flex:1">Deploy →</button>
+        <button class="btn" id="dispatchCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Event modal -->
+<div class="modal-bg" id="eventBg">
+  <div class="modal">
+    <div class="mhead" id="eventTitle">Field event</div>
+    <div class="mbody">
+      <div class="mflav" id="eventFlav"></div>
+      <div class="mq" id="eventQ"></div>
+      <div id="eventChoices"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Noclip modal -->
+<div class="modal-bg" id="noclipBg">
+  <div class="modal bad">
+    <div class="mhead">⚠ Operative noclipped</div>
+    <div class="mbody">
+      <div class="mflav" id="noclipFlav"></div>
+      <div class="mq" id="noclipQ"></div>
+      <div id="noclipChoices"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Gameover modal -->
+<div class="modal-bg" id="gameoverBg">
+  <div class="modal bad">
+    <div class="mhead">Containment lost</div>
+    <div class="mbody">
+      <div class="mflav" id="goReason"></div>
+      <div class="tiny muted" id="goStats" style="margin-bottom:14px"></div>
+      <button class="btn primary full" id="goRestart">Reinitialise site</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stats modal -->
+<div class="modal-bg" id="statsBg">
+  <div class="modal info" style="max-width:560px">
+    <div class="mhead">Site Statistics
+      <button class="btn small" id="statsClose" style="font-size:10px;padding:2px 8px">CLOSE</button>
+    </div>
+    <div class="mbody">
+      <div class="stat-grid" id="statsGrid"></div>
+      <h2 class="section" style="margin-top:4px">Achievements <span class="cnt" id="achCnt"></span></h2>
+      <div class="ach-grid" id="achieveList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Operative detail modal -->
+<div class="modal-bg" id="opDetailBg">
+  <div class="modal info">
+    <div class="mhead" id="opDetailTitle">Operative
+      <button class="btn small" id="opDetailClose" style="font-size:10px;padding:2px 8px">CLOSE</button>
+    </div>
+    <div class="mbody" id="opDetailBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const SAVE_KEY="parsec_save_v3";
+const FIRST=["Vance","Okoye","Reyes","Halloran","Sato","Mbeki","Kovac","Lindqvist","Ferreira","Adeyemi","Novak","Petrov","Chen","Dubois","Aaltonen","Marek","Iqbal","Sorensen","Romano","Bauer","Costa","Ng","Haddad","Ortega","Yakimov","Thorne","Mwangi","Sundaram","Voss","Papadopoulos"];
+const LAST=["D.","M.","R.","K.","T.","L.","S.","V.","E.","N.","J.","P.","A.","B.","O.","W.","C.","F.","H.","I."];
+const ENTITIES=["a Hound","a Smiler","a Skin-Stealer","a Clump","a Death Moth swarm","a Wretch","a Partygoer","something wearing a colleague's face","a Bacterium bloom","a Faceling","a Hunting Frenzy","a Crawler","a Blur","something that doesn't cast a shadow"];
+const DREAD=[
+  "The carpet was damp. It is always damp.",
+  "Someone had written 'IT KNOWS' on the wall in almond water. The team did not write it.",
+  "The fluorescents hummed at a frequency that made two operatives weep without knowing why.",
+  "A door that wasn't on the map. It is on the map now.",
+  "The team reports the ceiling tiles were warm to the touch.",
+  "Audio log recovered: forty seconds of a child laughing. No children deployed.",
+  "Operative count on exit matched count on entry. We are choosing to believe this.",
+  "The hum stopped for three seconds. Everyone remembers it differently.",
+  "A vending machine, fully stocked, in a level with no power. Nobody bought anything.",
+  "The team found their own footprints. Going the other way. Fresher than theirs.",
+  "Three phones rang simultaneously. The same voice answered on all of them.",
+  "An operative kept humming a song no one recognised. They don't remember doing it.",
+  "The exit was exactly where the entrance was. The team took an hour to figure out why.",
+  "The shadows were facing the wrong direction. They always were.",
+  "Someone had stacked every chair into a single tower. It was stable.",
+  "The corridor got shorter each time they walked it. They only noticed at the end.",
+];
+const DISCOVERIES=[
+  "Mapped a clean new corridor on the way out — routing updated.",
+  "Recovered a previous expedition's cache, seals intact.",
+  "Textbook extraction. Everyone out before the lights even flickered.",
+  "An operative pocketed a humming coin. Filed under 'examine later.'",
+  "Found a stairwell that only goes up. They took it anyway. It worked.",
+  "A wall of sticky notes, all in the same handwriting, all saying 'good job today.'",
+  "Quiet run. The hum stayed even the whole way. The team is grateful and suspicious.",
+  "Someone left a cold thermos of coffee on a shelf. The team drank it. No ill effects so far.",
+  "A room full of clocks, all stopped at different times. None of them the right one.",
+  "The team found a child's drawing of this exact corridor, signed with a date forty years ago.",
+];
+
+const TRAITS={
+  vet:  {name:"Veteran",   desc:"+2 starting Grit."},
+  lucky:{name:"Lucky",     desc:"+15% loot on their team."},
+  tough:{name:"Tough",     desc:"Half the chance of injury."},
+  path: {name:"Pathfinder",desc:"Rarely lost; reduces team noclip risk."},
+  swift:{name:"Swift",     desc:"−15% expedition duration for their team."},
+  mule: {name:"Pack Mule", desc:"+20% almond water yield for their team."},
+};
+
+function levelById(id){return LEVELS.find(l=>l.id===id);}
+const LEVELS=[
+  {id:0, name:"The Lobby",        danger:.03, time:30,  unlock:0,
+   flav:"Endless yellow rooms, mono-yellow wallpaper, the wet smell of old carpet and the buzz of fluorescent lights. The first and the last place.",
+   loot:{aw:[14,22],salvage:[1,4],credits:[3,7],data:[0,2]}},
+  {id:1, name:"Habitable Zone",   danger:.08, time:55,  unlock:0,
+   flav:"A concrete warehouse the size of grief. Pallets, forklifts, working sinks. People have lived here. Some still do.",
+   loot:{aw:[6,12],salvage:[5,11],credits:[7,16],data:[1,3]}},
+  {id:2, name:"Pipe Dreams",      danger:.15, time:85,  unlock:1,
+   flav:"Dark tunnels of groaning pipe. The temperature swings without reason. Bring a light. Bring two.",
+   loot:{aw:[4,9],salvage:[9,18],credits:[12,24],data:[2,5]}},
+  {id:7, name:"The Window",       code:"188", danger:.05,time:70, unlock:4,
+   flav:"A single endless room, soft brown light, and one window looking out on nothing in particular. People feel calm here. It may be the only kind level.",
+   loot:{aw:[10,16],salvage:[3,7],credits:[16,30],data:[2,4]}},
+  {id:3, name:"The Office",       danger:.22, time:120, unlock:3,
+   flav:"Cubicles to the horizon. The phones ring. If you answer, do not give your real name.",
+   loot:{aw:[3,8],salvage:[7,15],credits:[22,42],data:[3,7]}},
+  {id:9, name:"The Pool Rooms",   danger:.18, time:100, unlock:5,
+   flav:"Warm tiles, no exit on the first try. The water is the right colour but the wrong temperature. Sometimes it's higher than it was.",
+   loot:{aw:[8,14],salvage:[6,13],credits:[18,36],data:[2,6]}},
+  {id:4, name:"Cave System",      danger:.30, time:175, unlock:7,
+   flav:"Wet rock, no fluorescents — only what you carry. The dark is patient and it is very, very old.",
+   loot:{aw:[2,6],salvage:[15,28],credits:[26,50],data:[4,9]}},
+  {id:10,name:"Suburbs",          danger:.26, time:140, unlock:8,
+   flav:"Identical streets, identical houses. The cars are cold. Nobody is driving. The street lights turn on as you pass and won't turn off.",
+   loot:{aw:[3,7],salvage:[10,20],credits:[30,58],data:[3,8]}},
+  {id:5, name:"Terror Hotel",     danger:.42, time:240, unlock:11,
+   flav:"A grand hotel run by things that smile too wide. The rooms are warm. The hospitality is the trap.",
+   loot:{aw:[4,10],salvage:[11,24],credits:[48,88],data:[6,12]}},
+  {id:11,name:"Electrical Station",danger:.36,time:200,unlock:14,
+   flav:"Banks of humming generators, catwalks over nothing. The smell of ozone and fear. The power here goes somewhere. The team couldn't find where.",
+   loot:{aw:[2,5],salvage:[18,34],credits:[42,78],data:[8,16]}},
+  {id:6, name:"The End",          danger:.55, time:330, unlock:17,
+   flav:"A small office at the end of everything. A desk. A door marked EXIT. No team has confirmed what is behind it.",
+   loot:{aw:[6,14],salvage:[20,36],credits:[85,160],data:[10,20]}},
+  {id:8, name:"Run For Your Life",code:"!", danger:.72,time:300,unlock:24,
+   flav:"There is no exploring here. The moment you arrive, it is already chasing. Whatever you grab on the way out is all you get.",
+   loot:{aw:[8,18],salvage:[24,44],credits:[120,220],data:[14,28]}},
+];
+
+const TECH=[
+  {id:"hydro",    name:"Hydroponics Bay",       tag:"facility",desc:"Almond water condensers. +0.5 AW / sec, always running.",                        cost:{credits:35,salvage:12,data:3},  req:[]},
+  {id:"gear1",    name:"Reinforced Kit",         tag:"safety",  desc:"Field armour and beacons. −30% encounter severity, +12% loot.",                  cost:{credits:45,salvage:18,data:5},  req:[]},
+  {id:"drones",   name:"Recon Drones",           tag:"speed",   desc:"Scout ahead. Expeditions resolve 25% faster.",                                    cost:{credits:60,salvage:24,data:7},  req:[]},
+  {id:"med",      name:"Field Medicine",         tag:"safety",  desc:"Injured operatives recover twice as fast.",                                       cost:{credits:50,salvage:16,data:6},  req:[]},
+  {id:"logistics",name:"Logistics Convoy",       tag:"facility",desc:"Pre-positioned caches. Supply cost per expedition −40%.",                        cost:{credits:80,salvage:30,data:9},  req:["hydro"]},
+  {id:"beacon",   name:"Beacon Network",         tag:"safety",  desc:"Operatives lost to noclip are traced; return injured instead of gone.",          cost:{credits:90,salvage:28,data:12}, req:["drones"]},
+  {id:"cart1",    name:"Cartography I",          tag:"unlock",  desc:"Stabilises deep routing. Unlocks levels beyond Tier 2.",                        cost:{credits:85,salvage:30,data:11}, req:["drones"]},
+  {id:"contain",  name:"Containment Wing",       tag:"facility",desc:"License secured anomalies. +0.7 credits / sec, +400 credit cap.",               cost:{credits:120,salvage:44,data:16},req:["hydro"]},
+  {id:"gear2",    name:"Hardened Kit",           tag:"safety",  desc:"Class-III suits. A further −30% encounter severity.",                            cost:{credits:160,salvage:60,data:22},req:["gear1"]},
+  {id:"cart2",    name:"Cartography II",         tag:"unlock",  desc:"Maps the deepest routes. Required for The End and beyond.",                     cost:{credits:230,salvage:88,data:32},req:["cart1"]},
+  {id:"psi",      name:"Psi-Screen Helmets",     tag:"safety",  desc:"−60% noclip chance. Some operatives refuse to wear them.",                       cost:{credits:200,salvage:70,data:28},req:["beacon","gear2"]},
+  {id:"deep",     name:"Deep Survey Protocol",   tag:"unlock",  desc:"+25% loot from all levels Tier 5 and above.",                                    cost:{credits:320,salvage:115,data:50},req:["cart2"]},
+];
+
+const FACILITY=[
+  {id:"cap",     name:"Storage Expansion", desc:"Raise all resource caps by 50%.", base:{credits:25,salvage:8},  mult:1.6},
+  {id:"barracks",name:"Barracks",          desc:"+1 max operatives on site.",       base:{credits:40,salvage:15}, mult:1.7},
+  {id:"train",   name:"Training Sims",     desc:"New recruits start with +1 Grit.",base:{credits:38,data:5},     mult:1.8},
+];
+
+const ACHIEVEMENTS=[
+  {id:"first_run",  name:"First Contact",       desc:"Complete your first expedition.",           check:g=>g.runs>=1},
+  {id:"ten_runs",   name:"Routine",             desc:"Complete 10 expeditions.",                  check:g=>g.runs>=10},
+  {id:"fifty_runs", name:"Veteran Outfit",      desc:"Complete 50 expeditions.",                  check:g=>g.runs>=50},
+  {id:"no_losses",  name:"Nobody Left Behind",  desc:"Reach 20 runs without losing anyone.",      check:g=>g.runs>=20&&g.lost===0},
+  {id:"full_roster",name:"Full House",          desc:"Have 6 operatives on site at once.",        check:g=>g.ops.length>=6},
+  {id:"grit5",      name:"Iron Core",           desc:"Have an operative reach Grit 5.",           check:g=>g.ops.some(o=>o.grit>=5)},
+  {id:"grit8",      name:"Unbreakable",         desc:"Have an operative reach Grit 8.",           check:g=>g.ops.some(o=>o.grit>=8)},
+  {id:"all_tech",   name:"Fully Equipped",      desc:"Research all technologies.",               check:g=>TECH.every(t=>g.tech[t.id])},
+  {id:"the_end",    name:"Exit Found?",         desc:"Complete The End.",                         check:g=>!!g.endCleared},
+  {id:"rfyl",       name:"Beyond The Map",      desc:"Complete Run For Your Life.",               check:g=>!!g.rfylCleared},
+  {id:"credits1k",  name:"Flush",               desc:"Hold 1,000 credits at once.",              check:g=>g.res.credits>=1000},
+  {id:"aw500",      name:"Deep Reserve",        desc:"Hold 500 almond water at once.",           check:g=>g.res.aw>=500},
+  {id:"auto5",      name:"Set It, Forget It",   desc:"Run 5 auto-repeat expeditions.",           check:g=>(g.autoRuns||0)>=5},
+  {id:"wanderer",   name:"They Know The Walls", desc:"Successfully recruit a wanderer.",         check:g=>(g.wanderersFound||0)>=1},
+  {id:"survivor",   name:"Still Standing",      desc:"Accumulate 30 minutes of play time.",      check:g=>(g.playTime||0)>=1800},
+];
+
+let G=null,OP_SEQ=1,feedFilter="",notifEnabled=false;
+
+function newGame(){
+  OP_SEQ=1;
+  G={
+    res:{aw:120,credits:50,salvage:16,data:1},
+    cap:{aw:280,credits:260,salvage:160,data:100},
+    ops:[],active:[],tech:{},fac:{cap:0,barracks:0,train:0},
+    maxOps:4,feed:[],lastTick:Date.now(),
+    nextEvent:Date.now()+rand(55,100)*1000,expSeq:1,clearance:0,
+    dryUntil:null,gameOver:false,runs:0,lost:0,
+    achievements:{},autoRuns:0,wanderersFound:0,
+    totalGained:{aw:0,credits:0,salvage:0,data:0},
+    startTime:Date.now(),playTime:0,
+    endCleared:false,rfylCleared:false,
+  };
+  G.ops=[mkOp(),mkOp()];
+  return G;
+}
+
+function mkOp(){
+  let grit=1+(G?G.fac.train:0);
+  let trait=null;
+  if(Math.random()<0.45){trait=pick(Object.keys(TRAITS));if(trait==="vet")grit+=2;}
+  return{id:OP_SEQ++,name:pick(FIRST)+" "+pick(LAST),grit,xp:0,cond:100,status:"idle",recover:0,trait,runs:0};
+}
+function opById(id){return G.ops.find(o=>o.id===id);}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function fmt(n){n=Math.floor(n);if(n>=1e6)return(n/1e6).toFixed(2)+"M";if(n>=1e4)return(n/1e3).toFixed(1)+"k";return""+n;}
+function has(t){return !!G.tech[t];}
+function modalOpen(id){return document.getElementById(id).classList.contains("show");}
+
+function log(msg,cls){
+  const t=new Date();
+  const stamp=String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0")+":"+String(t.getSeconds()).padStart(2,"0");
+  G.feed.unshift({stamp,msg,cls:cls||"",fresh:true});
+  if(G.feed.length>180)G.feed.pop();
+  renderFeed();
+}
+let toastTimer=null;
+function toast(m,cls){
+  const el=document.getElementById("toast");
+  el.textContent=m;el.className="toast show"+(cls?" "+cls:"");
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2000);
+}
+
+function awPerSec(){return has("hydro")?0.5:0;}
+function creditsPerSec(){return has("contain")?0.7:0;}
+function supplyPerOp(L){return Math.max(2,Math.round(L.time/30)+1);}
+function supplyCost(L,n){return Math.max(1,Math.ceil(n*supplyPerOp(L)*(has("logistics")?0.6:1)));}
+function speedMult(){return has("drones")?0.75:1;}
+function speedMultTeam(ops){let m=speedMult();if(ops.some(o=>o.trait==="swift"))m*=0.85;return m;}
+function severityMult(){let m=1;if(has("gear1"))m*=0.7;if(has("gear2"))m*=0.7;return m;}
+function recoverMult(){return has("med")?0.5:1;}
+function lootMultBase(){return has("gear1")?1.12:1;}
+function deepBonus(L){return(L.id>=5&&has("deep"))?1.25:1;}
+function levelUnlocked(L){
+  if(G.clearance<L.unlock)return false;
+  if((L.id===3||L.id===4||L.id===9||L.id===10||L.id===11)&&!has("cart1"))return false;
+  if((L.id===5||L.id===6||L.id===8)&&!has("cart2"))return false;
+  return true;
+}
+function highestTier(){let m=0;for(const L of LEVELS)if(levelUnlocked(L))m=Math.max(m,L.id);return m;}
+
+function gain(type,amt){
+  if(amt>0){G.res[type]=clamp(G.res[type]+amt,0,G.cap[type]);G.totalGained[type]=(G.totalGained[type]||0)+Math.floor(amt);}
+}
+function canAfford(c){for(const k in c)if(G.res[k]<c[k])return false;return true;}
+function spend(c){if(!canAfford(c))return false;for(const k in c)G.res[k]-=c[k];return true;}
+
+/* ---- dispatch ---- */
+let DS={level:null,sel:[],auto:false};
+function openDispatch(id){
+  const L=levelById(id);
+  if(!levelUnlocked(L)){toast("Route not cleared yet.");return;}
+  DS={level:L,sel:[],auto:false};
+  document.getElementById("dispatchTitle").textContent="Dispatch · "+levelTag(L)+" — "+L.name;
+  document.getElementById("dispatchFlav").textContent=L.flav;
+  const dur=Math.round(L.time*speedMult());
+  document.getElementById("dispatchInfo").innerHTML=
+    "<b>Duration</b> ~"+dur+"s · <b>Danger</b> <span style='color:var(--red)'>"+Math.round(L.danger*100)+"%</span>"
+    +" · <span class='muted'>teams pack supplies from your reserve; bigger teams are safer</span>";
+  document.getElementById("autoToggle").classList.remove("on");
+  document.getElementById("autoBox").textContent="";
+  renderPicker();updateDispatchCost();
+  document.getElementById("dispatchBg").classList.add("show");
+}
+function levelTag(L){return L.code?("LVL "+L.code):("LEVEL "+L.id);}
+function renderPicker(){
+  const wrap=document.getElementById("dispatchPicker");wrap.innerHTML="";
+  const idle=G.ops.filter(o=>o.status==="idle");
+  if(!idle.length){wrap.innerHTML="<div class='muted tiny'>No operatives available.</div>";return;}
+  for(const o of G.ops){
+    const usable=o.status==="idle";
+    const slot=document.createElement("div");
+    slot.className="slot"+(DS.sel.includes(o.id)?" sel":"")+(usable?"":" disabled");
+    slot.innerHTML="<b>"+o.name+"</b><span class='muted'> G"+o.grit+(o.trait?" · "+TRAITS[o.trait].name:"")+"</span>";
+    if(usable)slot.onclick=()=>{const i=DS.sel.indexOf(o.id);if(i>=0)DS.sel.splice(i,1);else DS.sel.push(o.id);renderPicker();updateDispatchCost();};
+    wrap.appendChild(slot);
+  }
+}
+function updateDispatchCost(){
+  const cost=supplyCost(DS.level,DS.sel.length);
+  const ok=G.res.aw>=cost&&DS.sel.length>0;
+  document.getElementById("dispatchCost").innerHTML=
+    "<span class='"+(G.res.aw>=cost?"":"no")+"'>🥛 "+cost+" almond water</span>"
+    +"<span class='muted'>· "+DS.sel.length+" assigned</span>";
+  document.getElementById("dispatchGo").disabled=!ok;
+}
+function confirmDispatch(){
+  const cost=supplyCost(DS.level,DS.sel.length);
+  if(!DS.sel.length||G.res.aw<cost)return;
+  G.res.aw-=cost;
+  const L=DS.level;
+  const selOps=DS.sel.map(opById).filter(Boolean);
+  const dur=Math.round(L.time*speedMultTeam(selOps));
+  for(const id of DS.sel){const o=opById(id);if(o)o.status="deployed";}
+  G.active.push({id:G.expSeq++,level:L.id,ops:[...DS.sel],end:Date.now()+dur*1000,dur,auto:DS.auto,noclipResolved:false,waiting:false});
+  log("Team deployed to "+levelTag(L)+" — "+L.name+". "+DS.sel.length+" in the field"+(DS.auto?" (auto-repeat).":"."),"report");
+  document.getElementById("dispatchBg").classList.remove("show");
+  renderAll();
+}
+
+/* ---- noclip ---- */
+function beginResolve(exp){
+  const team=exp.ops.map(opById).filter(Boolean);
+  if(!exp.noclipResolved&&team.length>=2){
+    const pathers=team.filter(o=>o.trait==="path").length;
+    const chance=0.16*(pathers?0.4:1)*(has("psi")?0.4:1);
+    const cand=team.filter(o=>o.trait!=="path");
+    if(cand.length&&Math.random()<chance){openNoclip(exp,pick(cand).id);return true;}
+  }
+  finishResolve(exp);return false;
+}
+function openNoclip(exp,opId){
+  const L=levelById(exp.level),o=opById(opId);
+  const wait=rand(30,55);
+  document.getElementById("noclipFlav").textContent=o.name+" stepped through a wall that wasn't load-bearing and dropped into a space between rooms. Comms are faint but alive.";
+  document.getElementById("noclipQ").textContent="The rest of the team in "+levelTag(L)+" can hold position to pull them back, or cut losses and extract now.";
+  const box=document.getElementById("noclipChoices");box.innerHTML="";
+  const b1=document.createElement("button");b1.className="choice";
+  b1.innerHTML="Wait for "+o.name+"<span class='rk'>Expedition extends ~"+wait+"s · everyone comes home</span>";
+  b1.onclick=()=>{
+    exp.noclipResolved=true;exp.waiting=true;exp.end=Date.now()+wait*1000;exp.dur=wait;
+    G.active.push(exp);
+    log(levelTag(L)+": team holding to recover "+o.name+". +"+wait+"s.","report");
+    closeNoclip();
+  };
+  const b2=document.createElement("button");b2.className="choice";
+  b2.innerHTML="Leave "+o.name+"<span class='rk'>"+(has("beacon")?"Beacon traces them — returned badly injured":"They are lost for good")+" · rest extract now</span>";
+  b2.onclick=()=>{
+    if(has("beacon")){
+      o.cond=clamp(o.cond-rand(40,70),0,100);o.status="injured";o.recover=Date.now()+rand(80,150)*1000*recoverMult();
+      log(levelTag(L)+": "+o.name+" left behind, but beacon network traced them. Badly injured.","bad");
+    }else{
+      G.ops=G.ops.filter(x=>x.id!==opId);G.lost++;
+      log(levelTag(L)+": "+o.name+" was left behind. The space between rooms kept them.","bad");
+    }
+    exp.ops=exp.ops.filter(id=>id!==opId);finishResolve(exp);closeNoclip();
+  };
+  box.appendChild(b1);box.appendChild(b2);
+  document.getElementById("noclipBg").classList.add("show");
+}
+function closeNoclip(){document.getElementById("noclipBg").classList.remove("show");renderAll();}
+
+function finishResolve(exp){
+  const L=levelById(exp.level);
+  const team=exp.ops.map(opById).filter(Boolean);
+  const teamGrit=team.reduce((s,o)=>s+o.grit,0);
+  const sev=L.danger*severityMult();
+  const teamFactor=clamp(1-(teamGrit-team.length)*0.06-(team.length-1)*0.05,0.22,1);
+
+  if(Math.random()<sev*1.3){
+    const ent=pick(ENTITIES);let hurt=[],lost=[];
+    for(const o of team){
+      let risk=sev*teamFactor*(1-o.grit*0.04);
+      if(o.trait==="tough")risk*=0.5;
+      const roll=Math.random();
+      if(roll<risk*0.22&&L.danger>0.35&&o.trait!=="path")lost.push(o);
+      else if(roll<risk)hurt.push(o);
+    }
+    for(const o of lost){G.ops=G.ops.filter(x=>x.id!==o.id);G.lost++;}
+    for(const o of hurt){o.cond=clamp(o.cond-rand(25,55),0,100);o.status="injured";o.recover=Date.now()+rand(40,95)*1000*recoverMult();}
+    if(lost.length)log(levelTag(L)+": contact with "+ent+". Lost "+lost.map(o=>o.name).join(", ")+".","bad");
+    if(hurt.length)log(levelTag(L)+": contact with "+ent+". Injured "+hurt.map(o=>o.name).join(", ")+".","bad");
+    if(!lost.length&&!hurt.length)log(levelTag(L)+": brief contact with "+ent+", broke line of sight.","report");
+  }
+
+  const survivors=team.filter(o=>opById(o.id));
+  let lm=lootMultBase()*deepBonus(L)*(1+teamGrit*0.05);
+  lm+=survivors.filter(o=>o.trait==="lucky").length*0.15;
+  lm*=(0.5+0.5*(survivors.length/Math.max(1,team.length)));
+  const mules=survivors.filter(o=>o.trait==="mule").length;
+  const gained={};
+  for(const k in L.loot){
+    let[a,b]=L.loot[k];
+    let v=Math.round(rand(a,b)*lm);
+    if(k==="aw"&&mules)v=Math.round(v*(1+mules*0.2));
+    if(v>0){gain(k,v);gained[k]=v;}
+  }
+  if(survivors.length&&Math.random()<0.07){
+    const bonus=rand(20,60)+L.id*10;gain("credits",bonus);gained.credits=(gained.credits||0)+bonus;
+    log(levelTag(L)+": NOTABLE FIND — intact anomaly secured. +"+bonus+" ¤.","good");
+  }
+  if(survivors.length&&Math.random()<0.12){
+    const w=rand(4,9);gain("aw",w);gained.aw=(gained.aw||0)+w;
+    log(levelTag(L)+": working vending machine. +"+w+" bottles.","good");
+  }
+
+  G.clearance+=1+Math.floor(L.id/2);G.runs++;
+  if(L.id===6)G.endCleared=true;
+  if(L.id===8)G.rfylCleared=true;
+
+  for(const o of survivors){
+    if(o.status==="injured")continue;
+    o.status="idle";o.xp+=4+L.id*2;o.runs=(o.runs||0)+1;
+    if(o.xp>=o.grit*12){o.xp-=o.grit*12;o.grit++;log(o.name+" promoted to Grit "+o.grit+".","good");}
+  }
+
+  const back=survivors.filter(o=>o.status==="idle");
+  if(back.length)log(levelTag(L)+" — "+L.name+": extracted. Back: "+back.map(o=>o.name).join(", ")+".","report");
+  else log(levelTag(L)+" — "+L.name+": expedition closed.","report");
+  if(gained.aw)log("Hauled back +"+gained.aw+" 🥛 almond water.","good");
+  const other=[];
+  if(gained.credits)other.push(gained.credits+" ¤");
+  if(gained.salvage)other.push(gained.salvage+" ⚙");
+  if(gained.data)other.push(gained.data+" ▦");
+  if(other.length)log("Also recovered: "+other.join(", ")+".","good");
+  if(!gained.aw&&!other.length)log("The level gave nothing this time.","report");
+  const r=Math.random();
+  if(r<0.32)log(pick(DISCOVERIES),"report");
+  else if(r<0.55)log(pick(DREAD),"dread");
+
+  if(exp.auto){
+    const reSel=survivors.filter(o=>o.status==="idle").map(o=>o.id);
+    const cost=supplyCost(L,reSel.length);
+    if(reSel.length&&G.res.aw>=cost){
+      G.res.aw-=cost;
+      for(const id of reSel){const o=opById(id);if(o)o.status="deployed";}
+      const selOps=reSel.map(opById).filter(Boolean);
+      const dur=Math.round(L.time*speedMultTeam(selOps));
+      G.active.push({id:G.expSeq++,level:exp.level,ops:reSel,end:Date.now()+dur*1000,dur,auto:true,noclipResolved:false,waiting:false});
+      G.autoRuns=(G.autoRuns||0)+1;
+    }else if(reSel.length)log("Auto-repeat halted: insufficient supplies.","report");
+  }
+
+  maybeNotify(L,back);
+  checkAchievements();
+}
+
+function maybeNotify(L,back){
+  if(!notifEnabled||!("Notification" in window)||Notification.permission!=="granted")return;
+  try{new Notification("PARSEC",{body:levelTag(L)+" — "+L.name+": "+back.length+" returned.",silent:true});}catch(e){}
+}
+
+/* ---- recruit ---- */
+function recruitCost(){const n=G.ops.length;return{credits:22+n*16,aw:8+n*3};}
+function recruit(){
+  if(G.ops.length>=G.maxOps){toast("Site at capacity. Build a Barracks.");return;}
+  const c=recruitCost();if(!spend(c)){toast("Not enough resources.");return;}
+  const o=mkOp();G.ops.push(o);
+  log("Recruited "+o.name+" (Grit "+o.grit+(o.trait?", "+TRAITS[o.trait].name:"")+"). Welcome to PARSEC.","good");
+  checkAchievements();renderAll();
+}
+
+/* ---- research / facility ---- */
+function buyTech(t){
+  if(G.tech[t.id])return;
+  for(const r of t.req){if(!G.tech[r]){toast("Requires "+TECH.find(x=>x.id===r).name+".");return;}}
+  if(!spend(t.cost)){toast("Insufficient resources.");return;}
+  G.tech[t.id]=true;if(t.id==="contain")G.cap.credits+=400;
+  log("Research complete: "+t.name+".","good");checkAchievements();renderAll();
+}
+function facCost(f){const l=G.fac[f.id];const c={};for(const k in f.base)c[k]=Math.round(f.base[k]*Math.pow(f.mult,l));return c;}
+function buyFac(f){
+  const c=facCost(f);if(!spend(c)){toast("Insufficient resources.");return;}
+  G.fac[f.id]++;
+  if(f.id==="cap"){G.cap.aw=Math.round(G.cap.aw*1.5);G.cap.credits=Math.round(G.cap.credits*1.5);G.cap.salvage=Math.round(G.cap.salvage*1.5);G.cap.data=Math.round(G.cap.data*1.5);}
+  if(f.id==="barracks")G.maxOps++;
+  log(f.name+" upgraded to level "+G.fac[f.id]+".","good");renderAll();
+}
+
+/* ---- events ---- */
+function hurtRandom(){
+  const idle=G.ops.filter(o=>o.status!=="injured");
+  if(!idle.length)return;
+  const o=pick(idle);o.cond=clamp(o.cond-rand(25,50),0,100);o.status="injured";o.recover=Date.now()+rand(40,90)*1000*recoverMult();
+}
+const EVENTS=[
+  {title:"Sealed door",flav:"A welded door, scratching behind it. A cache, or something that wants out.",q:"Instruct the team?",
+   choices:[
+    {label:"Force it open",rk:"Risk · big salvage or an injury",run(){if(Math.random()<0.6){const v=rand(22,48);gain("salvage",v);log("Sealed cache cracked: +"+v+" salvage.","good");}else{hurtRandom();log("It was occupied. An operative was pulled out injured.","bad");}}},
+    {label:"Mark it and leave",rk:"Safe · small data",run(){const v=rand(3,6);gain("data",v);log("Door logged and bypassed. +"+v+" data.","report");}}]},
+  {title:"Pooled water",flav:"A still pool of clean almond water, far more than a level should hold. Too clean.",q:"Harvest it?",
+   choices:[
+    {label:"Fill every container",rk:"Greedy · big haul, small contamination risk",run(){if(Math.random()<0.72){const v=rand(30,60);gain("aw",v);log("Harvest successful: +"+v+" almond water.","good");}else{hurtRandom();log("The water was wrong. Operative in recovery and rambling.","bad");}}},
+    {label:"Measured ration",rk:"Safe · guaranteed almond water",run(){const v=rand(14,24);gain("aw",v);log("Measured ration: +"+v+" almond water.","report");}}]},
+  {title:"A lost wanderer",flav:"A person who claims to have been here for years. They know things no map shows. They want to come along.",q:"Decision?",
+   choices:[
+    {label:"Recruit them",rk:"Free operative · they may not be what they seem",run(){if(G.ops.length<G.maxOps){if(Math.random()<0.7){const o=mkOp();o.grit+=2;o.name="(found) "+o.name;G.ops.push(o);G.wanderersFound=(G.wanderersFound||0)+1;log("Recruited wanderer: "+o.name+", Grit "+o.grit+".","good");}else{hurtRandom();log("It wore a person's shape until it didn't. Operative hurt.","bad");}}else{const v=rand(5,9);gain("data",v);log("No room. Debriefed them: +"+v+" data.","report");}}},
+    {label:"Debrief and release",rk:"Safe · solid data",run(){const v=rand(7,13);gain("data",v);log("Wanderer debriefed: +"+v+" data on deep routing.","report");}}]},
+  {title:"License offer",flav:"A buyer wants first refusal on the next secured anomaly. Good price. Binding contract.",q:"Sign?",
+   choices:[
+    {label:"Sign the contract",rk:"Credits now",run(){const v=rand(34,75);gain("credits",v);log("Contract signed: +"+v+" credits.","good");}},
+    {label:"Stay independent",rk:"Keep options open",run(){const v=rand(4,7);gain("data",v);log("Offer declined. +"+v+" data.","report");}}]},
+  {title:"Almond spring",flav:"Survey drones found a self-replenishing spring. PARSEC will fund a tap — for a cut.",q:"Build the tap?",
+   choices:[
+    {label:"Build it",rk:"Costs 10 salvage · big AW surge",run(){if(G.res.salvage>=10){G.res.salvage-=10;const v=rand(40,80);gain("aw",v);log("Tap installed: +"+v+" almond water.","good");}else{const v=rand(6,12);gain("aw",v);log("No salvage for tap. Hauled by hand: +"+v+" AW.","report");}}},
+    {label:"Cap it for later",rk:"Safe · small data",run(){const v=rand(3,6);gain("data",v);log("Spring capped and mapped: +"+v+" data.","report");}}]},
+  {title:"Auction lot",flav:"A rival group is liquidating salvage cheap. Cash up front, sight unseen.",q:"Bid?",
+   choices:[
+    {label:"Buy the lot",rk:"Spend 25 credits · usually a profit",run(){if(G.res.credits>=25){G.res.credits-=25;const v=rand(18,46);gain("salvage",v);log("Lot won: +"+v+" salvage for 25¤.","good");}else{toast("Need 25 credits.");log("Couldn't cover the bid.","report");}}},
+    {label:"Pass",rk:"Keep your credits",run(){log("Passed on the auction.","report");}}]},
+  {title:"Distress signal",flav:"A looping distress call from a deep level. Could be survivors. Could be bait.",q:"Respond?",
+   choices:[
+    {label:"Send help",rk:"Risk · rescue an operative or lose one trying",run(){if(Math.random()<0.55&&G.ops.length<G.maxOps){const o=mkOp();G.ops.push(o);log("Rescued a survivor: "+o.name+" joins the roster.","good");}else{hurtRandom();log("The signal was bait. Operative injured.","bad");}}},
+    {label:"Log and ignore",rk:"Safe · small data",run(){const v=rand(3,6);gain("data",v);log("Signal triangulated and logged: +"+v+" data.","report");}}]},
+  {title:"Equipment cache",flav:"Intact lockers, sealed since before the site was established. Could be anything.",q:"Open them?",
+   choices:[
+    {label:"Open all",rk:"Varied loot · minor risk",run(){const r=Math.random();if(r<0.5){const s=rand(15,35);gain("salvage",s);log("Cache opened: +"+s+" salvage.","good");}else if(r<0.75){const d=rand(8,16);gain("data",d);log("Cache held research files: +"+d+" data.","good");}else{hurtRandom();log("The cache was a biohazard. Operative contaminated.","bad");}}},
+    {label:"Catalogue without opening",rk:"Safe · data only",run(){const v=rand(5,10);gain("data",v);log("Cache catalogued without opening: +"+v+" data.","report");}}]},
+  {title:"The phonecall",flav:"One of the field phones rings. You answer it. The voice on the line says your clearance number back to you, digit by digit, then waits.",q:"Respond?",
+   choices:[
+    {label:"Hang up immediately",rk:"Nothing happens. Probably.",run(){log("The line was dead before you could hang up. Maybe it already was.","dread");}},
+    {label:"Stay on the line",rk:"Unsettling · possibly valuable",run(){if(Math.random()<0.6){const v=rand(12,28);gain("data",v);log("The voice read out coordinates. Real ones. +"+v+" data.","good");}else{log("The voice kept reading the number. For eleven minutes. Then stopped.","dread");}}}]},
+  {title:"Black market",flav:"An anonymous channel offering salvage for data, no questions asked. The rate is good. Too good.",q:"Trade?",
+   choices:[
+    {label:"Trade 15 data",rk:"If genuine: 40+ salvage",run(){if(G.res.data>=15){G.res.data-=15;if(Math.random()<0.75){const v=rand(38,68);gain("salvage",v);log("Trade completed: +"+v+" salvage for 15 data.","good");}else{log("They took the data. Nothing arrived. Channel is dead.","bad");}}else{toast("Need 15 data.");}}},
+    {label:"Report the channel",rk:"Small data bonus",run(){const v=rand(5,9);gain("data",v);log("Channel reported. Finder's fee: +"+v+" data.","report");}}]},
+  {title:"Rogue machine",flav:"A maintenance robot still running old protocols. It can be redirected, for a cost.",q:"Repurpose it?",
+   choices:[
+    {label:"Spend 12 salvage to redirect",rk:"Ongoing credits",run(){if(G.res.salvage>=12){G.res.salvage-=12;const v=rand(50,90);gain("credits",v);log("Machine redirected to anomaly sorting: +"+v+" ¤.","good");}else{toast("Need 12 salvage.");log("Couldn't redirect the machine.","report");}}},
+    {label:"Disable it",rk:"Safe · frees up data",run(){const v=rand(6,11);gain("data",v);log("Machine disabled. Schematics extracted: +"+v+" data.","report");}}]},
+  {title:"Contamination risk",flav:"A returning operative seems 'off.' Different. Can't explain it.",q:"Protocol?",
+   choices:[
+    {label:"Quarantine for 60s",rk:"Lose one operative temporarily · full safety",run(){const idle=G.ops.filter(o=>o.status==="idle");if(idle.length){const o=pick(idle);o.status="injured";o.recover=Date.now()+60000*recoverMult();log(o.name+" quarantined as a precaution. Back in 60s.","report");}else log("No idle operatives to quarantine.","report");}},
+    {label:"Clear them immediately",rk:"Risky",run(){if(Math.random()<0.8)log("Operative cleared. Probably fine.","report");else{hurtRandom();log("They weren't fine. Operative stabilised.","bad");}}}]},
+];
+
+function fireEvent(){
+  const ev=pick(EVENTS);
+  document.getElementById("eventTitle").textContent="Field event · "+ev.title;
+  document.getElementById("eventFlav").textContent=ev.flav;
+  document.getElementById("eventQ").textContent=ev.q;
+  const box=document.getElementById("eventChoices");box.innerHTML="";
+  for(const c of ev.choices){
+    const b=document.createElement("button");b.className="choice";
+    b.innerHTML=c.label+"<span class='rk'>"+c.rk+"</span>";
+    b.onclick=()=>{c.run();document.getElementById("eventBg").classList.remove("show");checkAchievements();renderAll();};
+    box.appendChild(b);
+  }
+  document.getElementById("eventBg").classList.add("show");
+}
+
+/* ---- achievements ---- */
+function checkAchievements(){
+  for(const a of ACHIEVEMENTS){
+    if(!G.achievements[a.id]&&a.check(G)){
+      G.achievements[a.id]=Date.now();
+      log("ACHIEVEMENT UNLOCKED: "+a.name+" — "+a.desc,"achieve");
+      toast("✦ "+a.name,"good-t");
+    }
+  }
+}
+
+/* ---- gameover ---- */
+function doGameOver(reason){
+  G.gameOver=true;
+  document.getElementById("goReason").textContent=reason;
+  document.getElementById("goStats").textContent="Expeditions: "+G.runs+" · Lost: "+G.lost+" · Clearance: "+G.clearance+" · Time: "+Math.round((G.playTime||0)/60)+"m";
+  document.getElementById("gameoverBg").classList.add("show");
+  log("CONTAINMENT LOST. "+reason,"bad");
+}
+
+/* ---- tick ---- */
+function tick(){
+  if(G.gameOver)return;
+  const now=Date.now();
+  let dt=(now-G.lastTick)/1000;if(dt<0)dt=0;if(dt>2)dt=2;
+  G.playTime=(G.playTime||0)+dt;
+  if(dt>0){gain("aw",awPerSec()*dt);gain("credits",creditsPerSec()*dt);G.lastTick=now;}
+
+  if(G.res.aw<=0.01){
+    if(!G.dryUntil){G.dryUntil=now+35000;log("⚠ Almond water empty. Site can hold ~35s. Get water fast.","bad");}
+    else if(now>=G.dryUntil){doGameOver("The site ran dry. Without almond water the operatives could not be sustained.");return;}
+  }else if(G.dryUntil){G.dryUntil=null;log("Almond water restored. Rationing lifted.","good");}
+
+  if(!modalOpen("noclipBg")){
+    for(let i=G.active.length-1;i>=0;i--){
+      if(now>=G.active[i].end){const exp=G.active.splice(i,1)[0];const opened=beginResolve(exp);if(opened)break;}
+    }
+  }
+  let changed=false;
+  for(const o of G.ops){
+    if(o.status==="injured"&&now>=o.recover){o.status="idle";o.cond=clamp(o.cond+40,0,100);log(o.name+" cleared by medical and back on the roster.","good");changed=true;}
+  }
+  if(now>=G.nextEvent){G.nextEvent=now+rand(70,140)*1000;if(!modalOpen("eventBg")&&!modalOpen("dispatchBg")&&!modalOpen("noclipBg"))fireEvent();}
+
+  renderResbar();renderWarn();renderActive();
+  if(changed)renderRoster();
+  checkAchievements();
+}
+
+function offlineCatchup(){
+  const now=Date.now();const away=(now-G.lastTick)/1000;
+  if(away>20){
+    gain("aw",awPerSec()*away);gain("credits",creditsPerSec()*away);
+    for(let i=G.active.length-1;i>=0;i--){if(now>=G.active[i].end){const exp=G.active.splice(i,1)[0];exp.noclipResolved=true;finishResolve(exp);}}
+    if(G.res.aw<1)G.res.aw=1;
+    G.lastTick=now;G.dryUntil=null;
+    log("Site idled "+Math.round(away/60)+" min while you were away. Yields collected, runs resolved.","report");
+  }
+}
+
+/* ---- render ---- */
+function renderResbar(){
+  const defs=[
+    {k:"aw",  lab:"Almond Water",icon:"🥛",rate:awPerSec()},
+    {k:"credits",lab:"Credits", icon:"¤",  rate:creditsPerSec()},
+    {k:"salvage",lab:"Salvage", icon:"⚙",  rate:0},
+    {k:"data",   lab:"Data",    icon:"▦",  rate:0},
+  ];
+  const bar=document.getElementById("resbar");
+  let els=bar.querySelectorAll(".res");
+  if(els.length!==defs.length){bar.innerHTML="";els=[];}
+  defs.forEach((d,i)=>{
+    const pct=G.cap[d.k]>0?Math.round(G.res[d.k]/G.cap[d.k]*100):0;
+    let el=els[i];
+    if(!el){el=document.createElement("div");el.className="res";bar.appendChild(el);}
+    el.style.setProperty("--fill",pct+"%");
+    el.className="res"+(pct<=10?" r-warn":pct>=95?" r-full":"");
+    let rt="<div class='rate'>&nbsp;</div>";
+    if(Math.abs(d.rate)>0.001){rt="<div class='rate' style='color:"+(d.rate>=0?"var(--green)":"var(--red)")+"'>"+(d.rate>=0?"+":"")+d.rate.toFixed(2)+"/s</div>";}
+    el.innerHTML="<div class='label'>"+d.icon+" "+d.lab+"</div><div class='val'>"+fmt(G.res[d.k])+" <span class='muted tiny'>/ "+fmt(G.cap[d.k])+"</span></div>"+rt;
+  });
+  document.getElementById("clearance").textContent="CLEARANCE "+G.clearance+" · TIER "+highestTier();
+}
+function renderWarn(){
+  const el=document.getElementById("warnbar");
+  if(G.dryUntil){const left=Math.max(0,Math.ceil((G.dryUntil-Date.now())/1000));el.textContent="⚠ ALMOND WATER EMPTY — "+left+"s left. Extract a team with water or harvest some, fast.";el.classList.add("show");}
+  else el.classList.remove("show");
+}
+function renderRoster(){
+  const box=document.getElementById("roster");box.innerHTML="";
+  document.getElementById("rosterCnt").textContent=G.ops.length+"/"+G.maxOps;
+  for(const o of G.ops){
+    const div=document.createElement("div");div.className="op "+o.status;
+    let sub=o.status==="deployed"?"In the field":(o.status==="injured"?"Recovering · "+Math.max(0,Math.ceil((o.recover-Date.now())/1000))+"s":"On site · ready");
+    const barCls=o.cond<30?"low":o.cond<60?"mid":"";
+    div.innerHTML=
+      "<div class='avatar'>"+(o.status==="injured"?"✚":o.name.replace(/^\(found\) /,"")[0].toUpperCase())+"</div>"+
+      "<div class='meta'><div class='nm'>"+o.name+(o.trait?"<span class='tt'>"+TRAITS[o.trait].name+"</span>":"")+"</div>"+
+      "<div class='sub'>"+sub+"</div>"+
+      "<div class='bar "+barCls+"'><i style='width:"+o.cond+"%'></i></div></div>"+
+      "<div class='stat'>G "+o.grit+"<br><span class='muted' style='font-size:9.5px'>xp "+o.xp+"/"+(o.grit*12)+"</span></div>";
+    div.onclick=()=>openOpDetail(o.id);
+    box.appendChild(div);
+  }
+  const c=recruitCost();const btn=document.getElementById("hireBtn");
+  if(G.ops.length>=G.maxOps){btn.textContent="At capacity ("+G.maxOps+")";btn.disabled=true;}
+  else{btn.disabled=false;btn.innerHTML="Recruit operative <span class='muted tiny'>"+c.credits+"¤ "+c.aw+"🥛</span>";}
+}
+function renderFacility(){
+  const box=document.getElementById("facility");box.innerHTML="";
+  for(const f of FACILITY){
+    const c=facCost(f);const aff=canAfford(c);
+    const cs=Object.keys(c).map(k=>{const icon={credits:"¤",salvage:"⚙",data:"▦",aw:"🥛"}[k];return "<span class='"+(G.res[k]>=c[k]?"":"no")+"'>"+icon+" "+c[k]+"</span>";}).join("");
+    const div=document.createElement("div");div.className="tech";
+    div.innerHTML="<div class='tname'>"+f.name+" <span class='tag facility'>Lv "+G.fac[f.id]+"</span></div><div class='tdesc'>"+f.desc+"</div><div class='cost'>"+cs+"</div>";
+    const b=document.createElement("button");b.className="btn small full";b.textContent="Upgrade";b.disabled=!aff;b.onclick=()=>buyFac(f);div.appendChild(b);
+    box.appendChild(div);
+  }
+}
+function renderActive(){
+  const box=document.getElementById("active");
+  document.getElementById("activeCnt").textContent=G.active.length?"("+G.active.length+")":"";
+  if(!G.active.length){box.innerHTML="<div class='muted tiny'>No teams in the field.</div>";return;}
+  let h="";
+  for(const e of G.active){
+    const L=levelById(e.level);const left=Math.max(0,(e.end-Date.now())/1000);const pct=clamp(100*(1-left/e.dur),0,100);
+    const names=e.ops.map(id=>{const o=opById(id);return o?o.name:"—";}).join(", ");
+    const mins=Math.floor(left/60);const secs=Math.ceil(left%60);
+    const eta=mins>0?mins+"m "+String(secs).padStart(2,"0")+"s":Math.ceil(left)+"s";
+    h+="<div class='exped"+(e.waiting?" waiting":"")+"'>"+
+       "<div class='top'><span class='e-lvl'>"+levelTag(L)+" · "+L.name+(e.waiting?" <span style='color:var(--red)'>[recovering]</span>":(e.auto?" <span class='muted'>[auto]</span>":""))+"</span>"+
+       "<span class='e-eta'><span class='blink'>●</span> "+eta+"</span></div>"+
+       "<div class='pbar'><i style='width:"+pct+"%'></i></div>"+
+       "<div class='team'>"+names+"</div></div>";
+  }
+  box.innerHTML=h;
+}
+let openLevel=-1;
+function renderLevels(){
+  const box=document.getElementById("levels");box.innerHTML="";
+  const ordered=[...LEVELS].sort((a,b)=>a.unlock-b.unlock||a.id-b.id);
+  for(const L of ordered){
+    const unlocked=levelUnlocked(L);
+    const div=document.createElement("div");div.className="level"+(unlocked?"":" locked")+(openLevel===L.id?" open":"");
+    const dTxt=L.danger<0.06?"minimal":L.danger<0.16?"low":L.danger<0.32?"moderate":L.danger<0.5?"high":"extreme";
+    const dCls=L.danger<0.1?"lowd":L.danger<0.32?"modd":"";
+    const head=document.createElement("div");head.className="lhead";
+    head.innerHTML="<span class='num'>"+levelTag(L).replace("LEVEL ","L").replace("LVL ","L:")+"</span>"+
+      "<span class='lname'>"+L.name+"</span>"+
+      "<span class='danger "+dCls+"'>"+(unlocked?dTxt:"locked")+"</span>";
+    head.onclick=()=>{openLevel=(openLevel===L.id?-1:L.id);renderLevels();};
+    div.appendChild(head);
+    const body=document.createElement("div");body.className="body";
+    let lt=[];for(const k in L.loot){const icon={aw:"🥛",credits:"¤",salvage:"⚙",data:"▦"}[k];lt.push(icon+" "+L.loot[k][0]+"–"+L.loot[k][1]);}
+    let req="";
+    if(!unlocked){
+      if(G.clearance<L.unlock)req="Needs clearance "+L.unlock+" (have "+G.clearance+").";
+      else if((L.id===5||L.id===6||L.id===8)&&!has("cart2"))req="Needs Cartography II.";
+      else if(!has("cart1"))req="Needs Cartography I.";
+    }
+    const dur=Math.round(L.time*speedMult());
+    body.innerHTML=
+      "<div class='flav'>"+L.flav+"</div>"+
+      "<div class='lvl-stats'><div>Duration <span>~"+dur+"s</span></div><div>Danger <span style='color:var(--red)'>"+Math.round(L.danger*100)+"%</span></div></div>"+
+      "<div class='loot-line'>Yield: <b>"+lt.join("  ")+"</b></div>"+
+      (req?"<div class='tiny' style='color:var(--red);margin-bottom:8px'>"+req+"</div>":"");
+    if(unlocked){
+      const b=document.createElement("button");b.className="btn primary full";b.textContent="Dispatch team →";
+      b.onclick=e=>{e.stopPropagation();openDispatch(L.id);};body.appendChild(b);
+    }
+    div.appendChild(body);box.appendChild(div);
+  }
+}
+function renderResearch(){
+  const box=document.getElementById("research");box.innerHTML="";
+  for(const t of TECH){
+    const bought=!!G.tech[t.id];const reqMet=t.req.every(r=>G.tech[r]);const aff=canAfford(t.cost);
+    const div=document.createElement("div");div.className="tech"+(bought?" bought":"")+((!bought&&!reqMet)?" locked-dep":"");
+    const cs=Object.keys(t.cost).map(k=>{const icon={credits:"¤",salvage:"⚙",data:"▦"}[k];return "<span class='"+(G.res[k]>=t.cost[k]?"":"no")+"'>"+icon+" "+t.cost[k]+"</span>";}).join("");
+    div.innerHTML="<div class='tname'>"+t.name+" <span class='tag "+t.tag+"'>"+t.tag+"</span></div><div class='tdesc'>"+t.desc+"</div>";
+    if(bought)div.innerHTML+="<div class='tiny' style='color:var(--green)'>✓ Operational</div>";
+    else if(!reqMet)div.innerHTML+="<div class='tiny muted'>Requires: "+t.req.map(r=>TECH.find(x=>x.id===r).name).join(", ")+"</div>";
+    else{div.innerHTML+="<div class='cost'>"+cs+"</div>";const b=document.createElement("button");b.className="btn small full";b.textContent="Research";b.disabled=!aff;b.onclick=()=>buyTech(t);div.appendChild(b);}
+    box.appendChild(div);
+  }
+}
+function renderFeed(){
+  const box=document.getElementById("feed");
+  let entries=feedFilter?G.feed.filter(e=>e.cls===feedFilter):G.feed;
+  let h="";
+  for(let i=0;i<entries.length;i++){
+    const e=entries[i];
+    h+="<div class='e "+e.cls+(i===0&&e.fresh?" new-entry":"")+"'><span class='t'>"+e.stamp+"</span> <span class='msg'>"+e.msg+"</span></div>";
+  }
+  box.innerHTML=h;
+  if(G.feed.length>0)G.feed[0].fresh=false;
+}
+function renderStats(){
+  const ag=G.totalGained||{};const pt=Math.round((G.playTime||0)/60);
+  document.getElementById("statsGrid").innerHTML=`
+    <div class="stat-card"><div class="slabel">Expeditions run</div><div class="sval">${G.runs}</div></div>
+    <div class="stat-card"><div class="slabel">Operatives lost</div><div class="sval">${G.lost}</div></div>
+    <div class="stat-card"><div class="slabel">Clearance score</div><div class="sval">${G.clearance}</div></div>
+    <div class="stat-card"><div class="slabel">Play time</div><div class="sval">${pt}m</div></div>
+    <div class="stat-card"><div class="slabel">AW hauled total</div><div class="sval">${fmt(ag.aw||0)}</div></div>
+    <div class="stat-card"><div class="slabel">Credits earned</div><div class="sval">${fmt(ag.credits||0)}</div></div>
+    <div class="stat-card"><div class="slabel">Salvage recovered</div><div class="sval">${fmt(ag.salvage||0)}</div></div>
+    <div class="stat-card"><div class="slabel">Data recovered</div><div class="sval">${fmt(ag.data||0)}</div></div>`;
+  const achUnlocked=ACHIEVEMENTS.filter(a=>G.achievements[a.id]).length;
+  document.getElementById("achCnt").textContent=achUnlocked+"/"+ACHIEVEMENTS.length;
+  const alist=document.getElementById("achieveList");alist.innerHTML="";
+  for(const a of ACHIEVEMENTS){
+    const done=!!G.achievements[a.id];
+    const d=document.createElement("div");d.className="ach"+(done?" unlocked":"");
+    d.innerHTML="<div class='aname'>"+(done?"✦ ":"")+a.name+"</div><div class='adesc'>"+a.desc+"</div>";
+    alist.appendChild(d);
+  }
+}
+function openOpDetail(id){
+  const o=opById(id);if(!o)return;
+  const st=o.status==="idle"?"On site · ready":(o.status==="deployed"?"In the field":("Recovering · "+Math.max(0,Math.ceil((o.recover-Date.now())/1000))+"s"));
+  document.getElementById("opDetailTitle").innerHTML=o.name+
+    " <button class='btn small' id='opDetailClose' style='font-size:10px;padding:2px 8px'>CLOSE</button>";
+  document.getElementById("opDetailBody").innerHTML=
+    "<div class='mflav'>"+(o.trait?TRAITS[o.trait].name+" — "+TRAITS[o.trait].desc:"No special trait.")+"</div>"+
+    "<div class='op-dstat'>"+
+      "<div class='ds'>Status <b>"+st+"</b></div>"+
+      "<div class='ds'>Grit <b>"+o.grit+"</b></div>"+
+      "<div class='ds'>XP <b>"+o.xp+"/"+(o.grit*12)+"</b></div>"+
+      "<div class='ds'>Condition <b>"+o.cond+"%</b></div>"+
+      "<div class='ds'>Runs <b>"+(o.runs||0)+"</b></div>"+
+    "</div>"+
+    "<div class='bar "+(o.cond<30?"low":o.cond<60?"mid":"")+"' style='height:6px;margin:8px 0 16px'><i style='width:"+o.cond+"%'></i></div>"+
+    "<div class='tiny muted'>Click outside to close.</div>";
+  document.getElementById("opDetailClose").onclick=()=>document.getElementById("opDetailBg").classList.remove("show");
+  document.getElementById("opDetailBg").classList.add("show");
+}
+function renderAll(){renderResbar();renderWarn();renderRoster();renderFacility();renderActive();renderLevels();renderResearch();renderFeed();}
+
+/* ---- save / load ---- */
+function save(silent){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({G,OP_SEQ}));if(!silent){document.getElementById("saveStatus").textContent="Saved "+new Date().toLocaleTimeString()+".";toast("Saved.");}}
+  catch(e){document.getElementById("saveStatus").textContent="Save failed (storage blocked)";}
+}
+function load(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);if(!raw)return false;
+    const data=JSON.parse(raw);G=data.G;OP_SEQ=data.OP_SEQ||100;
+    if(!G.feed)G.feed=[];if(!G.fac)G.fac={cap:0,barracks:0,train:0};
+    if(G.dryUntil===undefined)G.dryUntil=null;if(G.gameOver===undefined)G.gameOver=false;
+    if(G.runs===undefined)G.runs=0;if(G.lost===undefined)G.lost=0;
+    if(!G.achievements)G.achievements={};if(!G.totalGained)G.totalGained={aw:0,credits:0,salvage:0,data:0};
+    if(!G.autoRuns)G.autoRuns=0;if(!G.wanderersFound)G.wanderersFound=0;
+    if(!G.playTime)G.playTime=0;if(!G.endCleared)G.endCleared=false;if(!G.rfylCleared)G.rfylCleared=false;
+    for(const o of G.ops)if(!o.runs)o.runs=0;
+    return true;
+  }catch(e){return false;}
+}
+function wipe(){if(!confirm("Wipe the site? All progress lost."))return;localStorage.removeItem(SAVE_KEY);startFresh();}
+function startFresh(){
+  newGame();
+  log("PARSEC dispatch console online. Two operatives on site. The Lobby is cleared for recovery work.","report");
+  log("Tip: teams pack almond water from your reserve for the trip. Run LEVEL 0 to top it back up. Reserve hits zero → site falls in 35 seconds.","report");
+  renderAll();
+}
+
+/* ---- keyboard shortcuts ---- */
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.isContentEditable)return;
+  if(e.key==="Escape"){["dispatchBg","eventBg","statsBg","opDetailBg"].forEach(id=>document.getElementById(id).classList.remove("show"));return;}
+  if(e.key==="h"||e.key==="H"){document.getElementById("hireBtn").click();return;}
+  if((e.key==="r"||e.key==="R")&&!G.gameOver){openDispatch(0);return;}
+  if(e.key==="s"||e.key==="S"){save(false);return;}
+});
+
+/* ---- notifications ---- */
+async function toggleNotifs(){
+  if(!("Notification" in window)){toast("Notifications not supported in this browser.");return;}
+  if(!notifEnabled){
+    if(Notification.permission==="default")await Notification.requestPermission();
+    notifEnabled=Notification.permission==="granted";
+  }else notifEnabled=false;
+  const btn=document.getElementById("notifBtn");
+  btn.textContent=notifEnabled?"ALERTS ON":"ALERTS OFF";
+  btn.classList.toggle("active",notifEnabled);
+  toast(notifEnabled?"Alerts enabled.":"Alerts disabled.");
+}
+
+/* ---- boot ---- */
+function boot(){
+  if(!load())startFresh();
+  else if(G.gameOver){localStorage.removeItem(SAVE_KEY);startFresh();}
+  else{offlineCatchup();log("Welcome back. Dispatch console restored.","report");}
+  renderAll();
+  setInterval(tick,250);
+  setInterval(()=>{if(!G.gameOver){save(true);document.getElementById("saveStatus").textContent="Autosaved · "+new Date().toLocaleTimeString();}},8000);
+  window.addEventListener("beforeunload",()=>{if(!G.gameOver)save(true);});
+
+  document.getElementById("hireBtn").onclick=recruit;
+  document.getElementById("dispatchGo").onclick=confirmDispatch;
+  document.getElementById("dispatchCancel").onclick=()=>document.getElementById("dispatchBg").classList.remove("show");
+  document.getElementById("autoToggle").onclick=()=>{DS.auto=!DS.auto;document.getElementById("autoToggle").classList.toggle("on",DS.auto);document.getElementById("autoBox").textContent=DS.auto?"✓":"";};
+  document.getElementById("saveBtn").onclick=()=>save(false);
+  document.getElementById("resetBtn").onclick=wipe;
+  document.getElementById("goRestart").onclick=()=>{document.getElementById("gameoverBg").classList.remove("show");startFresh();};
+  document.getElementById("statsBtn").onclick=()=>{renderStats();document.getElementById("statsBg").classList.add("show");};
+  document.getElementById("statsClose").onclick=()=>document.getElementById("statsBg").classList.remove("show");
+  document.getElementById("notifBtn").onclick=toggleNotifs;
+  document.getElementById("dispatchBg").addEventListener("click",e=>{if(e.target.id==="dispatchBg")e.currentTarget.classList.remove("show");});
+  document.getElementById("statsBg").addEventListener("click",e=>{if(e.target.id==="statsBg")e.currentTarget.classList.remove("show");});
+  document.getElementById("opDetailBg").addEventListener("click",e=>{if(e.target.id==="opDetailBg")e.currentTarget.classList.remove("show");});
+  document.querySelectorAll(".feed-tab").forEach(tab=>{
+    tab.onclick=()=>{feedFilter=tab.dataset.f;document.querySelectorAll(".feed-tab").forEach(t=>t.classList.toggle("active",t===tab));renderFeed();};
+  });
+}
+boot();
+</script>
+</body>
+</html>
