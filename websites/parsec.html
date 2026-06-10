@@ -253,7 +253,6 @@
   </div>
   <div class="spacer"></div>
   <button id="sfxBtn" class="hbtn">SFX OFF</button>
-  <button id="musicBtn" class="hbtn">MUSIC OFF</button>
   <button id="statsBtn" class="hbtn">STATS</button>
   <button id="loreBtn" class="hbtn">ARCHIVE</button>
   <button id="notifBtn" class="hbtn">ALERTS OFF</button>
@@ -452,107 +451,6 @@ function sfxAchieve(){if(!SFX)return;[440,554,659].forEach((f,i)=>setTimeout(()=
 function sfxEvent(){if(!SFX)return;tone(200,.25,"triangle",.04);}
 function sfxUpgrade(){if(!SFX)return;tone(330,.1,"sine",.05);setTimeout(()=>tone(440,.12,"sine",.05),110);}
 
-/* ---- ambient music ---- */
-let MUSIC=false,_musicMaster=null,_musicReverb=null,_droneOsc=null,_musicSched=null,_nextNoteT=0;
-let _curFrag=null,_fragIdx=0;
-
-// D natural minor scale Hz (octaves 2-4)
-const _DM=[73.4,82.4,87.3,98.0,110.0,116.5,130.8,
-            146.8,164.8,174.6,196.0,220.0,233.1,261.6,
-            293.7,329.6,349.2,392.0,440.0,466.2,523.3];
-// Fragment pools: each entry = [[noteIdx, beats], ...]
-const _FRAGS_QUIET=[
-  [[7,1.8],[9,1.8],[7,3.0]],
-  [[9,2.2],[7,3.5]],
-  [[12,1.5],[10,1.5],[9,2.5]],
-  [[7,5.0]],
-  [[9,1.5],[10,1.5],[12,1.5],[7,2.5]],
-  [[14,2.0],[12,3.0]],
-];
-const _FRAGS_NORMAL=[
-  [[7,0.8],[9,0.8],[12,0.8],[14,1.2]],
-  [[14,0.8],[12,0.8],[9,1.0],[7,1.5]],
-  [[12,0.8],[9,0.8],[12,0.6],[10,1.5]],
-  [[7,0.6],[9,0.6],[7,0.6],[9,0.6],[12,1.0]],
-  [[14,1.0],[12,0.8],[10,0.8],[9,2.0]],
-  [[9,0.7],[12,0.7],[14,0.7],[12,0.7],[9,1.5]],
-];
-const _FRAGS_HOT=[
-  [[13,0.5],[12,0.5],[13,0.4],[10,1.0]],
-  [[14,0.5],[13,0.6],[12,0.5],[10,0.8]],
-  [[12,0.4],[13,0.4],[12,0.4],[10,0.7],[9,1.2]],
-  [[7,0.4],[9,0.4],[13,0.4],[12,0.7],[7,1.5]],
-  [[13,0.3],[14,0.3],[13,0.3],[12,0.8]],
-];
-function _getMusicMood(){
-  const exps=typeof G!=="undefined"?G.active:[];
-  if(exps.some(e=>(e.condition||"clear")==="hot"))return"hot";
-  if(!exps.length)return"quiet";
-  return"normal";
-}
-function _makeReverb(ctx){
-  const len=Math.round(ctx.sampleRate*2.4);
-  const buf=ctx.createBuffer(2,len,ctx.sampleRate);
-  for(let c=0;c<2;c++){const d=buf.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6);}
-  const cv=ctx.createConvolver();cv.buffer=buf;return cv;
-}
-function _scheduleNotes(){
-  const ctx=getAC();if(!_musicMaster)return;
-  const LA=2.2;
-  while(_nextNoteT<ctx.currentTime+LA){
-    if(!_curFrag||_fragIdx>=_curFrag.length){
-      const mood=_getMusicMood();
-      const pool=mood==="hot"?_FRAGS_HOT:mood==="quiet"?_FRAGS_QUIET:_FRAGS_NORMAL;
-      _curFrag=pick(pool);_fragIdx=0;
-      const beatDur=mood==="hot"?0.42:mood==="quiet"?0.9:0.65;
-      _nextNoteT+=pick([1,1.5,2,2.5,3])*beatDur;
-      continue;
-    }
-    const [ni,beats]=_curFrag[_fragIdx];
-    const mood=_getMusicMood();
-    const beatDur=mood==="hot"?0.42:mood==="quiet"?0.9:0.65;
-    const dur=beats*beatDur;
-    const freq=_DM[Math.min(ni,_DM.length-1)];
-    try{
-      const o=ctx.createOscillator(),g=ctx.createGain();
-      o.type="triangle";o.frequency.value=freq;
-      g.gain.setValueAtTime(0,_nextNoteT);
-      g.gain.linearRampToValueAtTime(1,_nextNoteT+0.025);
-      g.gain.exponentialRampToValueAtTime(0.001,_nextNoteT+dur*0.8);
-      o.connect(g);g.connect(_musicMaster);
-      o.start(_nextNoteT);o.stop(_nextNoteT+dur);
-    }catch(e){}
-    _nextNoteT+=dur;_fragIdx++;
-  }
-}
-function startMusic(){
-  try{
-    const ctx=getAC();if(ctx.state==="suspended")ctx.resume();
-    _musicMaster=ctx.createGain();_musicMaster.gain.value=0.055;
-    _musicReverb=_makeReverb(ctx);
-    const rvg=ctx.createGain();rvg.gain.value=0.6;
-    _musicMaster.connect(_musicReverb);_musicReverb.connect(rvg);rvg.connect(ctx.destination);
-    _musicMaster.connect(ctx.destination);
-    _droneOsc=ctx.createOscillator();
-    const dg=ctx.createGain();dg.gain.value=0.032;
-    _droneOsc.type="sine";_droneOsc.frequency.value=36.7;
-    _droneOsc.connect(dg);dg.connect(ctx.destination);_droneOsc.start();
-    _curFrag=null;_fragIdx=0;_nextNoteT=ctx.currentTime+1.0;
-    _musicSched=setInterval(_scheduleNotes,120);
-  }catch(e){}
-}
-function stopMusic(){
-  if(_musicSched){clearInterval(_musicSched);_musicSched=null;}
-  try{if(_droneOsc)_droneOsc.stop();}catch(e){}
-  _droneOsc=null;_musicMaster=null;_musicReverb=null;
-}
-function toggleMusic(){
-  MUSIC=!MUSIC;
-  const btn=document.getElementById("musicBtn");
-  btn.textContent=MUSIC?"MUSIC ON":"MUSIC OFF";
-  btn.classList.toggle("active",MUSIC);
-  if(MUSIC)startMusic();else stopMusic();
-}
 
 const FIRST=["Vance","Okoye","Reyes","Halloran","Sato","Mbeki","Kovac","Lindqvist","Ferreira","Adeyemi","Novak","Petrov","Chen","Dubois","Aaltonen","Marek","Iqbal","Sorensen","Romano","Bauer","Costa","Ng","Haddad","Ortega","Yakimov","Thorne","Mwangi","Sundaram","Voss","Papadopoulos"];
 const LAST=["D.","M.","R.","K.","T.","L.","S.","V.","E.","N.","J.","P.","A.","B.","O.","W.","C.","F.","H.","I."];
@@ -2384,7 +2282,6 @@ function boot(){
     btn.classList.toggle("active",SFX);
     if(SFX)sfxAchieve();
   };
-  document.getElementById("musicBtn").onclick=toggleMusic;
   document.getElementById("hireBtn").onclick=recruit;
   document.getElementById("dispatchGo").onclick=confirmDispatch;
   document.getElementById("dispatchCancel").onclick=()=>document.getElementById("dispatchBg").classList.remove("show");
