@@ -103,7 +103,9 @@
 
   .tech{border:1px solid var(--line);border-radius:3px;background:var(--panel);padding:9px 11px;margin-bottom:8px}
   .tech.bought{border-color:var(--green-dim);background:#161d0e;opacity:.88}
-  .tech.locked-dep{opacity:.5}
+  .tech.locked-dep{opacity:.4;pointer-events:none}
+  .tech.can-buy{border-color:var(--amber-dim);background:rgba(200,155,40,0.05)}
+  .tech.can-buy .tname{color:var(--amber)}
   .tech .tname{font-size:12.5px;color:var(--ink);display:flex;justify-content:space-between;gap:8px;align-items:center}
   .tech .tname .tag{font-size:9px;letter-spacing:.08em;text-transform:uppercase;border:1px solid;padding:1px 5px;border-radius:1px}
   .tech .tname .tag.facility{color:var(--wall);border-color:var(--wall-deep)}
@@ -111,7 +113,8 @@
   .tech .tname .tag.speed{color:var(--green);border-color:var(--green-dim)}
   .tech .tname .tag.unlock{color:var(--amber-dim);border-color:var(--amber-dim)}
   .tech .tdesc{font-size:11px;color:var(--ink-dim);margin:4px 0 8px;line-height:1.5}
-  .cost{font-size:10.5px;color:var(--amber-dim);display:flex;gap:10px;flex-wrap:wrap}
+  .cost{font-size:10.5px;display:flex;gap:10px;flex-wrap:wrap}
+  .cost span.ok{color:var(--green)}
   .cost span.no{color:var(--red)}
 
   .feed-tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
@@ -650,6 +653,7 @@ function toast(m,cls){
 }
 
 function awPerSec(){return 0;}
+function awDrainPerSec(){return G.ops.length*0.03;}
 function creditsPerSec(){return has("contain")?0.7:0;}
 function supplyPerOp(L){return Math.max(2,Math.round(L.time/30)+1);}
 function supplyCost(L,n){return Math.max(1,Math.ceil(n*supplyPerOp(L)*(has("logistics")?0.6:1)));}
@@ -1168,7 +1172,7 @@ function tick(){
   const now=Date.now();
   let dt=(now-G.lastTick)/1000;if(dt<0)dt=0;if(dt>2)dt=2;
   G.playTime=(G.playTime||0)+dt;
-  if(dt>0){gain("aw",awPerSec()*dt);gain("credits",creditsPerSec()*dt);G.lastTick=now;}
+  if(dt>0){gain("aw",awPerSec()*dt);gain("credits",creditsPerSec()*dt);G.res.aw=Math.max(0,G.res.aw-awDrainPerSec()*dt);G.lastTick=now;}
   G.intel=(G.intel||[]).filter(x=>x.expires>now);
 
   if(G.res.aw<=0.01){
@@ -1206,7 +1210,7 @@ function offlineCatchup(){
 /* ---- render ---- */
 function renderResbar(){
   const defs=[
-    {k:"aw",  lab:"Almond Water",icon:"🥛",rate:awPerSec()},
+    {k:"aw",  lab:"Almond Water",icon:"🥛",rate:-awDrainPerSec()},
     {k:"credits",lab:"Credits", icon:"¤",  rate:creditsPerSec()},
     {k:"salvage",lab:"Salvage", icon:"⚙",  rate:0},
     {k:"data",   lab:"Data",    icon:"▦",  rate:0},
@@ -1347,13 +1351,44 @@ function renderLevels(){
 function renderResearch(){
   const box=document.getElementById("research");box.innerHTML="";
   for(const t of TECH){
-    const bought=!!G.tech[t.id];const reqMet=t.req.every(r=>G.tech[r]);const aff=canAfford(t.cost);
-    const div=document.createElement("div");div.className="tech"+(bought?" bought":"")+((!bought&&!reqMet)?" locked-dep":"");
-    const cs=Object.keys(t.cost).map(k=>{const icon={credits:"¤",salvage:"⚙",data:"▦"}[k];return "<span class='"+(G.res[k]>=t.cost[k]?"":"no")+"'>"+icon+" "+t.cost[k]+"</span>";}).join("");
+    const bought=!!G.tech[t.id];
+    const reqMet=t.req.every(r=>G.tech[r]);
+    const aff=canAfford(t.cost);
+    let cls="tech";
+    if(bought)cls+=" bought";
+    else if(!reqMet)cls+=" locked-dep";
+    else if(aff)cls+=" can-buy";
+    const div=document.createElement("div");div.className=cls;
     div.innerHTML="<div class='tname'>"+t.name+" <span class='tag "+t.tag+"'>"+t.tag+"</span></div><div class='tdesc'>"+t.desc+"</div>";
-    if(bought)div.innerHTML+="<div class='tiny' style='color:var(--green)'>✓ Operational</div>";
-    else if(!reqMet)div.innerHTML+="<div class='tiny muted'>Requires: "+t.req.map(r=>TECH.find(x=>x.id===r).name).join(", ")+"</div>";
-    else{div.innerHTML+="<div class='cost'>"+cs+"</div>";const b=document.createElement("button");b.className="btn small full";b.textContent="Research";b.disabled=!aff;b.onclick=()=>buyTech(t);div.appendChild(b);}
+    if(bought){
+      div.innerHTML+="<div class='tiny' style='color:var(--green)'>✓ Operational</div>";
+    } else if(!reqMet){
+      // Show each prereq with its own done/missing state
+      const reqHtml=t.req.map(r=>{
+        const done=!!G.tech[r];const rname=TECH.find(x=>x.id===r).name;
+        return "<span style='color:"+(done?"var(--green)":"var(--red)")+"'>"+(done?"✓ ":"✗ ")+rname+"</span>";
+      }).join("<span style='color:var(--ink-dim)'>&nbsp;·&nbsp;</span>");
+      div.innerHTML+="<div style='font-size:10px;margin-top:4px;letter-spacing:.03em'>Unlock first: "+reqHtml+"</div>";
+    } else {
+      // Show costs: green = have it, red = missing
+      const cs=Object.keys(t.cost).map(k=>{
+        const icon={credits:"¤",salvage:"⚙",data:"▦"}[k];
+        const have=G.res[k],need=t.cost[k],ok=have>=need;
+        return "<span class='"+(ok?"ok":"no")+"'>"+icon+" "+need+(ok?"":"<span style='font-size:9px;opacity:.7'>/"+fmt(have)+"</span>")+"</span>";
+      }).join("");
+      div.innerHTML+="<div class='cost'>"+cs+"</div>";
+      if(!aff){
+        const short=Object.keys(t.cost).filter(k=>G.res[k]<t.cost[k]).map(k=>{
+          const icon={credits:"¤",salvage:"⚙",data:"▦"}[k];
+          return icon+" "+(t.cost[k]-Math.floor(G.res[k]))+" more";
+        }).join("  ·  ");
+        div.innerHTML+="<div style='font-size:9.5px;color:var(--red);margin-top:3px'>need: "+short+"</div>";
+      }
+      const b=document.createElement("button");b.className="btn small full";
+      b.textContent=aff?"Research ↗":"Research";
+      b.disabled=!aff;b.onclick=()=>buyTech(t);
+      div.appendChild(b);
+    }
     box.appendChild(div);
   }
 }
