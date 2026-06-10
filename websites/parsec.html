@@ -337,7 +337,7 @@
       <div class="mflav" id="dispatchFlav"></div>
       <div id="dispatchInfo" class="tiny" style="margin-bottom:10px"></div>
       <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:4px">Assign operatives</div>
-      <div style="margin-bottom:6px"><button class="btn small" id="selectAllBtn">Select all idle</button></div>
+      <div style="margin-bottom:6px;display:flex;gap:6px"><button class="btn small" id="selectAllBtn">Select all idle</button><button class="btn small" id="selectHalfBtn">Select half</button></div>
       <div class="picker" id="dispatchPicker"></div>
       <div class="autorow" id="autoToggle"><div class="box" id="autoBox"></div><div>Auto-repeat while supplies last</div></div>
       <div id="dispatchCost" class="cost" style="margin:12px 0"></div>
@@ -2289,6 +2289,12 @@ function boot(){
   document.getElementById("selectAllBtn").onclick=()=>{
     const idle=G.ops.filter(o=>o.status==="idle");
     DS.sel=idle.map(o=>o.id);
+    renderPicker();updateDispatchCost();
+  };
+  document.getElementById("selectHalfBtn").onclick=()=>{
+    const idle=G.ops.filter(o=>o.status==="idle");
+    const half=Math.ceil(idle.length/2);
+    DS.sel=idle.slice(0,half).map(o=>o.id);
     renderPicker();updateDispatchCost();
   };
   document.getElementById("saveBtn").onclick=()=>save(false);
