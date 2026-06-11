@@ -750,7 +750,7 @@ function pick(a){return a[Math.floor(Math.random()*a.length)];}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function fmt(n){n=Math.floor(n);if(n>=1e6)return(n/1e6).toFixed(2)+"M";if(n>=1e4)return(n/1e3).toFixed(1)+"k";return""+n;}
 function has(t){return !!G.tech[t];}
-function modalOpen(id){return document.getElementById(id).classList.contains("show");}
+function modalOpen(id){const el=document.getElementById(id);return el?el.classList.contains("show"):false;}
 
 function log(msg,cls){
   const t=new Date();
@@ -1573,7 +1573,7 @@ function tick(){
         const elapsed=(exp.dur*1000-(exp.end-Date.now()));
         const pct=elapsed/(exp.dur*1000);
         const L=levelById(exp.level);
-        if(pct>0.2&&pct<0.7&&Math.random()<L.danger*0.0018){
+        if(L&&pct>0.2&&pct<0.7&&Math.random()<L.danger*0.0018){
           exp.encounterFired=true;
           exp._encounterActive=true;
           const ent=ENTITIES[L.id]||{name:"Unknown Form",icon:"◈",threat:0.3,flav:"Something unidentified in the facility. The team can feel it before they can see it."};
@@ -1626,7 +1626,7 @@ function tick(){
     }
   }
   renderResbar();renderWarn();renderActive();renderContracts();updateSuggestBar();renderAnomalies();
-  renderRoster();
+  tickRoster();
   tickResearch();
   if(changed)renderMemorial();
   checkAchievements();
@@ -1671,17 +1671,22 @@ function renderWarn(){
   if(G.dryUntil){const left=Math.max(0,Math.ceil((G.dryUntil-Date.now())/1000));el.textContent="⚠ ALMOND WATER EMPTY — "+left+"s left. Extract a team with water or harvest some, fast.";el.classList.add("show");}
   else el.classList.remove("show");
 }
+let _rosterSig="";
+function rosterSig(){return G.ops.map(o=>o.id+o.status+o.grit+o.xp+Math.round(o.cond)+Math.round(o.stress||0)+(o.trait||"")+(o.spec||"")).join("|")+G.ops.length+G.maxOps;}
 function renderRoster(){
+  _rosterSig=rosterSig();
   const box=document.getElementById("roster");box.innerHTML="";
   document.getElementById("rosterCnt").textContent=G.ops.length+"/"+G.maxOps;
   for(const o of G.ops){
     const div=document.createElement("div");div.className="op "+o.status;
-    let sub=o.status==="deployed"?"In the field":(o.status==="injured"?"Recovering · "+Math.max(0,Math.ceil((o.recover-Date.now())/1000))+"s":"On site · ready");
+    const secs=o.status==="injured"?Math.max(0,Math.ceil((o.recover-Date.now())/1000)):0;
+    let sub=o.status==="deployed"?"In the field":(o.status==="injured"?"Recovering · "+secs+"s":"On site · ready");
     const barCls=o.cond<30?"low":o.cond<60?"mid":"";
+    div.dataset.opid=o.id;
     div.innerHTML=
       "<div class='avatar'>"+(o.status==="injured"?"✚":o.name.replace(/^\(found\) /,"")[0].toUpperCase())+"</div>"+
       "<div class='meta'><div class='nm'>"+o.name+(o.trait?"<span class='tt'>"+TRAITS[o.trait].name+"</span>":"")+(o.spec?"<span class='tt' style='color:"+SPECS[o.spec].color+"'>"+SPECS[o.spec].icon+" "+SPECS[o.spec].name+"</span>":"")+"</div>"+
-      "<div class='sub'>"+sub+"</div>"+
+      "<div class='sub' data-sub='"+o.id+"'>"+sub+"</div>"+
       "<div class='bar "+barCls+"'><i style='width:"+o.cond+"%'></i></div>"+
       ((o.stress||0)>5?"<div class='bar' style='margin-top:2px'><i style='width:"+(o.stress||0)+"%;background:"+((o.stress||0)>75?"var(--red)":"var(--amber-dim)")+"'></i></div>":"")+"</div>"+
       "<div class='stat'>G "+o.grit+"<br><span class='muted' style='font-size:9.5px'>xp "+o.xp+"/"+(o.grit*12)+"</span></div>";
@@ -1691,6 +1696,16 @@ function renderRoster(){
   const c=recruitCost();const btn=document.getElementById("hireBtn");
   if(G.ops.length>=G.maxOps){btn.textContent="At capacity ("+G.maxOps+")";btn.disabled=true;}
   else{btn.disabled=false;btn.innerHTML="Recruit operative <span class='muted tiny'>"+c.credits+"¤ "+c.aw+"🥛</span>";}
+}
+function tickRoster(){
+  const sig=rosterSig();
+  if(sig!==_rosterSig){renderRoster();return;}
+  for(const o of G.ops){
+    if(o.status==="injured"){
+      const el=document.querySelector("[data-sub='"+o.id+"']");
+      if(el)el.textContent="Recovering · "+Math.max(0,Math.ceil((o.recover-Date.now())/1000))+"s";
+    }
+  }
 }
 function renderFacility(){
   const box=document.getElementById("facility");box.innerHTML="";
@@ -2846,7 +2861,7 @@ function startFresh(){
 /* ---- keyboard shortcuts ---- */
 document.addEventListener("keydown",e=>{
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.isContentEditable)return;
-  if(e.key==="Escape"){clearEventTimers();["dispatchBg","eventBg","statsBg","opDetailBg","specBg","loreBg","loreArchiveBg","fragBg"].forEach(id=>document.getElementById(id).classList.remove("show"));return;}
+  if(e.key==="Escape"){clearEventTimers();clearEncounterTimers();["dispatchBg","eventBg","statsBg","opDetailBg","specBg","loreBg","loreArchiveBg","fragBg","encBg"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove("show");});return;}
   if(e.key==="h"||e.key==="H"){document.getElementById("hireBtn").click();return;}
   if((e.key==="r"||e.key==="R")&&!G.gameOver){openDispatch(0);return;}
   if(e.key==="s"||e.key==="S"){save(false);return;}
