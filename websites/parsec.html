@@ -501,7 +501,7 @@ function sfxUpgrade(){if(!SFX)return;tone(330,.1,"sine",.05);setTimeout(()=>tone
 
 const FIRST=["Vance","Okoye","Reyes","Halloran","Sato","Mbeki","Kovac","Lindqvist","Ferreira","Adeyemi","Novak","Petrov","Chen","Dubois","Aaltonen","Marek","Iqbal","Sorensen","Romano","Bauer","Costa","Ng","Haddad","Ortega","Yakimov","Thorne","Mwangi","Sundaram","Voss","Papadopoulos"];
 const LAST=["D.","M.","R.","K.","T.","L.","S.","V.","E.","N.","J.","P.","A.","B.","O.","W.","C.","F.","H.","I."];
-const ENTITIES=["a Hound","a Smiler","a Skin-Stealer","a Clump","a Death Moth swarm","a Wretch","a Partygoer","something wearing a colleague's face","a Bacterium bloom","a Faceling","a Hunting Frenzy","a Crawler","a Blur","something that doesn't cast a shadow"];
+const ENTITY_NAMES=["a Hound","a Smiler","a Skin-Stealer","a Clump","a Death Moth swarm","a Wretch","a Partygoer","something wearing a colleague's face","a Bacterium bloom","a Faceling","a Hunting Frenzy","a Crawler","a Blur","something that doesn't cast a shadow"];
 const DREAD=[
   "The carpet was damp. It is always damp.",
   "Someone had written 'IT KNOWS' on the wall in almond water. The team did not write it.",
@@ -997,7 +997,7 @@ function finishResolve(exp){
 
   let hurt=[],lost_ops=[];
   if(Math.random()<sev*1.3){
-    const ent=pick(ENTITIES);
+    const ent=pick(ENTITY_NAMES);
     for(const o of team){
       let risk=sev*teamFactor*(1-(o.grit+(o.spec==="enforcer"?2:0))*0.04);
       if(o.trait==="tough")risk*=0.5;
