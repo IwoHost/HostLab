@@ -222,6 +222,13 @@
   .memorial-card .mname{font-size:12px;color:var(--red)}
   .memorial-card .mdetail{font-size:10.5px;color:var(--ink-dim);margin-top:2px}
 
+  #encBg .modal{border-color:var(--red);background:#150808}
+  #encBg .mhead{color:var(--red);background:#200a0a;letter-spacing:.12em}
+  .enc-entity-name{font-size:15px;color:var(--red);letter-spacing:.06em;margin-bottom:6px}
+  .enc-fight{border-color:var(--red-dim)!important;color:var(--red)!important}
+  .enc-fight:hover{background:#2a0808!important}
+  .enc-odds{font-size:10px;color:var(--ink-dim);margin-top:10px;display:flex;justify-content:space-between}
+
   .contract{border:1px solid var(--line);border-radius:3px;background:var(--panel);padding:9px 11px;margin-bottom:8px}
   .ct-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
   .ct-title{font-size:12.5px;color:var(--wall)}
@@ -297,6 +304,8 @@
     <div id="anomalies"></div>
     <h2 class="section" style="margin-top:22px">Research</h2>
     <div id="research"></div>
+    <h2 class="section" style="margin-top:22px">Memorial <span class="cnt" id="memCnt"></span></h2>
+    <div id="memorial"></div>
   </div>
 </div>
 
@@ -431,6 +440,23 @@
 <div class="toast" id="toast"></div>
 
 <!-- Fragment prestige modal -->
+<!-- Entity encounter modal -->
+<div class="modal-bg" id="encBg">
+  <div class="modal bad">
+    <div class="mhead">⚠ ENTITY CONTACT</div>
+    <div class="mbody">
+      <div class="enc-entity-name" id="encName"></div>
+      <div class="mflav" id="encFlav"></div>
+      <div class="mq" style="margin-top:10px">How does the team respond?</div>
+      <div style="display:flex;gap:8px;flex-direction:column;margin-top:10px">
+        <button class="btn enc-fight" id="fightBtn">Stand your ground — engage</button>
+        <button class="btn full" id="escapeBtn">Pull back and evade  <span class="rk">Auto if no response</span></button>
+      </div>
+      <div class="enc-odds"><span id="encOdds"></span><span id="encCd"></span></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="fragBg">
   <div class="modal" style="border-color:var(--green-dim);max-width:480px">
     <div class="mhead" style="color:var(--green);background:#0d1a0d">◈ ESTABLISH NEW FRAGMENT</div>
@@ -573,6 +599,21 @@ const LEVELS=[
   {id:14, name:"The False Light", danger:.50, time:270, unlock:18,
    flav:"Warm amber light from no visible source. The team reported feeling inexplicably safe until they didn't.",
    loot:{aw:[5,13],salvage:[17,32],credits:[58,108],data:[8,16]}},
+  {id:16, name:"The Void Lounge",    danger:.25, time:155, unlock:8,
+   flav:"Comfortable armchairs, soft amber light, jazz from nowhere. The staff here know your team's names. You've never met them.",
+   loot:{aw:[5,11],salvage:[9,20],credits:[26,50],data:[3,8]}},
+  {id:17, name:"Sub-Basement ∞",     danger:.37, time:215, unlock:12,
+   flav:"Concrete stairs going down, then down again — always the same stairwell. The loop is closed. Whatever lives down here has been circling for a very long time.",
+   loot:{aw:[3,7],salvage:[13,26],credits:[36,68],data:[5,11]}},
+  {id:18, name:"The Greenhouse",     danger:.18, time:130, unlock:6,
+   flav:"An impossible span of glowing flora, bioluminescent and silent. The air is thick and the humidity is wrong. Nothing here appears hostile — one operative noted 'yet' in the margin.",
+   loot:{aw:[10,22],salvage:[7,15],credits:[20,42],data:[3,8]}},
+  {id:19, name:"Catacombs",          danger:.44, time:255, unlock:16,
+   flav:"Stone corridors carved with text no one can read. Cold, constant, patient. The team was certain something walked behind them — always just outside the light.",
+   loot:{aw:[2,6],salvage:[17,34],credits:[52,96],data:[7,15]}},
+  {id:20, name:"The Quiet Room",     danger:.60, time:370, unlock:21,
+   flav:"One room. One desk. One chair, occupied by someone who looks like you. A window onto the lobby — empty, but for a figure standing at the far end. The team did not stay long.",
+   loot:{aw:[7,17],salvage:[20,38],credits:[95,175],data:[11,23]}},
 ];
 
 const TECH=[
@@ -588,6 +629,8 @@ const TECH=[
   {id:"cart2",    name:"Cartography II",         tag:"unlock",  desc:"Maps the deepest routes. Required for The End and beyond.",                     cost:{credits:230,salvage:88,data:32},req:["cart1"]},
   {id:"psi",      name:"Psi-Screen Helmets",     tag:"safety",  desc:"−60% noclip chance. Some operatives refuse to wear them.",                       cost:{credits:200,salvage:70,data:28},req:["beacon","gear2"]},
   {id:"deep",     name:"Deep Survey Protocol",   tag:"unlock",  desc:"+25% loot from all levels Tier 5 and above.",                                    cost:{credits:320,salvage:115,data:50},req:["cart2"]},
+  {id:"psych",   name:"Psychological Support",  tag:"safety",  desc:"Idle operatives shed stress 2× faster. Reduces long-run burnout.",                    cost:{credits:160,salvage:55,data:22}, req:["medkit"]},
+  {id:"anomreg", name:"Anomaly Register",       tag:"facility",desc:"Anomaly study speed +80%. Containment capacity increases to 5.",                       cost:{credits:180,salvage:64,data:26}, req:["contain"]},
 ];
 
 const FACILITY=[
@@ -638,6 +681,16 @@ const ACHIEVEMENTS=[
   {id:"fragment3",   name:"Endless Facility", desc:"Establish three fragments.",                   check:g=>FRAG.depth>=3},
   {id:"hub",         name:"Transit Hub",      desc:"Complete an expedition to The Hub.",           check:g=>!!(g.hubCleared)},
   {id:"parking_lot", name:"Long Term",        desc:"Complete an expedition to The Parking Lot.",   check:g=>!!(g.parkingCleared)},
+  {id:"century",     name:"Century",         desc:"Complete 100 expeditions.",                    check:g=>g.runs>=100},
+  {id:"data200",     name:"Data Hoarder",    desc:"Hold 200 data at once.",                       check:g=>g.res.data>=200},
+  {id:"credits5k",   name:"Compound Interest",desc:"Hold 5,000 credits at once.",                check:g=>g.res.credits>=5000},
+  {id:"clearance50", name:"Deep Diver",      desc:"Reach clearance level 50.",                    check:g=>g.clearance>=50},
+  {id:"clearance100",name:"The Deepest One", desc:"Reach clearance level 100.",                   check:g=>g.clearance>=100},
+  {id:"grit10",      name:"Immovable",       desc:"Have an operative reach Grit 10.",              check:g=>g.ops.some(o=>o.grit>=10)},
+  {id:"greenhouse",  name:"Biologist",       desc:"Complete an expedition to The Greenhouse.",     check:g=>!!(g.greenhouseCleared)},
+  {id:"catacombs",   name:"Archaeologist",   desc:"Complete an expedition to the Catacombs.",     check:g=>!!(g.cataCleared)},
+  {id:"voidlounge",  name:"Do Not Sit Down", desc:"Complete an expedition to The Void Lounge.",   check:g=>!!(g.voidLoungeCleared)},
+  {id:"anom5",       name:"Sample Collection",desc:"Study 5 anomalies.",                         check:g=>(g.anomStudied||0)>=5},
 ];
 
 // Expedition conditions
@@ -726,8 +779,8 @@ function lootMultBase(){return has("gear1")?1.12:1;}
 function deepBonus(L){return(L.id>=5&&has("deep"))?1.25:1;}
 function levelUnlocked(L){
   if(G.clearance<L.unlock)return false;
-  if((L.id===3||L.id===4||L.id===9||L.id===10||L.id===11||L.id===12)&&!has("cart1"))return false;
-  if((L.id===5||L.id===6||L.id===8||L.id===13||L.id===14||L.id===15)&&!has("cart2"))return false;
+  if((L.id===3||L.id===4||L.id===9||L.id===10||L.id===11||L.id===12||L.id===16||L.id===17||L.id===18)&&!has("cart1"))return false;
+  if((L.id===5||L.id===6||L.id===8||L.id===13||L.id===14||L.id===15||L.id===19||L.id===20)&&!has("cart2"))return false;
   return true;
 }
 function highestTier(){let m=0;for(const L of LEVELS)if(levelUnlocked(L))m=Math.max(m,L.id);return m;}
@@ -923,7 +976,7 @@ function openNoclip(exp,opId){
       log(levelTag(L)+": "+o.name+" left behind, but beacon network traced them. Badly injured.","bad");
     }else{
       if(!G.memorial)G.memorial=[];
-      G.memorial.push({name:o.name,grit:o.grit,runs:o.runs||0,trait:o.trait,level:L.name,when:new Date().toLocaleTimeString()});
+      G.memorial.push({name:o.name,grit:o.grit,runs:o.runs||0,trait:o.trait,spec:o.spec,level:L.name,cause:"noclipped — space between the walls",when:new Date().toLocaleTimeString()});
       G.ops=G.ops.filter(x=>x.id!==opId);G.lost++;
       log(levelTag(L)+": "+o.name+" was left behind. The space between rooms kept them.","bad");
     }
@@ -956,7 +1009,7 @@ function finishResolve(exp){
     }
     for(const o of lost_ops){
       if(!G.memorial)G.memorial=[];
-      G.memorial.push({name:o.name,grit:o.grit,runs:o.runs||0,trait:o.trait,level:L.name,when:new Date().toLocaleTimeString()});
+      G.memorial.push({name:o.name,grit:o.grit,runs:o.runs||0,trait:o.trait,spec:o.spec,level:L.name,cause:"lost on expedition",when:new Date().toLocaleTimeString()});
       G.ops=G.ops.filter(x=>x.id!==o.id);G.lost++;
     }
     for(const o of hurt){
@@ -984,6 +1037,7 @@ function finishResolve(exp){
   // Intel boost
   const intelIdx=(G.intel||[]).findIndex(x=>x.levelId===L.id&&x.expires>Date.now());
   if(intelIdx>=0){lm*=G.intel[intelIdx].boost;G.intel.splice(intelIdx,1);log("Intel acted on — "+L.name+" haul boosted.","good");}
+  lm*=(exp._lootMult||1);
   const mules=survivors.filter(o=>o.trait==="mule").length;
   const gained={};
   for(const k in L.loot){
@@ -1008,6 +1062,9 @@ function finishResolve(exp){
   if(L.id===8)G.rfylCleared=true;
   if(L.id===13)G.hubCleared=true;
   if(L.id===12)G.parkingCleared=true;
+  if(L.id===16)G.voidLoungeCleared=true;
+  if(L.id===18)G.greenhouseCleared=true;
+  if(L.id===19)G.cataCleared=true;
 
   for(const o of survivors){
     if(o.status==="injured")continue;
@@ -1052,7 +1109,8 @@ function finishResolve(exp){
   }
 
   // Anomaly generation
-  if(survivors.length&&Math.random()<0.11&&G.anomalies.length<3){
+  const anomCap=has("anomreg")?5:3;
+  if(survivors.length&&Math.random()<0.22&&G.anomalies.length<anomCap){
     const anom={
       id:Date.now(),
       name:pick(ANOMALY_NAMES),
@@ -1208,9 +1266,29 @@ const EVENTS=[
    choices:[
     {label:"Trace the draw",rk:"Costs 8 salvage · data reward",run(){if(G.res.salvage>=8){G.res.salvage-=8;const v=rand(14,28);gain("data",v);log("Power source traced to sub-level conduit. +"+v+" data.","good");}else{toast("Need 8 salvage.");log("Not enough salvage to trace the draw.","report");}}},
     {label:"Isolate the circuit",rk:"Safe · nothing lost",run(){log("Circuit isolated. The lights returned to normal. No one investigated further.","dread");}}]},
+  {title:"Supply pallet",flav:"Someone else's supply drop, still sealed. The branding is unfamiliar but the manifest is legible. It was meant for a team that didn't arrive.",q:"Claim it?",
+   choices:[
+    {label:"Full claim",rk:"AW + credits",run(){const aw=rand(20,40);const c=rand(14,28);gain("aw",aw);gain("credits",c);log("Pallet claimed: +"+aw+" almond water, +"+c+" ¤.","good");}},
+    {label:"Log it and leave",rk:"Data",run(){const v=rand(4,8);gain("data",v);log("Pallet location logged — evidence of another operation. +"+v+" data.","report");}}]},
+  {title:"Entity observation",flav:"Something is following the team at distance. Not hostile — curious. It hasn't tried to close the gap.",q:"How does the team respond?",
+   choices:[
+    {label:"Observe and document",rk:"Large data · risk",run(){const v=rand(14,28);gain("data",v);if(Math.random()<0.3)hurtRandom("it wasn't as passive as it seemed");log("Entity behaviour documented over 30 minutes. +"+v+" data.","good");}},
+    {label:"Move away quickly",rk:"Safe",run(){log("Team increased pace. Entity did not follow past the junction.","dread");}}]},
+  {title:"Signal on repeat",flav:"The comms unit picked up a loop broadcast — coordinates, four levels deep. Different from anything logged. Still transmitting.",q:"Log it?",
+   choices:[
+    {label:"Cross-reference and map",rk:"Clearance bonus",run(){const v=rand(2,5);G.clearance+=v;log("Signal cross-referenced. New routing opened. +"+v+" clearance.","good");}},
+    {label:"Archive raw signal",rk:"Data",run(){const v=rand(5,10);gain("data",v);log("Signal archived. Frequency noted for analysis. +"+v+" data.","report");}}]},
+  {title:"False wall",flav:"The acoustics are wrong. One section of wall sounds hollow — different material, recent installation. Someone put this here after the fact.",q:"Break it open?",
+   choices:[
+    {label:"Force it open",rk:"Salvage windfall · small risk",run(){if(Math.random()<0.75){const v=rand(18,38);gain("salvage",v);log("False wall removed. Stockpile behind it: +"+v+" salvage.","good");}else{hurtRandom("structural collapse");log("The wall took part of the ceiling with it.","bad");}}},
+    {label:"Mark and leave",rk:"Safe · data",run(){const v=rand(3,6);gain("data",v);log("Wall marked on site map. +"+v+" data.","report");}}]},
+  {title:"Familiar handwriting",flav:"A note tacked to a pillar. The handwriting belongs to someone on the roster. The date is nine days in the future.",q:"Take it?",
+   choices:[
+    {label:"Take the note",rk:"Unknown",run(){const v=rand(6,14);gain("data",v);log("The note was taken. Its contents were not shared in the debrief. +"+v+" data.","dread");}},
+    {label:"Leave it",rk:"Nothing gained",run(){log("The note was left. The team agreed not to mention it.","dread");}}]},
 ];
 
-const ANOMALY_NAMES=["Resonant Object","Humming Device","Mirrored Fragment","Null Compass","Recursive Map","Pale Transmission","Self-Indexing File","Amber Shard","Phase Object","Breathing Wall Section","Crystallised Static","Inverted Clock","Warm Stone","Signal Loop"];
+const ANOMALY_NAMES=["Resonant Object","Humming Device","Mirrored Fragment","Null Compass","Recursive Map","Pale Transmission","Self-Indexing File","Amber Shard","Phase Object","Breathing Wall Section","Crystallised Static","Inverted Clock","Warm Stone","Signal Loop","Folded Map","Singing Stone","Null Portrait","Frozen Wristwatch","Double-Exposed Photograph","Inverted Pressure Gauge","Thread Without End","Mechanical Eye","Index Card (illegible)","Carbon Copy","Radio With No Station","Self-Addressed Envelope","Weight That Increases","Sound With No Source","Threshold Marker","Object That Casts No Shadow"];
 
 const LEVEL_EVENTS={
   9:[{title:"The water is rising",flav:"The pool level climbed three inches while the team wasn't watching. It is still climbing.",q:"Call the extraction?",
@@ -1241,6 +1319,66 @@ const LEVEL_EVENTS={
      choices:[
        {label:"Mirror the pattern",rk:"Data reward · unknown consequence",run(){const v=rand(10,22);gain("data",v);if(Math.random()<0.25)hurtRandom("the discharge");log("Pattern acknowledged. Something changed in the hum. +"+v+" data.","dread");}},
        {label:"Kill the power to that bank",rk:"Safe · salvage",run(){const v=rand(8,16);gain("salvage",v);log("Generator bank shut down. Salvaged the components. +"+v+" salvage.","report");}}]}],
+  10:[{title:"A front door is open",flav:"The house at the end of the cul-de-sac. Light inside. Television on. Something is sitting in front of it.",q:"Go in?",
+     choices:[
+       {label:"Enter carefully",rk:"Good loot · risk",run(){if(Math.random()<0.55){const aw=rand(15,28);const c=rand(20,40);gain("aw",aw);gain("credits",c);log("House cleared. Supplies inside: +"+aw+" AW, +"+c+" ¤.","good");}else{hurtRandom("whoever was watching television");log("It wasn't a person.","bad");}}},
+       {label:"Document and move on",rk:"Data",run(){const v=rand(5,10);gain("data",v);log("House exterior documented. Lights still on. +"+v+" data.","report");}}]}],
+  13:[{title:"The highway is busy",flav:"Something is moving through the hub — fast, large, using the corridors as a transit route. The team pressed against the wall.",q:"What do the team do?",
+     choices:[
+       {label:"Observe and document",rk:"Large data · medium risk",run(){const v=rand(12,24);gain("data",v);if(Math.random()<0.35)hurtRandom("the transit struck the wall too close");log("Entity transit documented: 14 distinct forms, direction unknown. +"+v+" data.","dread");}},
+       {label:"Hold still and wait",rk:"Safe · small data",run(){const v=rand(4,8);gain("data",v);log("Team waited 22 minutes. Whatever used the hub moved on. +"+v+" data.","report");}}]}],
+  14:[{title:"The safe feeling intensifies",flav:"One operative sat down. Didn't want to get up. Reported that leaving felt wrong, like abandoning somewhere important.",q:"Force extraction?",
+     choices:[
+       {label:"Force extraction",rk:"Safe · stress relief",run(){G.ops.forEach(o=>{o.stress=Math.max(0,(o.stress||0)-15);});log("Team extracted. Stress was meaningfully lower after leaving the False Light.","good");}},
+       {label:"Let them rest a while",rk:"Risk being trapped · large AW",run(){if(Math.random()<0.6){const v=rand(22,44);gain("aw",v);log("The rest restored something. +"+v+" almond water equivalent.","good");}else{hurtRandom("the false light convinced them to stay too long");log("The warmth was a trap. It always is.","bad");}}}]}],
+  15:[{title:"All corridors look the same",flav:"The team has been walking for forty minutes and arrived at their starting point twice. The grey offers nothing to navigate by.",q:"Navigation approach?",
+     choices:[
+       {label:"Mark the walls and create a route",rk:"Costs 6 salvage · data",run(){if(G.res.salvage>=6){G.res.salvage-=6;const v=rand(8,16);gain("data",v);log("Route mapped by damage to the walls. +"+v+" data.","report");}else{toast("Need 6 salvage.");log("Couldn't mark route — not enough salvage.","report");}}},
+       {label:"Trust instinct",rk:"Random outcome",run(){const r=Math.random();if(r<0.4){const v=rand(14,28);gain("credits",v);log("Instinct led somewhere useful. +"+v+" ¤.","good");}else if(r<0.7){log("The team circled for another hour. No progress.","report");}else{hurtRandom("disorientation");log("Disorientation set in.","bad");}}}]}],
+  16:[{title:"They know your names",flav:"The lounge staff address every operative by name. No introductions were made. They are still smiling.",q:"Engage them?",
+     choices:[
+       {label:"Gather information",rk:"Large data · risk",run(){const v=rand(10,22);gain("data",v);if(Math.random()<0.3)hurtRandom("what they were told");log("The staff answered every question. The answers were too specific. +"+v+" data.","dread");}},
+       {label:"Leave immediately",rk:"Safe · exit early",run(){log("Team left the lounge at pace. Not everyone wanted to go.","report");}}]}],
+  17:[{title:"The stairs ended",flav:"After two hours of descent, the stairwell levelled into a concrete room. One door. Warm light underneath.",q:"Open the door?",
+     choices:[
+       {label:"Go through",rk:"High reward · unknown risk",run(){const s=rand(16,32);const d=rand(8,18);gain("salvage",s);gain("data",d);if(Math.random()<0.45)hurtRandom("what was in the room");log("Through the door, a military-grade cache. +"+s+" salvage, +"+d+" data.","good");}},
+       {label:"Note and retreat",rk:"Safe · clearance bonus",run(){const v=rand(2,4);G.clearance+=v;log("Door sealed on record. Clearance updated: +"+v+".","report");}}]}],
+  18:[{title:"The plants lean in",flav:"The bioluminescence pulsed in sequence as the team passed. The flora is responsive. One operative reported a warmth — like being noticed.",q:"Stay and study it?",
+     choices:[
+       {label:"Document the phenomenon",rk:"Excellent data",run(){const v=rand(12,24);gain("data",v);log("Flora behaviour documented over 40 minutes. +"+v+" data.","good");}},
+       {label:"Harvest samples",rk:"AW reward · possible reaction",run(){const v=rand(20,40);gain("aw",v);if(Math.random()<0.25)hurtRandom("the flora's defence response");log("Bioluminescent samples extracted: +"+v+" AW equivalent.","good");}}]}],
+  19:[{title:"A door with no handle",flav:"Set flush into the stone — no handle, no hinge, no script above it. The cold is more intense here than anywhere else in the catacombs.",q:"Investigate?",
+     choices:[
+       {label:"Chip at the surround",rk:"Costs 10 salvage · data or danger",run(){if(G.res.salvage>=10){G.res.salvage-=10;const d=rand(14,28);gain("data",d);if(Math.random()<0.35)hurtRandom("what came through when the seal broke");log("The door opened inward. Partially documented. +"+d+" data.","dread");}else{toast("Need 10 salvage.");log("Not enough salvage to investigate.","report");}}},
+       {label:"Record and step back",rk:"Small data",run(){const v=rand(5,10);gain("data",v);log("The door photographed. Dimensions noted. It is not standard. +"+v+" data.","report");}}]}],
+  20:[{title:"The figure in the chair",flav:"The figure is still. It does not breathe. It has the face of the last operative to go missing. The team recognised them.",q:"Approach it?",
+     choices:[
+       {label:"Speak to it",rk:"Possible contact · extreme risk",run(){if(Math.random()<0.4){const v=rand(20,40);gain("data",v);log("It spoke. The team refuses to transcribe what it said. +"+v+" data.","dread");}else{hurtRandom("what the figure did");hurtRandom("secondary response");log("They should not have gone closer.","bad");}}},
+       {label:"Document from the door",rk:"Safe · large data",run(){const v=rand(14,26);gain("data",v);log("Photographed from the threshold. The figure did not react. +"+v+" data.","report");}}]}],
+};
+
+const ENTITIES={
+  0: {name:"Bacterium Cluster",    icon:"◉", threat:0.10, flav:"Yellow-grey, pulsing. Walls of it. It moves when disturbed, and it has been disturbed."},
+  1: {name:"Facelings",            icon:"◌", threat:0.18, flav:"Blank-faced wanderers. Passive unless cornered — and the team has cornered them."},
+  2: {name:"Pipe Crawlers",        icon:"◈", threat:0.28, flav:"Something inside the pipes, moving parallel to the team, matching their pace exactly."},
+  3: {name:"Deathmoths",           icon:"◎", threat:0.22, flav:"Large. Silent. Drawn to light and movement. The ceiling is moving."},
+  4: {name:"Cave Spiders",         icon:"◆", threat:0.35, flav:"Not like surface spiders. Faster. Quieter. Far too many legs."},
+  5: {name:"Smilers",              icon:"⌇", threat:0.52, flav:"Always smiling. Always watching. They have been waiting here for a very long time."},
+  6: {name:"The Archivist",        icon:"⎔", threat:0.68, flav:"It knows the team is there. It has been patient about it. It is done being patient."},
+  7: {name:"Glass Figures",        icon:"◇", threat:0.14, flav:"Translucent, slow-moving. They look fragile. They have survived here longer than the team has been alive."},
+  8: {name:"The Hunter",           icon:"▲", threat:0.88, flav:"Nothing else has its full attention right now. Nothing."},
+  9: {name:"Pool Presence",        icon:"◌", threat:0.24, flav:"Beneath the surface. Watching. It hasn't broken the waterline yet."},
+  10:{name:"Suburbanites",         icon:"◉", threat:0.30, flav:"Human-shaped. Human-proportioned. Not human. They came out of the houses."},
+  11:{name:"Static Wraith",        icon:"⊕", threat:0.42, flav:"Feeds on electrical discharge. Extremely fast. The instruments are going wrong."},
+  12:{name:"Parking Stalker",      icon:"◈", threat:0.24, flav:"It has been in the parking lot since before the cars stopped. It remembers when they moved."},
+  13:{name:"Transit Form",         icon:"▷", threat:0.46, flav:"Uses the hub as a highway. Does not slow down for obstacles. The team is an obstacle."},
+  14:{name:"The Lure",             icon:"⌾", threat:0.55, flav:"It IS the warm light. It has always been the warm light. It has been waiting to be recognised."},
+  15:{name:"Mirror Walker",        icon:"⊘", threat:0.44, flav:"Identical to one of the operatives. The team can't agree on which one."},
+  16:{name:"Maître D'",            icon:"⌇", threat:0.28, flav:"Impeccably dressed. Very insistent. The team hasn't finished their reservation."},
+  17:{name:"Stair Dweller",        icon:"◆", threat:0.38, flav:"Has lived in the stairwell for longer than memory allows. This stairwell is its home."},
+  18:{name:"Root System",          icon:"◉", threat:0.20, flav:"The greenhouse is not a place. The greenhouse is the entity. It has noticed the team."},
+  19:{name:"The Interred",         icon:"⎔", threat:0.50, flav:"They were buried here. They have not fully accepted that."},
+  20:{name:"The Reflection",       icon:"⊘", threat:0.65, flav:"It has your face. It knows you noticed. It is walking toward you now."},
 };
 
 function fireLevelEvent(ev,exp){
@@ -1271,6 +1409,52 @@ function clearEventTimers(){
   if(_evCdTimer)clearInterval(_evCdTimer);
   _evAutoTimer=null;_evCdTimer=null;
   const cd=document.getElementById("eventCountdown");if(cd)cd.textContent="";
+}
+
+let _encAutoTimer=null,_encCdTimer=null;
+function clearEncounterTimers(){
+  if(_encAutoTimer)clearTimeout(_encAutoTimer);
+  if(_encCdTimer)clearInterval(_encCdTimer);
+  _encAutoTimer=null;_encCdTimer=null;
+}
+function fireEncounter(exp,L,ent){
+  document.getElementById("encName").textContent=ent.icon+" "+ent.name;
+  document.getElementById("encFlav").textContent=ent.flav;
+  const team=exp.ops.map(id=>opById(id)).filter(Boolean);
+  const grit=team.reduce((a,o)=>a+o.grit,0);
+  const fightChance=Math.min(0.85,Math.max(0.12,grit*9/(ent.threat*100+grit*9)));
+  document.getElementById("encOdds").textContent="Fight odds: "+Math.round(fightChance*100)+"%  ·  Grit "+grit;
+  document.getElementById("fightBtn").onclick=()=>{
+    clearEncounterTimers();
+    exp._encounterActive=false;
+    document.getElementById("encBg").classList.remove("show");
+    if(Math.random()<fightChance){
+      const sal=rand(10,24);const cr=rand(15,40+Math.round(ent.threat*60));
+      gain("salvage",sal);gain("credits",cr);
+      log(ent.name+" driven off. Spoils found in the chaos: +"+sal+" salvage, +"+cr+" ¤.","good");sfxAchieve();
+    }else{
+      hurtRandom("fighting "+ent.name);
+      if(ent.threat>0.5&&Math.random()<0.4)hurtRandom(ent.name+" second strike");
+      log("Team engaged "+ent.name+". Not all came through cleanly.","bad");sfxBad();
+    }
+    renderAll();
+  };
+  document.getElementById("escapeBtn").onclick=()=>resolveEscape(exp,ent);
+  clearEncounterTimers();
+  let rem=10;
+  const cd=document.getElementById("encCd");if(cd)cd.textContent="Auto-evade: "+rem+"s";
+  _encCdTimer=setInterval(()=>{rem--;if(cd)cd.textContent=rem>0?"Auto-evade: "+rem+"s":"";if(rem<=0)clearInterval(_encCdTimer);},1000);
+  _encAutoTimer=setTimeout(()=>{if(document.getElementById("encBg").classList.contains("show"))resolveEscape(exp,ent);},10000);
+  document.getElementById("encBg").classList.add("show");
+  sfxBad();
+}
+function resolveEscape(exp,ent){
+  clearEncounterTimers();
+  exp._encounterActive=false;
+  exp._lootMult=(exp._lootMult||1)*0.8;
+  document.getElementById("encBg").classList.remove("show");
+  log("Team evaded the "+ent.name+". Some haul abandoned in the retreat.","report");
+  renderAll();
 }
 function fireEvent(){
   const ev=pick(EVENTS);
@@ -1366,7 +1550,7 @@ function tick(){
   if(now>=G.nextEvent){G.nextEvent=now+rand(50,100)*1000;if(!modalOpen("eventBg")&&!modalOpen("dispatchBg")&&!modalOpen("noclipBg"))fireEvent();}
 
   // Mid-expedition level events
-  if(!modalOpen("eventBg")&&!modalOpen("noclipBg")&&!modalOpen("dispatchBg")){
+  if(!modalOpen("eventBg")&&!modalOpen("noclipBg")&&!modalOpen("dispatchBg")&&!modalOpen("encBg")){
     for(const exp of G.active){
       if(!exp.midEventFired){
         const elapsed=(exp.dur*1000-(exp.end-Date.now()));
@@ -1382,10 +1566,35 @@ function tick(){
     }
   }
 
+  // Entity encounters
+  if(!modalOpen("encBg")&&!modalOpen("eventBg")&&!modalOpen("noclipBg")&&!modalOpen("dispatchBg")){
+    for(const exp of G.active){
+      if(!exp.encounterFired){
+        const elapsed=(exp.dur*1000-(exp.end-Date.now()));
+        const pct=elapsed/(exp.dur*1000);
+        const L=levelById(exp.level);
+        if(pct>0.2&&pct<0.7&&Math.random()<L.danger*0.0018){
+          exp.encounterFired=true;
+          exp._encounterActive=true;
+          const ent=ENTITIES[L.id]||{name:"Unknown Form",icon:"◈",threat:0.3,flav:"Something unidentified in the facility. The team can feel it before they can see it."};
+          exp._encEntity=ent;
+          fireEncounter(exp,L,ent);
+        }
+      }
+    }
+  }
+
+  // Stress decay for idle operatives
+  for(const o of G.ops){
+    if(o.status==="idle"&&(o.stress||0)>0){
+      o.stress=Math.max(0,(o.stress||0)-(has("psych")?2:1)*dt);
+    }
+  }
+
   // Anomaly study
   if(G.anomalies&&G.anomalies.length){
     const idleCount=G.ops.filter(o=>o.status==="idle").length;
-    const anomRate=idleCount>0?idleCount*0.4:0;
+    const anomRate=idleCount>0?idleCount*0.4*(has("anomreg")?1.8:1):0;
     for(let i=G.anomalies.length-1;i>=0;i--){
       G.anomalies[i].progress+=anomRate*dt;
       if(G.anomalies[i].progress>=100){
@@ -1419,6 +1628,7 @@ function tick(){
   renderResbar();renderWarn();renderActive();renderContracts();updateSuggestBar();renderAnomalies();
   renderRoster();
   tickResearch();
+  if(changed)renderMemorial();
   checkAchievements();
 }
 
@@ -1544,9 +1754,9 @@ function renderLevels(){
         const filled=Math.round(pct/100*12);
         const barText="["+("█".repeat(filled)+"░".repeat(12-filled))+"] "+G.clearance+"/"+L.unlock+" clearance";
         req="<div class='tiny' style='color:var(--red);margin-bottom:4px'>Clearance required: "+L.unlock+"</div><div class='clr-prog'><i style='width:"+pct+"%'></i></div><div class='tiny muted' style='margin-bottom:8px;letter-spacing:.04em'>"+barText+"</div>";
-      }else if((L.id===5||L.id===6||L.id===8)&&!has("cart2")){
+      }else if((L.id===5||L.id===6||L.id===8||L.id===13||L.id===14||L.id===15||L.id===19||L.id===20)&&!has("cart2")){
         req="<div class='tiny' style='color:var(--red);margin-bottom:8px'>Needs Cartography II.</div>";
-      }else if(!has("cart1")){
+      }else if((L.id===3||L.id===4||L.id===9||L.id===10||L.id===11||L.id===12||L.id===16||L.id===17||L.id===18)&&!has("cart1")){
         req="<div class='tiny' style='color:var(--red);margin-bottom:8px'>Needs Cartography I.</div>";
       }
       body.innerHTML=
@@ -1948,8 +2158,9 @@ function _getLevelScene(lid){
   if(lid===5)return'hotel';
   if(lid===3)return'office';
   if(lid===1||lid===12)return'warehouse';
-  if(lid===13||lid===15)return'dark';
-  if(lid===14)return'hotel';
+  if(lid===13||lid===15||lid===17||lid===19)return'dark';
+  if(lid===14||lid===16)return'hotel';
+  if(lid===18||lid===20)return'pool';
   return'lobby';
 }
 
@@ -2013,6 +2224,28 @@ function startFieldAnim(){
   _fieldAF=requestAnimationFrame(frame);
 }
 
+function drawEntityFigure(ctx,x,y,t){
+  ctx.save();
+  const flicker=0.55+Math.sin(t*9.3)*0.35;
+  ctx.globalAlpha=flicker;
+  ctx.shadowBlur=14;ctx.shadowColor="#ff1100";
+  ctx.strokeStyle="#ff2200";ctx.lineWidth=1.6;ctx.fillStyle="#ff1100";
+  // Head
+  ctx.beginPath();ctx.arc(x,y-22,5.5+Math.sin(t*7)*0.4,0,Math.PI*2);ctx.fill();
+  // Body
+  ctx.beginPath();ctx.moveTo(x,y-16);ctx.lineTo(x+Math.sin(t*3)*1.5,y-3);ctx.stroke();
+  // Arms — reaching
+  ctx.beginPath();
+  ctx.moveTo(x,y-14);ctx.lineTo(x-15+Math.sin(t*4)*2,y-8+Math.cos(t*3.5)*2);
+  ctx.moveTo(x,y-14);ctx.lineTo(x+15+Math.sin(t*4+1)*2,y-8+Math.cos(t*3.5+1)*2);
+  ctx.stroke();
+  // Legs
+  ctx.beginPath();
+  ctx.moveTo(x,y-3);ctx.lineTo(x-7+Math.sin(t*5)*1,y+9);
+  ctx.moveTo(x,y-3);ctx.lineTo(x+7+Math.sin(t*5+2)*1,y+9);
+  ctx.stroke();
+  ctx.restore();
+}
 function drawPanel(ctx,pi,W,H,exp,isEventOpen,isNoclipOpen){
   const bgOff=_panelBgOff[pi],walkF=_panelWalkF[pi],flickS=_panelFlickS[pi];
   const scene=_getLevelScene(exp.level);
@@ -2049,6 +2282,14 @@ function drawPanel(ctx,pi,W,H,exp,isEventOpen,isNoclipOpen){
     ctx.save();ctx.globalAlpha=0.8;ctx.fillStyle="#ff6600";
     ctx.font="bold 8px monospace";ctx.textAlign="center";
     ctx.fillText("⚠ NOCLIP",W*0.55,H-54);ctx.restore();
+  } else if(exp._encounterActive){
+    if(_noclipStart)_noclipStart=0;
+    for(let fi=0;fi<nOps;fi++)drawOpSocial(ctx,fi,nOps,W,H,walkF,t,true,drawFn);
+    const entX=W-26+Math.sin(t*1.8)*2;
+    drawEntityFigure(ctx,entX,H-12,t);
+    ctx.save();ctx.fillStyle="#ff2200";ctx.font="bold 8px monospace";ctx.textAlign="center";
+    ctx.globalAlpha=0.7+Math.sin(t*6)*0.3;
+    ctx.fillText("⚠ CONTACT",W/2,H-72);ctx.restore();
   } else if(isEventOpen){
     if(_noclipStart)_noclipStart=0;
     for(let fi=0;fi<nOps;fi++)drawOpSocial(ctx,fi,nOps,W,H,walkF,t,true,drawFn);
@@ -2515,6 +2756,28 @@ function renderAnomalies(){
   }
 }
 
+function renderMemorial(){
+  const box=document.getElementById("memorial");if(!box)return;
+  const cnt=document.getElementById("memCnt");
+  const mem=G.memorial||[];
+  if(cnt)cnt.textContent=mem.length?"("+mem.length+")":"";
+  if(!mem.length){box.innerHTML="<div class='muted tiny'>No one has been lost.</div>";return;}
+  box.innerHTML="<div class='memorial-grid'></div>";
+  const grid=box.querySelector(".memorial-grid");
+  for(const m of [...mem].reverse()){
+    const trait=m.trait?TRAITS[m.trait]?.name:"—";
+    const spec=m.spec?SPECS[m.spec]?.name:"—";
+    const div=document.createElement("div");div.className="memorial-card";
+    div.innerHTML=
+      "<div class='mname'>"+m.name+"</div>"+
+      "<div class='mdetail'>Grit "+m.grit+" · "+m.runs+" mission"+(m.runs!==1?"s":"")+"</div>"+
+      "<div class='mdetail'>Lost in: "+m.level+"</div>"+
+      (m.cause?"<div class='mdetail' style='color:#6e3020'>"+m.cause+"</div>":"")+
+      (m.trait?"<div class='mdetail'>"+trait+"</div>":"")+
+      "<div class='mdetail' style='opacity:.5;font-size:9.5px'>"+m.when+"</div>";
+    grid.appendChild(div);
+  }
+}
 function checkFragmentUnlock(){
   const eligible=G.endCleared&&TECH.every(t=>G.tech[t.id]);
   const btn=document.getElementById("newFragBtn");
@@ -2523,7 +2786,7 @@ function checkFragmentUnlock(){
 
 function fragmentRoman(n){const v=[10,9,5,4,1],s=["X","IX","V","IV","I"];let r="";for(let i=0;i<v.length;i++)while(n>=v[i]){r+=s[i];n-=v[i];}return r;}
 
-function renderAll(){renderResbar();renderWarn();renderRoster();renderFacility();renderActive();renderContracts();renderLevels();renderResearch();renderAnomalies();renderFeed();updateSuggestBar();checkFragmentUnlock();
+function renderAll(){renderResbar();renderWarn();renderRoster();renderFacility();renderActive();renderContracts();renderLevels();renderResearch();renderAnomalies();renderMemorial();renderFeed();updateSuggestBar();checkFragmentUnlock();
   const fd=document.getElementById("fragDepth");
   if(fd)fd.textContent=FRAG.depth>0?"Fragment "+fragmentRoman(FRAG.depth):"";
 }
@@ -2559,6 +2822,16 @@ function load(){
     if(!G.anomStudied)G.anomStudied=0;
     if(!G.hubCleared)G.hubCleared=false;
     if(!G.parkingCleared)G.parkingCleared=false;
+    if(!G.voidLoungeCleared)G.voidLoungeCleared=false;
+    if(!G.greenhouseCleared)G.greenhouseCleared=false;
+    if(!G.cataCleared)G.cataCleared=false;
+    if(!G.memorial)G.memorial=[];
+    // Bug fix: ops stuck as "deployed" with no active expedition get reset to idle
+    const activeOpIds=new Set((G.active||[]).flatMap(e=>e.ops||[]));
+    for(const o of G.ops){
+      if(o.status==="deployed"&&!activeOpIds.has(o.id))o.status="idle";
+      if(o.status==="injured"&&o.recover&&o.recover<=Date.now()){o.status="idle";o.cond=Math.min(100,(o.cond||50)+20);}
+    }
     return true;
   }catch(e){return false;}
 }
