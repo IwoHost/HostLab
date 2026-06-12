@@ -863,8 +863,9 @@ function load(){
 function wipe(){if(!confirm("Wipe the site? All progress lost."))return;localStorage.removeItem(SAVE_KEY);startFresh();}
 function startFresh(){
   newGame();
-  log("PARSEC dispatch console online. Two operatives on site. The Lobby is cleared for recovery work.","report");
-  log("Tip: teams pack almond water from your reserve for the trip. Run LEVEL 0 to top it back up. Reserve hits zero → site falls in 35 seconds.","report");
+  log("PARSEC advance base online. Settlement authority granted by the Sync. Two operatives on site.","report");
+  log("Mission: scout, clear, and prepare sectors for settler intake. The Lobby is your first site.","report");
+  log("Almond water keeps the advance team alive — it will keep the settlers alive too. Reserve hits zero → site fails in 35 seconds.","report");
   renderAll();
 }
 

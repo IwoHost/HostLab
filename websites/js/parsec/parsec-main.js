@@ -26,7 +26,7 @@ function boot(){
   loadFrag();
   if(!load())startFresh();
   else if(G.gameOver){localStorage.removeItem(SAVE_KEY);startFresh();}
-  else{offlineCatchup();log("Welcome back. Dispatch console restored.","report");}
+  else{offlineCatchup();log("Welcome back. PARSEC advance base restored. The Sync's settlers are still waiting.","report");}
   renderAll();
   setInterval(tick,250);
   setInterval(()=>{if(!G.gameOver){save(true);document.getElementById("saveStatus").textContent="Autosaved · "+new Date().toLocaleTimeString();}},8000);
