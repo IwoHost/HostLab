@@ -75,6 +75,7 @@ def _boot():
     t.add_row("burn dec <token>", "decode a note")
     t.add_row("qr <url or text>", "generate a QR code (needs: pip install qrcode)")
     t.add_row("backrooms",        "infinite ASCII maze (terminal game)")
+    t.add_row("parsec",           "PARSEC Initiative — Backrooms management game")
     t.add_row("clear · exit",     "")
     console.print(t)
     console.print()
@@ -508,6 +509,7 @@ def _dispatch(raw: str):
             ("burn dec <token>",       "decode note"),
             ("qr <url or text>",       "QR code in terminal"),
             ("backrooms",              "infinite ASCII maze"),
+            ("parsec",                 "PARSEC Initiative management game"),
             ("clear · exit",           ""),
         ]
         for c, d in rows:
@@ -541,6 +543,10 @@ def _dispatch(raw: str):
     if cmd == "backrooms":
         from .backrooms import main as _backrooms
         _backrooms(); return
+
+    if cmd == "parsec":
+        from .parsec import main as _parsec
+        _parsec(); return
 
     console.print(f"  [red]✗[/red]  unknown command: [bold]{cmd}[/bold]  [dim](type help)[/dim]")
 
@@ -651,6 +657,13 @@ def backrooms_cmd():
     """The Backrooms — infinite procedurally-generated ASCII maze"""
     from .backrooms import main as _backrooms
     _backrooms()
+
+
+@app.command("parsec")
+def parsec_cmd():
+    """PARSEC Initiative — Backrooms operative management game"""
+    from .parsec import main as _parsec
+    _parsec()
 
 
 def main():
