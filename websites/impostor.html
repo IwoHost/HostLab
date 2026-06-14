@@ -4,1224 +4,887 @@
 <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
 <script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
 <script type="text/plain" data-cookiecategory="statistics">
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-R7MJHBKJVY');
+  window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+  gtag('js',new Date());gtag('config','G-R7MJHBKJVY');
 </script>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IMPOSTOR — HostLab</title>
 <meta property="og:title" content="IMPOSTOR — HostLab">
-<meta property="og:description" content="Party game z impostorem, fałszywymi słowami i losowymi eventami. Znajdź szpiega — albo nim zostań.">
+<meta property="og:description" content="Party game: jeden gracz jest impostorem i musi zgadnąć tajne słowo nie zdradzając się.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://iwohost.github.io/HostLab/websites/impostor.html">
 <meta property="og:image" content="https://iwohost.github.io/HostLab/other/p_impostor.png">
-
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Syne+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../other/backbutton.css">
-
 <style>
 :root {
-  --bg:      #05080a;
-  --panel:   #0a0e12;
-  --border:  #142030;
-  --border2: #1c3348;
-  --text:    #b8d4e8;
-  --text2:   #608898;
-  --text3:   #254050;
-  --accent:  #00d4ff;
-  --accent2: #44e8ff;
-  --accent3: #001018;
-  --green:   #00ff88;
-  --green2:  #002a16;
-  --red:     #ff2244;
-  --red2:    #ff5566;
-  --red3:    #180008;
-  --orange:  #ffaa00;
-  --yellow:  #ffee00;
-  --purple:  #cc44ff;
-  --purple2: #1a0030;
-  --mono: 'Share Tech Mono', monospace;
-  --vt:   'VT323', monospace;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;}
-body{
-  background:var(--bg);color:var(--text);
-  font-family:var(--mono);height:100vh;overflow:hidden;
-}
-body::after{
-  content:'';position:fixed;inset:0;
-  background:repeating-linear-gradient(0deg,transparent 2px,rgba(0,0,0,.06) 2px);
-  pointer-events:none;z-index:998;
+  --bg:      #050905;
+  --surface: #090e09;
+  --border:  #1a2e1a;
+  --green:   #00ff41;
+  --dim:     #008822;
+  --red:     #ff2828;
+  --amber:   #ffb300;
+  --text:    #b8f0b8;
+  --muted:   #3a5a3a;
+  --font:    'Share Tech Mono', monospace;
 }
 
-#app{display:grid;grid-template-rows:46px 1fr 36px;height:100vh;}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
 
-/* HEADER */
-#hdr{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 18px;border-bottom:1px solid var(--border2);background:var(--panel);
-  position:relative;z-index:10;
-}
-#logo{
-  font-family:var(--vt);font-size:28px;color:var(--accent);
-  letter-spacing:.12em;text-shadow:0 0 18px rgba(0,212,255,.5);
-  animation:flicker 5s infinite;
-}
-#logo em{color:var(--red);font-style:normal;}
-#hmeta{display:flex;gap:16px;font-size:10px;color:var(--text2);letter-spacing:.18em;}
-#hmeta b{color:var(--accent);}
-#hmeta .twist-badge{
-  color:var(--purple);border:1px solid var(--purple);padding:1px 6px;
-  font-size:9px;letter-spacing:.2em;animation:pulse-purple 2s infinite;
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.5;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  animation: flicker 10s infinite;
 }
 
-#main{overflow-y:auto;overflow-x:hidden;position:relative;}
-.scr{display:none;min-height:100%;animation:fadeUp .3s ease;}
-.scr.on{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px 16px;}
-
-/* ANIMATIONS */
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-@keyframes flicker{0%,100%{opacity:1}91%{opacity:1}92%{opacity:.6}93%{opacity:1}96%{opacity:.8}97%{opacity:1}}
-@keyframes pulse-red{0%,100%{box-shadow:0 0 8px rgba(255,34,68,.2)}50%{box-shadow:0 0 28px rgba(255,34,68,.7)}}
-@keyframes pulse-cyan{0%,100%{box-shadow:0 0 6px rgba(0,212,255,.15)}50%{box-shadow:0 0 20px rgba(0,212,255,.45)}}
-@keyframes pulse-purple{0%,100%{box-shadow:0 0 4px rgba(204,68,255,.2)}50%{box-shadow:0 0 14px rgba(204,68,255,.6)}}
-@keyframes pulse-green{0%,100%{box-shadow:0 0 6px rgba(0,255,136,.15)}50%{box-shadow:0 0 20px rgba(0,255,136,.45)}}
-@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
-@keyframes glitch-h{0%{clip-path:inset(40% 0 52% 0);transform:translate(-4px)}25%{clip-path:inset(80% 0 2% 0);transform:translate(4px)}50%{clip-path:inset(20% 0 65% 0);transform:translate(-2px)}75%{clip-path:inset(55% 0 30% 0);transform:translate(3px)}100%{clip-path:inset(40% 0 52% 0);transform:translate(0)}}
-@keyframes scandown{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
-@keyframes event-in{0%{opacity:0;transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
-@keyframes static{0%,100%{opacity:1}50%{opacity:.4}}
-
-/* SHARED */
-.box{background:var(--panel);border:1px solid var(--border2);padding:18px 20px;width:100%;max-width:480px;}
-.box-title{font-size:9px;letter-spacing:.35em;color:var(--text3);margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--border);}
-
-.btn{
-  width:100%;max-width:480px;padding:12px 16px;
-  border:1px solid var(--border2);background:var(--panel);
-  color:var(--text2);font-family:var(--mono);font-size:11px;
-  letter-spacing:.2em;cursor:pointer;transition:all .15s;
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,.12) 3px, rgba(0,0,0,.12) 4px);
+  pointer-events: none; z-index: 9000;
 }
-.btn:hover{border-color:var(--accent);color:var(--accent);}
-.btn-lg{font-family:var(--vt);font-size:22px;padding:13px;}
-.btn-cyan{border-color:var(--accent);color:var(--accent);background:var(--accent3);}
-.btn-cyan:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 22px rgba(0,212,255,.4);}
-.btn-green{border-color:var(--green);color:var(--green);background:var(--green2);}
-.btn-green:hover{background:var(--green);color:var(--bg);box-shadow:0 0 22px rgba(0,255,136,.4);}
-.btn-red{border-color:var(--red);color:var(--red);background:var(--red3);}
-.btn-red:hover{background:var(--red);color:var(--bg);box-shadow:0 0 22px rgba(255,34,68,.4);}
-.btn-purple{border-color:var(--purple);color:var(--purple);background:var(--purple2);}
-.btn-purple:hover{background:var(--purple);color:var(--bg);box-shadow:0 0 22px rgba(204,68,255,.4);}
-.btn-sm{width:auto;padding:7px 14px;font-size:10px;}
-.btn:disabled{opacity:.35;cursor:not-allowed;}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.5) 100%);
+  pointer-events: none; z-index: 8999;
+}
 
-input[type=text],select{
-  background:var(--bg);border:1px solid var(--border2);
-  color:var(--text);font-family:var(--mono);font-size:12px;
-  padding:7px 10px;outline:none;transition:border-color .15s;
-}
-input:focus,select:focus{border-color:var(--accent);}
-input::placeholder{color:var(--text3);}
-select{cursor:pointer;}
+@keyframes flicker { 0%,90%,100%{opacity:1} 91%{opacity:.88} 93%{opacity:1} 95%{opacity:.92} }
+@keyframes blink   { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes scanIn  { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
 
-/* toggle switch */
-.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.toggle-row label{font-size:11px;letter-spacing:.15em;color:var(--text2);}
-.toggle-row .sub{font-size:9px;color:var(--text3);letter-spacing:.1em;}
-.switch{position:relative;width:44px;height:22px;flex-shrink:0;}
-.switch input{opacity:0;width:0;height:0;}
-.slider{
-  position:absolute;inset:0;background:var(--border2);cursor:pointer;
-  transition:.3s;border:1px solid var(--border2);
+/* ── TOPBAR ── */
+#topbar {
+  flex-shrink: 0;
+  padding: 9px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; align-items: center; gap: 12px;
+  position: relative; z-index: 100;
 }
-.slider::before{
-  content:'';position:absolute;width:16px;height:16px;
-  left:2px;top:2px;background:var(--text3);transition:.3s;
+#topbar .logo {
+  font-size: 11px; letter-spacing: .28em; color: var(--green); margin-right: auto;
 }
-input:checked + .slider{background:var(--accent3);border-color:var(--accent);}
-input:checked + .slider::before{transform:translateX(22px);background:var(--accent);}
+#topbar .meta { font-size: 10px; letter-spacing: .18em; color: var(--muted); }
+#topbar .meta b { color: var(--text); }
+#topbar .sys-status { font-size: 10px; letter-spacing: .2em; color: var(--muted); }
+#topbar .sys-status span { color: var(--green); animation: blink 2s step-end infinite; }
+
+/* ── MAIN SCROLL ── */
+#main {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  position: relative; z-index: 10;
+}
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* ── SCREENS ── */
+.scr { display: none; animation: scanIn .25s ease; }
+.scr.on { display: block; }
 
 /* ── SETUP ── */
-#s-setup .hero{text-align:center;}
-#s-setup .hero h1{
-  font-family:var(--vt);font-size:clamp(50px,9vw,86px);
-  color:var(--accent);letter-spacing:.08em;line-height:1;
-  text-shadow:0 0 35px rgba(0,212,255,.55);animation:flicker 4s infinite;
+#s-setup {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 32px 20px 40px;
 }
-#s-setup .hero h1 em{color:var(--red);text-shadow:0 0 35px rgba(255,34,68,.6);font-style:normal;}
-#s-setup .hero p{font-size:10px;letter-spacing:.4em;color:var(--text3);margin-top:5px;}
 
-.count-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.count-row label{font-size:11px;letter-spacing:.15em;color:var(--text2);}
-.count-ctrl{display:flex;align-items:center;}
-.cbt{
-  width:30px;height:30px;background:var(--accent3);border:1px solid var(--border2);
-  color:var(--accent);font-family:var(--mono);font-size:18px;
-  cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;
+.s-title { margin-bottom: 28px; }
+.s-title h1 {
+  font-size: clamp(36px, 8vw, 58px);
+  font-weight: normal; letter-spacing: .14em;
+  color: var(--green); line-height: 1;
+  text-shadow: 0 0 30px rgba(0,255,65,.4);
 }
-.cbt:hover{background:var(--accent);color:var(--bg);}
-#count-disp{
-  width:48px;height:30px;text-align:center;line-height:28px;
-  background:var(--bg);border-top:1px solid var(--border2);border-bottom:1px solid var(--border2);
-  font-family:var(--vt);font-size:24px;color:var(--accent);
+.s-title h1::after { content: '_'; animation: blink 1s step-end infinite; }
+.s-title p {
+  font-size: 10px; letter-spacing: .32em; color: var(--muted);
+  margin-top: 6px; text-transform: uppercase;
 }
-#name-list{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;max-height:190px;overflow-y:auto;}
-.name-row{display:flex;align-items:center;gap:8px;}
-.name-idx{font-size:10px;color:var(--text3);width:18px;flex-shrink:0;}
-.name-row input{flex:1;}
-.cat-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.cat-row label{font-size:11px;letter-spacing:.15em;color:var(--text2);white-space:nowrap;}
-.cat-row select{flex:1;}
-#custom-row{display:flex;gap:8px;margin-bottom:12px;}
-#custom-row input{flex:1;}
 
-/* twist options block */
-.twist-opts{
-  border:1px solid var(--purple);background:var(--purple2);
-  padding:14px 16px;margin-bottom:12px;
+.s-block { margin-bottom: 20px; }
+.s-block label {
+  display: block; font-size: 0.6rem; letter-spacing: .3em;
+  color: var(--amber); margin-bottom: 7px; text-transform: uppercase;
 }
-.twist-opts .topt-title{
-  font-size:9px;letter-spacing:.35em;color:var(--purple);
-  margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid rgba(204,68,255,.2);
+
+/* count */
+.count-row { display: flex; align-items: center; gap: 0; width: fit-content; }
+.cbt {
+  width: 30px; height: 30px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--font); font-size: 16px;
+  cursor: pointer; transition: .1s;
+  display: flex; align-items: center; justify-content: center;
 }
-.topt-desc{font-size:10px;color:rgba(204,68,255,.6);letter-spacing:.08em;line-height:1.5;margin-top:3px;}
+.cbt:hover { border-color: var(--dim); color: var(--green); }
+#count-disp {
+  width: 46px; height: 30px; text-align: center; line-height: 28px;
+  background: var(--bg);
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  font-size: 18px; color: var(--text); font-variant-numeric: tabular-nums;
+}
+
+/* names */
+#name-list { display: flex; flex-direction: column; gap: 4px; }
+.name-row { display: flex; align-items: center; gap: 8px; }
+.name-idx { font-size: 10px; color: var(--muted); width: 16px; flex-shrink: 0; }
+.name-row input { flex: 1; }
+
+/* inputs / selects */
+input[type=text], select {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text); font-family: var(--font); font-size: 12px;
+  padding: 6px 10px; outline: none; transition: border-color .12s; width: 100%;
+  caret-color: var(--green);
+}
+input:focus, select:focus { border-color: var(--dim); }
+input::placeholder { color: var(--muted); }
+select { cursor: pointer; }
+select option { background: var(--bg); }
+
+/* toggles */
+.toggle-list { display: flex; flex-direction: column; gap: 10px; }
+.t-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.t-row .t-label { font-size: 11px; color: var(--text); letter-spacing: .06em; }
+.t-row .t-desc  { font-size: 10px; color: var(--muted); margin-top: 2px; letter-spacing: .04em; }
+.t-row .t-desc.off { opacity: .4; }
+
+.sw { position: relative; width: 38px; height: 20px; flex-shrink: 0; }
+.sw input { opacity: 0; width: 0; height: 0; }
+.sw-track {
+  position: absolute; inset: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  cursor: pointer; transition: .18s;
+}
+.sw-track::before {
+  content: ''; position: absolute;
+  width: 14px; height: 14px; left: 2px; top: 2px;
+  background: var(--muted); transition: .18s;
+}
+.sw input:checked + .sw-track { background: rgba(0,255,65,.05); border-color: var(--dim); }
+.sw input:checked + .sw-track::before { transform: translateX(18px); background: var(--green); }
+.sw input:disabled + .sw-track { opacity: .3; cursor: not-allowed; }
+
+.btn-go {
+  width: 100%; padding: 11px;
+  background: transparent; border: 1px solid var(--dim);
+  color: var(--green); font-family: var(--font); font-size: 11px;
+  letter-spacing: .3em; cursor: pointer; transition: .15s; margin-top: 8px;
+  text-transform: uppercase;
+}
+.btn-go:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
 
 /* ── REVEAL ── */
-#s-reveal .whose{text-align:center;}
-.whose-lbl{font-size:9px;letter-spacing:.4em;color:var(--text3);}
-.whose-name{font-family:var(--vt);font-size:clamp(30px,7vw,50px);color:var(--accent);text-shadow:0 0 18px rgba(0,212,255,.5);}
-.whose-sub{font-size:9px;letter-spacing:.3em;color:var(--text3);margin-top:2px;}
-
-.rcard{
-  width:100%;max-width:400px;border:2px solid var(--border2);
-  background:var(--panel);position:relative;overflow:hidden;
-  animation:pulse-cyan 3s infinite;
+#s-reveal {
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100%; padding: 0;
 }
-.rcard.imp-card{animation:pulse-red 2s infinite;border-color:var(--red);}
-.rcard.decoy-card{animation:pulse-purple 2s infinite;border-color:var(--purple);}
-.corner{position:absolute;width:10px;height:10px;}
-.c-tl{top:-1px;left:-1px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);}
-.c-tr{top:-1px;right:-1px;border-top:2px solid var(--accent);border-right:2px solid var(--accent);}
-.c-bl{bottom:-1px;left:-1px;border-bottom:2px solid var(--accent);border-left:2px solid var(--accent);}
-.c-br{bottom:-1px;right:-1px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);}
-.imp-card .corner{border-color:var(--red)!important;}
-.decoy-card .corner{border-color:var(--purple)!important;}
+#s-reveal.on { display: flex; }
 
-.r-locked{padding:34px 20px;text-align:center;}
-.r-lock-icon{font-family:var(--vt);font-size:62px;color:var(--text3);display:block;margin-bottom:8px;animation:blink 2s infinite;}
-.r-lock-lbl{font-size:10px;letter-spacing:.3em;color:var(--text2);margin-bottom:16px;}
-.r-open{padding:26px 22px;text-align:center;}
-.r-role{font-size:9px;letter-spacing:.4em;margin-bottom:6px;}
-.r-role.crew{color:var(--green);}
-.r-role.imp{color:var(--red);}
-.r-role.dbl{color:var(--purple);}
-.r-word{
-  font-family:var(--vt);font-size:clamp(42px,10vw,66px);line-height:1.1;
-  color:var(--green);text-shadow:0 0 25px rgba(0,255,136,.6);
+.rv-header {
+  width: 100%; padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
 }
-.r-word.imp-word{color:var(--red);text-shadow:0 0 25px rgba(255,34,68,.6);animation:flicker 1.5s infinite;}
-.r-word.decoy-word{color:var(--purple);text-shadow:0 0 25px rgba(204,68,255,.6);}
-.r-hint{font-size:10px;letter-spacing:.15em;color:var(--text3);margin-top:10px;line-height:1.75;}
-.r-prog{font-size:10px;letter-spacing:.3em;color:var(--text2);}
+.rv-header .who-lbl { font-size: 9px; letter-spacing: .35em; color: var(--muted); }
+.rv-header .who-name {
+  font-size: 28px; letter-spacing: .14em; color: var(--green);
+  text-shadow: 0 0 14px rgba(0,255,65,.3); margin-top: 1px;
+}
 
-/* decoy warning banner */
-.decoy-warning{
-  width:100%;max-width:400px;
-  background:var(--purple2);border:1px solid var(--purple);
-  padding:10px 14px;font-size:10px;color:var(--purple);
-  letter-spacing:.1em;line-height:1.6;text-align:center;
-  display:none;
+.rv-body {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px 18px; gap: 18px; width: 100%;
 }
-.decoy-warning.show{display:block;}
+
+.rv-card {
+  width: 100%; max-width: 360px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.rv-card.c-crew { border-color: var(--dim); }
+.rv-card.c-imp  { border-color: var(--red); }
+
+.rv-locked {
+  padding: 30px 20px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.rv-locked .glyph {
+  font-size: 52px; color: var(--muted); letter-spacing: -.05em;
+  animation: blink 3s infinite;
+}
+.rv-locked .sub { font-size: 10px; letter-spacing: .26em; color: var(--muted); }
+
+.rv-open {
+  padding: 26px 20px; text-align: center;
+  display: none; flex-direction: column; align-items: center; gap: 8px;
+}
+.rv-open.show { display: flex; }
+
+.rv-tag {
+  font-size: 9px; letter-spacing: .38em; padding: 3px 10px; border: 1px solid;
+  text-transform: uppercase;
+}
+.rv-tag.crew { color: var(--green); border-color: var(--dim); background: rgba(0,255,65,.05); }
+.rv-tag.imp  { color: var(--red);   border-color: var(--red); background: rgba(255,40,40,.05); }
+
+.rv-word {
+  font-size: clamp(36px, 10vw, 60px); letter-spacing: .06em; line-height: 1.1;
+  margin: 4px 0;
+}
+.rv-word.crew { color: var(--green); text-shadow: 0 0 20px rgba(0,255,65,.3); }
+.rv-word.imp  { color: var(--red); letter-spacing: .2em; }
+
+.rv-hint {
+  font-size: 10px; color: var(--muted); letter-spacing: .1em;
+  line-height: 1.75; white-space: pre-line;
+}
+
+.rv-prog { font-size: 10px; letter-spacing: .22em; color: var(--muted); }
+
+.rv-footer {
+  width: 100%; padding: 11px 18px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px;
+}
+.btn-line {
+  flex: 1; padding: 9px 12px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--font); font-size: 11px;
+  letter-spacing: .16em; cursor: pointer; transition: .12s;
+}
+.btn-line:hover  { border-color: var(--dim); color: var(--green); }
+.btn-line.hi { border-color: var(--dim); color: var(--green); }
+.btn-line.hi:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+.btn-line.ok { border-color: var(--dim); color: var(--green); background: rgba(0,255,65,.04); }
+.btn-line.ok:hover { background: var(--green); color: var(--bg); }
 
 /* ── DISCUSS ── */
-#s-discuss .d-title{text-align:center;}
-#s-discuss .d-title h2{
-  font-family:var(--vt);font-size:clamp(40px,7vw,60px);
-  color:var(--orange);text-shadow:0 0 20px rgba(255,170,0,.5);letter-spacing:.1em;
+#s-discuss {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 100%; padding: 28px 20px; gap: 22px;
 }
-#s-discuss .d-title p{font-size:10px;letter-spacing:.3em;color:var(--text3);margin-top:4px;}
+#s-discuss.on { display: flex; }
 
-.timer-wrap{position:relative;width:148px;height:148px;}
-.timer-svg{transform:rotate(-90deg);}
-.t-track{fill:none;stroke:var(--border2);stroke-width:3;}
-.t-ring{
-  fill:none;stroke:var(--orange);stroke-width:3;stroke-linecap:round;
-  stroke-dasharray:440;stroke-dashoffset:0;
-  transition:stroke-dashoffset 1s linear,stroke .4s;
-  filter:drop-shadow(0 0 6px rgba(255,170,0,.6));
-}
-.timer-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-#t-val{font-family:var(--vt);font-size:48px;color:var(--orange);line-height:1;}
-#t-lbl{font-size:9px;letter-spacing:.3em;color:var(--text3);}
+.d-label { font-size: 9px; letter-spacing: .4em; color: var(--muted); text-align: center; }
 
-.rules-box .rule{display:flex;gap:10px;font-size:11px;color:var(--text2);line-height:1.55;margin-bottom:5px;}
-.rules-box .rule:last-child{margin-bottom:0;}
-.rule-dot{color:var(--accent);flex-shrink:0;}
+.timer-block { text-align: center; }
+#t-val {
+  font-size: clamp(62px, 18vw, 108px);
+  letter-spacing: -.02em; line-height: 1;
+  color: var(--green); font-variant-numeric: tabular-nums;
+  transition: color .35s; text-shadow: 0 0 30px rgba(0,255,65,.3);
+}
+#t-val.warn { color: var(--amber); text-shadow: 0 0 20px rgba(255,179,0,.3); }
+#t-val.crit { color: var(--red); text-shadow: 0 0 20px rgba(255,40,40,.4); }
 
-.d-btns{display:flex;gap:10px;width:100%;max-width:480px;}
-.d-btns .btn:first-child{flex:1;}
-.d-btns .btn:last-child{flex:2.5;}
+.timer-track {
+  width: 100%; max-width: 340px; height: 1px;
+  background: var(--border); margin: 10px auto 0;
+}
+#timer-fill {
+  height: 100%; background: var(--dim); width: 100%;
+  transition: width 1s linear, background .35s;
+}
+#timer-fill.warn { background: var(--amber); }
+#timer-fill.crit { background: var(--red); }
 
-/* ── CZARNY ŁABĘDŹ EVENT OVERLAY ── */
-#event-overlay{
-  position:fixed;inset:0;z-index:900;
-  background:rgba(0,0,0,.88);
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  gap:20px;padding:24px;
-  animation:event-in .4s ease;
+.d-rules {
+  width: 100%; max-width: 340px;
+  border: 1px solid var(--border); background: var(--surface);
 }
-#event-overlay.show{display:flex;}
+.d-rule {
+  display: flex; gap: 10px; padding: 7px 12px;
+  font-size: 11px; color: var(--muted); line-height: 1.5;
+  border-bottom: 1px solid var(--border);
+}
+.d-rule:last-child { border-bottom: none; }
+.d-rule .dot { color: var(--dim); flex-shrink: 0; }
 
-.event-header{
-  font-size:9px;letter-spacing:.5em;
-  color:var(--text3);text-align:center;
+.d-btns { display: flex; gap: 8px; width: 100%; max-width: 340px; }
+.d-btns button {
+  flex: 1; padding: 9px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--font); font-size: 11px;
+  letter-spacing: .14em; cursor: pointer; transition: .12s;
 }
-.event-code{
-  font-family:var(--vt);font-size:clamp(36px,7vw,58px);
-  letter-spacing:.08em;text-align:center;line-height:1;
+.d-btns button:hover { border-color: var(--dim); color: var(--green); }
+.d-btns .btn-vote {
+  flex: 2.5; border-color: var(--red); color: var(--red);
 }
-.event-code.red   {color:var(--red);  text-shadow:0 0 30px rgba(255,34,68,.8);animation:flicker 1s infinite;}
-.event-code.yellow{color:var(--yellow);text-shadow:0 0 30px rgba(255,238,0,.8);animation:flicker 1.2s infinite;}
-.event-code.purple{color:var(--purple);text-shadow:0 0 30px rgba(204,68,255,.8);animation:flicker .9s infinite;}
+.d-btns .btn-vote:hover { background: var(--red); color: #fff; }
 
-.event-body{
-  background:var(--panel);border:1px solid var(--border2);
-  padding:18px 22px;max-width:460px;width:100%;text-align:center;
+/* ── EVENT OVERLAY ── */
+#ev-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(5,9,5,.97);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px; padding: 24px;
+  animation: fadeUp .3s ease;
 }
-.event-body .ev-title{font-size:10px;letter-spacing:.3em;color:var(--text2);margin-bottom:8px;}
-.event-body .ev-desc{font-size:13px;color:var(--text);line-height:1.7;letter-spacing:.05em;}
-.event-body .ev-target{
-  font-family:var(--vt);font-size:36px;color:var(--yellow);
-  text-shadow:0 0 20px rgba(255,238,0,.6);margin:6px 0;
-}
+#ev-overlay.on { display: flex; }
 
-/* scan line that crosses screen */
-.scan-beam{
-  position:fixed;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,transparent,rgba(0,212,255,.6),transparent);
-  z-index:901;animation:scandown 1.2s linear;pointer-events:none;
+.ev-eye    { font-size: 9px; letter-spacing: .45em; color: var(--muted); text-align: center; }
+.ev-code   {
+  font-size: clamp(24px, 5vw, 40px); letter-spacing: .1em; text-align: center;
+  color: var(--green); text-shadow: 0 0 24px rgba(0,255,65,.4);
 }
+.ev-panel  {
+  width: 100%; max-width: 400px;
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 14px 16px;
+}
+.ev-panel .ev-type { font-size: 9px; letter-spacing: .28em; color: var(--amber); margin-bottom: 5px; }
+.ev-panel .ev-desc { font-size: 12px; color: var(--text); line-height: 1.7; }
+.ev-panel .ev-who  {
+  font-size: 18px; letter-spacing: .1em; color: var(--green);
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
+}
+.btn-ev {
+  padding: 8px 20px; background: transparent; border: 1px solid var(--dim);
+  color: var(--green); font-family: var(--font); font-size: 11px;
+  letter-spacing: .18em; cursor: pointer; transition: .12s;
+}
+.btn-ev:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
 
 /* ── VOTE ── */
-#s-vote{justify-content:flex-start;padding-top:18px;}
-#s-vote .v-title{text-align:center;}
-#s-vote .v-title h2{
-  font-family:var(--vt);font-size:clamp(36px,7vw,56px);
-  color:var(--red);text-shadow:0 0 20px rgba(255,34,68,.5);
-}
-#s-vote .v-title p{font-size:10px;letter-spacing:.3em;color:var(--text3);margin-top:3px;}
-.vsec{width:100%;max-width:480px;}
-.vsec h3{font-size:9px;letter-spacing:.35em;color:var(--text3);margin-bottom:9px;}
-.vrow{
-  display:flex;align-items:center;gap:8px;
-  padding:9px 11px;background:var(--panel);border:1px solid var(--border);margin-bottom:5px;
-}
-.vrow-name{font-size:12px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.vrow-arr{font-size:10px;color:var(--text3);flex-shrink:0;}
-.vrow select{flex:2;min-width:0;}
+#s-vote { min-height: 100%; display: none; flex-direction: column; }
+#s-vote.on { display: flex; }
 
-.imp-guess-box{
-  width:100%;max-width:480px;
-  background:var(--red3);border:1px solid var(--red);padding:14px 16px;
+.v-header {
+  padding: 13px 18px 10px; border-bottom: 1px solid var(--border);
 }
-.imp-guess-box h3{font-size:9px;letter-spacing:.3em;color:var(--red2);margin-bottom:5px;}
-.imp-guess-box p{font-size:10px;color:var(--text3);letter-spacing:.08em;margin-bottom:9px;line-height:1.5;}
-.guess-row{display:flex;gap:8px;}
-.guess-row input{flex:1;border-color:var(--red);}
-.guess-row input:focus{border-color:var(--red2);}
+.v-header h2 { font-size: 10px; letter-spacing: .3em; color: var(--muted); font-weight: normal; }
+.v-header p  { font-size: 11px; color: var(--text); margin-top: 3px; letter-spacing: .06em; }
+
+.v-main { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+.v-section h3 {
+  font-size: 9px; letter-spacing: .28em; color: var(--amber); margin-bottom: 8px;
+}
+.vrow {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border: 1px solid var(--border); background: var(--surface); margin-bottom: 5px;
+}
+.vrow-name { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vrow-arr  { font-size: 10px; color: var(--muted); flex-shrink: 0; }
+.vrow select { flex: 2; }
+
+.guess-panel {
+  border: 1px solid var(--red); background: rgba(255,40,40,.03); padding: 12px 14px;
+}
+.guess-panel h3 { font-size: 9px; letter-spacing: .28em; color: var(--red); margin-bottom: 5px; }
+.guess-panel p  { font-size: 10px; color: var(--muted); margin-bottom: 9px; line-height: 1.6; }
+.guess-row { display: flex; gap: 6px; }
+.guess-row input { flex: 1; border-color: var(--red); }
+.guess-row input:focus { border-color: var(--red); }
+.btn-guess {
+  padding: 6px 12px; background: transparent; border: 1px solid var(--red);
+  color: var(--red); font-family: var(--font); font-size: 10px;
+  letter-spacing: .1em; cursor: pointer; transition: .12s; white-space: nowrap;
+}
+.btn-guess:hover { background: var(--red); color: #fff; }
+.btn-guess:disabled { opacity: .35; cursor: not-allowed; }
+
+.v-footer { padding: 10px 18px; border-top: 1px solid var(--border); }
+.btn-tally {
+  display: block; width: 100%; padding: 10px;
+  background: transparent; border: 1px solid var(--red);
+  color: var(--red); font-family: var(--font); font-size: 11px;
+  letter-spacing: .2em; cursor: pointer; transition: .15s;
+}
+.btn-tally:hover { background: var(--red); color: #fff; }
 
 /* ── RESULT ── */
-.res-banner{text-align:center;}
-.res-label{font-size:9px;letter-spacing:.5em;color:var(--text3);}
-.res-title{font-family:var(--vt);font-size:clamp(40px,8vw,74px);letter-spacing:.06em;line-height:1;margin:4px 0;}
-.res-title.crew{color:var(--green);text-shadow:0 0 30px rgba(0,255,136,.6);}
-.res-title.imp{color:var(--red);text-shadow:0 0 30px rgba(255,34,68,.6);}
-.res-sub{font-size:11px;letter-spacing:.18em;color:var(--text2);}
+#s-result { min-height: 100%; display: none; flex-direction: column; }
+#s-result.on { display: flex; }
 
-.res-card{width:100%;max-width:460px;background:var(--panel);border:1px solid var(--border2);padding:16px 18px;}
-.res-card h3{font-size:9px;letter-spacing:.4em;color:var(--text3);margin-bottom:9px;padding-bottom:7px;border-bottom:1px solid var(--border);}
-.word-reveal-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;margin-bottom:5px;border-bottom:1px solid var(--border);}
-.word-reveal-row span:first-child{font-size:10px;letter-spacing:.25em;color:var(--text3);}
-.word-big{font-family:var(--vt);font-size:36px;color:var(--green);text-shadow:0 0 14px rgba(0,255,136,.5);}
-.rrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;}
-.rrow:last-child{border-bottom:none;}
-.rrow-name{color:var(--text);}
-.rrow-votes{color:var(--text3);font-size:10px;}
-.rrow-role-c{color:var(--green);font-size:9px;letter-spacing:.1em;}
-.rrow-role-i{color:var(--red);font-size:9px;letter-spacing:.1em;}
-.rrow-decoy{font-size:9px;color:var(--purple);letter-spacing:.08em;margin-left:4px;}
-
-/* event log */
-.event-log{
-  width:100%;max-width:460px;
-  background:var(--panel);border:1px solid var(--border);padding:12px 16px;
+.res-verdict {
+  padding: 20px 18px 14px; border-bottom: 1px solid var(--border); text-align: center;
 }
-.event-log h3{font-size:9px;letter-spacing:.4em;color:var(--text3);margin-bottom:8px;}
-.ev-log-item{font-size:10px;color:var(--text3);padding:3px 0;border-bottom:1px solid var(--border);letter-spacing:.05em;}
-.ev-log-item:last-child{border:none;}
-.ev-log-item span{color:var(--yellow);}
-
-.res-btns{display:flex;gap:10px;width:100%;max-width:460px;flex-wrap:wrap;}
-.res-btns .btn{flex:1;min-width:140px;}
-
-/* FOOTER */
-#ftr{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 14px;border-top:1px solid var(--border);background:var(--panel);
-  font-size:9px;letter-spacing:.2em;color:var(--text3);
+.res-eye   { font-size: 9px; letter-spacing: .42em; color: var(--muted); }
+.res-title {
+  font-size: clamp(26px, 6vw, 44px); letter-spacing: .1em; margin: 4px 0 5px;
 }
-#ftr b{color:var(--accent);}
+.res-title.crew { color: var(--green); text-shadow: 0 0 20px rgba(0,255,65,.3); }
+.res-title.imp  { color: var(--red); }
+.res-sub   { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
 
-::-webkit-scrollbar{width:3px;}
-::-webkit-scrollbar-track{background:var(--bg);}
-::-webkit-scrollbar-thumb{background:var(--border2);}
-.hidden{display:none!important;}
+.res-main { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
 
-@media(max-width:600px){
-  #hmeta span:last-child{display:none;}
-  .d-btns,.res-btns{flex-direction:column;}
+.res-card { border: 1px solid var(--border); background: var(--surface); padding: 14px 16px; }
+.res-card h3 {
+  font-size: 9px; letter-spacing: .32em; color: var(--amber); font-weight: normal;
+  margin-bottom: 9px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
+}
+.word-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.word-row .wr-lbl  { font-size: 10px; letter-spacing: .2em; color: var(--muted); }
+.word-row .wr-word { font-size: 22px; letter-spacing: .08em; color: var(--green); text-shadow: 0 0 14px rgba(0,255,65,.3); }
+
+.rrow {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 11px;
+}
+.rrow:last-child { border-bottom: none; }
+.rrow-name  { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.rrow-v     { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.rrow-role  { font-size: 9px; letter-spacing: .1em; flex-shrink: 0; }
+.rrow-role.c { color: var(--green); }
+.rrow-role.i { color: var(--red); }
+.rrow-decoy { font-size: 9px; color: var(--muted); }
+
+.ev-log { border: 1px solid var(--border); background: var(--surface); padding: 12px 14px; }
+.ev-log h3 { font-size: 9px; letter-spacing: .32em; color: var(--amber); font-weight: normal; margin-bottom: 7px; }
+.ev-log-item { font-size: 10px; color: var(--muted); padding: 3px 0; letter-spacing: .06em; }
+
+.res-footer { padding: 10px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+.res-footer button {
+  flex: 1; padding: 9px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--font); font-size: 11px;
+  letter-spacing: .16em; cursor: pointer; transition: .12s;
+}
+.res-footer button:hover { border-color: var(--dim); color: var(--green); }
+.res-footer .btn-hi { border-color: var(--dim); color: var(--green); }
+.res-footer .btn-hi:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+
+/* ── STATUSBAR ── */
+#statusbar {
+  flex-shrink: 0; padding: 0 16px;
+  height: 30px; border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 9px; letter-spacing: .2em; color: var(--muted);
+  position: relative; z-index: 100;
+}
+#statusbar b { color: var(--text); }
+
+.hidden { display: none !important; }
+@media (max-width:580px) {
+  .d-btns { flex-direction: column; }
+  .res-footer { flex-direction: column; }
 }
 </style>
 </head>
 <body>
-<div id="app">
 
-<div id="hdr">
-  <span id="logo"><em>IMP</em>◆STOR</span>
-  <div id="hmeta">
-    <span>FAZA <b id="h-phase">SETUP</b></span>
-    <span>GRACZE <b id="h-players">—</b></span>
-    <span class="twist-badge hidden" id="h-twist">DEZINFORMACJA</span>
-    <span>v2.1</span>
-  </div>
+<div id="topbar">
+  <span class="logo">IMPOSTOR</span>
+  <span class="meta">faza <b id="h-phase">setup</b></span>
+  <span class="meta">gracze <b id="h-players">—</b></span>
+  <span class="sys-status">SYS STATUS: <span>ONLINE</span></span>
 </div>
 
 <div id="main">
 
-<!-- ═══ SETUP ═══ -->
+<!-- SETUP -->
 <div class="scr on" id="s-setup">
-  <div class="hero">
-    <h1><em>IMP</em>OSTOR</h1>
-    <p>PARTY GAME · PROTOKÓŁ DEZINFORMACJI</p>
+  <div class="s-title">
+    <h1>IMPOSTOR</h1>
+    <p>party game · 3–10 graczy</p>
   </div>
 
-  <div class="box">
-    <div class="box-title">► KONFIGURACJA GRY</div>
-
+  <div class="s-block">
+    <label>liczba graczy</label>
     <div class="count-row">
-      <label>LICZBA GRACZY</label>
-      <div class="count-ctrl">
-        <button class="cbt" id="btn-minus">−</button>
-        <div id="count-disp">4</div>
-        <button class="cbt" id="btn-plus">+</button>
-      </div>
+      <button class="cbt" id="btn-minus">−</button>
+      <div id="count-disp">4</div>
+      <button class="cbt" id="btn-plus">+</button>
     </div>
+  </div>
 
+  <div class="s-block">
+    <label>nazwy graczy</label>
     <div id="name-list"></div>
-
-    <div class="cat-row">
-      <label>KATEGORIA</label>
-      <select id="cat-sel">
-        <option value="space">🚀 KOSMOS</option>
-        <option value="food">🍕 JEDZENIE</option>
-        <option value="animals">🐙 ZWIERZĘTA</option>
-        <option value="tech">💻 TECH</option>
-        <option value="movies">🎬 FILMY / SERIALE</option>
-        <option value="sports">⚽ SPORT</option>
-        <option value="custom">✏️ WŁASNE SŁOWO</option>
-      </select>
-    </div>
-
-    <div id="custom-row" class="hidden">
-      <input type="text" id="custom-word" placeholder="WPISZ TAJNE SŁOWO..." maxlength="22">
-    </div>
-
-    <!-- TWIST OPTIONS -->
-    <div class="twist-opts">
-      <div class="topt-title">◈ PROTOKÓŁ DEZINFORMACJI — TWISTY</div>
-
-      <div class="toggle-row">
-        <div>
-          <label>FAŁSZYWE SŁOWO</label>
-          <div class="topt-desc">Impostor dostaje mylące słowo zamiast ???</div>
-        </div>
-        <label class="switch">
-          <input type="checkbox" id="opt-decoy" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="toggle-row">
-        <div>
-          <label>CZARNY ŁABĘDŹ</label>
-          <div class="topt-desc">Losowy event zakłóci dyskusję</div>
-        </div>
-        <label class="switch">
-          <input type="checkbox" id="opt-event" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="toggle-row" id="dbl-toggle-row" style="opacity:.4">
-        <div>
-          <label>PODWÓJNY IMPOSTOR</label>
-          <div class="topt-desc">Dwóch szpiegów — nie znają się (6+ graczy)</div>
-        </div>
-        <label class="switch">
-          <input type="checkbox" id="opt-double" disabled>
-          <span class="slider"></span>
-        </label>
-      </div>
-    </div>
-
-    <button class="btn btn-lg btn-cyan" id="btn-start">[ START GRY ]</button>
   </div>
+
+  <div class="s-block">
+    <label>kategoria słowa</label>
+    <select id="cat-sel">
+      <option value="space">Kosmos</option>
+      <option value="food">Jedzenie</option>
+      <option value="animals">Zwierzęta</option>
+      <option value="tech">Tech</option>
+      <option value="movies">Filmy / Seriale</option>
+      <option value="sports">Sport</option>
+      <option value="custom">Własne słowo…</option>
+    </select>
+    <div id="custom-row" class="hidden" style="margin-top:5px">
+      <input type="text" id="custom-word" placeholder="wpisz tajne słowo" maxlength="22">
+    </div>
+  </div>
+
+  <div class="s-block">
+    <label>opcje</label>
+    <div class="toggle-list">
+      <div class="t-row">
+        <div>
+          <div class="t-label">fałszywe słowo</div>
+          <div class="t-desc">impostor dostaje mylące słowo zamiast ???</div>
+        </div>
+        <label class="sw"><input type="checkbox" id="opt-decoy" checked><span class="sw-track"></span></label>
+      </div>
+      <div class="t-row">
+        <div>
+          <div class="t-label">czarny łabędź</div>
+          <div class="t-desc">losowy event zakłóci dyskusję</div>
+        </div>
+        <label class="sw"><input type="checkbox" id="opt-event" checked><span class="sw-track"></span></label>
+      </div>
+      <div class="t-row" id="dbl-row">
+        <div>
+          <div class="t-label">podwójny impostor</div>
+          <div class="t-desc off" id="dbl-desc">dostępne od 6 graczy</div>
+        </div>
+        <label class="sw"><input type="checkbox" id="opt-double" disabled><span class="sw-track"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-go" id="btn-start">rozpocznij grę</button>
 </div>
 
-<!-- ═══ REVEAL ═══ -->
+<!-- REVEAL -->
 <div class="scr" id="s-reveal">
-  <div class="whose">
-    <div class="whose-lbl">TERAZ PATRZY GRACZ</div>
-    <div class="whose-name" id="rv-name">—</div>
-    <div class="whose-sub">POKAŻ EKRAN TYLKO SOBIE</div>
+  <div class="rv-header">
+    <div class="who-lbl">teraz patrzy</div>
+    <div class="who-name" id="rv-name">—</div>
   </div>
-
-  <div class="decoy-warning" id="decoy-warn">
-    ◈ PROTOKÓŁ DEZINFORMACJI AKTYWNY<br>
-    Jeden z graczy widzi fałszywe słowo. Reszta — prawdziwe.
-  </div>
-
-  <div class="rcard" id="rv-card">
-    <div class="corner c-tl"></div><div class="corner c-tr"></div>
-    <div class="corner c-bl"></div><div class="corner c-br"></div>
-    <div class="r-locked" id="rv-locked">
-      <span class="r-lock-icon">▓▓▓</span>
-      <div class="r-lock-lbl">EKRAN ZABLOKOWANY</div>
-      <button class="btn btn-sm btn-cyan" id="btn-show">[ ODKRYJ ROLĘ ]</button>
+  <div class="rv-body">
+    <div class="rv-card" id="rv-card">
+      <div class="rv-locked" id="rv-locked">
+        <div class="glyph">▓▓▓</div>
+        <div class="sub">pokaż ekran tylko sobie</div>
+        <button class="btn-line hi" id="btn-show" style="width:auto;padding:8px 20px">odkryj rolę</button>
+      </div>
+      <div class="rv-open" id="rv-open">
+        <div class="rv-tag" id="rv-tag">rola</div>
+        <div class="rv-word" id="rv-word">—</div>
+        <div class="rv-hint" id="rv-hint">—</div>
+      </div>
     </div>
-    <div class="r-open hidden" id="rv-open">
-      <div class="r-role" id="rv-badge">ROLA</div>
-      <div class="r-word" id="rv-word">—</div>
-      <div class="r-hint" id="rv-hint">—</div>
-    </div>
+    <div class="rv-prog" id="rv-prog">gracz 1 / 4</div>
   </div>
-
-  <div class="r-prog" id="rv-prog">GRACZ 1 / 4</div>
-  <button class="btn btn-lg btn-cyan   hidden" id="btn-next">[ NASTĘPNY GRACZ → ]</button>
-  <button class="btn btn-lg btn-green  hidden" id="btn-all-ready">[ WSZYSCY GOTOWI — START DYSKUSJI ]</button>
+  <div class="rv-footer">
+    <button class="btn-line hi hidden" id="btn-next">następny →</button>
+    <button class="btn-line ok hidden" id="btn-all-ready">wszyscy gotowi — start dyskusji</button>
+  </div>
 </div>
 
-<!-- ═══ DISCUSS ═══ -->
+<!-- DISCUSS -->
 <div class="scr" id="s-discuss">
-  <div class="d-title">
-    <h2>DYSKUSJA</h2>
-    <p>JEDNA WSKAZÓWKA · ZNAJDŹ SZPIEGA · UWAŻAJ NA SYGNAŁY</p>
+  <div class="d-label">dyskusja</div>
+  <div class="timer-block">
+    <div id="t-val">03:00</div>
+    <div class="timer-track"><div id="timer-fill"></div></div>
   </div>
-
-  <div class="timer-wrap">
-    <svg class="timer-svg" width="148" height="148" viewBox="0 0 148 148">
-      <circle class="t-track" cx="74" cy="74" r="68"/>
-      <circle class="t-ring" id="t-ring" cx="74" cy="74" r="68"/>
-    </svg>
-    <div class="timer-inner">
-      <div id="t-val">03:00</div>
-      <div id="t-lbl">POZOSTAŁO</div>
-    </div>
+  <div class="d-rules">
+    <div class="d-rule"><span class="dot">›</span><span>każdy podaje jedną wskazówkę opisującą tajne słowo</span></div>
+    <div class="d-rule"><span class="dot">›</span><span>impostor ma fałszywe słowo — jego wskazówki mogą być lekko nie-tak</span></div>
+    <div class="d-rule"><span class="dot">›</span><span>nie wymawiaj słowa wprost</span></div>
   </div>
-
-  <div class="box rules-box" style="max-width:480px">
-    <div class="box-title">► ZASADY RUNDY</div>
-    <div class="rule"><span class="rule-dot">▶</span><span>Każdy gracz podaje jedną wskazówkę opisującą tajne słowo</span></div>
-    <div class="rule"><span class="rule-dot">▶</span><span>Impostor ma <b style="color:var(--purple)">fałszywe słowo</b> — jego wskazówki mogą być lekko nie-tak</span></div>
-    <div class="rule"><span class="rule-dot">▶</span><span>Uważaj na Czarnego Łabędzia — może wydarzyć się cokolwiek</span></div>
-    <div class="rule"><span class="rule-dot">▶</span><span>Nie wymawiaj tajnego słowa wprost!</span></div>
-  </div>
-
   <div class="d-btns">
-    <button class="btn btn-sm" id="btn-addtime">+1 MIN</button>
-    <button class="btn btn-lg btn-red" id="btn-go-vote">[ GŁOSOWANIE → ]</button>
+    <button id="btn-addtime">+1 min</button>
+    <button class="btn-vote" id="btn-go-vote">głosowanie →</button>
   </div>
 </div>
 
-<!-- ═══ VOTE ═══ -->
+<!-- EVENT OVERLAY -->
+<div id="ev-overlay">
+  <div class="ev-eye">czarny łabędź</div>
+  <div class="ev-code" id="ev-code">zakłócenie</div>
+  <div class="ev-panel">
+    <div class="ev-type" id="ev-type">—</div>
+    <div class="ev-desc" id="ev-desc">—</div>
+    <div class="ev-who hidden" id="ev-who">—</div>
+  </div>
+  <button class="btn-ev" id="btn-ev-ok">rozumiem — kontynuuj</button>
+</div>
+
+<!-- VOTE -->
 <div class="scr" id="s-vote">
-  <div class="v-title">
-    <h2>GŁOSOWANIE</h2>
-    <p>KTO JEST IMPOSTOREM?</p>
+  <div class="v-header">
+    <h2>głosowanie</h2>
+    <p>kto jest impostorem? każdy oddaje głos.</p>
   </div>
-
-  <div class="vsec">
-    <h3>► KAŻDY GRACZ WSKAZUJE PODEJRZANEGO</h3>
-    <div id="vote-list"></div>
-  </div>
-
-  <div class="imp-guess-box">
-    <h3>► OSTATNIA SZANSA IMPOSTORA</h3>
-    <p>Jeśli zgadniesz PRAWDZIWE słowo (nawet mając fałszywe) — wygrywasz mimo ujawnienia</p>
-    <div class="guess-row">
-      <input type="text" id="imp-guess" placeholder="ZGADNIJ PRAWDZIWE SŁOWO..." maxlength="25">
-      <button class="btn btn-sm btn-red" id="btn-guess">ZGADNIJ</button>
+  <div class="v-main">
+    <div class="v-section">
+      <h3>wskaż podejrzanego</h3>
+      <div id="vote-list"></div>
+    </div>
+    <div class="guess-panel">
+      <h3>ostatnia szansa impostora</h3>
+      <p>jeśli zgadniesz prawdziwe słowo — wygrywasz mimo ujawnienia.</p>
+      <div class="guess-row">
+        <input type="text" id="imp-guess" placeholder="zgadnij prawdziwe słowo…" maxlength="25">
+        <button class="btn-guess" id="btn-guess">zgadnij</button>
+      </div>
     </div>
   </div>
-
-  <button class="btn btn-lg btn-red" id="btn-tally" style="max-width:480px">[ POLICZ GŁOSY ]</button>
+  <div class="v-footer">
+    <button class="btn-tally" id="btn-tally">policz głosy</button>
+  </div>
 </div>
 
-<!-- ═══ RESULT ═══ -->
+<!-- RESULT -->
 <div class="scr" id="s-result">
-  <div class="res-banner">
-    <div class="res-label">WYNIK GRY</div>
-    <div class="res-title crew" id="res-title">CREW WYGRYWA</div>
+  <div class="res-verdict">
+    <div class="res-eye">wynik</div>
+    <div class="res-title crew" id="res-title">crew wygrywa</div>
     <div class="res-sub" id="res-sub">—</div>
   </div>
-
-  <div class="res-card">
-    <h3>► PODSUMOWANIE</h3>
-    <div class="word-reveal-row">
-      <span>PRAWDZIWE SŁOWO BYŁO</span>
-      <span class="word-big" id="res-word">—</span>
+  <div class="res-main">
+    <div class="res-card">
+      <h3>podsumowanie</h3>
+      <div class="word-row">
+        <span class="wr-lbl">tajne słowo</span>
+        <span class="wr-word" id="res-word">—</span>
+      </div>
+      <div id="res-rows"></div>
     </div>
-    <div id="res-rows"></div>
+    <div class="ev-log hidden" id="ev-log">
+      <h3>eventy tej rundy</h3>
+      <div id="ev-log-items"></div>
+    </div>
   </div>
-
-  <div class="event-log hidden" id="ev-log">
-    <h3>► LOG EVENTÓW</h3>
-    <div id="ev-log-items"></div>
-  </div>
-
-  <div class="res-btns">
-    <button class="btn btn-red"  id="btn-new-game">[ NOWA GRA ]</button>
-    <button class="btn btn-cyan" id="btn-same-players">[ CI SAMI GRACZE ]</button>
+  <div class="res-footer">
+    <button id="btn-new-game">nowa gra</button>
+    <button class="btn-hi" id="btn-same-players">ci sami gracze →</button>
   </div>
 </div>
 
 </div><!-- /main -->
 
-<!-- EVENT OVERLAY -->
-<div id="event-overlay">
-  <div class="event-header">◈ PROTOKÓŁ DEZINFORMACJI — CZARNY ŁABĘDŹ</div>
-  <div class="event-code" id="ev-code">ZAKŁÓCENIE</div>
-  <div class="event-body">
-    <div class="ev-title" id="ev-type-lbl">TYP EVENTU</div>
-    <div class="ev-desc" id="ev-desc">—</div>
-    <div class="ev-target hidden" id="ev-target">—</div>
-  </div>
-  <button class="btn btn-sm btn-cyan" id="btn-ev-dismiss">[ ROZUMIEM — KONTYNUUJ ]</button>
-</div>
-
-<div id="ftr">
-  <span>HOSTLAB / IMPOSTOR</span>
-  <span id="ftr-c">——</span>
+<div id="statusbar">
+  <span>hostlab / impostor</span>
+  <span id="status-c">—</span>
   <span>© 2025</span>
 </div>
-</div><!-- /app -->
 
 <script>
-// ═══════════════════ WORD BANKS ═══════════════════
-// Each category: array of [realWord, ...decoyVariants]
 const BANKS = {
-  space: [
-    ['CZARNA DZIURA','NEUTRON','PULSAR'],['NEBULA','GALAKTYKA','KWAZAR'],
-    ['ASTRONAUTA','KOSMONAUTA','PIONIER'],['RAKIETA','PROM','KAPSUŁA'],
-    ['SATELITA','SONDA','ORBITER'],['METEOR','KOMETA','ASTEROID'],
-    ['ORBIT','TRAJEKTORIA','WEKTOR'],['GRAWITACJA','POLE','MASA'],
-    ['TELESKOP','OBSERWATORIUM','SONDA'],['WORMHOLE','PORTAL','OSOBLIWOŚĆ'],
-    ['STACJA KOSMICZNA','BAZA','MODUŁ'],['PROM KOSMICZNY','KAPSUŁA','LĄDOWNIK'],
-  ],
-  food: [
-    ['PIZZA','CALZONE','FOCACCIA'],['SUSHI','SASHIMI','ONIGIRI'],
-    ['BURGER','SANDWICH','WRAP'],['CZEKOLADA','GANACHE','TRUFLA'],
-    ['RAMEN','PHO','UDON'],['KAWA','ESPRESSO','LATTE'],
-    ['CROISSANT','BRIOCHE','BAGEL'],['AVOKADO','HUMMUS','GUACAMOLE'],
-    ['TACO','BURRITO','QUESADILLA'],['TIRAMISU','PANNA COTTA','SEMIFREDDO'],
-    ['KEBAB','GYROS','SHAWARMA'],['LODY','SORBET','GELATO'],
-  ],
-  animals: [
-    ['PINGWIN','FOKA','MORS'],['OŚMIORNICA','KALMAR','MĄTWA'],
-    ['FLAMING','CZAPLA','IBIS'],['KAMELEON','GEKON','AGAMA'],
-    ['DZIOBAK','WOMBAT','ECHIDNA'],['NARWAL','BELUGA','DELFIN'],
-    ['AXOLOTL','TRASZKA','SALAMANDRA'],['KAPIBARA','NUTRIA','BÓBR'],
-    ['LENIWIEC','ANTEATER','PANCERNIK'],['FENNEK','SURYKATKA','MANGUSTA'],
-    ['TAPIR','OKAPI','DUGONG'],['MANTYS','PATYKAT','MODLISZKA'],
-  ],
-  tech: [
-    ['ALGORYTM','HEURYSTYKA','PROTOKÓŁ'],['FIREWALL','PROXY','SANDBOX'],
-    ['BLOCKCHAIN','HASHGRAPH','TANGLE'],['PIKSEL','WEKSEL','RASTER'],
-    ['PROCESOR','KOPROCESOR','UKŁAD'],['KERNEL','DAEMON','PROCES'],
-    ['SHADER','RENDERER','RASTERIZER'],['DEBUGGER','PROFILER','TRACER'],
-    ['KOMPILATOR','INTERPRETER','TRANSPILER'],['TERMINAL','KONSOLA','POWŁOKA'],
-    ['CACHE','BUFFER','REJESTR'],['LATENCJA','JITTER','BANDWIDTH'],
-  ],
-  movies: [
-    ['MATRIX','TRON','EXISTENZ'],['DUNE','ARRIVAL','SOLARIS'],
-    ['INTERSTELLAR','CONTACT','GRAVITY'],['INCEPTION','TENET','PRESTIŻ'],
-    ['BLADE RUNNER','GHOST IN THE SHELL','AKIRA'],['STAR WARS','STAR TREK','DUNE'],
-    ['ALIEN','THING','EVENT HORIZON'],['AVATAR','PANDORUM','OBLIVION'],
-    ['BREAKING BAD','BETTER CALL SAUL','OZARK'],['DARK','DARK MATTER','DARK CITY'],
-    ['SEVERANCE','WESTWORLD','DEVS'],['CHERNOBYL','THE LAST OF US','BAND OF BROTHERS'],
-  ],
-  sports: [
-    ['PIŁKA NOŻNA','RUGBY','FUTBOL AUSTRALIJSKI'],['KOSZYKÓWKA','SIATKÓWKA','PIŁKA RĘCZNA'],
-    ['TENIS','SQUASH','BADMINTON'],['PŁYWANIE','TRIATLON','WIOSLARSTWO'],
-    ['BOKS','MMA','JUDO'],['NARCIARSTWO','SNOWBOARD','BIATHLON'],
-    ['FORMUŁA 1','MOTOGP','RALLY'],['GOLF','POLO','CRICKET'],
-    ['SZERMIERKA','ŁUCZNICTWO','STRZELECTWO'],['WSPINACZKA','PARKOUR','SKATEBOARDING'],
-  ],
+  space:   [['CZARNA DZIURA','NEUTRON','PULSAR'],['NEBULA','GALAKTYKA','KWAZAR'],['ASTRONAUTA','KOSMONAUTA','PIONIER'],['RAKIETA','PROM','KAPSUŁA'],['SATELITA','SONDA','ORBITER'],['METEOR','KOMETA','ASTEROID'],['WORMHOLE','PORTAL','OSOBLIWOŚĆ'],['GRAWITACJA','POLE','MASA'],['TELESKOP','OBSERVATORIUM','SONDA'],['STACJA KOSMICZNA','BAZA ORBITALNA','MODUŁ'],],
+  food:    [['PIZZA','CALZONE','FOCACCIA'],['SUSHI','SASHIMI','ONIGIRI'],['BURGER','SANDWICH','WRAP'],['CZEKOLADA','GANACHE','TRUFLA'],['RAMEN','PHO','UDON'],['KAWA','ESPRESSO','LATTE'],['CROISSANT','BRIOCHE','BAGEL'],['AVOKADO','HUMMUS','GUACAMOLE'],['TACO','BURRITO','QUESADILLA'],['TIRAMISU','PANNA COTTA','SEMIFREDDO'],['KEBAB','GYROS','SHAWARMA'],],
+  animals: [['PINGWIN','FOKA','MORS'],['OŚMIORNICA','KALMAR','MĄTWA'],['FLAMING','CZAPLA','IBIS'],['KAMELEON','GEKON','AGAMA'],['DZIOBAK','WOMBAT','ECHIDNA'],['NARWAL','BELUGA','DELFIN'],['AXOLOTL','TRASZKA','SALAMANDRA'],['KAPIBARA','NUTRIA','BÓBR'],['LENIWIEC','MRÓWKOJAD','PANCERNIK'],['FENNEK','SURYKATKA','MANGUSTA'],],
+  tech:    [['ALGORYTM','HEURYSTYKA','PROTOKÓŁ'],['FIREWALL','PROXY','SANDBOX'],['BLOCKCHAIN','HASHGRAPH','TANGLE'],['PROCESOR','KOPROCESOR','UKŁAD'],['KERNEL','DAEMON','PROCES'],['DEBUGGER','PROFILER','TRACER'],['KOMPILATOR','INTERPRETER','TRANSPILER'],['TERMINAL','KONSOLA','POWŁOKA'],['CACHE','BUFFER','REJESTR'],['LATENCJA','JITTER','BANDWIDTH'],],
+  movies:  [['MATRIX','TRON','EXISTENZ'],['DUNE','ARRIVAL','SOLARIS'],['INTERSTELLAR','CONTACT','GRAVITY'],['INCEPTION','TENET','PRESTIŻ'],['BLADE RUNNER','GHOST IN THE SHELL','AKIRA'],['ALIEN','THE THING','EVENT HORIZON'],['BREAKING BAD','OZARK','BETTER CALL SAUL'],['DARK','DARK MATTER','DEVS'],['SEVERANCE','WESTWORLD','PANTHEON'],['CHERNOBYL','THE LAST OF US','BAND OF BROTHERS'],],
+  sports:  [['PIŁKA NOŻNA','RUGBY','FUTBOL AUSTRALIJSKI'],['KOSZYKÓWKA','SIATKÓWKA','PIŁKA RĘCZNA'],['TENIS','SQUASH','BADMINTON'],['PŁYWANIE','TRIATLON','WIOSLARSTWO'],['BOKS','MMA','JUDO'],['NARCIARSTWO','SNOWBOARD','BIATHLON'],['FORMUŁA 1','MOTOGP','RALLY'],['SZERMIERKA','ŁUCZNICTWO','STRZELECTWO'],],
 };
 
-// ═══════════════════ CZARNY ŁABĘDŹ EVENTS ═══════════════════
 const EVENTS = [
-  {
-    code: 'TRANSMISJA ZAKŁÓCONA',
-    colorClass: 'red',
-    type: 'SABOTAŻ SYGNAŁU',
-    desc: 'Nadajnik jednego gracza został zakłócony. Ten gracz musi podać swoją wskazówkę NA WSPAK — od ostatniej litery do pierwszej.',
-    hasTarget: true,
-    logFmt: (t) => `Sabotaż: ${t} musiał mówić wspak`,
-  },
-  {
-    code: 'PROTOKÓŁ CISZY',
-    colorClass: 'yellow',
-    type: 'BLACKOUT KOMUNIKACYJNY',
-    desc: 'System wykrył anomalię. Wskazany gracz POMIJA swoją turę w tej rundzie — zero wskazówek, zero słów.',
-    hasTarget: true,
-    logFmt: (t) => `Cisza: ${t} pominął turę`,
-  },
-  {
-    code: 'FAŁSZYWA TRANSMISJA',
-    colorClass: 'purple',
-    type: 'DEZINFORMACJA SYSTEMOWA',
-    desc: 'System wygenerował fałszywą wskazówkę. Wskazany gracz MUSI podać wskazówkę pasującą do słowa: "LUSTRO" — niezależnie co zna.',
-    hasTarget: true,
-    logFmt: (t) => `Dezinfo: ${t} dawał wskazówkę do LUSTRO`,
-  },
-  {
-    code: 'CZAS ZAMROŻONY',
-    colorClass: 'yellow',
-    type: 'ANOMALIA TEMPORALNA',
-    desc: 'Wykryto pętlę czasową. Timer zostaje zamrożony na 45 sekund — wszyscy mogą dyskutować swobodnie, bez wskazówek.',
-    hasTarget: false,
-    logFmt: () => `Anomalia: timer zamrożony +45s`,
-    onDismiss: () => { G.timerFrozen = true; setTimeout(() => { G.timerFrozen = false; }, 45000); },
-  },
-  {
-    code: 'ZMIANA TOŻSAMOŚCI',
-    colorClass: 'red',
-    type: 'PROTOKÓŁ RESET',
-    desc: 'System zresetował oznaczenia. Przez tę rundę wszyscy mówią do siebie wyłącznie jako AGENT_01, AGENT_02 itd. — bez prawdziwych imion.',
-    hasTarget: false,
-    logFmt: () => `Reset: anonimowe agentydo końca rundy`,
-  },
-  {
-    code: 'DWUZNACZNA WSKAZÓWKA',
-    colorClass: 'purple',
-    type: 'PROTOKÓŁ PARADOKSU',
-    desc: 'Wskazany gracz musi podać wskazówkę, która pasuje ZARÓWNO do tajnego słowa JAK I do czegoś zupełnie innego. Im bardziej dwuznaczna, tym lepiej.',
-    hasTarget: true,
-    logFmt: (t) => `Paradoks: ${t} dawał dwuznaczną wskazówkę`,
-  },
+  { code:'transmisja zakłócona', type:'sabotaż sygnału',       desc:'Wskazany gracz musi podać wskazówkę NA WSPAK — od ostatniej litery do pierwszej.', hasTarget:true,  log:t=>`${t} mówił wspak` },
+  { code:'protokół ciszy',       type:'blackout komunikacyjny', desc:'Wskazany gracz pomija swoją turę — zero wskazówek, zero słów.',                     hasTarget:true,  log:t=>`${t} pominął turę` },
+  { code:'fałszywa transmisja',  type:'dezinformacja',          desc:'Wskazany gracz musi podać wskazówkę do słowa LUSTRO — niezależnie co wie.',          hasTarget:true,  log:t=>`${t} dawał wskazówkę do LUSTRO` },
+  { code:'anomalia czasowa',     type:'zamrożenie timera',      desc:'Timer zatrzymuje się na 45 sekund. Wszyscy mogą rozmawiać swobodnie.',               hasTarget:false, log:()=>'timer zamrożony +45s', onDismiss:()=>{G.frozen=true;setTimeout(()=>{G.frozen=false;},45000);} },
+  { code:'reset tożsamości',     type:'protokół reset',         desc:'Do końca tej rundy wszyscy mówią do siebie tylko AGENT_01, AGENT_02 itd.',           hasTarget:false, log:()=>'anonimowe agenty do końca rundy' },
+  { code:'paradoks',             type:'dwuznaczna wskazówka',   desc:'Wskazany gracz musi podać wskazówkę pasującą do tajnego słowa I do czegoś zupełnie innego.', hasTarget:true, log:t=>`${t} dawał dwuznaczną wskazówkę` },
 ];
 
-// ═══════════════════ STATE ═══════════════════
-let G = {
-  players: [],
-  word: '',
-  impostors: [],      // array of indices
-  decoyWords: {},     // impostorIdx → decoyWord
-  revealIdx: 0,
-  timerSec: 180,
-  timerTotal: 180,
-  timerHandle: null,
-  timerFrozen: false,
-  eventFired: false,
-  eventHandle: null,
-  firedEvent: null,
-  firedEventTarget: null,
-  eventLog: [],
-  impostorGuessCorrect: false,
-  opts: { decoy: true, event: true, double: false },
-};
-let playerCount = 4;
+let G={players:[],word:'',impostors:[],decoyWords:{},revealIdx:0,timerSec:180,timerTotal:180,timerHandle:null,frozen:false,eventFired:false,eventHandle:null,eventLog:[],impostorGuessOk:false,opts:{decoy:true,event:true,double:false}};
+let playerCount=4;
 
-// ═══════════════════ HELPERS ═══════════════════
-function setScreen(id) {
-  document.querySelectorAll('.scr').forEach(s => s.classList.remove('on'));
-  document.getElementById(id).classList.add('on');
-  const m = {
-    's-setup':'SETUP','s-reveal':'REVEAL',
-    's-discuss':'DISCUSS','s-vote':'VOTE','s-result':'RESULT'
-  };
-  document.getElementById('h-phase').textContent = m[id] || id;
-}
-function setStatus(t) { document.getElementById('ftr-c').textContent = t; }
-function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-function plVotes(n) {
-  if (n === 1) return 'głos';
-  if (n >= 2 && n <= 4) return 'głosy';
-  return 'głosów';
+function setScreen(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');const m={'s-setup':'setup','s-reveal':'reveal','s-discuss':'discuss','s-vote':'vote','s-result':'result'};document.getElementById('h-phase').textContent=m[id]||id;}
+function status(t){document.getElementById('status-c').textContent=t;}
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+
+function buildNames(){
+  const el=document.getElementById('name-list');el.innerHTML='';
+  for(let i=0;i<playerCount;i++){const r=document.createElement('div');r.className='name-row';r.innerHTML=`<span class="name-idx">${i+1}</span><input type="text" placeholder="gracz ${i+1}" maxlength="14" id="pn-${i}">`;el.appendChild(r);}
+  const cb=document.getElementById('opt-double'),desc=document.getElementById('dbl-desc');
+  if(playerCount>=6){cb.disabled=false;desc.classList.remove('off');desc.textContent='dwie niezależne osoby nie wiedzą o sobie';}
+  else{cb.disabled=true;cb.checked=false;desc.classList.add('off');desc.textContent='dostępne od 6 graczy';}
 }
 
-// ═══════════════════ SETUP ═══════════════════
-function buildNameInputs() {
-  const el = document.getElementById('name-list');
-  el.innerHTML = '';
-  for (let i = 0; i < playerCount; i++) {
-    const d = document.createElement('div');
-    d.className = 'name-row';
-    d.innerHTML = `<span class="name-idx">${String(i+1).padStart(2,'0')}</span>
-      <input type="text" placeholder="GRACZ ${i+1}" maxlength="14" id="pn-${i}">`;
-    el.appendChild(d);
-  }
-  const dblRow = document.getElementById('dbl-toggle-row');
-  const dblCb  = document.getElementById('opt-double');
-  if (playerCount >= 6) {
-    dblRow.style.opacity = '1';
-    dblCb.disabled = false;
-  } else {
-    dblRow.style.opacity = '.4';
-    dblCb.disabled = true;
-    dblCb.checked  = false;
-  }
-}
+document.getElementById('btn-minus').onclick=()=>{if(playerCount>3){playerCount--;document.getElementById('count-disp').textContent=playerCount;buildNames();}};
+document.getElementById('btn-plus').onclick=()=>{if(playerCount<10){playerCount++;document.getElementById('count-disp').textContent=playerCount;buildNames();}};
+document.getElementById('cat-sel').onchange=e=>document.getElementById('custom-row').classList.toggle('hidden',e.target.value!=='custom');
 
-document.getElementById('btn-minus').onclick = () => {
-  if (playerCount > 3) { playerCount--; document.getElementById('count-disp').textContent = playerCount; buildNameInputs(); }
-};
-document.getElementById('btn-plus').onclick = () => {
-  if (playerCount < 10) { playerCount++; document.getElementById('count-disp').textContent = playerCount; buildNameInputs(); }
-};
-document.getElementById('cat-sel').onchange = e => {
-  document.getElementById('custom-row').classList.toggle('hidden', e.target.value !== 'custom');
-};
-
-document.getElementById('btn-start').onclick = () => {
-  G.players = [];
-  for (let i = 0; i < playerCount; i++) {
-    const v = (document.getElementById(`pn-${i}`)?.value || '').trim().toUpperCase();
-    G.players.push(v || `GRACZ ${i+1}`);
-  }
-
-  G.opts.decoy  = document.getElementById('opt-decoy').checked;
-  G.opts.event  = document.getElementById('opt-event').checked;
-  G.opts.double = document.getElementById('opt-double').checked && playerCount >= 6;
-
-  const cat = document.getElementById('cat-sel').value;
+document.getElementById('btn-start').onclick=()=>{
+  G.players=[];
+  for(let i=0;i<playerCount;i++){const v=(document.getElementById(`pn-${i}`)?.value||'').trim().toUpperCase();G.players.push(v||`GRACZ ${i+1}`);}
+  G.opts.decoy=document.getElementById('opt-decoy').checked;
+  G.opts.event=document.getElementById('opt-event').checked;
+  G.opts.double=document.getElementById('opt-double').checked&&playerCount>=6;
+  const cat=document.getElementById('cat-sel').value;
   let entry;
-  if (cat === 'custom') {
-    G.word = (document.getElementById('custom-word').value.trim().toUpperCase()) || 'SŁOWO';
-    entry  = [G.word, 'SYMBOL', 'SYGNAŁ', 'OBIEKT'];
-  } else {
-    entry = rand(BANKS[cat]);
-    G.word = entry[0];
-  }
-
-  // pick decoy words (words from same entry, not the real one)
-  const decoys = entry.slice(1);
-
-  // pick impostors
-  const indices = Array.from({length:playerCount},(_,i)=>i);
-  // Fisher-Yates shuffle first two
-  for (let i = indices.length-1; i > 0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
-    [indices[i],indices[j]] = [indices[j],indices[i]];
-  }
-  G.impostors = G.opts.double ? [indices[0], indices[1]] : [indices[0]];
-  G.decoyWords = {};
-  G.impostors.forEach((idx, i) => {
-    if (G.opts.decoy) {
-      G.decoyWords[idx] = decoys[i % decoys.length] || decoys[0];
-    }
-  });
-
-  G.revealIdx = 0;
-  G.eventFired = false;
-  G.firedEvent = null;
-  G.firedEventTarget = null;
-  G.eventLog = [];
-  G.impostorGuessCorrect = false;
-
-  document.getElementById('h-players').textContent = playerCount;
-  const twistBadge = document.getElementById('h-twist');
-  if (G.opts.decoy || G.opts.event || G.opts.double) {
-    twistBadge.classList.remove('hidden');
-  }
-
-  // show decoy warning only on first slide if decoy is on
-  document.getElementById('decoy-warn').classList.toggle('show', G.opts.decoy);
-
-  setStatus('PROTOKÓŁ DEZINFORMACJI AKTYWNY');
-  setScreen('s-reveal');
-  loadRevealSlide(0);
+  if(cat==='custom'){G.word=(document.getElementById('custom-word').value.trim().toUpperCase())||'SLOWO';entry=[G.word,'SYMBOL','SYGNAŁ','OBIEKT'];}
+  else{entry=rand(BANKS[cat]);G.word=entry[0];}
+  const decoys=entry.slice(1);
+  const idx=Array.from({length:playerCount},(_,i)=>i);
+  for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
+  G.impostors=G.opts.double?[idx[0],idx[1]]:[idx[0]];
+  G.decoyWords={};
+  G.impostors.forEach((x,i)=>{if(G.opts.decoy)G.decoyWords[x]=decoys[i%decoys.length]||decoys[0];});
+  G.revealIdx=0;G.eventFired=false;G.eventLog=[];G.impostorGuessOk=false;
+  document.getElementById('h-players').textContent=playerCount;
+  setScreen('s-reveal');loadReveal(0);
 };
 
-// ═══════════════════ REVEAL ═══════════════════
-function loadRevealSlide(idx) {
-  G.revealIdx = idx;
-  const name = G.players[idx];
-  document.getElementById('rv-name').textContent = name;
-  document.getElementById('rv-prog').textContent = `GRACZ ${idx+1} / ${G.players.length}`;
-
-  const card = document.getElementById('rv-card');
-  card.classList.remove('imp-card','decoy-card');
-  document.getElementById('rv-locked').classList.remove('hidden');
-  document.getElementById('rv-open').classList.add('hidden');
+function loadReveal(idx){
+  G.revealIdx=idx;
+  const name=G.players[idx];
+  document.getElementById('rv-name').textContent=name;
+  document.getElementById('rv-prog').textContent=`gracz ${idx+1} / ${G.players.length}`;
+  document.getElementById('rv-card').className='rv-card';
+  document.getElementById('rv-locked').style.display='';
+  document.getElementById('rv-open').classList.remove('show');
   document.getElementById('btn-next').classList.add('hidden');
   document.getElementById('btn-all-ready').classList.add('hidden');
-
-  setStatus(`PRZEKAŻ URZĄDZENIE: ${name}`);
+  status(`podaj urządzenie: ${name}`);
 }
 
-document.getElementById('btn-show').onclick = () => {
-  const idx   = G.revealIdx;
-  const isImp = G.impostors.includes(idx);
-  const card  = document.getElementById('rv-card');
-  const badge = document.getElementById('rv-badge');
-  const word  = document.getElementById('rv-word');
-  const hint  = document.getElementById('rv-hint');
-
-  document.getElementById('rv-locked').classList.add('hidden');
-  document.getElementById('rv-open').classList.remove('hidden');
-
-  if (isImp) {
-    const decoyWord = G.decoyWords[idx];
-    const hasDecoy  = G.opts.decoy && decoyWord;
-
-    if (hasDecoy) {
-      card.classList.add('decoy-card');
-      badge.className = 'r-role dbl';
-      badge.textContent = G.opts.double && G.impostors.length > 1
-        ? '▲  IMPOSTOR (PODWÓJNY)  ▲'
-        : '▲  IMPOSTOR  ▲';
-      word.className = 'r-word decoy-word';
-      word.textContent = decoyWord;
-      hint.textContent = 'TO JEST FAŁSZYWE SŁOWO\nDAWAJ WSKAZÓWKI JAKBY TO BYŁ PRAWDA\nPODSŁUCHAJ INNYCH I ZGADNIJ PRAWDZIWE';
-    } else {
-      card.classList.add('imp-card');
-      badge.className = 'r-role imp';
-      badge.textContent = '▲  IMPOSTOR  ▲';
-      word.className = 'r-word imp-word';
-      word.textContent = '? ? ?';
-      hint.textContent = 'NIE ZNASZ SŁOWA\nSŁUCHAJ WSKAZÓWEK INNYCH\nUDAWAJ ŻE WIESZ · ZGADNIJ';
-    }
+document.getElementById('btn-show').onclick=()=>{
+  const idx=G.revealIdx,isImp=G.impostors.includes(idx);
+  document.getElementById('rv-locked').style.display='none';
+  document.getElementById('rv-open').classList.add('show');
+  const tag=document.getElementById('rv-tag'),word=document.getElementById('rv-word'),hint=document.getElementById('rv-hint');
+  if(isImp){
+    const decoy=G.decoyWords[idx];
+    document.getElementById('rv-card').className='rv-card c-imp';
+    tag.className='rv-tag imp';tag.textContent=G.opts.double&&G.impostors.length>1?'impostor (podwójny)':'impostor';
+    if(G.opts.decoy&&decoy){word.className='rv-word imp';word.textContent=decoy;hint.textContent='to jest fałszywe słowo\ngrasz jakbyś je znał\nposłuchaj innych — spróbuj zgadnąć prawdziwe';}
+    else{word.className='rv-word imp';word.textContent='? ? ?';hint.textContent='nie znasz słowa\nsłuchaj wskazówek\nudawaj że wiesz';}
   } else {
-    badge.className = 'r-role crew';
-    badge.textContent = '✓  CREW MEMBER';
-    word.className = 'r-word';
-    word.textContent = G.word;
-    hint.textContent = 'ZNASZ PRAWDZIWE SŁOWO\nDAJ JEDNĄ WSKAZÓWKĘ\nZNAJDŹ IMPOSTORA';
+    document.getElementById('rv-card').className='rv-card c-crew';
+    tag.className='rv-tag crew';tag.textContent='crew member';
+    word.className='rv-word crew';word.textContent=G.word;
+    hint.textContent='znasz tajne słowo\ndaj jedną wskazówkę\nznajdź impostora';
   }
-
-  const isLast = idx === G.players.length - 1;
-  if (!isLast) {
-    document.getElementById('btn-next').classList.remove('hidden');
-  } else {
-    document.getElementById('btn-all-ready').classList.remove('hidden');
-  }
+  const last=idx===G.players.length-1;
+  if(!last)document.getElementById('btn-next').classList.remove('hidden');
+  else document.getElementById('btn-all-ready').classList.remove('hidden');
 };
 
-document.getElementById('btn-next').onclick = () => loadRevealSlide(G.revealIdx + 1);
-document.getElementById('btn-all-ready').onclick = startDiscuss;
+document.getElementById('btn-next').onclick=()=>loadReveal(G.revealIdx+1);
+document.getElementById('btn-all-ready').onclick=startDiscuss;
 
-// ═══════════════════ DISCUSS ═══════════════════
-function startDiscuss() {
+function startDiscuss(){
   setScreen('s-discuss');
-  G.timerSec   = 180;
-  G.timerTotal = 180;
-  G.timerFrozen = false;
-  G.eventFired  = false;
-  renderTimer();
-  clearInterval(G.timerHandle);
-
-  // Schedule Czarny Łabędź between 40-70% of timer
-  if (G.opts.event) {
-    const delay = (G.timerTotal * (0.35 + Math.random() * 0.3)) * 1000;
-    G.eventHandle = setTimeout(fireEvent, delay);
-  }
-
-  G.timerHandle = setInterval(() => {
-    if (G.timerFrozen) return;
-    G.timerSec--;
-    renderTimer();
-    if (G.timerSec <= 0) { clearInterval(G.timerHandle); setStatus('CZAS MINĄŁ — GŁOSUJ'); }
-  }, 1000);
-
-  setStatus('DYSKUSJA W TOKU');
+  G.timerSec=180;G.timerTotal=180;G.frozen=false;G.eventFired=false;
+  renderTimer();clearInterval(G.timerHandle);
+  if(G.opts.event)G.eventHandle=setTimeout(fireEvent,(G.timerTotal*(0.35+Math.random()*0.3))*1000);
+  G.timerHandle=setInterval(()=>{if(G.frozen)return;G.timerSec--;renderTimer();if(G.timerSec<=0)clearInterval(G.timerHandle);},1000);
+  status('dyskusja');
+}
+function renderTimer(){
+  const m=Math.floor(G.timerSec/60),s=G.timerSec%60;
+  document.getElementById('t-val').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const pct=Math.max(0,G.timerSec)/G.timerTotal;
+  document.getElementById('timer-fill').style.width=(pct*100)+'%';
+  const tv=document.getElementById('t-val'),tf=document.getElementById('timer-fill');
+  if(pct<0.25){tv.className='crit';tf.className='crit';}
+  else if(pct<0.5){tv.className='warn';tf.className='warn';}
+  else{tv.className='';tf.className='';}
 }
 
-function renderTimer() {
-  const m = Math.floor(G.timerSec / 60);
-  const s = G.timerSec % 60;
-  document.getElementById('t-val').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  const circ = 2 * Math.PI * 68;
-  const pct  = Math.max(0, G.timerSec) / G.timerTotal;
-  document.getElementById('t-ring').style.strokeDashoffset = circ * (1 - pct);
-  const ring = document.getElementById('t-ring');
-  const val  = document.getElementById('t-val');
-  if (pct < 0.25) {
-    ring.style.stroke = 'var(--red)';
-    ring.style.filter = 'drop-shadow(0 0 10px rgba(255,34,68,.9))';
-    val.style.color   = 'var(--red)';
-  } else if (pct < 0.5) {
-    ring.style.stroke = 'var(--red2)';
-    ring.style.filter = 'drop-shadow(0 0 7px rgba(255,86,102,.7))';
-    val.style.color   = 'var(--red2)';
-  } else {
-    ring.style.stroke = 'var(--orange)';
-    ring.style.filter = 'drop-shadow(0 0 6px rgba(255,170,0,.6))';
-    val.style.color   = 'var(--orange)';
-  }
+document.getElementById('btn-addtime').onclick=()=>{G.timerSec=Math.min(G.timerSec+60,599);G.timerTotal=Math.max(G.timerTotal,G.timerSec);renderTimer();};
+document.getElementById('btn-go-vote').onclick=()=>{clearInterval(G.timerHandle);clearTimeout(G.eventHandle);startVote();};
+
+function fireEvent(){
+  if(G.eventFired)return;G.eventFired=true;
+  const ev=rand(EVENTS);let target=null;
+  if(ev.hasTarget){const crew=G.players.filter((_,i)=>!G.impostors.includes(i));target=crew.length>0?rand(crew):rand(G.players);}
+  G.eventLog.push(ev.log?ev.log(target||''):'event');
+  document.getElementById('ev-code').textContent=ev.code;
+  document.getElementById('ev-type').textContent=ev.type;
+  document.getElementById('ev-desc').textContent=ev.desc;
+  const whoEl=document.getElementById('ev-who');
+  if(ev.hasTarget&&target){whoEl.textContent='› '+target;whoEl.classList.remove('hidden');}else{whoEl.classList.add('hidden');}
+  document._evd=ev.onDismiss||null;
+  document.getElementById('ev-overlay').classList.add('on');
 }
-
-document.getElementById('btn-addtime').onclick = () => {
-  G.timerSec   = Math.min(G.timerSec + 60, 599);
-  G.timerTotal = Math.max(G.timerTotal, G.timerSec);
-  renderTimer();
-};
-document.getElementById('btn-go-vote').onclick = () => {
-  clearInterval(G.timerHandle);
-  clearTimeout(G.eventHandle);
-  startVote();
+document.getElementById('btn-ev-ok').onclick=()=>{
+  document.getElementById('ev-overlay').classList.remove('on');
+  if(document._evd){document._evd();document._evd=null;}
 };
 
-// ═══════════════════ CZARNY ŁABĘDŹ ═══════════════════
-function fireEvent() {
-  if (G.eventFired) return;
-  G.eventFired = true;
-
-  const ev = rand(EVENTS);
-  G.firedEvent = ev;
-
-  // pick random non-impostor target if needed
-  let target = null;
-  if (ev.hasTarget) {
-    const crew = G.players.filter((_, i) => !G.impostors.includes(i));
-    target = crew.length > 0 ? rand(crew) : rand(G.players);
-    G.firedEventTarget = target;
-  }
-
-  G.eventLog.push(ev.logFmt ? ev.logFmt(target || '') : ev.code);
-
-  document.getElementById('ev-code').textContent  = ev.code;
-  document.getElementById('ev-code').className    = `event-code ${ev.colorClass}`;
-  document.getElementById('ev-type-lbl').textContent = ev.type;
-  document.getElementById('ev-desc').textContent  = ev.desc;
-
-  const tEl = document.getElementById('ev-target');
-  if (ev.hasTarget && target) {
-    tEl.textContent = `► ${target}`;
-    tEl.classList.remove('hidden');
-  } else {
-    tEl.classList.add('hidden');
-  }
-
-  if (ev.onDismiss) {
-    document._pendingEvDismiss = ev.onDismiss;
-  } else {
-    document._pendingEvDismiss = null;
-  }
-
-  document.getElementById('event-overlay').classList.add('show');
-
-  // scan beam effect
-  const beam = document.createElement('div');
-  beam.className = 'scan-beam';
-  document.body.appendChild(beam);
-  setTimeout(() => beam.remove(), 1300);
-}
-
-document.getElementById('btn-ev-dismiss').onclick = () => {
-  document.getElementById('event-overlay').classList.remove('show');
-  if (document._pendingEvDismiss) {
-    document._pendingEvDismiss();
-    document._pendingEvDismiss = null;
-  }
-};
-
-// ═══════════════════ VOTE ═══════════════════
-function startVote() {
+function startVote(){
   setScreen('s-vote');
-  const list = document.getElementById('vote-list');
-  list.innerHTML = '';
-  G.players.forEach((name, i) => {
-    const opts = G.players
-      .map((n, j) => j === i ? null : `<option value="${j}">${n}</option>`)
-      .filter(Boolean).join('');
-    const row = document.createElement('div');
-    row.className = 'vrow';
-    row.innerHTML = `<span class="vrow-name">${name}</span>
-      <span class="vrow-arr">→</span>
-      <select id="vsel-${i}"><option value="">—</option>${opts}</select>`;
-    list.appendChild(row);
+  const list=document.getElementById('vote-list');list.innerHTML='';
+  G.players.forEach((name,i)=>{
+    const opts=G.players.map((n,j)=>j===i?null:`<option value="${j}">${n}</option>`).filter(Boolean).join('');
+    const r=document.createElement('div');r.className='vrow';
+    r.innerHTML=`<span class="vrow-name">${name}</span><span class="vrow-arr">→</span><select id="vsel-${i}"><option value="">—</option>${opts}</select>`;
+    list.appendChild(r);
   });
-
-  const gi = document.getElementById('imp-guess');
-  gi.value = ''; gi.disabled = false;
-  gi.style.borderColor = ''; gi.style.color = '';
-  document.getElementById('btn-guess').disabled = false;
-  G.impostorGuessCorrect = false;
-
-  setStatus('GŁOSOWANIE · KTO JEST SZPIEGIEM?');
+  const gi=document.getElementById('imp-guess');gi.value='';gi.disabled=false;gi.style.borderColor='';gi.style.color='';
+  document.getElementById('btn-guess').disabled=false;G.impostorGuessOk=false;status('głosowanie');
 }
 
-document.getElementById('btn-guess').onclick = () => {
-  const raw = document.getElementById('imp-guess').value.trim().toUpperCase();
-  if (!raw) return;
-  const input = document.getElementById('imp-guess');
-  const correct = raw === G.word || (raw.length > 3 && G.word.includes(raw));
-  G.impostorGuessCorrect = correct;
-  input.disabled = true;
-  document.getElementById('btn-guess').disabled = true;
-  if (correct) {
-    input.value = '✓ ' + raw + ' — POPRAWNIE!';
-    input.style.borderColor = 'var(--green)';
-    input.style.color = 'var(--green)';
-  } else {
-    input.value = '✗ ' + raw + ' — BŁĄD';
-    input.style.borderColor = 'var(--red2)';
-    input.style.color = 'var(--red2)';
-  }
+document.getElementById('btn-guess').onclick=()=>{
+  const raw=document.getElementById('imp-guess').value.trim().toUpperCase();if(!raw)return;
+  const input=document.getElementById('imp-guess');
+  const ok=raw===G.word||(raw.length>3&&G.word.includes(raw));
+  G.impostorGuessOk=ok;input.disabled=true;document.getElementById('btn-guess').disabled=true;
+  if(ok){input.value='✓ '+raw;input.style.borderColor='var(--green)';input.style.color='var(--green-t)';}
+  else{input.value='✗ '+raw;input.style.borderColor='var(--red)';input.style.color='var(--red-t)';}
 };
 
-document.getElementById('btn-tally').onclick = () => {
-  const tally = new Array(G.players.length).fill(0);
-  for (let i = 0; i < G.players.length; i++) {
-    const v = document.getElementById(`vsel-${i}`)?.value;
-    if (v !== '' && v !== undefined && v !== null) tally[parseInt(v)]++;
-  }
-  const maxV   = Math.max(...tally);
-  const topIdx = tally.indexOf(maxV);
-  showResult(topIdx, maxV, tally);
+document.getElementById('btn-tally').onclick=()=>{
+  const tally=new Array(G.players.length).fill(0);
+  for(let i=0;i<G.players.length;i++){const v=document.getElementById(`vsel-${i}`)?.value;if(v!==''&&v!=null)tally[parseInt(v)]++;}
+  const maxV=Math.max(...tally),topIdx=tally.indexOf(maxV);showResult(topIdx,maxV,tally);
 };
 
-// ═══════════════════ RESULT ═══════════════════
-function showResult(topIdx, maxV, tally) {
+function showResult(topIdx,maxV,tally){
   setScreen('s-result');
-
-  const allCaught = G.impostors.every(i => {
-    const myVotes = tally[i] || 0;
-    return i === topIdx || myVotes === maxV;
+  const caught=topIdx===G.impostors[0];
+  const allCaught=G.opts.double&&G.impostors.length>1?G.impostors.every(i=>tally[i]===maxV):caught;
+  const crewWin=(G.opts.double?allCaught:caught)&&!G.impostorGuessOk;
+  const impNames=G.impostors.map(i=>G.players[i]).join(' & ');
+  const titleEl=document.getElementById('res-title'),subEl=document.getElementById('res-sub');
+  if(crewWin){titleEl.textContent='crew wygrywa';titleEl.className='res-title crew';subEl.textContent=`${impNames} ${G.impostors.length>1?'zostali zidentyfikowani':'został zidentyfikowany'}.`;status('crew wins');}
+  else if(caught&&G.impostorGuessOk){titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=`${impNames} zgadł prawdziwe słowo.`;status('impostor wins — word guessed');}
+  else{titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=G.opts.double&&G.impostors.length>1?`nie złapaliście obu. ${impNames} uciekają.`:`wybraliście ${G.players[topIdx]} — to pomyłka. ${impNames} ucieka.`;status('impostor wins');}
+  document.getElementById('res-word').textContent=G.word;
+  const rows=document.getElementById('res-rows');rows.innerHTML='';
+  G.players.forEach((name,i)=>{
+    const isImp=G.impostors.includes(i),decoy=G.decoyWords[i],v=tally[i]||0;
+    const r=document.createElement('div');r.className='rrow';
+    r.innerHTML=`<span class="rrow-name">${name}</span><span class="rrow-v">${v}g</span><span class="rrow-role ${isImp?'i':'c'}">${isImp?'impostor':'crew'}</span>${isImp&&decoy?`<span class="rrow-decoy">← ${decoy}</span>`:''}`;
+    rows.appendChild(r);
   });
-  const primaryImpCaught = topIdx === G.impostors[0];
-  const guessedOut = G.impostorGuessCorrect;
-
-  let crewWin = primaryImpCaught && !guessedOut;
-  // double impostor: need to catch both for crew win
-  if (G.opts.double && G.impostors.length > 1) {
-    crewWin = allCaught && !guessedOut;
-  }
-
-  const titleEl = document.getElementById('res-title');
-  const subEl   = document.getElementById('res-sub');
-  const impNames = G.impostors.map(i => G.players[i]).join(' & ');
-
-  if (crewWin) {
-    titleEl.textContent = 'CREW WYGRYWA';
-    titleEl.className   = 'res-title crew';
-    subEl.textContent   = `Impostor${G.impostors.length > 1 ? 'zy' : ''} ${impNames} ${G.impostors.length > 1 ? 'zostali zidentyfikowani' : 'został zidentyfikowany'}!`;
-    setStatus('CREW WINS');
-  } else if (primaryImpCaught && guessedOut) {
-    titleEl.textContent = 'IMPOSTOR WYGRYWA';
-    titleEl.className   = 'res-title imp';
-    subEl.textContent   = `${impNames} zgadł prawdziwe słowo! Wygrywa mimo ujawnienia.`;
-    setStatus('IMPOSTOR WINS — WORD GUESSED');
-  } else {
-    titleEl.textContent = 'IMPOSTOR WYGRYWA';
-    titleEl.className   = 'res-title imp';
-    const wrongName = G.players[topIdx];
-    subEl.textContent = G.opts.double && G.impostors.length > 1
-      ? `Nie złapaliście obu szpiegów. ${impNames} uciekają!`
-      : `Wybraliście ${wrongName} — to pomyłka! ${impNames} ucieka!`;
-    setStatus('IMPOSTOR WINS');
-  }
-
-  document.getElementById('res-word').textContent = G.word;
-
-  const rows = document.getElementById('res-rows');
-  rows.innerHTML = '';
-  G.players.forEach((name, i) => {
-    const isImp   = G.impostors.includes(i);
-    const decoy   = G.decoyWords[i];
-    const v       = tally[i] || 0;
-    const row     = document.createElement('div');
-    row.className = 'rrow';
-    row.innerHTML = `<span class="rrow-name">${name}</span>
-      <span class="rrow-votes">${v} ${plVotes(v)}</span>
-      <span class="${isImp ? 'rrow-role-i' : 'rrow-role-c'}">
-        ${isImp ? '▲ IMPOSTOR' : '✓ CREW'}
-      </span>
-      ${isImp && decoy ? `<span class="rrow-decoy">[fałszywe: ${decoy}]</span>` : ''}`;
-    rows.appendChild(row);
-  });
-
-  // Event log
-  if (G.eventLog.length > 0) {
-    const logEl = document.getElementById('ev-log');
-    logEl.classList.remove('hidden');
-    const items = document.getElementById('ev-log-items');
-    items.innerHTML = '';
-    G.eventLog.forEach(entry => {
-      const d = document.createElement('div');
-      d.className = 'ev-log-item';
-      d.textContent = '► ' + entry;
-      items.appendChild(d);
-    });
+  if(G.eventLog.length>0){
+    document.getElementById('ev-log').classList.remove('hidden');
+    const items=document.getElementById('ev-log-items');items.innerHTML='';
+    G.eventLog.forEach(e=>{const d=document.createElement('div');d.className='ev-log-item';d.textContent='› '+e;items.appendChild(d);});
   }
 }
 
-document.getElementById('btn-new-game').onclick = () => {
-  setScreen('s-setup');
-  setStatus('——');
-  document.getElementById('h-players').textContent = '—';
-  document.getElementById('h-twist').classList.add('hidden');
+document.getElementById('btn-new-game').onclick=()=>{setScreen('s-setup');status('—');document.getElementById('h-players').textContent='—';document.getElementById('ev-log').classList.add('hidden');};
+document.getElementById('btn-same-players').onclick=()=>{
+  const cat=document.getElementById('cat-sel').value;let entry;
+  if(cat==='custom'){G.word=(document.getElementById('custom-word').value.trim().toUpperCase())||'SLOWO';entry=[G.word,'SYMBOL','SYGNAŁ'];}
+  else{const bank=BANKS[cat]||BANKS.space;do{entry=rand(bank);}while(entry[0]===G.word&&bank.length>1);G.word=entry[0];}
+  const decoys=entry.slice(1);
+  const idx=Array.from({length:G.players.length},(_,i)=>i);
+  for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
+  G.impostors=G.opts.double?[idx[0],idx[1]]:[idx[0]];
+  G.decoyWords={};G.impostors.forEach((x,i)=>{if(G.opts.decoy)G.decoyWords[x]=decoys[i%decoys.length]||decoys[0];});
+  G.revealIdx=0;G.eventFired=false;G.eventLog=[];G.impostorGuessOk=false;
   document.getElementById('ev-log').classList.add('hidden');
+  setScreen('s-reveal');loadReveal(0);
 };
 
-document.getElementById('btn-same-players').onclick = () => {
-  const cat = document.getElementById('cat-sel').value;
-  let entry;
-  if (cat === 'custom') {
-    G.word = (document.getElementById('custom-word').value.trim().toUpperCase()) || 'SŁOWO';
-    entry  = [G.word, 'SYMBOL', 'SYGNAŁ'];
-  } else {
-    const bank = BANKS[cat] || BANKS.space;
-    do { entry = rand(bank); } while (entry[0] === G.word && bank.length > 1);
-    G.word = entry[0];
-  }
-
-  const decoys = entry.slice(1);
-  const indices = Array.from({length:G.players.length},(_,i)=>i);
-  for (let i = indices.length-1; i > 0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
-    [indices[i],indices[j]] = [indices[j],indices[i]];
-  }
-  G.impostors = G.opts.double ? [indices[0],indices[1]] : [indices[0]];
-  G.decoyWords = {};
-  G.impostors.forEach((idx, i) => {
-    if (G.opts.decoy) G.decoyWords[idx] = decoys[i % decoys.length] || decoys[0];
-  });
-
-  G.revealIdx = 0;
-  G.eventFired = false;
-  G.firedEvent = null;
-  G.firedEventTarget = null;
-  G.eventLog = [];
-  G.impostorGuessCorrect = false;
-
-  document.getElementById('decoy-warn').classList.toggle('show', G.opts.decoy);
-  document.getElementById('ev-log').classList.add('hidden');
-  setStatus('NOWA RUNDA · IMPOSTOR WYLOSOWANY');
-  setScreen('s-reveal');
-  loadRevealSlide(0);
-};
-
-// ═══════════════════ INIT ═══════════════════
-buildNameInputs();
+buildNames();
 </script>
 </body>
 </html>
