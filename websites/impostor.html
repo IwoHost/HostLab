@@ -220,14 +220,30 @@ select option { background: var(--bg); }
 .rv-card.c-imp  { border-color: var(--red); }
 
 .rv-locked {
-  padding: 30px 20px; text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 22px 20px 18px; text-align: left;
+  display: flex; flex-direction: column; gap: 10px;
 }
-.rv-locked .glyph {
-  font-size: 52px; color: var(--muted); letter-spacing: -.05em;
-  animation: blink 3s infinite;
+.rv-locked .clf-header {
+  font-size: 8px; letter-spacing: .4em; color: var(--amber);
+  border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 2px;
 }
-.rv-locked .sub { font-size: 10px; letter-spacing: .26em; color: var(--muted); }
+.rv-locked .clf-lines { display: flex; flex-direction: column; gap: 5px; }
+.clf-row { display: flex; align-items: center; gap: 8px; font-size: 10px; }
+.clf-key { color: var(--muted); letter-spacing: .12em; width: 60px; flex-shrink: 0; }
+.clf-val {
+  height: 10px; background: var(--muted); border-radius: 0;
+  opacity: .35;
+}
+.clf-row:nth-child(1) .clf-val { width: 72px; }
+.clf-row:nth-child(2) .clf-val { width: 110px; }
+.clf-row:nth-child(3) .clf-val { width: 55px; }
+.clf-row:nth-child(4) .clf-val { width: 88px; }
+.rv-locked .clf-prompt {
+  margin-top: 4px; font-size: 11px; color: var(--dim); letter-spacing: .1em;
+  border-top: 1px solid var(--border); padding-top: 10px;
+}
+.rv-locked .clf-prompt::before { content: '> '; color: var(--green); }
+.rv-locked .clf-cursor { animation: blink 1s step-end infinite; color: var(--green); }
 
 .rv-open {
   padding: 26px 20px; text-align: center;
@@ -571,9 +587,15 @@ select option { background: var(--bg); }
   <div class="rv-body">
     <div class="rv-card" id="rv-card">
       <div class="rv-locked" id="rv-locked">
-        <div class="glyph">▓▓▓</div>
-        <div class="sub">pokaż ekran tylko sobie</div>
-        <button class="btn-line hi" id="btn-show" style="width:auto;padding:8px 20px">odkryj rolę</button>
+        <div class="clf-header">PLIK KLASYFIKOWANY — DOSTĘP OGRANICZONY</div>
+        <div class="clf-lines">
+          <div class="clf-row"><span class="clf-key">ROLA</span><span class="clf-val"></span></div>
+          <div class="clf-row"><span class="clf-key">SŁOWO</span><span class="clf-val"></span></div>
+          <div class="clf-row"><span class="clf-key">STATUS</span><span class="clf-val"></span></div>
+          <div class="clf-row"><span class="clf-key">MISJA</span><span class="clf-val"></span></div>
+        </div>
+        <div class="clf-prompt">uwierzytelnienie wymagane<span class="clf-cursor">_</span></div>
+        <button class="btn-line hi" id="btn-show">[ ODSZYFRUJ PLIK ]</button>
       </div>
       <div class="rv-open" id="rv-open">
         <div class="rv-tag" id="rv-tag">rola</div>
