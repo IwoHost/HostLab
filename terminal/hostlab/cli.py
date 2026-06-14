@@ -74,6 +74,7 @@ def _boot():
     t.add_row("burn enc <msg>",   "encode a note")
     t.add_row("burn dec <token>", "decode a note")
     t.add_row("qr <url or text>", "generate a QR code (needs: pip install qrcode)")
+    t.add_row("backrooms",        "infinite ASCII maze (terminal game)")
     t.add_row("clear · exit",     "")
     console.print(t)
     console.print()
@@ -506,6 +507,7 @@ def _dispatch(raw: str):
             ("burn enc <message>",     "encode note"),
             ("burn dec <token>",       "decode note"),
             ("qr <url or text>",       "QR code in terminal"),
+            ("backrooms",              "infinite ASCII maze"),
             ("clear · exit",           ""),
         ]
         for c, d in rows:
@@ -535,6 +537,10 @@ def _dispatch(raw: str):
 
     if cmd == "port":
         _do_port(rest); return
+
+    if cmd == "backrooms":
+        from .backrooms import main as _backrooms
+        _backrooms(); return
 
     console.print(f"  [red]✗[/red]  unknown command: [bold]{cmd}[/bold]  [dim](type help)[/dim]")
 
@@ -638,6 +644,13 @@ def qr_cmd(text: list[str] = typer.Argument(...)):
 def port_cmd(numbers: list[str] = typer.Argument(...)):
     """Look up what a port number is used for"""
     _do_port(list(numbers))
+
+
+@app.command("backrooms")
+def backrooms_cmd():
+    """The Backrooms — infinite procedurally-generated ASCII maze"""
+    from .backrooms import main as _backrooms
+    _backrooms()
 
 
 def main():
