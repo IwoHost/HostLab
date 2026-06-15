@@ -84,18 +84,21 @@ body::after {
 
 /* ── MAIN SCROLL ── */
 #main {
-  flex: 1; overflow-y: auto; overflow-x: hidden;
+  flex: 1; overflow: hidden;
   position: relative; z-index: 10;
+  display: flex; flex-direction: column;
 }
+#s-setup { overflow-y: auto; }
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); }
 
 /* ── SCREENS ── */
-.scr { display: none; animation: scanIn .25s ease; }
-.scr.on { display: block; }
+.scr { display: none; animation: scanIn .25s ease; flex: 1; }
+.scr.on { display: flex; flex-direction: column; }
 
 /* ── SETUP ── */
+#s-setup.on { display: block; }
 #s-setup {
   max-width: 540px;
   margin: 0 auto;
@@ -211,7 +214,7 @@ select option { background: var(--bg); }
 /* ── REVEAL ── */
 #s-reveal {
   display: flex; flex-direction: column; align-items: center;
-  min-height: 100%; padding: 0;
+  height: 100%; overflow: hidden; padding: 0;
 }
 #s-reveal.on { display: flex; }
 
@@ -332,7 +335,7 @@ select option { background: var(--bg); }
 #s-discuss {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  min-height: 100%; padding: 28px 20px; gap: 22px;
+  height: 100%; overflow: hidden; padding: 28px 20px; gap: 22px;
 }
 #s-discuss.on { display: flex; }
 
@@ -418,7 +421,7 @@ select option { background: var(--bg); }
 .btn-ev:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
 
 /* ── VOTE ── */
-#s-vote { min-height: 100%; display: none; flex-direction: column; }
+#s-vote { height: 100%; overflow: hidden; display: none; flex-direction: column; }
 #s-vote.on { display: flex; }
 
 .v-header {
@@ -466,7 +469,7 @@ select option { background: var(--bg); }
 .btn-tally:hover { background: var(--red); color: #fff; }
 
 /* ── RESULT ── */
-#s-result { min-height: 100%; display: none; flex-direction: column; }
+#s-result { height: 100%; overflow: hidden; display: none; flex-direction: column; }
 #s-result.on { display: flex; }
 
 .res-verdict {
