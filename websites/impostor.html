@@ -470,7 +470,19 @@ select option { background: var(--bg); }
 }
 .vrow-name { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vrow-arr  { font-size: 10px; color: var(--muted); flex-shrink: 0; }
-.vrow select { flex: 2; }
+.vrow-sel-wrap {
+  flex: 2; position: relative; display: flex;
+}
+.vrow-sel-wrap::after {
+  content: '▾'; position: absolute; right: 8px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--dim); font-size: 10px; pointer-events: none;
+}
+.vrow select {
+  flex: 1; width: 100%;
+  appearance: none; -webkit-appearance: none;
+  padding-right: 24px;
+}
 
 .guess-panel {
   border: 1px solid var(--red); background: rgba(255,40,40,.03); padding: 12px 14px;
@@ -1322,7 +1334,7 @@ function startVote(){
   G.players.forEach((name,i)=>{
     const opts=G.players.map((n,j)=>j===i?null:`<option value="${j}">${n}</option>`).filter(Boolean).join('');
     const r=document.createElement('div');r.className='vrow';
-    r.innerHTML=`<span class="vrow-name">${name}</span><span class="vrow-arr">→</span><select id="vsel-${i}"><option value="">—</option>${opts}</select>`;
+    r.innerHTML=`<span class="vrow-name">${name}</span><span class="vrow-arr">→</span><div class="vrow-sel-wrap"><select id="vsel-${i}"><option value="">—</option>${opts}</select></div>`;
     list.appendChild(r);
   });
   const gi=document.getElementById('imp-guess');gi.value='';gi.disabled=false;gi.style.borderColor='';gi.style.color='';
