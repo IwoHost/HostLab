@@ -86,19 +86,19 @@ body::after {
 #main {
   flex: 1; overflow: hidden;
   position: relative; z-index: 10;
-  display: flex; flex-direction: column;
 }
-#s-setup { overflow-y: auto; }
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); }
 
 /* ── SCREENS ── */
-.scr { display: none; animation: scanIn .25s ease; flex: 1; }
-.scr.on { display: flex; flex-direction: column; }
+.scr { display: none; animation: scanIn .25s ease; }
+.scr.on { display: block; }
 
 /* ── SETUP ── */
-#s-setup.on { display: block; }
+#s-setup.on {
+  display: block; height: 100%; overflow-y: auto;
+}
 #s-setup {
   max-width: 540px;
   margin: 0 auto;
@@ -164,7 +164,8 @@ body::after {
 /* names */
 #name-list { display: flex; flex-direction: column; gap: 4px; }
 .name-row { display: flex; align-items: center; gap: 8px; }
-.name-idx { font-size: 10px; color: var(--muted); width: 16px; flex-shrink: 0; }
+.name-idx { font-size: 9px; color: var(--dim); letter-spacing: .12em; width: 64px; flex-shrink: 0; }
+.name-prompt { color: var(--green); font-size: 13px; flex-shrink: 0; margin-right: 2px; }
 .name-row input { flex: 1; }
 
 /* inputs / selects */
@@ -213,10 +214,13 @@ select option { background: var(--bg); }
 
 /* ── REVEAL ── */
 #s-reveal {
-  display: flex; flex-direction: column; align-items: center;
-  height: 100%; overflow: hidden; padding: 0;
+  flex-direction: column; align-items: center; padding: 0;
 }
-#s-reveal.on { display: flex; }
+#s-reveal.on, #s-discuss.on, #s-vote.on, #s-result.on {
+  position: absolute; inset: 0;
+  background: var(--bg); z-index: 20; overflow: hidden;
+  display: flex; flex-direction: column;
+}
 
 .rv-header {
   width: 100%; padding: 14px 18px 12px;
@@ -344,11 +348,9 @@ select option { background: var(--bg); }
 
 /* ── DISCUSS ── */
 #s-discuss {
-  display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  height: 100%; overflow: hidden; padding: 28px 20px; gap: 22px;
+  padding: 28px 20px; gap: 22px;
 }
-#s-discuss.on { display: flex; }
 
 .d-label { font-size: 9px; letter-spacing: .4em; color: var(--muted); text-align: center; }
 
@@ -432,8 +434,7 @@ select option { background: var(--bg); }
 .btn-ev:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
 
 /* ── VOTE ── */
-#s-vote { height: 100%; overflow: hidden; display: none; flex-direction: column; }
-#s-vote.on { display: flex; }
+#s-vote { }
 
 .v-header {
   padding: 13px 18px 10px; border-bottom: 1px solid var(--border);
@@ -480,8 +481,7 @@ select option { background: var(--bg); }
 .btn-tally:hover { background: var(--red); color: #fff; }
 
 /* ── RESULT ── */
-#s-result { height: 100%; overflow: hidden; display: none; flex-direction: column; }
-#s-result.on { display: flex; }
+#s-result { }
 
 .res-verdict {
   padding: 20px 18px 14px; border-bottom: 1px solid var(--border); text-align: center;
@@ -534,6 +534,23 @@ select option { background: var(--bg); }
 .res-footer button:hover { border-color: var(--dim); color: var(--green); }
 .res-footer .btn-hi { border-color: var(--dim); color: var(--green); }
 .res-footer .btn-hi:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+
+/* ── FINGERPRINT SCANNER ── */
+.fp-scanner {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; padding: 12px;
+  border: 1px solid var(--border); transition: border-color .2s;
+  color: var(--muted); user-select: none;
+}
+.fp-scanner:hover { border-color: var(--dim); color: var(--dim); }
+.fp-scanner.scanning { border-color: var(--green); color: var(--green); animation: fp-pulse 0.6s ease; }
+.fp-scanner.scanning .fp-label { color: var(--green); }
+.fp-svg { transition: color .2s; }
+@keyframes fp-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes fp-scan { 0%{transform:translateY(-22px)} 100%{transform:translateY(22px)} }
+.fp-scan { animation: fp-scan 1.5s ease-in-out infinite; transform-origin: center; }
+.fp-label { font-size: 9px; letter-spacing: .4em; text-transform: uppercase; }
+.fp-hint  { font-size: 8px; letter-spacing: .15em; color: var(--muted); opacity: .6; }
 
 /* ── STATUSBAR ── */
 #statusbar {
@@ -669,7 +686,24 @@ select option { background: var(--bg); }
           <div class="clf-row"><span class="clf-key">MISJA</span><span class="clf-val"></span></div>
         </div>
         <div class="clf-prompt">uwierzytelnienie wymagane<span class="clf-cursor">_</span></div>
-        <button class="btn-line hi" id="btn-show">[ ODSZYFRUJ PLIK ]</button>
+        <div class="fp-scanner" id="btn-show" role="button" tabindex="0">
+          <svg class="fp-svg" viewBox="0 0 60 60" width="60" height="60" fill="none">
+            <path d="M30 52 C16 52 8 42 8 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M30 48 C19 48 12 40 12 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M30 44 C22 44 16 38 16 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M30 40 C24 40 20 36 20 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M30 36 C26 36 24 33 24 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M30 52 C44 52 52 42 52 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M30 48 C41 48 48 40 48 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M30 44 C38 44 44 38 44 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M30 40 C36 40 40 36 40 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M30 36 C34 36 36 33 36 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="30" cy="30" r="3" fill="currentColor" opacity="0.4"/>
+            <line x1="8" y1="30" x2="52" y2="30" stroke="currentColor" stroke-width="0.8" opacity="0.3" class="fp-scan"/>
+          </svg>
+          <div class="fp-label" id="fp-label">SKANUJ ODCISK</div>
+          <div class="fp-hint">dotknij aby zidentyfikować agenta</div>
+        </div>
       </div>
       <div class="rv-open" id="rv-open">
         <div class="clf-header" id="rv-clf-header">PLIK ODSZYFROWANY — DOSTĘP PRZYZNANY</div>
@@ -967,7 +1001,7 @@ function rand(a){return a[Math.floor(Math.random()*a.length)];}
 
 function buildNames(){
   const el=document.getElementById('name-list');el.innerHTML='';
-  for(let i=0;i<playerCount;i++){const r=document.createElement('div');r.className='name-row';r.innerHTML=`<span class="name-idx">${i+1}</span><input type="text" placeholder="gracz ${i+1}" maxlength="14" id="pn-${i}">`;el.appendChild(r);}
+  for(let i=0;i<playerCount;i++){const r=document.createElement('div');r.className='name-row';r.innerHTML=`<span class="name-idx">AGENT_${String(i+1).padStart(2,'0')}</span><span class="name-prompt">›</span><input type="text" placeholder="kryptonim..." maxlength="14" id="pn-${i}">`;el.appendChild(r);}
   const cb=document.getElementById('opt-double'),desc=document.getElementById('dbl-desc');
   if(playerCount>=6){cb.disabled=false;desc.classList.remove('off');desc.textContent='dwie niezależne osoby nie wiedzą o sobie';}
   else{cb.disabled=true;cb.checked=false;desc.classList.add('off');desc.textContent='dostępne od 6 graczy';}
@@ -1012,54 +1046,63 @@ function loadReveal(idx){
   status(`podaj urządzenie: ${name}`);
 }
 
-document.getElementById('btn-show').onclick=()=>{
-  const idx=G.revealIdx,isImp=G.impostors.includes(idx);
-  document.getElementById('rv-locked').style.display='none';
-  const open=document.getElementById('rv-open');
-  open.classList.add('show');
-  const word=document.getElementById('rv-word'),hint=document.getElementById('rv-hint');
-  const roleVal=document.getElementById('rv-role-val'),statusVal=document.getElementById('rv-status-val');
-  const hdr=document.getElementById('rv-clf-header');
-  if(isImp){
-    const decoy=G.decoyWords[idx];
-    const dbl=G.opts.double&&G.impostors.length>1;
-    document.getElementById('rv-card').className='rv-card c-imp';
-    open.className='rv-open show imp-open';
-    hdr.textContent='PLIK ODSZYFROWANY — OSTRZEŻENIE BEZPIECZEŃSTWA';
-    roleVal.textContent=dbl?'IMPOSTOR (x2)':'IMPOSTOR';
-    roleVal.style.color='var(--red)';
-    statusVal.textContent='AGENT WROGA';
-    statusVal.style.color='var(--red)';
-    if(G.opts.decoy&&decoy){
-      word.className='rv-word imp';word.textContent=decoy;
-      hint.className='rv-hint imp-hint';
-      hint.textContent='to jest fałszywe słowo\ngrasz jakbyś je znał\nposłuchaj innych — spróbuj zgadnąć prawdziwe';
+document.getElementById('btn-show').addEventListener('click', ()=>{
+  const fp=document.getElementById('btn-show');
+  const lbl=document.getElementById('fp-label');
+  if(fp.classList.contains('scanning'))return;
+  fp.classList.add('scanning');
+  lbl.textContent='IDENTYFIKACJA...';
+  setTimeout(()=>{
+    const idx=G.revealIdx,isImp=G.impostors.includes(idx);
+    document.getElementById('rv-locked').style.display='none';
+    const open=document.getElementById('rv-open');
+    open.classList.add('show');
+    const word=document.getElementById('rv-word'),hint=document.getElementById('rv-hint');
+    const roleVal=document.getElementById('rv-role-val'),statusVal=document.getElementById('rv-status-val');
+    const hdr=document.getElementById('rv-clf-header');
+    if(isImp){
+      const decoy=G.decoyWords[idx];
+      const dbl=G.opts.double&&G.impostors.length>1;
+      document.getElementById('rv-card').className='rv-card c-imp';
+      open.className='rv-open show imp-open';
+      hdr.textContent='PLIK ODSZYFROWANY — OSTRZEŻENIE BEZPIECZEŃSTWA';
+      roleVal.textContent=dbl?'IMPOSTOR (x2)':'IMPOSTOR';
+      roleVal.style.color='var(--red)';
+      statusVal.textContent='AGENT WROGA';
+      statusVal.style.color='var(--red)';
+      if(G.opts.decoy&&decoy){
+        word.className='rv-word imp';word.textContent=decoy;
+        hint.className='rv-hint imp-hint';
+        hint.textContent='to jest fałszywe słowo\ngrasz jakbyś je znał\nposłuchaj innych — spróbuj zgadnąć prawdziwe';
+      } else {
+        word.className='rv-word imp';word.textContent='? ? ?';
+        hint.className='rv-hint imp-hint';
+        hint.textContent='nie znasz słowa\nsłuchaj wskazówek\nudawaj że wiesz';
+      }
+      const impHintEl=document.getElementById('rv-imp-hint');
+      const impHintText=document.getElementById('rih-text');
+      if(G.impHint){impHintEl.classList.remove('hidden');impHintText.textContent=G.impHint;}
+      else{impHintEl.classList.add('hidden');}
     } else {
-      word.className='rv-word imp';word.textContent='? ? ?';
-      hint.className='rv-hint imp-hint';
-      hint.textContent='nie znasz słowa\nsłuchaj wskazówek\nudawaj że wiesz';
+      document.getElementById('rv-card').className='rv-card c-crew';
+      open.className='rv-open show crew-open';
+      hdr.textContent='PLIK ODSZYFROWANY — DOSTĘP PRZYZNANY';
+      roleVal.textContent='AGENT ZAŁOGI';
+      roleVal.style.color='var(--green)';
+      statusVal.textContent='ZAUFANY';
+      statusVal.style.color='var(--dim)';
+      word.className='rv-word crew';word.textContent=G.word;
+      hint.className='rv-hint crew-hint';
+      hint.textContent='znasz tajne słowo\ndaj jedną wskazówkę\nznajdź impostora';
+      document.getElementById('rv-imp-hint').classList.add('hidden');
     }
-    const impHintEl=document.getElementById('rv-imp-hint');
-    const impHintText=document.getElementById('rih-text');
-    if(G.impHint){impHintEl.classList.remove('hidden');impHintText.textContent=G.impHint;}
-    else{impHintEl.classList.add('hidden');}
-  } else {
-    document.getElementById('rv-card').className='rv-card c-crew';
-    open.className='rv-open show crew-open';
-    hdr.textContent='PLIK ODSZYFROWANY — DOSTĘP PRZYZNANY';
-    roleVal.textContent='AGENT ZAŁOGI';
-    roleVal.style.color='var(--green)';
-    statusVal.textContent='ZAUFANY';
-    statusVal.style.color='var(--dim)';
-    word.className='rv-word crew';word.textContent=G.word;
-    hint.className='rv-hint crew-hint';
-    hint.textContent='znasz tajne słowo\ndaj jedną wskazówkę\nznajdź impostora';
-    document.getElementById('rv-imp-hint').classList.add('hidden');
-  }
-  const last=idx===G.players.length-1;
-  if(!last)document.getElementById('btn-next').classList.remove('hidden');
-  else document.getElementById('btn-all-ready').classList.remove('hidden');
-};
+    const last=idx===G.players.length-1;
+    if(!last)document.getElementById('btn-next').classList.remove('hidden');
+    else document.getElementById('btn-all-ready').classList.remove('hidden');
+    fp.classList.remove('scanning');
+    lbl.textContent='ZIDENTYFIKOWANO';
+  }, 800);
+});
 
 document.getElementById('btn-next').onclick=()=>loadReveal(G.revealIdx+1);
 document.getElementById('btn-all-ready').onclick=startDiscuss;
