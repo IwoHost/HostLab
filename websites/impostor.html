@@ -816,21 +816,24 @@ const BANKS = {
   ],
   /* ── INNE ── */
   kraje: [
-    ['JAPONIA','KOREA POŁUDNIOWA','TAJWAN'],
-    ['BRAZYLIA','ARGENTYNA','CHILE'],
-    ['NORWEGIA','SZWECJA','FINLANDIA'],
-    ['EGIPT','MAROKO','TUNEZJA'],
-    ['INDIE','PAKISTAN','BANGLADESZ'],
-    ['AUSTRALIA','NOWA ZELANDIA','FIDŻI'],
-    ['KANADA','USA','MEKSYK'],
-    ['NIEMCY','AUSTRIA','SZWAJCARIA'],
-    ['POLSKA','CZECHY','SŁOWACJA'],
-    ['TAJLANDIA','WIETNAM','KAMBODŻA'],
-    ['NIGERIA','GHANA','SENEGAL'],
-    ['PERU','KOLUMBIA','EKWADOR'],
-    ['PORTUGAL','HISZPANIA','WŁOCHY'],
-    ['ROSJA','UKRAINA','BIAŁORUŚ'],
-    ['ARABIA SAUDYJSKA','ZJEDNOCZONE EMIRATY','KATAR'],
+    ['🇯🇵 JAPONIA','🇰🇷 KOREA PŁD.','🇹🇼 TAJWAN'],
+    ['🇧🇷 BRAZYLIA','🇦🇷 ARGENTYNA','🇨🇱 CHILE'],
+    ['🇳🇴 NORWEGIA','🇸🇪 SZWECJA','🇫🇮 FINLANDIA'],
+    ['🇪🇬 EGIPT','🇲🇦 MAROKO','🇹🇳 TUNEZJA'],
+    ['🇮🇳 INDIE','🇵🇰 PAKISTAN','🇧🇩 BANGLADESZ'],
+    ['🇦🇺 AUSTRALIA','🇳🇿 NOWA ZELANDIA','🇫🇯 FIDŻI'],
+    ['🇨🇦 KANADA','🇺🇸 USA','🇲🇽 MEKSYK'],
+    ['🇩🇪 NIEMCY','🇦🇹 AUSTRIA','🇨🇭 SZWAJCARIA'],
+    ['🇵🇱 POLSKA','🇨🇿 CZECHY','🇸🇰 SŁOWACJA'],
+    ['🇹🇭 TAJLANDIA','🇻🇳 WIETNAM','🇰🇭 KAMBODŻA'],
+    ['🇳🇬 NIGERIA','🇬🇭 GHANA','🇸🇳 SENEGAL'],
+    ['🇵🇪 PERU','🇨🇴 KOLUMBIA','🇪🇨 EKWADOR'],
+    ['🇵🇹 PORTUGALIA','🇪🇸 HISZPANIA','🇮🇹 WŁOCHY'],
+    ['🇺🇦 UKRAINA','🇵🇱 POLSKA','🇧🇾 BIAŁORUŚ'],
+    ['🇸🇦 ARABIA SAUDYJSKA','🇦🇪 ZEA','🇶🇦 KATAR'],
+    ['🇬🇷 GRECJA','🇹🇷 TURCJA','🇨🇾 CYPR'],
+    ['🇮🇩 INDONEZJA','🇲🇾 MALEZJA','🇸🇬 SINGAPUR'],
+    ['🇿🇦 RPA','🇰🇪 KENIA','🇹🇿 TANZANIA'],
   ],
   space: [
     ['CZARNA DZIURA','NEUTRON','PULSAR'],
@@ -933,7 +936,7 @@ document.getElementById('btn-start').onclick=()=>{
   const cat=document.getElementById('cat-sel').value;
   let entry;
   if(cat==='custom'){G.word=(document.getElementById('custom-word').value.trim().toUpperCase())||'SLOWO';entry=[G.word,'SYMBOL','SYGNAŁ','OBIEKT'];}
-  else{entry=rand(BANKS[cat]);G.word=entry[0];}
+  else{entry=rand(BANKS[cat]||BANKS.programowanie);G.word=entry[0];}
   const decoys=entry.slice(1);
   const idx=Array.from({length:playerCount},(_,i)=>i);
   for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
@@ -971,7 +974,7 @@ document.getElementById('btn-show').onclick=()=>{
     else{word.className='rv-word imp';word.textContent='? ? ?';hint.textContent='nie znasz słowa\nsłuchaj wskazówek\nudawaj że wiesz';}
   } else {
     document.getElementById('rv-card').className='rv-card c-crew';
-    tag.className='rv-tag crew';tag.textContent='crew member';
+    tag.className='rv-tag crew';tag.textContent='AGENT ZAŁOGI';
     word.className='rv-word crew';word.textContent=G.word;
     hint.textContent='znasz tajne słowo\ndaj jedną wskazówkę\nznajdź impostora';
   }
@@ -1041,8 +1044,8 @@ document.getElementById('btn-guess').onclick=()=>{
   const input=document.getElementById('imp-guess');
   const ok=raw===G.word||(raw.length>3&&G.word.includes(raw));
   G.impostorGuessOk=ok;input.disabled=true;document.getElementById('btn-guess').disabled=true;
-  if(ok){input.value='✓ '+raw;input.style.borderColor='var(--green)';input.style.color='var(--green-t)';}
-  else{input.value='✗ '+raw;input.style.borderColor='var(--red)';input.style.color='var(--red-t)';}
+  if(ok){input.value='✓ '+raw;input.style.borderColor='var(--green)';input.style.color='var(--green)';}
+  else{input.value='✗ '+raw;input.style.borderColor='var(--red)';input.style.color='var(--red)';}
 };
 
 document.getElementById('btn-tally').onclick=()=>{
@@ -1058,9 +1061,9 @@ function showResult(topIdx,maxV,tally){
   const crewWin=(G.opts.double?allCaught:caught)&&!G.impostorGuessOk;
   const impNames=G.impostors.map(i=>G.players[i]).join(' & ');
   const titleEl=document.getElementById('res-title'),subEl=document.getElementById('res-sub');
-  if(crewWin){titleEl.textContent='crew wygrywa';titleEl.className='res-title crew';subEl.textContent=`${impNames} ${G.impostors.length>1?'zostali zidentyfikowani':'został zidentyfikowany'}.`;status('crew wins');}
-  else if(caught&&G.impostorGuessOk){titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=`${impNames} zgadł prawdziwe słowo.`;status('impostor wins — word guessed');}
-  else{titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=G.opts.double&&G.impostors.length>1?`nie złapaliście obu. ${impNames} uciekają.`:`wybraliście ${G.players[topIdx]} — to pomyłka. ${impNames} ucieka.`;status('impostor wins');}
+  if(crewWin){titleEl.textContent='załoga wygrywa';titleEl.className='res-title crew';subEl.textContent=`${impNames} ${G.impostors.length>1?'zostali zidentyfikowani':'został zidentyfikowany'}.`;status('załoga wygrywa');}
+  else if(caught&&G.impostorGuessOk){titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=`${impNames} zgadł prawdziwe słowo.`;status('impostor wygrywa — słowo odgadnięte');}
+  else{titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=G.opts.double&&G.impostors.length>1?`nie złapaliście obu. ${impNames} uciekają.`:`wybraliście ${G.players[topIdx]} — to pomyłka. ${impNames} ucieka.`;status('impostor wygrywa');}
   document.getElementById('res-word').textContent=G.word;
   const rows=document.getElementById('res-rows');rows.innerHTML='';
   G.players.forEach((name,i)=>{
