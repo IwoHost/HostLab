@@ -65,7 +65,7 @@ body::after {
 @keyframes fadeUp  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 @keyframes scanIn  { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
 @keyframes glitch  { 0%{clip-path:inset(0 0 100% 0);opacity:0} 8%{clip-path:inset(40% 0 30% 0);opacity:1} 16%{clip-path:inset(10% 0 60% 0)} 24%{clip-path:inset(70% 0 5% 0)} 32%{clip-path:inset(0 0 0 0);opacity:1} 100%{clip-path:inset(0 0 0 0);opacity:1} }
-@keyframes glitchFlash { 0%,100%{opacity:1} 10%{opacity:0} 20%{opacity:.6} 30%{opacity:0} 45%{opacity:1} 55%{opacity:.7} 65%{opacity:1} }
+@keyframes glitchFlash { 0%,100%{opacity:0} }
 @keyframes typeIn  { from{width:0} to{width:100%} }
 @keyframes resReveal { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
 
@@ -100,13 +100,8 @@ body::after {
 .scr { display: none; }
 .scr.on { display: block; animation: glitch .32s steps(1) both; }
 
-/* screen transition flash overlay */
-#flash-overlay {
-  position: fixed; inset: 0; z-index: 9998;
-  background: var(--green); opacity: 0; pointer-events: none;
-  transition: opacity 0s;
-}
-#flash-overlay.flash { animation: glitchFlash .22s steps(1) forwards; }
+/* flash overlay removed */
+#flash-overlay { display: none; }
 
 /* ── SETUP ── */
 #s-setup.on {
@@ -1151,16 +1146,10 @@ function haptic(ms){try{navigator.vibrate&&navigator.vibrate(ms||40);}catch(e){}
 
 
 function setScreen(id){
-  const fl=document.getElementById('flash-overlay');
-  fl.classList.remove('flash');
-  void fl.offsetWidth;
-  fl.classList.add('flash');
-  setTimeout(()=>{
-    document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
-    document.getElementById(id).classList.add('on');
-    const m={'s-setup':'setup','s-reveal':'reveal','s-discuss':'discuss','s-vote':'vote','s-result':'result'};
-    document.getElementById('h-phase').textContent=m[id]||id;
-  },60);
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  const m={'s-setup':'setup','s-reveal':'reveal','s-discuss':'discuss','s-vote':'vote','s-result':'result'};
+  document.getElementById('h-phase').textContent=m[id]||id;
   sndClick();
 }
 function status(t){document.getElementById('status-c').textContent=t;}
