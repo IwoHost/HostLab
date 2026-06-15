@@ -126,7 +126,9 @@ body::after {
 .s-boot-line {
   font-size: 9px; letter-spacing: .1em; color: var(--muted);
   display: flex; align-items: center; gap: 8px;
+  opacity: 0;
 }
+.s-boot-line.visible { animation: fadeUp .3s ease forwards; }
 .s-ok {
   color: var(--green); letter-spacing: .06em; flex-shrink: 0;
 }
@@ -155,6 +157,15 @@ body::after {
   display: block; font-size: 0.6rem; letter-spacing: .3em;
   color: var(--amber); margin-bottom: 7px; text-transform: uppercase;
 }
+.cat-row { display: flex; gap: 6px; align-items: center; }
+.cat-row select { flex: 1; }
+.btn-rand-cat {
+  flex-shrink: 0; padding: 0 10px; height: 32px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--font); font-size: 13px;
+  cursor: pointer; transition: .1s; line-height: 1;
+}
+.btn-rand-cat:hover { border-color: var(--dim); color: var(--green); }
 
 /* count */
 .count-row { display: flex; align-items: center; gap: 0; width: fit-content; }
@@ -641,6 +652,7 @@ select option { background: var(--bg); }
 
   <div class="s-block">
     <label>kategoria słowa</label>
+    <div class="cat-row">
     <select id="cat-sel">
       <optgroup label="── INFORMATYKA ──">
         <option value="programowanie">Programowanie</option>
@@ -657,9 +669,14 @@ select option { background: var(--bg); }
         <option value="animals">Zwierzęta</option>
         <option value="movies">Filmy / Seriale</option>
         <option value="sports">Sport</option>
+        <option value="muzyka">Muzyka</option>
+        <option value="nauka">Nauka</option>
+        <option value="historia">Historia</option>
         <option value="custom">Własne słowo…</option>
       </optgroup>
     </select>
+    <button class="btn-rand-cat" id="btn-rand-cat" title="losuj kategorię">⇄</button>
+    </div>
     <div id="custom-row" class="hidden" style="margin-top:5px">
       <input type="text" id="custom-word" placeholder="wpisz tajne słowo" maxlength="22">
     </div>
@@ -919,6 +936,45 @@ const BANKS = {
     ['WERYFIKACJA',   'AUTORYZACJA', 'LOGOWANIE', 'potwierdzasz że to naprawdę ty próbujesz się zalogować'],
     ['ATAK',          'WŁAMANIE',    'EXPLOIT',   'próba nieuprawnionego dostępu do cudzego systemu'],
   ],
+  muzyka: [
+    ['GITARA',       'UKULELE',     'BANJO',      'strunowy instrument który grasz palcami lub kostką'],
+    ['PERKUSJA',     'BĘBNY',       'MARIMBA',    'rytmiczny instrument który uderzasz pałkami'],
+    ['MIKROFON',     'WZMACNIACZ',  'MIKSER',     'urządzenie które wychwytuje dźwięk i wzmacnia głos'],
+    ['ALBUM',        'EP',          'SINGIEL',    'kolekcja piosenek wydana przez artystę'],
+    ['KONCERT',      'FESTIWAL',    'TRASA',      'artysta gra muzykę na żywo dla publiczności'],
+    ['BEAT',         'RYTM',        'GROOVE',     'powtarzający się wzorzec perkusji w muzyce'],
+    ['REFREN',       'ZWROTKA',     'BRIDGE',     'najbardziej wpadająca w ucho część piosenki'],
+    ['PLAYLISTА',    'SETLISTA',    'MIXTAPE',    'ułożona przez ciebie lista utworów do słuchania'],
+    ['STREAMING',    'RADIO',       'PODCAST',    'słuchasz muzyki online bez pobierania pliku'],
+    ['RAPER',        'WOKALISTA',   'DJ',         'artysta który mówi rytmicznie do bitu'],
+    ['HIP-HOP',      'R&B',         'TRAP',       'gatunek muzyczny urodzony na ulicach Nowego Jorku'],
+    ['VINYL',        'KASETA',      'CD',         'okrągła płyta na której nagrywano muzykę przed streamingiem'],
+  ],
+  nauka: [
+    ['ATOM',         'CZĄSTECZKA',  'ELEKTRON',   'najmniejsza jednostka pierwiastka chemicznego'],
+    ['DNA',          'RNA',         'BIAŁKO',     'nośnik informacji genetycznej w każdej żywej komórce'],
+    ['EWOLUCJA',     'MUTACJA',     'SELEKCJA',   'powolny proces zmian gatunków na przestrzeni pokoleń'],
+    ['FOTOSYNTEZA',  'ODDYCHANIE',  'FERMENTACJA','rośliny produkują cukier używając światła słonecznego'],
+    ['GRAWITACJA',   'TARCIE',      'BEZWŁADNOŚĆ','siła która przyciąga masy do siebie nawzajem'],
+    ['LASER',        'LED',         'NEON',       'skupiona wiązka światła jednej długości fali'],
+    ['TEMPERATURA',  'CIŚNIENIE',   'WILGOTNOŚĆ', 'miara średniej energii kinetycznej cząsteczek'],
+    ['SZCZEPIONKA',  'ANTYBIOTYK',  'WITAMINA',   'preparat który uczy układ immunologiczny rozpoznawać chorobę'],
+    ['TELESKOP',     'MIKROSKOP',   'SPEKTROSKOP','optyczny przyrząd do oglądania bardzo odległych obiektów'],
+    ['MAGNETYZM',    'ELEKTRYCZNOŚĆ','FALA',      'właściwość materiałów przyciągania żelaza i metali'],
+    ['CZARNA DZIURA','SUPERNOWA',   'PULSAR',     'obszar w kosmosie z którego nie może uciec nawet światło'],
+  ],
+  historia: [
+    ['REWOLUCJA',    'POWSTANIE',   'BUNT',       'gwałtowna zmiana systemu politycznego przez lud'],
+    ['IMPERIUM',     'KRÓLESTWO',   'REPUBLIKA',  'wielkie państwo rządzone przez jednego władcę'],
+    ['ZAMEK',        'TWIERDZA',    'FORTECA',    'średniowieczna warownia z murami i wieżami'],
+    ['WIKINGOWIE',   'NORMANDOWIE', 'SAXONOWIE',  'nordyccy wojownicy i żeglarze ze Skandynawii'],
+    ['PIRAMIDA',     'SFINKS',      'OBELISK',    'ogromna kamienna budowla grobowiec faraona'],
+    ['NAPOLEON',     'CEZAR',       'ALEKSANDER', 'słynny dowódca wojskowy który podbił pół świata'],
+    ['ZIMNA ВОЙНА',  'WYŚCIG ZBROJEŃ','KURTYNA',  'konflikt USA z ZSRR bez bezpośrednich walk'],
+    ['KOLONIZACJA',  'EKSPANSJA',   'PODBÓJ',     'przejęcie cudzego terytorium przez silniejsze państwo'],
+    ['TRAKTAT',      'POKÓJ',       'PRZYMIERZE', 'pisemna umowa kończąca konflikt między państwami'],
+    ['GLADIATOR',    'LEGIONISTA',  'CENTURION',  'żołnierz armii starożytnego Rzymu'],
+  ],
   /* ── INNE ── */
   kraje: [
     ['🇯🇵 JAPONIA',   '🇰🇷 KOREA PŁD.','🇹🇼 TAJWAN',    'kraj znany z technologii anime i samurajów'],
@@ -1033,6 +1089,9 @@ function sndScan(){beep(220,.08,.04,'sawtooth');setTimeout(()=>beep(440,.06,.03,
 function sndWin(){[0,80,160,260].forEach((d,i)=>{setTimeout(()=>beep([523,659,784,1047][i],.18,.05),d);});}
 function sndLose(){[0,100,220].forEach((d,i)=>{setTimeout(()=>beep([330,294,220][i],.22,.06,'sawtooth'),d);});}
 function sndFieldReveal(){beep(600,.05,.04);}
+function sndTick(){beep(1200,.04,.035,'square');}
+function haptic(ms){try{navigator.vibrate&&navigator.vibrate(ms||40);}catch(e){}}
+
 
 function setScreen(id){
   const fl=document.getElementById('flash-overlay');
@@ -1061,6 +1120,32 @@ function buildNames(){
 document.getElementById('btn-minus').onclick=()=>{if(playerCount>3){playerCount--;document.getElementById('count-disp').textContent=playerCount;buildNames();}};
 document.getElementById('btn-plus').onclick=()=>{if(playerCount<10){playerCount++;document.getElementById('count-disp').textContent=playerCount;buildNames();}};
 document.getElementById('cat-sel').onchange=e=>document.getElementById('custom-row').classList.toggle('hidden',e.target.value!=='custom');
+
+/* random category button */
+const _allCats=['programowanie','sieci','bazy','sprzet','systemy','cyber','kraje','space','food','animals','movies','sports','muzyka','nauka','historia'];
+document.getElementById('btn-rand-cat').onclick=()=>{
+  const sel=document.getElementById('cat-sel');
+  const current=sel.value;
+  const choices=_allCats.filter(c=>c!==current);
+  sel.value=choices[Math.floor(Math.random()*choices.length)];
+  document.getElementById('custom-row').classList.add('hidden');
+  sndClick();
+};
+
+/* boot sequence animation */
+(function(){
+  const lines=document.querySelectorAll('.s-boot-line');
+  lines.forEach((l,i)=>setTimeout(()=>l.classList.add('visible'),i*220+100));
+})();
+
+/* Enter key on reveal screen advances to next player */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  const nextBtn=document.getElementById('btn-next');
+  const readyBtn=document.getElementById('btn-all-ready');
+  if(!nextBtn.classList.contains('hidden')){nextBtn.click();}
+  else if(!readyBtn.classList.contains('hidden')){readyBtn.click();}
+});
 
 document.getElementById('btn-start').onclick=()=>{
   G.players=[];
@@ -1113,7 +1198,7 @@ function revealField(id,text,cls,delay){
     const el=document.getElementById(id);
     el.textContent=text;
     el.className='clf-val revealed '+(cls||'');
-    sndFieldReveal();
+    sndFieldReveal(); haptic(20);
   },delay);
 }
 
@@ -1123,7 +1208,7 @@ document.getElementById('btn-show').addEventListener('click', ()=>{
   if(fp.classList.contains('scanning'))return;
   fp.classList.add('scanning');
   lbl.textContent='IDENTYFIKACJA...';
-  sndScan();
+  sndScan(); haptic(60);
   setTimeout(()=>{
     const idx=G.revealIdx,isImp=G.impostors.includes(idx);
     const doc=document.getElementById('rv-doc');
@@ -1197,7 +1282,7 @@ function renderTimer(){
   const pct=Math.max(0,G.timerSec)/G.timerTotal;
   document.getElementById('timer-fill').style.width=(pct*100)+'%';
   const tv=document.getElementById('t-val'),tf=document.getElementById('timer-fill');
-  if(pct<0.25){tv.className='crit';tf.className='crit';}
+  if(pct<0.25){tv.className='crit';tf.className='crit';if(G.timerSec>0&&G.timerSec<=10)sndTick();}
   else if(pct<0.5){tv.className='warn';tf.className='warn';}
   else{tv.className='';tf.className='';}
 }
@@ -1258,9 +1343,9 @@ function showResult(topIdx,maxV,tally){
   const crewWin=(G.opts.double?allCaught:caught)&&!G.impostorGuessOk;
   const impNames=G.impostors.map(i=>G.players[i]).join(' & ');
   const titleEl=document.getElementById('res-title'),subEl=document.getElementById('res-sub');
-  if(crewWin){titleEl.textContent='załoga wygrywa';titleEl.className='res-title crew';subEl.textContent=`${impNames} ${G.impostors.length>1?'zostali zidentyfikowani':'został zidentyfikowany'}.`;status('załoga wygrywa');setTimeout(sndWin,150);}
-  else if(caught&&G.impostorGuessOk){titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=`${impNames} zgadł prawdziwe słowo.`;status('impostor wygrywa — słowo odgadnięte');setTimeout(sndLose,150);}
-  else{titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=G.opts.double&&G.impostors.length>1?`nie złapaliście obu. ${impNames} uciekają.`:`wybraliście ${G.players[topIdx]} — to pomyłka. ${impNames} ucieka.`;status('impostor wygrywa');setTimeout(sndLose,150);}
+  if(crewWin){titleEl.textContent='załoga wygrywa';titleEl.className='res-title crew';subEl.textContent=`${impNames} ${G.impostors.length>1?'zostali zidentyfikowani':'został zidentyfikowany'}.`;status('załoga wygrywa');setTimeout(sndWin,150);setTimeout(()=>haptic([60,40,60,40,100]),200);}
+  else if(caught&&G.impostorGuessOk){titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=`${impNames} zgadł prawdziwe słowo.`;status('impostor wygrywa — słowo odgadnięte');setTimeout(sndLose,150);setTimeout(()=>haptic([80,40,200]),200);}
+  else{titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=G.opts.double&&G.impostors.length>1?`nie złapaliście obu. ${impNames} uciekają.`:`wybraliście ${G.players[topIdx]} — to pomyłka. ${impNames} ucieka.`;status('impostor wygrywa');setTimeout(sndLose,150);setTimeout(()=>haptic([80,40,200]),200);}
   /* dossier */
   const doss=document.getElementById('res-dossier');
   doss.classList.remove('hidden');
