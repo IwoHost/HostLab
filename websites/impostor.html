@@ -246,71 +246,61 @@ select option { background: var(--bg); }
 .rv-card.c-crew { border-color: var(--dim); }
 .rv-card.c-imp  { border-color: var(--red); }
 
-.rv-locked {
+.rv-doc {
   padding: 22px 20px 18px; text-align: left;
   display: flex; flex-direction: column; gap: 10px;
 }
-.rv-locked .clf-header {
+.rv-doc .clf-header {
   font-size: 8px; letter-spacing: .4em; color: var(--amber);
   border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 2px;
+  transition: color .4s;
 }
-.rv-locked .clf-lines { display: flex; flex-direction: column; gap: 5px; }
+.rv-doc.unlocked-crew .clf-header { color: var(--dim); }
+.rv-doc.unlocked-imp  .clf-header { color: var(--red); opacity: .7; }
+.rv-doc .clf-lines { display: flex; flex-direction: column; gap: 5px; }
 .clf-row { display: flex; align-items: center; gap: 8px; font-size: 10px; }
 .clf-key { color: var(--muted); letter-spacing: .12em; width: 60px; flex-shrink: 0; }
 .clf-val {
   height: 10px; background: var(--muted); border-radius: 0;
-  opacity: .35;
+  opacity: .35; display: inline-block;
+  transition: opacity .25s, background .25s, height .25s, color .25s, font-size .25s;
 }
 .clf-row:nth-child(1) .clf-val { width: 72px; }
 .clf-row:nth-child(2) .clf-val { width: 110px; }
 .clf-row:nth-child(3) .clf-val { width: 55px; }
 .clf-row:nth-child(4) .clf-val { width: 88px; }
-.rv-locked .clf-prompt {
+.clf-val.revealed {
+  height: auto; background: transparent; opacity: 1;
+  letter-spacing: .1em; color: var(--text);
+  animation: fadeUp .25s ease both;
+}
+.clf-val.revealed.r-imp  { color: var(--red); }
+.clf-val.revealed.r-crew { color: var(--green); }
+.clf-val.revealed.r-word-crew {
+  color: var(--green); font-size: 28px; letter-spacing: .08em;
+  text-shadow: 0 0 18px rgba(0,255,65,.3);
+}
+.clf-val.revealed.r-word-imp {
+  color: var(--red); font-size: 28px; letter-spacing: .12em;
+}
+.clf-row.word-row { align-items: baseline; }
+.rv-doc .clf-prompt {
   margin-top: 4px; font-size: 11px; color: var(--dim); letter-spacing: .1em;
   border-top: 1px solid var(--border); padding-top: 10px;
+  transition: opacity .3s;
 }
-.rv-locked .clf-prompt::before { content: '> '; color: var(--green); }
-.rv-locked .clf-cursor { animation: blink 1s step-end infinite; color: var(--green); }
-
-.rv-open {
-  padding: 22px 20px 18px; text-align: left;
-  display: none; flex-direction: column; gap: 10px;
-  animation: fadeUp .2s ease both;
-}
-.rv-open.show { display: flex; }
-
-.rv-open .clf-header {
-  font-size: 8px; letter-spacing: .4em; padding-bottom: 8px; margin-bottom: 2px;
-  border-bottom: 1px solid var(--border);
-}
-.rv-open.crew-open .clf-header { color: var(--dim); }
-.rv-open.imp-open  .clf-header { color: var(--red); opacity: .7; }
-
-.rv-open .clf-lines { display: flex; flex-direction: column; gap: 5px; }
-.clf-row-filled { display: flex; align-items: baseline; gap: 10px; font-size: 10px; }
-.clf-row-filled .clf-key { color: var(--muted); letter-spacing: .12em; width: 60px; flex-shrink: 0; }
-.clf-row-filled .clf-data { letter-spacing: .1em; }
-
-.rv-word-block {
-  margin: 6px 0 4px;
-  padding: 10px 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-.rv-word-block .rw-label {
-  font-size: 8px; letter-spacing: .45em; color: var(--muted); margin-bottom: 4px;
-}
-.rv-word {
-  font-size: clamp(32px, 9vw, 54px); letter-spacing: .08em; line-height: 1.1;
-}
-.rv-word.crew { color: var(--green); text-shadow: 0 0 20px rgba(0,255,65,.35); }
-.rv-word.imp  { color: var(--red); letter-spacing: .18em; }
+.rv-doc .clf-prompt::before { content: '> '; color: var(--green); }
+.rv-doc.unlocked-crew .clf-prompt,
+.rv-doc.unlocked-imp  .clf-prompt { opacity: 0; pointer-events: none; height: 0; margin: 0; padding: 0; border: none; overflow: hidden; }
+.clf-cursor { animation: blink 1s step-end infinite; color: var(--green); }
 
 .rv-hint {
   font-size: 10px; color: var(--muted); letter-spacing: .08em;
   line-height: 1.8; white-space: pre-line;
   border-left: 2px solid var(--border); padding-left: 10px;
+  display: none; animation: fadeUp .25s ease both;
 }
+.rv-hint.show { display: block; }
 .rv-hint.crew-hint { border-left-color: var(--dim); }
 .rv-hint.imp-hint  { border-left-color: var(--red); opacity: .8; }
 
@@ -538,19 +528,30 @@ select option { background: var(--bg); }
 /* ── FINGERPRINT SCANNER ── */
 .fp-scanner {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
-  cursor: pointer; padding: 12px;
-  border: 1px solid var(--border); transition: border-color .2s;
+  cursor: pointer; padding: 14px 18px;
+  border: 1px solid var(--border); transition: border-color .2s, color .2s;
   color: var(--muted); user-select: none;
 }
 .fp-scanner:hover { border-color: var(--dim); color: var(--dim); }
-.fp-scanner.scanning { border-color: var(--green); color: var(--green); animation: fp-pulse 0.6s ease; }
+.fp-scanner.scanning { border-color: var(--green); color: var(--green); }
 .fp-scanner.scanning .fp-label { color: var(--green); }
-.fp-svg { transition: color .2s; }
-@keyframes fp-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-@keyframes fp-scan { 0%{transform:translateY(-22px)} 100%{transform:translateY(22px)} }
-.fp-scan { animation: fp-scan 1.5s ease-in-out infinite; transform-origin: center; }
-.fp-label { font-size: 9px; letter-spacing: .4em; text-transform: uppercase; }
-.fp-hint  { font-size: 8px; letter-spacing: .15em; color: var(--muted); opacity: .6; }
+.fp-scanner.scanning .fp-scan-line { animation-duration: .4s; opacity: 1; }
+.fp-wrap { position: relative; width: 72px; height: 72px; }
+.fp-svg { display: block; }
+.fp-scan-line {
+  position: absolute; left: 0; right: 0; height: 2px; top: 0;
+  background: linear-gradient(90deg, transparent 0%, currentColor 30%, currentColor 70%, transparent 100%);
+  opacity: 0; animation: fp-scan 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes fp-scan {
+  0%   { top: 0%;   opacity: 0; }
+  8%   { opacity: .8; }
+  92%  { opacity: .8; }
+  100% { top: 100%; opacity: 0; }
+}
+.fp-label { font-size: 9px; letter-spacing: .4em; text-transform: uppercase; transition: color .2s; }
+.fp-hint  { font-size: 8px; letter-spacing: .15em; color: var(--muted); opacity: .55; }
 
 /* ── STATUSBAR ── */
 #statusbar {
@@ -677,51 +678,38 @@ select option { background: var(--bg); }
   </div>
   <div class="rv-body">
     <div class="rv-card" id="rv-card">
-      <div class="rv-locked" id="rv-locked">
-        <div class="clf-header">PLIK KLASYFIKOWANY — DOSTĘP OGRANICZONY</div>
+      <div class="rv-doc" id="rv-doc">
+        <div class="clf-header" id="rv-clf-header">PLIK KLASYFIKOWANY — DOSTĘP OGRANICZONY</div>
         <div class="clf-lines">
-          <div class="clf-row"><span class="clf-key">ROLA</span><span class="clf-val"></span></div>
-          <div class="clf-row"><span class="clf-key">SŁOWO</span><span class="clf-val"></span></div>
-          <div class="clf-row"><span class="clf-key">STATUS</span><span class="clf-val"></span></div>
-          <div class="clf-row"><span class="clf-key">MISJA</span><span class="clf-val"></span></div>
+          <div class="clf-row"><span class="clf-key">ROLA</span><span class="clf-val" id="rv-rola-val"></span></div>
+          <div class="clf-row word-row"><span class="clf-key">SŁOWO</span><span class="clf-val" id="rv-slowo-val"></span></div>
+          <div class="clf-row"><span class="clf-key">STATUS</span><span class="clf-val" id="rv-status-val"></span></div>
+          <div class="clf-row"><span class="clf-key">MISJA</span><span class="clf-val" id="rv-misja-val"></span></div>
         </div>
-        <div class="clf-prompt">uwierzytelnienie wymagane<span class="clf-cursor">_</span></div>
-        <div class="fp-scanner" id="btn-show" role="button" tabindex="0">
-          <svg class="fp-svg" viewBox="0 0 60 60" width="60" height="60" fill="none">
-            <path d="M30 52 C16 52 8 42 8 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M30 48 C19 48 12 40 12 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M30 44 C22 44 16 38 16 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M30 40 C24 40 20 36 20 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M30 36 C26 36 24 33 24 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M30 52 C44 52 52 42 52 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M30 48 C41 48 48 40 48 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M30 44 C38 44 44 38 44 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M30 40 C36 40 40 36 40 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M30 36 C34 36 36 33 36 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <circle cx="30" cy="30" r="3" fill="currentColor" opacity="0.4"/>
-            <line x1="8" y1="30" x2="52" y2="30" stroke="currentColor" stroke-width="0.8" opacity="0.3" class="fp-scan"/>
-          </svg>
-          <div class="fp-label" id="fp-label">SKANUJ ODCISK</div>
-          <div class="fp-hint">dotknij aby zidentyfikować agenta</div>
-        </div>
-      </div>
-      <div class="rv-open" id="rv-open">
-        <div class="clf-header" id="rv-clf-header">PLIK ODSZYFROWANY — DOSTĘP PRZYZNANY</div>
-        <div class="clf-lines">
-          <div class="clf-row-filled"><span class="clf-key">ROLA</span><span class="clf-data" id="rv-role-val">—</span></div>
-          <div class="clf-row-filled"><span class="clf-key">STATUS</span><span class="clf-data" id="rv-status-val">—</span></div>
-        </div>
-        <div class="rv-word-block">
-          <div class="rw-label" id="rv-word-label">TAJNE SŁOWO</div>
-          <div class="rv-word" id="rv-word">—</div>
-        </div>
-        <div class="rv-hint" id="rv-hint">—</div>
+        <div class="clf-prompt" id="clf-prompt">uwierzytelnienie wymagane<span class="clf-cursor">_</span></div>
+        <div class="rv-hint" id="rv-hint"></div>
         <div class="rv-imp-hint hidden" id="rv-imp-hint">
           <div class="rih-label">TWOJA WSKAZÓWKA NA PIERWSZĄ TURĘ</div>
           <div class="rih-text" id="rih-text">—</div>
           <div class="rih-note">możesz jej użyć — brzmi przekonująco, ale może wzbudzić podejrzenia</div>
         </div>
-        <div class="rv-tag" id="rv-tag" style="display:none"></div>
+        <div class="fp-scanner" id="btn-show" role="button" tabindex="0">
+          <div class="fp-wrap">
+            <svg class="fp-svg" viewBox="0 0 72 72" width="72" height="72" fill="none">
+              <path d="M33,66 L33,50 Q33,46 36,46 Q39,46 39,50 L39,66" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M30,66 L30,48 Q30,40 36,40 Q42,40 42,48 L42,66" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M27,66 L27,46 Q27,34 36,34 Q45,34 45,46 L45,66" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M24,66 L24,44 Q24,28 36,28 Q48,28 48,44 L48,66" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M21,66 L21,42 Q21,22 36,22 Q51,22 51,42 L51,66" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M18,66 L18,40 Q18,16 36,16 Q54,16 54,40 L54,66" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M15,66 L15,38 Q15,10 36,10 Q57,10 57,38 L57,66" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M33,26 Q36,20 39,26" stroke="currentColor" stroke-width="1" stroke-linecap="round" fill="none" opacity=".5"/>
+            </svg>
+            <div class="fp-scan-line"></div>
+          </div>
+          <div class="fp-label" id="fp-label">SKANUJ ODCISK</div>
+          <div class="fp-hint">dotknij aby zidentyfikować agenta</div>
+        </div>
       </div>
     </div>
     <div class="rv-prog" id="rv-prog">gracz 1 / 4</div>
@@ -1038,12 +1026,31 @@ function loadReveal(idx){
   const name=G.players[idx];
   document.getElementById('rv-name').textContent=name;
   document.getElementById('rv-prog').textContent=`gracz ${idx+1} / ${G.players.length}`;
+  const doc=document.getElementById('rv-doc');
+  doc.className='rv-doc';
   document.getElementById('rv-card').className='rv-card';
-  document.getElementById('rv-locked').style.display='';
-  document.getElementById('rv-open').classList.remove('show');
+  document.getElementById('rv-clf-header').textContent='PLIK KLASYFIKOWANY — DOSTĘP OGRANICZONY';
+  ['rv-rola-val','rv-slowo-val','rv-status-val','rv-misja-val'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.className='clf-val'; el.textContent='';
+  });
+  const hint=document.getElementById('rv-hint');
+  hint.className='rv-hint'; hint.textContent='';
+  document.getElementById('rv-imp-hint').classList.add('hidden');
+  const fp=document.getElementById('btn-show');
+  fp.classList.remove('scanning'); fp.style.display='';
+  document.getElementById('fp-label').textContent='SKANUJ ODCISK';
   document.getElementById('btn-next').classList.add('hidden');
   document.getElementById('btn-all-ready').classList.add('hidden');
   status(`podaj urządzenie: ${name}`);
+}
+
+function revealField(id,text,cls,delay){
+  setTimeout(()=>{
+    const el=document.getElementById(id);
+    el.textContent=text;
+    el.className='clf-val revealed '+(cls||'');
+  },delay);
 }
 
 document.getElementById('btn-show').addEventListener('click', ()=>{
@@ -1054,53 +1061,57 @@ document.getElementById('btn-show').addEventListener('click', ()=>{
   lbl.textContent='IDENTYFIKACJA...';
   setTimeout(()=>{
     const idx=G.revealIdx,isImp=G.impostors.includes(idx);
-    document.getElementById('rv-locked').style.display='none';
-    const open=document.getElementById('rv-open');
-    open.classList.add('show');
-    const word=document.getElementById('rv-word'),hint=document.getElementById('rv-hint');
-    const roleVal=document.getElementById('rv-role-val'),statusVal=document.getElementById('rv-status-val');
+    const doc=document.getElementById('rv-doc');
     const hdr=document.getElementById('rv-clf-header');
+    const hint=document.getElementById('rv-hint');
+    fp.classList.remove('scanning'); fp.style.display='none';
     if(isImp){
       const decoy=G.decoyWords[idx];
       const dbl=G.opts.double&&G.impostors.length>1;
       document.getElementById('rv-card').className='rv-card c-imp';
-      open.className='rv-open show imp-open';
+      doc.className='rv-doc unlocked-imp';
       hdr.textContent='PLIK ODSZYFROWANY — OSTRZEŻENIE BEZPIECZEŃSTWA';
-      roleVal.textContent=dbl?'IMPOSTOR (x2)':'IMPOSTOR';
-      roleVal.style.color='var(--red)';
-      statusVal.textContent='AGENT WROGA';
-      statusVal.style.color='var(--red)';
+      revealField('rv-rola-val', dbl?'IMPOSTOR (x2)':'IMPOSTOR', 'r-imp', 0);
       if(G.opts.decoy&&decoy){
-        word.className='rv-word imp';word.textContent=decoy;
-        hint.className='rv-hint imp-hint';
-        hint.textContent='to jest fałszywe słowo\ngrasz jakbyś je znał\nposłuchaj innych — spróbuj zgadnąć prawdziwe';
+        revealField('rv-slowo-val', decoy, 'r-word-imp', 120);
       } else {
-        word.className='rv-word imp';word.textContent='? ? ?';
-        hint.className='rv-hint imp-hint';
-        hint.textContent='nie znasz słowa\nsłuchaj wskazówek\nudawaj że wiesz';
+        revealField('rv-slowo-val', '? ? ?', 'r-word-imp', 120);
       }
+      revealField('rv-status-val','AGENT WROGA','r-imp',240);
+      revealField('rv-misja-val','INFILTRUJ GRUPĘ','r-imp',360);
+      setTimeout(()=>{
+        hint.className='rv-hint imp-hint show';
+        if(G.opts.decoy&&decoy){
+          hint.textContent='to jest fałszywe słowo\ngrasz jakbyś je znał\nposłuchaj innych — spróbuj zgadnąć prawdziwe';
+        } else {
+          hint.textContent='nie znasz słowa\nsłuchaj wskazówek\nudawaj że wiesz';
+        }
+      },500);
       const impHintEl=document.getElementById('rv-imp-hint');
       const impHintText=document.getElementById('rih-text');
-      if(G.impHint){impHintEl.classList.remove('hidden');impHintText.textContent=G.impHint;}
-      else{impHintEl.classList.add('hidden');}
+      if(G.impHint){
+        setTimeout(()=>{impHintEl.classList.remove('hidden');impHintText.textContent=G.impHint;},650);
+      }
     } else {
       document.getElementById('rv-card').className='rv-card c-crew';
-      open.className='rv-open show crew-open';
+      doc.className='rv-doc unlocked-crew';
       hdr.textContent='PLIK ODSZYFROWANY — DOSTĘP PRZYZNANY';
-      roleVal.textContent='AGENT ZAŁOGI';
-      roleVal.style.color='var(--green)';
-      statusVal.textContent='ZAUFANY';
-      statusVal.style.color='var(--dim)';
-      word.className='rv-word crew';word.textContent=G.word;
-      hint.className='rv-hint crew-hint';
-      hint.textContent='znasz tajne słowo\ndaj jedną wskazówkę\nznajdź impostora';
+      revealField('rv-rola-val','AGENT ZAŁOGI','r-crew',0);
+      revealField('rv-slowo-val', G.word,'r-word-crew',120);
+      revealField('rv-status-val','ZAUFANY','r-crew',240);
+      revealField('rv-misja-val','WYKRYJ IMPOSTORA','r-crew',360);
+      setTimeout(()=>{
+        hint.className='rv-hint crew-hint show';
+        hint.textContent='znasz tajne słowo\ndaj jedną wskazówkę\nznajdź impostora';
+      },500);
       document.getElementById('rv-imp-hint').classList.add('hidden');
     }
-    const last=idx===G.players.length-1;
-    if(!last)document.getElementById('btn-next').classList.remove('hidden');
-    else document.getElementById('btn-all-ready').classList.remove('hidden');
-    fp.classList.remove('scanning');
     lbl.textContent='ZIDENTYFIKOWANO';
+    const last=idx===G.players.length-1;
+    setTimeout(()=>{
+      if(!last)document.getElementById('btn-next').classList.remove('hidden');
+      else document.getElementById('btn-all-ready').classList.remove('hidden');
+    },700);
   }, 800);
 });
 
