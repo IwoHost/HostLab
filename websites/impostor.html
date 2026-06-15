@@ -85,6 +85,7 @@ body::after {
 #topbar .meta b { color: var(--text); }
 #topbar .sys-status { font-size: 10px; letter-spacing: .2em; color: var(--muted); }
 #topbar .sys-status span { color: var(--green); animation: blink 2s step-end infinite; }
+@media (max-width: 480px) { #topbar .sys-status { display: none; } }
 
 /* ── MAIN SCROLL ── */
 #main {
@@ -160,9 +161,9 @@ body::after {
 .cat-row { display: flex; gap: 6px; align-items: center; }
 .cat-row select { flex: 1; }
 .btn-rand-cat {
-  flex-shrink: 0; padding: 0 10px; height: 32px;
+  flex-shrink: 0; padding: 0 12px; height: 44px; min-width: 44px;
   background: transparent; border: 1px solid var(--border);
-  color: var(--muted); font-family: var(--font); font-size: 13px;
+  color: var(--muted); font-family: var(--font); font-size: 14px;
   cursor: pointer; transition: .1s; line-height: 1;
 }
 .btn-rand-cat:hover { border-color: var(--dim); color: var(--green); }
@@ -259,12 +260,14 @@ select option { background: var(--bg); }
 .rv-body {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  padding: 24px 18px; gap: 18px; width: 100%;
+  padding: 16px 18px; gap: 12px; width: 100%;
+  overflow-y: auto;
 }
 
 .rv-card {
   width: 100%; max-width: 360px;
   border: 1px solid var(--border); background: var(--surface);
+  overflow-y: auto; max-height: 100%;
 }
 .rv-card.c-crew { border-color: var(--dim); }
 .rv-card.c-imp  { border-color: var(--red); }
@@ -341,6 +344,7 @@ select option { background: var(--bg); }
 .rv-tag { display: none; }
 
 .rv-prog { font-size: 10px; letter-spacing: .22em; color: var(--muted); }
+.rv-prog b { color: var(--green); letter-spacing: 0; }
 
 .rv-footer {
   width: 100%; padding: 11px 18px;
@@ -501,12 +505,16 @@ select option { background: var(--bg); }
 }
 .res-eye   { font-size: 9px; letter-spacing: .42em; color: var(--muted); margin-bottom: 4px; }
 .res-title {
-  font-size: clamp(28px, 7vw, 48px); letter-spacing: .1em; margin: 0 0 5px;
-  overflow: hidden; white-space: nowrap;
+  font-size: clamp(24px, 7vw, 48px); letter-spacing: .1em; margin: 0 0 5px;
 }
-.res-title.crew { color: var(--green); text-shadow: 0 0 20px rgba(0,255,65,.3); animation: resReveal .4s ease both; }
-.res-title.imp  { color: var(--red); animation: resReveal .4s ease both; }
-.res-sub   { font-size: 11px; color: var(--muted); letter-spacing: .08em; animation: fadeUp .5s .2s ease both; opacity: 0; animation-fill-mode: both; }
+.res-sub { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
+@media (prefers-reduced-motion: no-preference) {
+  .res-title.crew { animation: resReveal .4s ease both; }
+  .res-title.imp  { animation: resReveal .4s ease both; }
+  .res-sub   { animation: fadeUp .5s .2s ease both; opacity: 0; animation-fill-mode: both; }
+}
+.res-title.crew { color: var(--green); text-shadow: 0 0 20px rgba(0,255,65,.3); }
+.res-title.imp  { color: var(--red); }
 
 .res-imp-dossier {
   border: 1px solid var(--red); background: rgba(255,40,40,.03);
@@ -1173,7 +1181,7 @@ function loadReveal(idx){
   G.revealIdx=idx;
   const name=G.players[idx];
   document.getElementById('rv-name').textContent=name;
-  document.getElementById('rv-prog').textContent=`gracz ${idx+1} / ${G.players.length}`;
+  document.getElementById('rv-prog').innerHTML=`gracz <b>${idx+1}</b> / ${G.players.length}`;
   const doc=document.getElementById('rv-doc');
   doc.className='rv-doc';
   document.getElementById('rv-card').className='rv-card';
@@ -1369,7 +1377,15 @@ function showResult(topIdx,maxV,tally){
   }
 }
 
-document.getElementById('btn-new-game').onclick=()=>{setScreen('s-setup');status('—');document.getElementById('h-players').textContent='—';document.getElementById('ev-log').classList.add('hidden');document.getElementById('res-dossier').classList.add('hidden');};
+document.getElementById('btn-new-game').onclick=()=>{
+  setScreen('s-setup');status('—');
+  document.getElementById('h-players').textContent='—';
+  document.getElementById('ev-log').classList.add('hidden');
+  document.getElementById('res-dossier').classList.add('hidden');
+  const lines=document.querySelectorAll('.s-boot-line');
+  lines.forEach(l=>l.classList.remove('visible'));
+  lines.forEach((l,i)=>setTimeout(()=>l.classList.add('visible'),i*220+100));
+};
 document.getElementById('btn-same-players').onclick=()=>{
   const cat=document.getElementById('cat-sel').value;let entry;
   if(cat==='custom'){G.word=(document.getElementById('custom-word').value.trim().toUpperCase())||'SLOWO';entry=[G.word,'SYMBOL','SYGNAŁ'];}
