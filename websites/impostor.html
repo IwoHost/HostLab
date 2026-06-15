@@ -97,25 +97,37 @@ body::after {
 
 /* ── SETUP ── */
 #s-setup {
-  max-width: 500px;
+  max-width: 540px;
   margin: 0 auto;
-  padding: 32px 20px 40px;
+  padding: 28px 20px 44px;
 }
 
-.s-title { margin-bottom: 28px; }
+.s-title { margin-bottom: 24px; }
+.s-title .s-badge {
+  font-size: 8px; letter-spacing: .5em; color: var(--muted);
+  margin-bottom: 8px;
+}
 .s-title h1 {
-  font-size: clamp(36px, 8vw, 58px);
+  font-size: clamp(40px, 9vw, 64px);
   font-weight: normal; letter-spacing: .14em;
   color: var(--green); line-height: 1;
   text-shadow: 0 0 30px rgba(0,255,65,.4);
 }
 .s-title h1::after { content: '_'; animation: blink 1s step-end infinite; }
-.s-title p {
-  font-size: 10px; letter-spacing: .32em; color: var(--muted);
-  margin-top: 6px; text-transform: uppercase;
+.s-title .s-desc {
+  font-size: 10px; letter-spacing: .18em; color: var(--muted);
+  margin-top: 8px; line-height: 1.7;
 }
 
-.s-block { margin-bottom: 20px; }
+.s-sep {
+  display: flex; align-items: center; gap: 10px;
+  margin: 20px 0 14px; font-size: 8px; letter-spacing: .4em; color: var(--dim);
+}
+.s-sep::before, .s-sep::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+.s-block { margin-bottom: 16px; }
 .s-block label {
   display: block; font-size: 0.6rem; letter-spacing: .3em;
   color: var(--amber); margin-bottom: 7px; text-transform: uppercase;
@@ -220,14 +232,30 @@ select option { background: var(--bg); }
 .rv-card.c-imp  { border-color: var(--red); }
 
 .rv-locked {
-  padding: 30px 20px; text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 22px 20px 18px; text-align: left;
+  display: flex; flex-direction: column; gap: 10px;
 }
-.rv-locked .glyph {
-  font-size: 52px; color: var(--muted); letter-spacing: -.05em;
-  animation: blink 3s infinite;
+.rv-locked .clf-header {
+  font-size: 8px; letter-spacing: .4em; color: var(--amber);
+  border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 2px;
 }
-.rv-locked .sub { font-size: 10px; letter-spacing: .26em; color: var(--muted); }
+.rv-locked .clf-lines { display: flex; flex-direction: column; gap: 5px; }
+.clf-row { display: flex; align-items: center; gap: 8px; font-size: 10px; }
+.clf-key { color: var(--muted); letter-spacing: .12em; width: 60px; flex-shrink: 0; }
+.clf-val {
+  height: 10px; background: var(--muted); border-radius: 0;
+  opacity: .35;
+}
+.clf-row:nth-child(1) .clf-val { width: 72px; }
+.clf-row:nth-child(2) .clf-val { width: 110px; }
+.clf-row:nth-child(3) .clf-val { width: 55px; }
+.clf-row:nth-child(4) .clf-val { width: 88px; }
+.rv-locked .clf-prompt {
+  margin-top: 4px; font-size: 11px; color: var(--dim); letter-spacing: .1em;
+  border-top: 1px solid var(--border); padding-top: 10px;
+}
+.rv-locked .clf-prompt::before { content: '> '; color: var(--green); }
+.rv-locked .clf-cursor { animation: blink 1s step-end infinite; color: var(--green); }
 
 .rv-open {
   padding: 26px 20px; text-align: center;
@@ -498,9 +526,12 @@ select option { background: var(--bg); }
 <!-- SETUP -->
 <div class="scr on" id="s-setup">
   <div class="s-title">
+    <div class="s-badge">// INICJALIZACJA SESJI PARTY GAME</div>
     <h1>IMPOSTOR</h1>
-    <p>party game · 3–10 graczy</p>
+    <div class="s-desc">jeden gracz jest agentem wroga — musi zgadnąć tajne słowo<br>nie zdradzając że go nie zna · 3–10 graczy</div>
   </div>
+
+  <div class="s-sep">KONFIGURACJA GRACZY</div>
 
   <div class="s-block">
     <label>liczba graczy</label>
@@ -516,21 +547,35 @@ select option { background: var(--bg); }
     <div id="name-list"></div>
   </div>
 
+  <div class="s-sep">PARAMETRY GRY</div>
+
   <div class="s-block">
     <label>kategoria słowa</label>
     <select id="cat-sel">
-      <option value="space">Kosmos</option>
-      <option value="food">Jedzenie</option>
-      <option value="animals">Zwierzęta</option>
-      <option value="tech">Tech</option>
-      <option value="movies">Filmy / Seriale</option>
-      <option value="sports">Sport</option>
-      <option value="custom">Własne słowo…</option>
+      <optgroup label="── INFORMATYKA ──">
+        <option value="programowanie">Programowanie</option>
+        <option value="sieci">Sieci komputerowe</option>
+        <option value="bazy">Bazy danych</option>
+        <option value="sprzet">Sprzęt komputerowy</option>
+        <option value="systemy">Systemy operacyjne</option>
+        <option value="cyber">Cyberbezpieczeństwo</option>
+      </optgroup>
+      <optgroup label="── INNE ──">
+        <option value="kraje">Kraje świata</option>
+        <option value="space">Kosmos</option>
+        <option value="food">Jedzenie</option>
+        <option value="animals">Zwierzęta</option>
+        <option value="movies">Filmy / Seriale</option>
+        <option value="sports">Sport</option>
+        <option value="custom">Własne słowo…</option>
+      </optgroup>
     </select>
     <div id="custom-row" class="hidden" style="margin-top:5px">
       <input type="text" id="custom-word" placeholder="wpisz tajne słowo" maxlength="22">
     </div>
   </div>
+
+  <div class="s-sep">MODUŁY DODATKOWE</div>
 
   <div class="s-block">
     <label>opcje</label>
@@ -559,7 +604,7 @@ select option { background: var(--bg); }
     </div>
   </div>
 
-  <button class="btn-go" id="btn-start">rozpocznij grę</button>
+  <button class="btn-go" id="btn-start">▶ URUCHOM SESJĘ</button>
 </div>
 
 <!-- REVEAL -->
@@ -571,9 +616,15 @@ select option { background: var(--bg); }
   <div class="rv-body">
     <div class="rv-card" id="rv-card">
       <div class="rv-locked" id="rv-locked">
-        <div class="glyph">▓▓▓</div>
-        <div class="sub">pokaż ekran tylko sobie</div>
-        <button class="btn-line hi" id="btn-show" style="width:auto;padding:8px 20px">odkryj rolę</button>
+        <div class="clf-header">PLIK KLASYFIKOWANY — DOSTĘP OGRANICZONY</div>
+        <div class="clf-lines">
+          <div class="clf-row"><span class="clf-key">ROLA</span><span class="clf-val"></span></div>
+          <div class="clf-row"><span class="clf-key">SŁOWO</span><span class="clf-val"></span></div>
+          <div class="clf-row"><span class="clf-key">STATUS</span><span class="clf-val"></span></div>
+          <div class="clf-row"><span class="clf-key">MISJA</span><span class="clf-val"></span></div>
+        </div>
+        <div class="clf-prompt">uwierzytelnienie wymagane<span class="clf-cursor">_</span></div>
+        <button class="btn-line hi" id="btn-show">[ ODSZYFRUJ PLIK ]</button>
       </div>
       <div class="rv-open" id="rv-open">
         <div class="rv-tag" id="rv-tag">rola</div>
@@ -681,12 +732,171 @@ select option { background: var(--bg); }
 
 <script>
 const BANKS = {
-  space:   [['CZARNA DZIURA','NEUTRON','PULSAR'],['NEBULA','GALAKTYKA','KWAZAR'],['ASTRONAUTA','KOSMONAUTA','PIONIER'],['RAKIETA','PROM','KAPSUŁA'],['SATELITA','SONDA','ORBITER'],['METEOR','KOMETA','ASTEROID'],['WORMHOLE','PORTAL','OSOBLIWOŚĆ'],['GRAWITACJA','POLE','MASA'],['TELESKOP','OBSERVATORIUM','SONDA'],['STACJA KOSMICZNA','BAZA ORBITALNA','MODUŁ'],],
-  food:    [['PIZZA','CALZONE','FOCACCIA'],['SUSHI','SASHIMI','ONIGIRI'],['BURGER','SANDWICH','WRAP'],['CZEKOLADA','GANACHE','TRUFLA'],['RAMEN','PHO','UDON'],['KAWA','ESPRESSO','LATTE'],['CROISSANT','BRIOCHE','BAGEL'],['AVOKADO','HUMMUS','GUACAMOLE'],['TACO','BURRITO','QUESADILLA'],['TIRAMISU','PANNA COTTA','SEMIFREDDO'],['KEBAB','GYROS','SHAWARMA'],],
-  animals: [['PINGWIN','FOKA','MORS'],['OŚMIORNICA','KALMAR','MĄTWA'],['FLAMING','CZAPLA','IBIS'],['KAMELEON','GEKON','AGAMA'],['DZIOBAK','WOMBAT','ECHIDNA'],['NARWAL','BELUGA','DELFIN'],['AXOLOTL','TRASZKA','SALAMANDRA'],['KAPIBARA','NUTRIA','BÓBR'],['LENIWIEC','MRÓWKOJAD','PANCERNIK'],['FENNEK','SURYKATKA','MANGUSTA'],],
-  tech:    [['ALGORYTM','HEURYSTYKA','PROTOKÓŁ'],['FIREWALL','PROXY','SANDBOX'],['BLOCKCHAIN','HASHGRAPH','TANGLE'],['PROCESOR','KOPROCESOR','UKŁAD'],['KERNEL','DAEMON','PROCES'],['DEBUGGER','PROFILER','TRACER'],['KOMPILATOR','INTERPRETER','TRANSPILER'],['TERMINAL','KONSOLA','POWŁOKA'],['CACHE','BUFFER','REJESTR'],['LATENCJA','JITTER','BANDWIDTH'],],
-  movies:  [['MATRIX','TRON','EXISTENZ'],['DUNE','ARRIVAL','SOLARIS'],['INTERSTELLAR','CONTACT','GRAVITY'],['INCEPTION','TENET','PRESTIŻ'],['BLADE RUNNER','GHOST IN THE SHELL','AKIRA'],['ALIEN','THE THING','EVENT HORIZON'],['BREAKING BAD','OZARK','BETTER CALL SAUL'],['DARK','DARK MATTER','DEVS'],['SEVERANCE','WESTWORLD','PANTHEON'],['CHERNOBYL','THE LAST OF US','BAND OF BROTHERS'],],
-  sports:  [['PIŁKA NOŻNA','RUGBY','FUTBOL AUSTRALIJSKI'],['KOSZYKÓWKA','SIATKÓWKA','PIŁKA RĘCZNA'],['TENIS','SQUASH','BADMINTON'],['PŁYWANIE','TRIATLON','WIOSLARSTWO'],['BOKS','MMA','JUDO'],['NARCIARSTWO','SNOWBOARD','BIATHLON'],['FORMUŁA 1','MOTOGP','RALLY'],['SZERMIERKA','ŁUCZNICTWO','STRZELECTWO'],],
+  /* ── INFORMATYKA ── */
+  programowanie: [
+    ['PĘTLA FOR','PĘTLA WHILE','REKURENCJA'],
+    ['ZMIENNA','STAŁA','WSKAŹNIK'],
+    ['FUNKCJA','METODA','PROCEDURA'],
+    ['KLASA','OBIEKT','INTERFEJS'],
+    ['TABLICA','LISTA','SŁOWNIK'],
+    ['KOMPILATOR','INTERPRETER','TRANSPILATOR'],
+    ['GIT','SVN','MERCURIAL'],
+    ['PYTHON','JAVA','C SHARP'],
+    ['DEBUGGER','BREAKPOINT','WYJĄTEK'],
+    ['ALGORYTM SORTOWANIA','QUICKSORT','BUBBLESORT'],
+    ['BIBLIOTEKA','FRAMEWORK','MODUŁ'],
+    ['KOMENTARZ','DOKUMENTACJA','README'],
+  ],
+  sieci: [
+    ['ADRES IP','ADRES MAC','HOSTNAME'],
+    ['ROUTER','SWITCH','HUB'],
+    ['PROTOKÓŁ TCP','PROTOKÓŁ UDP','PROTOKÓŁ ICMP'],
+    ['DNS','DHCP','NAT'],
+    ['FIREWALL','PROXY','VPN'],
+    ['LAN','WAN','MAN'],
+    ['TOPOLOGIA GWIAZDY','TOPOLOGIA MAGISTRALI','TOPOLOGIA PIERŚCIENIA'],
+    ['PAKIET','RAMKA','DATAGRAM'],
+    ['PORT','GNIAZDO','KANAŁ'],
+    ['HTTP','HTTPS','FTP'],
+    ['MASKA PODSIECI','BRAMA DOMYŚLNA','PODSIEĆ'],
+    ['PING','TRACEROUTE','NSLOOKUP'],
+  ],
+  bazy: [
+    ['SELECT','INSERT','UPDATE'],
+    ['TABELA','WIDOK','INDEKS'],
+    ['KLUCZ GŁÓWNY','KLUCZ OBCY','KLUCZ UNIKALNY'],
+    ['JOIN','UNION','PODZAPYTANIE'],
+    ['MYSQL','POSTGRESQL','SQLITE'],
+    ['TRANSAKCJA','COMMIT','ROLLBACK'],
+    ['NORMALIZACJA','DENORMALIZACJA','REDUNDANCJA'],
+    ['TRIGGER','PROCEDURA SKŁADOWANA','FUNKCJA'],
+    ['MONGODB','REDIS','CASSANDRA'],
+    ['DIAGRAM ERD','SCHEMAT','RELACJA'],
+    ['AGREGACJA','GROUP BY','HAVING'],
+  ],
+  sprzet: [
+    ['PROCESOR','KOPROCESOR','MIKROPROCESOR'],
+    ['RAM','ROM','CACHE'],
+    ['DYSK SSD','DYSK HDD','PENDRIVE'],
+    ['KARTA GRAFICZNA','KARTA SIECIOWA','KARTA DŹWIĘKOWA'],
+    ['PŁYTA GŁÓWNA','CHIPSET','SOCKET'],
+    ['ZASILACZ','UPS','AKUMULATOR'],
+    ['MONITOR','PROJEKTOR','EKRAN DOTYKOWY'],
+    ['DRUKARKA','SKANER','PLOTER'],
+    ['KLAWIATURA','MYSZ','TOUCHPAD'],
+    ['BIOS','UEFI','FIRMWARE'],
+    ['CHŁODZENIE CIECZĄ','WENTYLATOR','RADIATOR'],
+  ],
+  systemy: [
+    ['WINDOWS','LINUX','MACOS'],
+    ['KERNEL','POWŁOKA','STEROWNIK'],
+    ['PROCES','WĄTEK','DEMON'],
+    ['SYSTEM PLIKÓW','PARTYCJA','WOLUMIN'],
+    ['UPRAWNIENIA','UŻYTKOWNIK','GRUPA'],
+    ['REJESTR','KONFIGURACJA','ZMIENNA ŚRODOWISKOWA'],
+    ['WIRTUALIZACJA','KONTENER','DOCKER'],
+    ['NTFS','EXT4','FAT32'],
+    ['HARMONOGRAM ZADAŃ','CRONA','USŁUGA'],
+    ['TERMINAL','WIERSZ POLECEŃ','BASH'],
+    ['UBUNTU','DEBIAN','FEDORA'],
+  ],
+  cyber: [
+    ['PHISHING','SPEAR PHISHING','SMISHING'],
+    ['MALWARE','RANSOMWARE','SPYWARE'],
+    ['SZYFROWANIE','HASZOWANIE','PODPIS CYFROWY'],
+    ['FIREWALL','IDS','IPS'],
+    ['ATAK BRUTE FORCE','ATAK SŁOWNIKOWY','RAINBOW TABLE'],
+    ['CERTYFIKAT SSL','HTTPS','TLS'],
+    ['BACKUP','ARCHIWUM','MIGAWKA'],
+    ['UWIERZYTELNIANIE','AUTORYZACJA','MFA'],
+    ['PENETRATION TESTING','AUDYT','SKAN PODATNOŚCI'],
+    ['SQL INJECTION','XSS','CSRF'],
+    ['BOTNET','TROJAN','ROOTKIT'],
+    ['ZERO-DAY','CVE','PATCH'],
+  ],
+  /* ── INNE ── */
+  kraje: [
+    ['🇯🇵 JAPONIA','🇰🇷 KOREA PŁD.','🇹🇼 TAJWAN'],
+    ['🇧🇷 BRAZYLIA','🇦🇷 ARGENTYNA','🇨🇱 CHILE'],
+    ['🇳🇴 NORWEGIA','🇸🇪 SZWECJA','🇫🇮 FINLANDIA'],
+    ['🇪🇬 EGIPT','🇲🇦 MAROKO','🇹🇳 TUNEZJA'],
+    ['🇮🇳 INDIE','🇵🇰 PAKISTAN','🇧🇩 BANGLADESZ'],
+    ['🇦🇺 AUSTRALIA','🇳🇿 NOWA ZELANDIA','🇫🇯 FIDŻI'],
+    ['🇨🇦 KANADA','🇺🇸 USA','🇲🇽 MEKSYK'],
+    ['🇩🇪 NIEMCY','🇦🇹 AUSTRIA','🇨🇭 SZWAJCARIA'],
+    ['🇵🇱 POLSKA','🇨🇿 CZECHY','🇸🇰 SŁOWACJA'],
+    ['🇹🇭 TAJLANDIA','🇻🇳 WIETNAM','🇰🇭 KAMBODŻA'],
+    ['🇳🇬 NIGERIA','🇬🇭 GHANA','🇸🇳 SENEGAL'],
+    ['🇵🇪 PERU','🇨🇴 KOLUMBIA','🇪🇨 EKWADOR'],
+    ['🇵🇹 PORTUGALIA','🇪🇸 HISZPANIA','🇮🇹 WŁOCHY'],
+    ['🇺🇦 UKRAINA','🇵🇱 POLSKA','🇧🇾 BIAŁORUŚ'],
+    ['🇸🇦 ARABIA SAUDYJSKA','🇦🇪 ZEA','🇶🇦 KATAR'],
+    ['🇬🇷 GRECJA','🇹🇷 TURCJA','🇨🇾 CYPR'],
+    ['🇮🇩 INDONEZJA','🇲🇾 MALEZJA','🇸🇬 SINGAPUR'],
+    ['🇿🇦 RPA','🇰🇪 KENIA','🇹🇿 TANZANIA'],
+  ],
+  space: [
+    ['CZARNA DZIURA','NEUTRON','PULSAR'],
+    ['NEBULA','GALAKTYKA','KWAZAR'],
+    ['ASTRONAUTA','KOSMONAUTA','PIONIER'],
+    ['RAKIETA','PROM KOSMICZNY','KAPSUŁA'],
+    ['SATELITA','SONDA','ORBITER'],
+    ['METEOR','KOMETA','ASTEROIDA'],
+    ['GRAWITACJA','POLE MAGNETYCZNE','MASA'],
+    ['TELESKOP','OBSERWATORIUM','RADAR'],
+    ['STACJA KOSMICZNA','BAZA ORBITALNA','MODUŁ'],
+    ['MARS','JOWISZ','SATURN'],
+    ['ZAĆMIENIE','TRANZYT','KONIUNKCJA'],
+  ],
+  food: [
+    ['PIZZA','CALZONE','FOCACCIA'],
+    ['SUSHI','SASHIMI','ONIGIRI'],
+    ['BURGER','KANAPKA','WRAP'],
+    ['CZEKOLADA','GANACHE','TRUFLA'],
+    ['RAMEN','PHO','UDON'],
+    ['KAWA','ESPRESSO','LATTE'],
+    ['CROISSANT','BRIOCHE','BAGEL'],
+    ['AWOKADO','HUMMUS','GUACAMOLE'],
+    ['KEBAB','GYROS','SHAWARMA'],
+    ['TIRAMISU','PANNA COTTA','LODY'],
+    ['PIEROGI','KOPYTKA','USZKA'],
+    ['BIGOS','ŻUREK','FLAKI'],
+  ],
+  animals: [
+    ['PINGWIN','FOKA','MORS'],
+    ['OŚMIORNICA','KALMAR','MĄTWA'],
+    ['FLAMING','CZAPLA','IBIS'],
+    ['KAMELEON','GEKON','AGAMA'],
+    ['NARWAL','BELUGA','DELFIN'],
+    ['AXOLOTL','TRASZKA','SALAMANDRA'],
+    ['KAPIBARA','NUTRIA','BÓBR'],
+    ['LENIWIEC','MRÓWKOJAD','PANCERNIK'],
+    ['FENNEK','SURYKATKA','MANGUSTA'],
+    ['WILK','LIS','JENOT'],
+    ['ŁOŚ','RENIFER','BIZON'],
+  ],
+  movies: [
+    ['MATRIX','TRON','EXISTENZ'],
+    ['INTERSTELLAR','CONTACT','GRAWITACJA'],
+    ['INCEPCJA','TENET','PRESTIŻ'],
+    ['ALIEN','THE THING','EVENT HORIZON'],
+    ['BREAKING BAD','OZARK','BETTER CALL SAUL'],
+    ['DARK','DARK MATTER','DEVS'],
+    ['SEVERANCE','WESTWORLD','PANTHEON'],
+    ['CZARNOBYL','THE LAST OF US','BAND OF BROTHERS'],
+    ['WIEDŹMIN','SQUID GAME','DARK TOURIST'],
+    ['DUNE','ARRIVAL','SOLARIS'],
+  ],
+  sports: [
+    ['PIŁKA NOŻNA','RUGBY','FUTBOL AUSTRALIJSKI'],
+    ['KOSZYKÓWKA','SIATKÓWKA','PIŁKA RĘCZNA'],
+    ['TENIS','SQUASH','BADMINTON'],
+    ['PŁYWANIE','TRIATLON','WIOŚLARSTWO'],
+    ['BOKS','MMA','JUDO'],
+    ['NARCIARSTWO','SNOWBOARD','BIATHLON'],
+    ['FORMUŁA 1','MOTOGP','RAJD'],
+    ['SZERMIERKA','ŁUCZNICTWO','STRZELECTWO'],
+  ],
 };
 
 const EVENTS = [
@@ -726,7 +936,7 @@ document.getElementById('btn-start').onclick=()=>{
   const cat=document.getElementById('cat-sel').value;
   let entry;
   if(cat==='custom'){G.word=(document.getElementById('custom-word').value.trim().toUpperCase())||'SLOWO';entry=[G.word,'SYMBOL','SYGNAŁ','OBIEKT'];}
-  else{entry=rand(BANKS[cat]);G.word=entry[0];}
+  else{entry=rand(BANKS[cat]||BANKS.programowanie);G.word=entry[0];}
   const decoys=entry.slice(1);
   const idx=Array.from({length:playerCount},(_,i)=>i);
   for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
@@ -764,7 +974,7 @@ document.getElementById('btn-show').onclick=()=>{
     else{word.className='rv-word imp';word.textContent='? ? ?';hint.textContent='nie znasz słowa\nsłuchaj wskazówek\nudawaj że wiesz';}
   } else {
     document.getElementById('rv-card').className='rv-card c-crew';
-    tag.className='rv-tag crew';tag.textContent='crew member';
+    tag.className='rv-tag crew';tag.textContent='AGENT ZAŁOGI';
     word.className='rv-word crew';word.textContent=G.word;
     hint.textContent='znasz tajne słowo\ndaj jedną wskazówkę\nznajdź impostora';
   }
@@ -834,8 +1044,8 @@ document.getElementById('btn-guess').onclick=()=>{
   const input=document.getElementById('imp-guess');
   const ok=raw===G.word||(raw.length>3&&G.word.includes(raw));
   G.impostorGuessOk=ok;input.disabled=true;document.getElementById('btn-guess').disabled=true;
-  if(ok){input.value='✓ '+raw;input.style.borderColor='var(--green)';input.style.color='var(--green-t)';}
-  else{input.value='✗ '+raw;input.style.borderColor='var(--red)';input.style.color='var(--red-t)';}
+  if(ok){input.value='✓ '+raw;input.style.borderColor='var(--green)';input.style.color='var(--green)';}
+  else{input.value='✗ '+raw;input.style.borderColor='var(--red)';input.style.color='var(--red)';}
 };
 
 document.getElementById('btn-tally').onclick=()=>{
@@ -851,9 +1061,9 @@ function showResult(topIdx,maxV,tally){
   const crewWin=(G.opts.double?allCaught:caught)&&!G.impostorGuessOk;
   const impNames=G.impostors.map(i=>G.players[i]).join(' & ');
   const titleEl=document.getElementById('res-title'),subEl=document.getElementById('res-sub');
-  if(crewWin){titleEl.textContent='crew wygrywa';titleEl.className='res-title crew';subEl.textContent=`${impNames} ${G.impostors.length>1?'zostali zidentyfikowani':'został zidentyfikowany'}.`;status('crew wins');}
-  else if(caught&&G.impostorGuessOk){titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=`${impNames} zgadł prawdziwe słowo.`;status('impostor wins — word guessed');}
-  else{titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=G.opts.double&&G.impostors.length>1?`nie złapaliście obu. ${impNames} uciekają.`:`wybraliście ${G.players[topIdx]} — to pomyłka. ${impNames} ucieka.`;status('impostor wins');}
+  if(crewWin){titleEl.textContent='załoga wygrywa';titleEl.className='res-title crew';subEl.textContent=`${impNames} ${G.impostors.length>1?'zostali zidentyfikowani':'został zidentyfikowany'}.`;status('załoga wygrywa');}
+  else if(caught&&G.impostorGuessOk){titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=`${impNames} zgadł prawdziwe słowo.`;status('impostor wygrywa — słowo odgadnięte');}
+  else{titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=G.opts.double&&G.impostors.length>1?`nie złapaliście obu. ${impNames} uciekają.`:`wybraliście ${G.players[topIdx]} — to pomyłka. ${impNames} ucieka.`;status('impostor wygrywa');}
   document.getElementById('res-word').textContent=G.word;
   const rows=document.getElementById('res-rows');rows.innerHTML='';
   G.players.forEach((name,i)=>{
