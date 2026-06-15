@@ -103,9 +103,17 @@ body::after {
 }
 
 .s-title { margin-bottom: 24px; }
-.s-title .s-badge {
-  font-size: 8px; letter-spacing: .5em; color: var(--muted);
-  margin-bottom: 8px;
+.s-boot {
+  display: flex; flex-direction: column; gap: 3px;
+  margin-bottom: 14px; padding: 10px 12px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.s-boot-line {
+  font-size: 9px; letter-spacing: .1em; color: var(--muted);
+  display: flex; align-items: center; gap: 8px;
+}
+.s-ok {
+  color: var(--green); letter-spacing: .06em; flex-shrink: 0;
 }
 .s-title h1 {
   font-size: clamp(40px, 9vw, 64px);
@@ -258,29 +266,48 @@ select option { background: var(--bg); }
 .rv-locked .clf-cursor { animation: blink 1s step-end infinite; color: var(--green); }
 
 .rv-open {
-  padding: 26px 20px; text-align: center;
-  display: none; flex-direction: column; align-items: center; gap: 8px;
+  padding: 22px 20px 18px; text-align: left;
+  display: none; flex-direction: column; gap: 10px;
+  animation: fadeUp .2s ease both;
 }
 .rv-open.show { display: flex; }
 
-.rv-tag {
-  font-size: 9px; letter-spacing: .38em; padding: 3px 10px; border: 1px solid;
-  text-transform: uppercase;
+.rv-open .clf-header {
+  font-size: 8px; letter-spacing: .4em; padding-bottom: 8px; margin-bottom: 2px;
+  border-bottom: 1px solid var(--border);
 }
-.rv-tag.crew { color: var(--green); border-color: var(--dim); background: rgba(0,255,65,.05); }
-.rv-tag.imp  { color: var(--red);   border-color: var(--red); background: rgba(255,40,40,.05); }
+.rv-open.crew-open .clf-header { color: var(--dim); }
+.rv-open.imp-open  .clf-header { color: var(--red); opacity: .7; }
 
-.rv-word {
-  font-size: clamp(36px, 10vw, 60px); letter-spacing: .06em; line-height: 1.1;
-  margin: 4px 0;
+.rv-open .clf-lines { display: flex; flex-direction: column; gap: 5px; }
+.clf-row-filled { display: flex; align-items: baseline; gap: 10px; font-size: 10px; }
+.clf-row-filled .clf-key { color: var(--muted); letter-spacing: .12em; width: 60px; flex-shrink: 0; }
+.clf-row-filled .clf-data { letter-spacing: .1em; }
+
+.rv-word-block {
+  margin: 6px 0 4px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
-.rv-word.crew { color: var(--green); text-shadow: 0 0 20px rgba(0,255,65,.3); }
-.rv-word.imp  { color: var(--red); letter-spacing: .2em; }
+.rv-word-block .rw-label {
+  font-size: 8px; letter-spacing: .45em; color: var(--muted); margin-bottom: 4px;
+}
+.rv-word {
+  font-size: clamp(32px, 9vw, 54px); letter-spacing: .08em; line-height: 1.1;
+}
+.rv-word.crew { color: var(--green); text-shadow: 0 0 20px rgba(0,255,65,.35); }
+.rv-word.imp  { color: var(--red); letter-spacing: .18em; }
 
 .rv-hint {
-  font-size: 10px; color: var(--muted); letter-spacing: .1em;
-  line-height: 1.75; white-space: pre-line;
+  font-size: 10px; color: var(--muted); letter-spacing: .08em;
+  line-height: 1.8; white-space: pre-line;
+  border-left: 2px solid var(--border); padding-left: 10px;
 }
+.rv-hint.crew-hint { border-left-color: var(--dim); }
+.rv-hint.imp-hint  { border-left-color: var(--red); opacity: .8; }
+
+.rv-tag { display: none; }
 
 .rv-prog { font-size: 10px; letter-spacing: .22em; color: var(--muted); }
 
@@ -526,9 +553,13 @@ select option { background: var(--bg); }
 <!-- SETUP -->
 <div class="scr on" id="s-setup">
   <div class="s-title">
-    <div class="s-badge">// INICJALIZACJA SESJI PARTY GAME</div>
+    <div class="s-boot">
+      <div class="s-boot-line"><span class="s-ok">[  OK  ]</span> ładowanie modułu identyfikacji agentów</div>
+      <div class="s-boot-line"><span class="s-ok">[  OK  ]</span> bank słów kluczowych: gotowy</div>
+      <div class="s-boot-line"><span class="s-ok">[  OK  ]</span> protokół dezinformacji: aktywny</div>
+    </div>
     <h1>IMPOSTOR</h1>
-    <div class="s-desc">jeden gracz jest agentem wroga — musi zgadnąć tajne słowo<br>nie zdradzając że go nie zna · 3–10 graczy</div>
+    <div class="s-desc">jeden gracz jest agentem wroga — musi zgadnąć tajne słowo<br>nie zdradzając że go nie zna</div>
   </div>
 
   <div class="s-sep">KONFIGURACJA GRACZY</div>
@@ -627,9 +658,17 @@ select option { background: var(--bg); }
         <button class="btn-line hi" id="btn-show">[ ODSZYFRUJ PLIK ]</button>
       </div>
       <div class="rv-open" id="rv-open">
-        <div class="rv-tag" id="rv-tag">rola</div>
-        <div class="rv-word" id="rv-word">—</div>
+        <div class="clf-header" id="rv-clf-header">PLIK ODSZYFROWANY — DOSTĘP PRZYZNANY</div>
+        <div class="clf-lines">
+          <div class="clf-row-filled"><span class="clf-key">ROLA</span><span class="clf-data" id="rv-role-val">—</span></div>
+          <div class="clf-row-filled"><span class="clf-key">STATUS</span><span class="clf-data" id="rv-status-val">—</span></div>
+        </div>
+        <div class="rv-word-block">
+          <div class="rw-label">TAJNE SŁOWO</div>
+          <div class="rv-word" id="rv-word">—</div>
+        </div>
         <div class="rv-hint" id="rv-hint">—</div>
+        <div class="rv-tag" id="rv-tag" style="display:none"></div>
       </div>
     </div>
     <div class="rv-prog" id="rv-prog">gracz 1 / 4</div>
@@ -964,18 +1003,40 @@ function loadReveal(idx){
 document.getElementById('btn-show').onclick=()=>{
   const idx=G.revealIdx,isImp=G.impostors.includes(idx);
   document.getElementById('rv-locked').style.display='none';
-  document.getElementById('rv-open').classList.add('show');
-  const tag=document.getElementById('rv-tag'),word=document.getElementById('rv-word'),hint=document.getElementById('rv-hint');
+  const open=document.getElementById('rv-open');
+  open.classList.add('show');
+  const word=document.getElementById('rv-word'),hint=document.getElementById('rv-hint');
+  const roleVal=document.getElementById('rv-role-val'),statusVal=document.getElementById('rv-status-val');
+  const hdr=document.getElementById('rv-clf-header');
   if(isImp){
     const decoy=G.decoyWords[idx];
+    const dbl=G.opts.double&&G.impostors.length>1;
     document.getElementById('rv-card').className='rv-card c-imp';
-    tag.className='rv-tag imp';tag.textContent=G.opts.double&&G.impostors.length>1?'impostor (podwójny)':'impostor';
-    if(G.opts.decoy&&decoy){word.className='rv-word imp';word.textContent=decoy;hint.textContent='to jest fałszywe słowo\ngrasz jakbyś je znał\nposłuchaj innych — spróbuj zgadnąć prawdziwe';}
-    else{word.className='rv-word imp';word.textContent='? ? ?';hint.textContent='nie znasz słowa\nsłuchaj wskazówek\nudawaj że wiesz';}
+    open.className='rv-open show imp-open';
+    hdr.textContent='PLIK ODSZYFROWANY — OSTRZEŻENIE BEZPIECZEŃSTWA';
+    roleVal.textContent=dbl?'IMPOSTOR (x2)':'IMPOSTOR';
+    roleVal.style.color='var(--red)';
+    statusVal.textContent='AGENT WROGA';
+    statusVal.style.color='var(--red)';
+    if(G.opts.decoy&&decoy){
+      word.className='rv-word imp';word.textContent=decoy;
+      hint.className='rv-hint imp-hint';
+      hint.textContent='to jest fałszywe słowo\ngrasz jakbyś je znał\nposłuchaj innych — spróbuj zgadnąć prawdziwe';
+    } else {
+      word.className='rv-word imp';word.textContent='? ? ?';
+      hint.className='rv-hint imp-hint';
+      hint.textContent='nie znasz słowa\nsłuchaj wskazówek\nudawaj że wiesz';
+    }
   } else {
     document.getElementById('rv-card').className='rv-card c-crew';
-    tag.className='rv-tag crew';tag.textContent='AGENT ZAŁOGI';
+    open.className='rv-open show crew-open';
+    hdr.textContent='PLIK ODSZYFROWANY — DOSTĘP PRZYZNANY';
+    roleVal.textContent='AGENT ZAŁOGI';
+    roleVal.style.color='var(--green)';
+    statusVal.textContent='ZAUFANY';
+    statusVal.style.color='var(--dim)';
     word.className='rv-word crew';word.textContent=G.word;
+    hint.className='rv-hint crew-hint';
     hint.textContent='znasz tajne słowo\ndaj jedną wskazówkę\nznajdź impostora';
   }
   const last=idx===G.players.length-1;
