@@ -64,6 +64,10 @@ body::after {
 @keyframes blink   { 0%,100%{opacity:1} 50%{opacity:0} }
 @keyframes fadeUp  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 @keyframes scanIn  { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+@keyframes glitch  { 0%{clip-path:inset(0 0 100% 0);opacity:0} 8%{clip-path:inset(40% 0 30% 0);opacity:1} 16%{clip-path:inset(10% 0 60% 0)} 24%{clip-path:inset(70% 0 5% 0)} 32%{clip-path:inset(0 0 0 0);opacity:1} 100%{clip-path:inset(0 0 0 0);opacity:1} }
+@keyframes glitchFlash { 0%,100%{opacity:1} 10%{opacity:0} 20%{opacity:.6} 30%{opacity:0} 45%{opacity:1} 55%{opacity:.7} 65%{opacity:1} }
+@keyframes typeIn  { from{width:0} to{width:100%} }
+@keyframes resReveal { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
 
 /* ── TOPBAR ── */
 #topbar {
@@ -92,8 +96,16 @@ body::after {
 ::-webkit-scrollbar-thumb { background: var(--border); }
 
 /* ── SCREENS ── */
-.scr { display: none; animation: scanIn .25s ease; }
-.scr.on { display: block; }
+.scr { display: none; }
+.scr.on { display: block; animation: glitch .32s steps(1) both; }
+
+/* screen transition flash overlay */
+#flash-overlay {
+  position: fixed; inset: 0; z-index: 9998;
+  background: var(--green); opacity: 0; pointer-events: none;
+  transition: opacity 0s;
+}
+#flash-overlay.flash { animation: glitchFlash .22s steps(1) forwards; }
 
 /* ── SETUP ── */
 #s-setup.on {
@@ -474,15 +486,30 @@ select option { background: var(--bg); }
 #s-result { }
 
 .res-verdict {
-  padding: 20px 18px 14px; border-bottom: 1px solid var(--border); text-align: center;
+  padding: 18px 18px 12px; border-bottom: 1px solid var(--border);
 }
-.res-eye   { font-size: 9px; letter-spacing: .42em; color: var(--muted); }
+.res-eye   { font-size: 9px; letter-spacing: .42em; color: var(--muted); margin-bottom: 4px; }
 .res-title {
-  font-size: clamp(26px, 6vw, 44px); letter-spacing: .1em; margin: 4px 0 5px;
+  font-size: clamp(28px, 7vw, 48px); letter-spacing: .1em; margin: 0 0 5px;
+  overflow: hidden; white-space: nowrap;
 }
-.res-title.crew { color: var(--green); text-shadow: 0 0 20px rgba(0,255,65,.3); }
-.res-title.imp  { color: var(--red); }
-.res-sub   { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
+.res-title.crew { color: var(--green); text-shadow: 0 0 20px rgba(0,255,65,.3); animation: resReveal .4s ease both; }
+.res-title.imp  { color: var(--red); animation: resReveal .4s ease both; }
+.res-sub   { font-size: 11px; color: var(--muted); letter-spacing: .08em; animation: fadeUp .5s .2s ease both; opacity: 0; animation-fill-mode: both; }
+
+.res-imp-dossier {
+  border: 1px solid var(--red); background: rgba(255,40,40,.03);
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 7px;
+  animation: fadeUp .35s .1s ease both; opacity: 0; animation-fill-mode: both;
+}
+.res-imp-dossier h3 {
+  font-size: 9px; letter-spacing: .32em; color: var(--red); font-weight: normal;
+  padding-bottom: 6px; border-bottom: 1px solid rgba(255,40,40,.2);
+}
+.res-dossier-row { display: flex; gap: 10px; font-size: 10px; align-items: baseline; }
+.res-dossier-key { color: var(--muted); letter-spacing: .1em; width: 72px; flex-shrink: 0; }
+.res-dossier-val { color: var(--red); letter-spacing: .06em; }
+.res-dossier-val.green { color: var(--green); }
 
 .res-main { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
 
@@ -778,17 +805,19 @@ select option { background: var(--bg); }
 <!-- RESULT -->
 <div class="scr" id="s-result">
   <div class="res-verdict">
-    <div class="res-eye">wynik</div>
-    <div class="res-title crew" id="res-title">crew wygrywa</div>
+    <div class="res-eye">— wynik rundy —</div>
+    <div class="res-title crew" id="res-title">załoga wygrywa</div>
     <div class="res-sub" id="res-sub">—</div>
   </div>
   <div class="res-main">
+    <div class="res-imp-dossier hidden" id="res-dossier">
+      <h3>AKTA AGENTA</h3>
+      <div class="res-dossier-row"><span class="res-dossier-key">IMPOSTOR</span><span class="res-dossier-val" id="doss-name">—</span></div>
+      <div class="res-dossier-row"><span class="res-dossier-key">TAJNE SŁOWO</span><span class="res-dossier-val green" id="doss-word">—</span></div>
+      <div class="res-dossier-row hidden" id="doss-decoy-row"><span class="res-dossier-key">FAŁSZYWE</span><span class="res-dossier-val" id="doss-decoy">—</span></div>
+    </div>
     <div class="res-card">
-      <h3>podsumowanie</h3>
-      <div class="word-row">
-        <span class="wr-lbl">tajne słowo</span>
-        <span class="wr-word" id="res-word">—</span>
-      </div>
+      <h3>gracze</h3>
       <div id="res-rows"></div>
     </div>
     <div class="ev-log hidden" id="ev-log">
@@ -803,6 +832,8 @@ select option { background: var(--bg); }
 </div>
 
 </div><!-- /main -->
+
+<div id="flash-overlay"></div>
 
 <div id="statusbar">
   <span>hostlab / impostor</span>
@@ -983,7 +1014,39 @@ const EVENTS = [
 let G={players:[],word:'',impostors:[],decoyWords:{},impHint:'',revealIdx:0,timerSec:180,timerTotal:180,timerHandle:null,frozen:false,eventFired:false,eventHandle:null,eventLog:[],impostorGuessOk:false,opts:{decoy:true,event:true,double:false}};
 let playerCount=4;
 
-function setScreen(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');const m={'s-setup':'setup','s-reveal':'reveal','s-discuss':'discuss','s-vote':'vote','s-result':'result'};document.getElementById('h-phase').textContent=m[id]||id;}
+/* ── AUDIO ENGINE ── */
+let _actx=null;
+function actx(){if(!_actx)_actx=new(window.AudioContext||window.webkitAudioContext)();return _actx;}
+function beep(freq,dur,vol,type){
+  try{
+    const c=actx(),o=c.createOscillator(),g=c.createGain();
+    o.connect(g);g.connect(c.destination);
+    o.type=type||'square';o.frequency.value=freq;
+    g.gain.setValueAtTime(vol||.07,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,c.currentTime+dur);
+    o.start();o.stop(c.currentTime+dur);
+  }catch(e){}
+}
+function sndClick(){beep(880,.06,.06);}
+function sndReveal(){beep(440,.04,.05);setTimeout(()=>beep(660,.08,.05),60);setTimeout(()=>beep(880,.12,.04),140);}
+function sndScan(){beep(220,.08,.04,'sawtooth');setTimeout(()=>beep(440,.06,.03,'sawtooth'),100);}
+function sndWin(){[0,80,160,260].forEach((d,i)=>{setTimeout(()=>beep([523,659,784,1047][i],.18,.05),d);});}
+function sndLose(){[0,100,220].forEach((d,i)=>{setTimeout(()=>beep([330,294,220][i],.22,.06,'sawtooth'),d);});}
+function sndFieldReveal(){beep(600,.05,.04);}
+
+function setScreen(id){
+  const fl=document.getElementById('flash-overlay');
+  fl.classList.remove('flash');
+  void fl.offsetWidth;
+  fl.classList.add('flash');
+  setTimeout(()=>{
+    document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+    document.getElementById(id).classList.add('on');
+    const m={'s-setup':'setup','s-reveal':'reveal','s-discuss':'discuss','s-vote':'vote','s-result':'result'};
+    document.getElementById('h-phase').textContent=m[id]||id;
+  },60);
+  sndClick();
+}
 function status(t){document.getElementById('status-c').textContent=t;}
 function rand(a){return a[Math.floor(Math.random()*a.length)];}
 
@@ -1050,6 +1113,7 @@ function revealField(id,text,cls,delay){
     const el=document.getElementById(id);
     el.textContent=text;
     el.className='clf-val revealed '+(cls||'');
+    sndFieldReveal();
   },delay);
 }
 
@@ -1059,6 +1123,7 @@ document.getElementById('btn-show').addEventListener('click', ()=>{
   if(fp.classList.contains('scanning'))return;
   fp.classList.add('scanning');
   lbl.textContent='IDENTYFIKACJA...';
+  sndScan();
   setTimeout(()=>{
     const idx=G.revealIdx,isImp=G.impostors.includes(idx);
     const doc=document.getElementById('rv-doc');
@@ -1115,7 +1180,7 @@ document.getElementById('btn-show').addEventListener('click', ()=>{
   }, 800);
 });
 
-document.getElementById('btn-next').onclick=()=>loadReveal(G.revealIdx+1);
+document.getElementById('btn-next').onclick=()=>{sndReveal();loadReveal(G.revealIdx+1);};
 document.getElementById('btn-all-ready').onclick=startDiscuss;
 
 function startDiscuss(){
@@ -1193,15 +1258,23 @@ function showResult(topIdx,maxV,tally){
   const crewWin=(G.opts.double?allCaught:caught)&&!G.impostorGuessOk;
   const impNames=G.impostors.map(i=>G.players[i]).join(' & ');
   const titleEl=document.getElementById('res-title'),subEl=document.getElementById('res-sub');
-  if(crewWin){titleEl.textContent='załoga wygrywa';titleEl.className='res-title crew';subEl.textContent=`${impNames} ${G.impostors.length>1?'zostali zidentyfikowani':'został zidentyfikowany'}.`;status('załoga wygrywa');}
-  else if(caught&&G.impostorGuessOk){titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=`${impNames} zgadł prawdziwe słowo.`;status('impostor wygrywa — słowo odgadnięte');}
-  else{titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=G.opts.double&&G.impostors.length>1?`nie złapaliście obu. ${impNames} uciekają.`:`wybraliście ${G.players[topIdx]} — to pomyłka. ${impNames} ucieka.`;status('impostor wygrywa');}
-  document.getElementById('res-word').textContent=G.word;
+  if(crewWin){titleEl.textContent='załoga wygrywa';titleEl.className='res-title crew';subEl.textContent=`${impNames} ${G.impostors.length>1?'zostali zidentyfikowani':'został zidentyfikowany'}.`;status('załoga wygrywa');setTimeout(sndWin,150);}
+  else if(caught&&G.impostorGuessOk){titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=`${impNames} zgadł prawdziwe słowo.`;status('impostor wygrywa — słowo odgadnięte');setTimeout(sndLose,150);}
+  else{titleEl.textContent='impostor wygrywa';titleEl.className='res-title imp';subEl.textContent=G.opts.double&&G.impostors.length>1?`nie złapaliście obu. ${impNames} uciekają.`:`wybraliście ${G.players[topIdx]} — to pomyłka. ${impNames} ucieka.`;status('impostor wygrywa');setTimeout(sndLose,150);}
+  /* dossier */
+  const doss=document.getElementById('res-dossier');
+  doss.classList.remove('hidden');
+  document.getElementById('doss-name').textContent=impNames;
+  document.getElementById('doss-word').textContent=G.word;
+  const decoyRow=document.getElementById('doss-decoy-row');
+  const firstDecoy=G.impostors.length>0?G.decoyWords[G.impostors[0]]:null;
+  if(firstDecoy){decoyRow.classList.remove('hidden');document.getElementById('doss-decoy').textContent=firstDecoy;}
+  else decoyRow.classList.add('hidden');
   const rows=document.getElementById('res-rows');rows.innerHTML='';
   G.players.forEach((name,i)=>{
     const isImp=G.impostors.includes(i),decoy=G.decoyWords[i],v=tally[i]||0;
     const r=document.createElement('div');r.className='rrow';
-    r.innerHTML=`<span class="rrow-name">${name}</span><span class="rrow-v">${v}g</span><span class="rrow-role ${isImp?'i':'c'}">${isImp?'impostor':'crew'}</span>${isImp&&decoy?`<span class="rrow-decoy">← ${decoy}</span>`:''}`;
+    r.innerHTML=`<span class="rrow-name">${name}</span><span class="rrow-v">${v}g</span><span class="rrow-role ${isImp?'i':'c'}">${isImp?'IMPOSTOR':'AGENT'}</span>${isImp&&decoy?`<span class="rrow-decoy">← ${decoy}</span>`:''}`;
     rows.appendChild(r);
   });
   if(G.eventLog.length>0){
@@ -1211,7 +1284,7 @@ function showResult(topIdx,maxV,tally){
   }
 }
 
-document.getElementById('btn-new-game').onclick=()=>{setScreen('s-setup');status('—');document.getElementById('h-players').textContent='—';document.getElementById('ev-log').classList.add('hidden');};
+document.getElementById('btn-new-game').onclick=()=>{setScreen('s-setup');status('—');document.getElementById('h-players').textContent='—';document.getElementById('ev-log').classList.add('hidden');document.getElementById('res-dossier').classList.add('hidden');};
 document.getElementById('btn-same-players').onclick=()=>{
   const cat=document.getElementById('cat-sel').value;let entry;
   if(cat==='custom'){G.word=(document.getElementById('custom-word').value.trim().toUpperCase())||'SLOWO';entry=[G.word,'SYMBOL','SYGNAŁ'];}
