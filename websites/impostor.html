@@ -44,8 +44,8 @@ body {
   display: flex;
   flex-direction: column;
   -webkit-font-smoothing: antialiased;
-  animation: flicker 10s infinite;
 }
+
 
 body::before {
   content: '';
@@ -60,7 +60,6 @@ body::after {
   pointer-events: none; z-index: 8999;
 }
 
-@keyframes flicker { 0%,90%,100%{opacity:1} 91%{opacity:.88} 93%{opacity:1} 95%{opacity:.92} }
 @keyframes blink   { 0%,100%{opacity:1} 50%{opacity:0} }
 @keyframes fadeUp  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 @keyframes scanIn  { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
@@ -84,7 +83,7 @@ body::after {
 #topbar .meta { font-size: 10px; letter-spacing: .18em; color: var(--muted); }
 #topbar .meta b { color: var(--text); }
 #topbar .sys-status { font-size: 10px; letter-spacing: .2em; color: var(--muted); }
-#topbar .sys-status span { color: var(--green); animation: blink 2s step-end infinite; }
+#topbar .sys-status span { color: var(--green); }
 @media (max-width: 480px) { #topbar .sys-status { display: none; } }
 
 /* ── MAIN SCROLL ── */
@@ -98,7 +97,7 @@ body::after {
 
 /* ── SCREENS ── */
 .scr { display: none; }
-.scr.on { display: block; animation: glitch .32s steps(1) both; }
+.scr.on { display: block; animation: fadeUp .18s ease both; }
 
 /* flash overlay removed */
 #flash-overlay { display: none; }
@@ -245,19 +244,20 @@ select option { background: var(--bg); }
 .rv-pass {
   position: absolute; inset: 0; background: var(--bg); z-index: 5;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 20px;
+  align-items: center; justify-content: center; gap: 14px;
   cursor: pointer; user-select: none;
-  animation: fadeUp .2s ease both;
 }
 .rv-pass.gone { display: none; }
-.rv-pass-eye  { font-size: 9px; letter-spacing: .45em; color: var(--muted); }
-.rv-pass-name {
-  font-size: clamp(42px, 14vw, 72px); letter-spacing: .1em; color: var(--green);
-  text-shadow: 0 0 30px rgba(0,255,65,.4); text-align: center; line-height: 1.1;
+.rv-pass-tag {
+  font-size: 9px; letter-spacing: .5em; color: var(--muted);
+  border: 1px solid var(--border); padding: 4px 12px;
 }
-.rv-pass-tap {
-  font-size: 10px; letter-spacing: .28em; color: var(--muted);
-  border: 1px solid var(--border); padding: 8px 20px;
+.rv-pass-name {
+  font-size: clamp(36px, 12vw, 64px); letter-spacing: .12em; color: var(--green);
+  text-align: center; line-height: 1;
+}
+.rv-pass-sub {
+  font-size: 10px; letter-spacing: .2em; color: var(--muted);
 }
 
 .rv-header {
@@ -598,33 +598,48 @@ select option { background: var(--bg); }
 .res-footer .btn-hi { border-color: var(--dim); color: var(--green); }
 .res-footer .btn-hi:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
 
-/* ── FINGERPRINT SCANNER ── */
-.fp-scanner {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  cursor: pointer; padding: 14px 18px;
-  border: 1px solid var(--border); transition: border-color .2s, color .2s;
-  color: var(--muted); user-select: none;
+/* ── UNLOCK BUTTON ── */
+.btn-unlock {
+  width: 100%; padding: 13px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--font); font-size: 11px;
+  letter-spacing: .3em; cursor: pointer; transition: .15s;
+  text-transform: uppercase; margin-top: 4px;
 }
-.fp-scanner:hover { border-color: var(--dim); color: var(--dim); }
-.fp-scanner.scanning { border-color: var(--green); color: var(--green); }
-.fp-scanner.scanning .fp-label { color: var(--green); }
-.fp-scanner.scanning .fp-scan-line { animation-duration: .4s; opacity: 1; }
-.fp-wrap { position: relative; width: 64px; height: 78px; }
-.fp-svg { display: block; }
-.fp-scan-line {
-  position: absolute; left: 0; right: 0; height: 2px; top: 0;
-  background: linear-gradient(90deg, transparent 0%, currentColor 30%, currentColor 70%, transparent 100%);
-  opacity: 0; animation: fp-scan 2s ease-in-out infinite;
-  pointer-events: none;
+.btn-unlock:hover { border-color: var(--dim); color: var(--green); }
+.btn-unlock:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ── DIFFICULTY ── */
+.diff-row { display: flex; gap: 0; }
+.diff-btn {
+  flex: 1; padding: 8px 6px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--font); font-size: 10px;
+  letter-spacing: .14em; cursor: pointer; transition: .1s;
+  margin-right: -1px;
 }
-@keyframes fp-scan {
-  0%   { top: 0%;   opacity: 0; }
-  8%   { opacity: .8; }
-  92%  { opacity: .8; }
-  100% { top: 100%; opacity: 0; }
+.diff-btn:last-child { margin-right: 0; }
+.diff-btn:hover { border-color: var(--dim); color: var(--text); z-index: 1; position: relative; }
+.diff-btn.active { border-color: var(--dim); color: var(--green); background: rgba(0,255,65,.04); z-index: 1; position: relative; }
+.diff-desc { font-size: 9px; color: var(--muted); margin-top: 6px; letter-spacing: .06em; }
+
+/* ── MUTE ── */
+.btn-mute {
+  background: transparent; border: none; color: var(--muted);
+  font-size: 14px; cursor: pointer; padding: 4px 6px;
+  font-family: var(--font); transition: color .1s; line-height: 1;
 }
-.fp-label { font-size: 9px; letter-spacing: .4em; text-transform: uppercase; transition: color .2s; }
-.fp-hint  { font-size: 8px; letter-spacing: .15em; color: var(--muted); opacity: .55; }
+.btn-mute:hover { color: var(--green); }
+.btn-mute.muted { color: var(--red); opacity: .6; }
+
+/* ── IMPOSTOR WORD IN VOTE ── */
+.v-imp-info {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 10px 0 12px; border-bottom: 1px solid rgba(255,40,40,.2);
+  margin-bottom: 6px;
+}
+.v-imp-label { font-size: 9px; letter-spacing: .28em; color: var(--red); opacity: .7; }
+.v-imp-word { font-size: 22px; letter-spacing: .1em; color: var(--red); }
 
 /* ── STATUSBAR ── */
 #statusbar {
@@ -651,6 +666,7 @@ select option { background: var(--bg); }
   <span class="meta">faza <b id="h-phase">setup</b></span>
   <span class="meta">gracze <b id="h-players">—</b></span>
   <span class="sys-status">SYS STATUS: <span>ONLINE</span></span>
+  <button class="btn-mute" id="btn-mute" title="wycisz">♪</button>
 </div>
 
 <div id="main">
@@ -717,6 +733,18 @@ select option { background: var(--bg); }
     </div>
   </div>
 
+  <div class="s-sep">POZIOM TRUDNOŚCI</div>
+
+  <div class="s-block">
+    <label>poziom trudności</label>
+    <div class="diff-row">
+      <button class="diff-btn active" data-diff="easy">ŁATWY</button>
+      <button class="diff-btn" data-diff="normal">NORMALNY</button>
+      <button class="diff-btn" data-diff="hard">TRUDNY</button>
+    </div>
+    <div class="diff-desc" id="diff-desc">impostor dostaje wskazówkę na start • timer 4 min</div>
+  </div>
+
   <div class="s-sep">MODUŁY DODATKOWE</div>
 
   <div class="s-block">
@@ -753,9 +781,9 @@ select option { background: var(--bg); }
 <div class="scr" id="s-reveal">
   <!-- pass-screen: shown first, tap to dismiss -->
   <div class="rv-pass" id="rv-pass">
-    <div class="rv-pass-eye">teraz patrzy</div>
+    <div class="rv-pass-tag">IDENTYFIKACJA AGENTA</div>
     <div class="rv-pass-name" id="rv-pass-name">—</div>
-    <div class="rv-pass-tap">dotknij aby kontynuować</div>
+    <div class="rv-pass-sub">dotknij aby kontynuować</div>
   </div>
   <div class="rv-header">
     <div class="who-lbl">teraz patrzy</div>
@@ -778,25 +806,7 @@ select option { background: var(--bg); }
           <div class="rih-text" id="rih-text">—</div>
           <div class="rih-note">możesz jej użyć — brzmi przekonująco, ale może wzbudzić podejrzenia</div>
         </div>
-        <div class="fp-scanner" id="btn-show" role="button" tabindex="0">
-          <div class="fp-wrap">
-            <svg class="fp-svg" viewBox="0 0 64 78" width="64" height="78" fill="none">
-              <path d="M28,68 L28,54 Q28,48 32,45 Q36,48 36,54 L36,68" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              <path d="M24,68 L24,52 Q24,40 32,35 Q40,40 40,52 L40,68" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              <path d="M20,68 L20,50 Q20,32 32,26 Q44,32 44,50 L44,68" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M16,68 L16,48 Q16,24 32,17 Q48,24 48,48 L48,68" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M12,64 L12,44 Q12,16 32,9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-              <path d="M32,9 Q52,16 52,44 L52,64" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-              <path d="M8,56 L8,40 Q9,16 24,7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".65"/>
-              <path d="M56,56 L56,40 Q55,16 40,7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".65"/>
-              <path d="M5,48 Q6,22 20,12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity=".4"/>
-              <path d="M59,48 Q58,22 44,12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity=".4"/>
-            </svg>
-            <div class="fp-scan-line"></div>
-          </div>
-          <div class="fp-label" id="fp-label">SKANUJ ODCISK</div>
-          <div class="fp-hint">dotknij aby zidentyfikować agenta</div>
-        </div>
+        <button class="btn-unlock" id="btn-show">▶ ODSŁOŃ PLIK</button>
       </div>
     </div>
     <div class="rv-prog" id="rv-prog">gracz 1 / 4</div>
@@ -840,9 +850,9 @@ select option { background: var(--bg); }
 <!-- VOTE -->
 <div class="scr" id="s-vote">
   <div class="rv-pass" id="vt-pass">
-    <div class="rv-pass-eye">czas na głosowanie</div>
+    <div class="rv-pass-tag">GŁOSOWANIE</div>
     <div class="rv-pass-name" id="vt-pass-name">—</div>
-    <div class="rv-pass-tap">dotknij aby zagłosować</div>
+    <div class="rv-pass-sub">dotknij aby zagłosować</div>
   </div>
   <div class="v-header">
     <h2>kogo podejrzewasz?</h2>
@@ -1110,13 +1120,15 @@ const EVENTS = [
   { code:'paradoks',             type:'dwuznaczna wskazówka',   desc:'Wskazany gracz musi podać wskazówkę pasującą do tajnego słowa I do czegoś zupełnie innego.', hasTarget:true, log:t=>`${t} dawał dwuznaczną wskazówkę` },
 ];
 
-let G={players:[],word:'',impostors:[],decoyWords:{},impHint:'',revealIdx:0,timerSec:180,timerTotal:180,timerHandle:null,frozen:false,eventFired:false,eventHandle:null,eventLog:[],impostorGuessOk:false,opts:{decoy:true,event:true,double:false}};
+let G={players:[],word:'',impostors:[],decoyWords:{},impHint:'',revealIdx:0,timerSec:180,timerTotal:180,timerHandle:null,frozen:false,eventFired:false,eventHandle:null,eventLog:[],impostorGuessOk:false,difficulty:'easy',opts:{decoy:true,event:true,double:false}};
 let playerCount=4;
 
 /* ── AUDIO ENGINE ── */
 let _actx=null;
+let _muted=false;
 function actx(){if(!_actx)_actx=new(window.AudioContext||window.webkitAudioContext)();return _actx;}
 function beep(freq,dur,vol,type){
+  if(_muted)return;
   try{
     const c=actx(),o=c.createOscillator(),g=c.createGain();
     o.connect(g);g.connect(c.destination);
@@ -1199,9 +1211,11 @@ document.getElementById('btn-start').onclick=()=>{
   const idx=Array.from({length:playerCount},(_,i)=>i);
   for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
   G.impostors=G.opts.double?[idx[0],idx[1]]:[idx[0]];
+  if(G.difficulty==='hard'){G.opts.decoy=false;}
   G.decoyWords={};
   G.impostors.forEach((x,i)=>{if(G.opts.decoy)G.decoyWords[x]=decoys[i%decoys.length]||decoys[0];});
   G.revealIdx=0;G.eventFired=false;G.eventLog=[];G.impostorGuessOk=false;
+  const _tm={easy:240,normal:180,hard:120};G.timerSec=_tm[G.difficulty]||180;G.timerTotal=G.timerSec;
   document.getElementById('h-players').textContent=playerCount;
   setScreen('s-reveal');loadReveal(0);
 };
@@ -1226,9 +1240,7 @@ function loadReveal(idx){
   const hint=document.getElementById('rv-hint');
   hint.className='rv-hint'; hint.textContent='';
   document.getElementById('rv-imp-hint').classList.add('hidden');
-  const fp=document.getElementById('btn-show');
-  fp.classList.remove('scanning'); fp.style.display='';
-  document.getElementById('fp-label').textContent='SKANUJ ODCISK';
+  document.getElementById('btn-show').disabled=false;
   document.getElementById('btn-next').classList.add('hidden');
   document.getElementById('btn-all-ready').classList.add('hidden');
   status(`podaj urządzenie: ${name}`);
@@ -1249,18 +1261,15 @@ function revealField(id,text,cls,delay){
 }
 
 document.getElementById('btn-show').addEventListener('click', ()=>{
-  const fp=document.getElementById('btn-show');
-  const lbl=document.getElementById('fp-label');
-  if(fp.classList.contains('scanning'))return;
-  fp.classList.add('scanning');
-  lbl.textContent='IDENTYFIKACJA...';
+  const btn=document.getElementById('btn-show');
+  if(btn.disabled)return;
+  btn.disabled=true;
   sndScan(); haptic(60);
   setTimeout(()=>{
     const idx=G.revealIdx,isImp=G.impostors.includes(idx);
     const doc=document.getElementById('rv-doc');
     const hdr=document.getElementById('rv-clf-header');
     const hint=document.getElementById('rv-hint');
-    fp.classList.remove('scanning'); fp.style.display='none';
     if(isImp){
       const decoy=G.decoyWords[idx];
       const dbl=G.opts.double&&G.impostors.length>1;
@@ -1285,8 +1294,10 @@ document.getElementById('btn-show').addEventListener('click', ()=>{
       },500);
       const impHintEl=document.getElementById('rv-imp-hint');
       const impHintText=document.getElementById('rih-text');
-      if(G.impHint){
+      if(G.impHint&&G.difficulty==='easy'){
         setTimeout(()=>{impHintEl.classList.remove('hidden');impHintText.textContent=G.impHint;},650);
+      } else {
+        impHintEl.classList.add('hidden');
       }
     } else {
       document.getElementById('rv-card').className='rv-card c-crew';
@@ -1302,13 +1313,12 @@ document.getElementById('btn-show').addEventListener('click', ()=>{
       },500);
       document.getElementById('rv-imp-hint').classList.add('hidden');
     }
-    lbl.textContent='ZIDENTYFIKOWANO';
     const last=idx===G.players.length-1;
     setTimeout(()=>{
       if(!last)document.getElementById('btn-next').classList.remove('hidden');
       else document.getElementById('btn-all-ready').classList.remove('hidden');
     },700);
-  }, 800);
+  }, 200);
 });
 
 document.getElementById('btn-next').onclick=()=>{sndReveal();loadReveal(G.revealIdx+1);};
@@ -1316,7 +1326,8 @@ document.getElementById('btn-all-ready').onclick=startDiscuss;
 
 function startDiscuss(){
   setScreen('s-discuss');
-  G.timerSec=180;G.timerTotal=180;G.frozen=false;G.eventFired=false;
+  const _timerMap={easy:240,normal:180,hard:120};
+  G.timerSec=_timerMap[G.difficulty]||180;G.timerTotal=G.timerSec;G.frozen=false;G.eventFired=false;
   renderTimer();clearInterval(G.timerHandle);
   if(G.opts.event)G.eventHandle=setTimeout(fireEvent,(G.timerTotal*(0.35+Math.random()*0.3))*1000);
   G.timerHandle=setInterval(()=>{if(G.frozen)return;G.timerSec--;renderTimer();if(G.timerSec<=0)clearInterval(G.timerHandle);},1000);
@@ -1367,6 +1378,13 @@ function loadVote(idx){
   document.getElementById('vt-prog').innerHTML=`głos <b>${idx+1}</b> / ${G.players.length}`;
   /* build tap candidates */
   const container=document.getElementById('v-candidates');container.innerHTML='';
+  const isImp=G.impostors.includes(idx);
+  if(isImp){
+    const info=document.createElement('div');
+    info.className='v-imp-info';
+    info.innerHTML=`<span class="v-imp-label">TAJNE SŁOWO</span><span class="v-imp-word">${G.word}</span>`;
+    container.appendChild(info);
+  }
   G.players.forEach((n,j)=>{
     if(j===idx)return;
     const btn=document.createElement('button');btn.className='v-candidate';
@@ -1380,7 +1398,6 @@ function loadVote(idx){
     container.appendChild(btn);
   });
   /* impostor gets a guess panel */
-  const isImp=G.impostors.includes(idx);
   const panel=document.getElementById('imp-guess-panel');
   panel.classList.toggle('hidden',!isImp);
   if(isImp){
@@ -1470,11 +1487,33 @@ document.getElementById('btn-same-players').onclick=()=>{
   G.impostors=G.opts.double?[idx[0],idx[1]]:[idx[0]];
   G.decoyWords={};G.impostors.forEach((x,i)=>{if(G.opts.decoy)G.decoyWords[x]=decoys[i%decoys.length]||decoys[0];});
   G.revealIdx=0;G.eventFired=false;G.eventLog=[];G.impostorGuessOk=false;
+  const _tm2={easy:240,normal:180,hard:120};G.timerSec=_tm2[G.difficulty]||180;G.timerTotal=G.timerSec;
   document.getElementById('ev-log').classList.add('hidden');
   setScreen('s-reveal');loadReveal(0);
 };
 
 buildNames();
+
+const DIFF_DESC={
+  easy:'impostor dostaje wskazówkę na start • timer 4 min',
+  normal:'bez wskazówki na start • timer 3 min',
+  hard:'bez wskazówki • bez fałszywego słowa • timer 2 min',
+};
+document.querySelectorAll('.diff-btn').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.diff-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    G.difficulty=b.dataset.diff;
+    document.getElementById('diff-desc').textContent=DIFF_DESC[G.difficulty];
+    sndClick();
+  };
+});
+
+document.getElementById('btn-mute').onclick=()=>{
+  _muted=!_muted;
+  document.getElementById('btn-mute').classList.toggle('muted',_muted);
+  document.getElementById('btn-mute').textContent=_muted?'✕':'♪';
+};
 </script>
 </body>
 </html>
