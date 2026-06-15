@@ -84,18 +84,21 @@ body::after {
 
 /* ── MAIN SCROLL ── */
 #main {
-  flex: 1; overflow-y: auto; overflow-x: hidden;
+  flex: 1; overflow: hidden;
   position: relative; z-index: 10;
+  display: flex; flex-direction: column;
 }
+#s-setup { overflow-y: auto; }
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); }
 
 /* ── SCREENS ── */
-.scr { display: none; animation: scanIn .25s ease; }
-.scr.on { display: block; }
+.scr { display: none; animation: scanIn .25s ease; flex: 1; }
+.scr.on { display: flex; flex-direction: column; }
 
 /* ── SETUP ── */
+#s-setup.on { display: block; }
 #s-setup {
   max-width: 540px;
   margin: 0 auto;
@@ -103,9 +106,17 @@ body::after {
 }
 
 .s-title { margin-bottom: 24px; }
-.s-title .s-badge {
-  font-size: 8px; letter-spacing: .5em; color: var(--muted);
-  margin-bottom: 8px;
+.s-boot {
+  display: flex; flex-direction: column; gap: 3px;
+  margin-bottom: 14px; padding: 10px 12px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.s-boot-line {
+  font-size: 9px; letter-spacing: .1em; color: var(--muted);
+  display: flex; align-items: center; gap: 8px;
+}
+.s-ok {
+  color: var(--green); letter-spacing: .06em; flex-shrink: 0;
 }
 .s-title h1 {
   font-size: clamp(40px, 9vw, 64px);
@@ -203,7 +214,7 @@ select option { background: var(--bg); }
 /* ── REVEAL ── */
 #s-reveal {
   display: flex; flex-direction: column; align-items: center;
-  min-height: 100%; padding: 0;
+  height: 100%; overflow: hidden; padding: 0;
 }
 #s-reveal.on { display: flex; }
 
@@ -258,29 +269,59 @@ select option { background: var(--bg); }
 .rv-locked .clf-cursor { animation: blink 1s step-end infinite; color: var(--green); }
 
 .rv-open {
-  padding: 26px 20px; text-align: center;
-  display: none; flex-direction: column; align-items: center; gap: 8px;
+  padding: 22px 20px 18px; text-align: left;
+  display: none; flex-direction: column; gap: 10px;
+  animation: fadeUp .2s ease both;
 }
 .rv-open.show { display: flex; }
 
-.rv-tag {
-  font-size: 9px; letter-spacing: .38em; padding: 3px 10px; border: 1px solid;
-  text-transform: uppercase;
+.rv-open .clf-header {
+  font-size: 8px; letter-spacing: .4em; padding-bottom: 8px; margin-bottom: 2px;
+  border-bottom: 1px solid var(--border);
 }
-.rv-tag.crew { color: var(--green); border-color: var(--dim); background: rgba(0,255,65,.05); }
-.rv-tag.imp  { color: var(--red);   border-color: var(--red); background: rgba(255,40,40,.05); }
+.rv-open.crew-open .clf-header { color: var(--dim); }
+.rv-open.imp-open  .clf-header { color: var(--red); opacity: .7; }
 
-.rv-word {
-  font-size: clamp(36px, 10vw, 60px); letter-spacing: .06em; line-height: 1.1;
-  margin: 4px 0;
+.rv-open .clf-lines { display: flex; flex-direction: column; gap: 5px; }
+.clf-row-filled { display: flex; align-items: baseline; gap: 10px; font-size: 10px; }
+.clf-row-filled .clf-key { color: var(--muted); letter-spacing: .12em; width: 60px; flex-shrink: 0; }
+.clf-row-filled .clf-data { letter-spacing: .1em; }
+
+.rv-word-block {
+  margin: 6px 0 4px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
-.rv-word.crew { color: var(--green); text-shadow: 0 0 20px rgba(0,255,65,.3); }
-.rv-word.imp  { color: var(--red); letter-spacing: .2em; }
+.rv-word-block .rw-label {
+  font-size: 8px; letter-spacing: .45em; color: var(--muted); margin-bottom: 4px;
+}
+.rv-word {
+  font-size: clamp(32px, 9vw, 54px); letter-spacing: .08em; line-height: 1.1;
+}
+.rv-word.crew { color: var(--green); text-shadow: 0 0 20px rgba(0,255,65,.35); }
+.rv-word.imp  { color: var(--red); letter-spacing: .18em; }
 
 .rv-hint {
-  font-size: 10px; color: var(--muted); letter-spacing: .1em;
-  line-height: 1.75; white-space: pre-line;
+  font-size: 10px; color: var(--muted); letter-spacing: .08em;
+  line-height: 1.8; white-space: pre-line;
+  border-left: 2px solid var(--border); padding-left: 10px;
 }
+.rv-hint.crew-hint { border-left-color: var(--dim); }
+.rv-hint.imp-hint  { border-left-color: var(--red); opacity: .8; }
+
+.rv-imp-hint {
+  border: 1px solid var(--red); background: rgba(255,40,40,.04);
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 5px;
+}
+.rv-imp-hint.hidden { display: none; }
+.rih-label { font-size: 8px; letter-spacing: .4em; color: var(--red); opacity: .7; }
+.rih-text  { font-size: 11px; color: var(--text); letter-spacing: .06em; line-height: 1.55; }
+.rih-text::before { content: '"'; color: var(--red); }
+.rih-text::after  { content: '"'; color: var(--red); }
+.rih-note  { font-size: 9px; color: var(--muted); letter-spacing: .06em; font-style: italic; }
+
+.rv-tag { display: none; }
 
 .rv-prog { font-size: 10px; letter-spacing: .22em; color: var(--muted); }
 
@@ -305,7 +346,7 @@ select option { background: var(--bg); }
 #s-discuss {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  min-height: 100%; padding: 28px 20px; gap: 22px;
+  height: 100%; overflow: hidden; padding: 28px 20px; gap: 22px;
 }
 #s-discuss.on { display: flex; }
 
@@ -391,7 +432,7 @@ select option { background: var(--bg); }
 .btn-ev:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
 
 /* ── VOTE ── */
-#s-vote { min-height: 100%; display: none; flex-direction: column; }
+#s-vote { height: 100%; overflow: hidden; display: none; flex-direction: column; }
 #s-vote.on { display: flex; }
 
 .v-header {
@@ -439,7 +480,7 @@ select option { background: var(--bg); }
 .btn-tally:hover { background: var(--red); color: #fff; }
 
 /* ── RESULT ── */
-#s-result { min-height: 100%; display: none; flex-direction: column; }
+#s-result { height: 100%; overflow: hidden; display: none; flex-direction: column; }
 #s-result.on { display: flex; }
 
 .res-verdict {
@@ -526,9 +567,13 @@ select option { background: var(--bg); }
 <!-- SETUP -->
 <div class="scr on" id="s-setup">
   <div class="s-title">
-    <div class="s-badge">// INICJALIZACJA SESJI PARTY GAME</div>
+    <div class="s-boot">
+      <div class="s-boot-line"><span class="s-ok">[  OK  ]</span> ładowanie modułu identyfikacji agentów</div>
+      <div class="s-boot-line"><span class="s-ok">[  OK  ]</span> bank słów kluczowych: gotowy</div>
+      <div class="s-boot-line"><span class="s-ok">[  OK  ]</span> protokół dezinformacji: aktywny</div>
+    </div>
     <h1>IMPOSTOR</h1>
-    <div class="s-desc">jeden gracz jest agentem wroga — musi zgadnąć tajne słowo<br>nie zdradzając że go nie zna · 3–10 graczy</div>
+    <div class="s-desc">jeden gracz jest agentem wroga — musi zgadnąć tajne słowo<br>nie zdradzając że go nie zna</div>
   </div>
 
   <div class="s-sep">KONFIGURACJA GRACZY</div>
@@ -627,9 +672,22 @@ select option { background: var(--bg); }
         <button class="btn-line hi" id="btn-show">[ ODSZYFRUJ PLIK ]</button>
       </div>
       <div class="rv-open" id="rv-open">
-        <div class="rv-tag" id="rv-tag">rola</div>
-        <div class="rv-word" id="rv-word">—</div>
+        <div class="clf-header" id="rv-clf-header">PLIK ODSZYFROWANY — DOSTĘP PRZYZNANY</div>
+        <div class="clf-lines">
+          <div class="clf-row-filled"><span class="clf-key">ROLA</span><span class="clf-data" id="rv-role-val">—</span></div>
+          <div class="clf-row-filled"><span class="clf-key">STATUS</span><span class="clf-data" id="rv-status-val">—</span></div>
+        </div>
+        <div class="rv-word-block">
+          <div class="rw-label" id="rv-word-label">TAJNE SŁOWO</div>
+          <div class="rv-word" id="rv-word">—</div>
+        </div>
         <div class="rv-hint" id="rv-hint">—</div>
+        <div class="rv-imp-hint hidden" id="rv-imp-hint">
+          <div class="rih-label">TWOJA WSKAZÓWKA NA PIERWSZĄ TURĘ</div>
+          <div class="rih-text" id="rih-text">—</div>
+          <div class="rih-note">możesz jej użyć — brzmi przekonująco, ale może wzbudzić podejrzenia</div>
+        </div>
+        <div class="rv-tag" id="rv-tag" style="display:none"></div>
       </div>
     </div>
     <div class="rv-prog" id="rv-prog">gracz 1 / 4</div>
@@ -734,168 +792,160 @@ select option { background: var(--bg); }
 const BANKS = {
   /* ── INFORMATYKA ── */
   programowanie: [
-    ['PĘTLA FOR','PĘTLA WHILE','REKURENCJA'],
-    ['ZMIENNA','STAŁA','WSKAŹNIK'],
-    ['FUNKCJA','METODA','PROCEDURA'],
-    ['KLASA','OBIEKT','INTERFEJS'],
-    ['TABLICA','LISTA','SŁOWNIK'],
-    ['KOMPILATOR','INTERPRETER','TRANSPILATOR'],
-    ['GIT','SVN','MERCURIAL'],
-    ['PYTHON','JAVA','C SHARP'],
-    ['DEBUGGER','BREAKPOINT','WYJĄTEK'],
-    ['ALGORYTM SORTOWANIA','QUICKSORT','BUBBLESORT'],
-    ['BIBLIOTEKA','FRAMEWORK','MODUŁ'],
-    ['KOMENTARZ','DOKUMENTACJA','README'],
+    ['PĘTLA',      'WARUNEK',    'INSTRUKCJA', 'używa się tego żeby coś powtarzać w kółko'],
+    ['ZMIENNA',    'STAŁA',      'PARAMETR',   'przechowuje jakąś wartość którą można zmienić'],
+    ['FUNKCJA',    'METODA',     'PROCEDURA',  'kawałek kodu który robi jedną konkretną rzecz'],
+    ['BŁĄD',       'OSTRZEŻENIE','WYJĄTEK',    'coś poszło nie tak i program przestał działać'],
+    ['KOMENTARZ',  'OPIS',       'DOKUMENTACJA','notatka w kodzie która nic nie wykonuje'],
+    ['KLASA',      'OBIEKT',     'INTERFEJS',  'szablon według którego tworzy się obiekty'],
+    ['GIT',        'GITHUB',     'SVN',        'narzędzie do zapisywania historii zmian w projekcie'],
+    ['DEBUGGER',   'TESTER',     'PROFILER',   'pomaga znaleźć i naprawić błędy w kodzie'],
+    ['ALGORYTM',   'SCHEMAT',    'DIAGRAM',    'przepis krok po kroku jak rozwiązać dany problem'],
+    ['KOMPILATOR', 'INTERPRETER','PARSER',     'tłumaczy kod na język który rozumie komputer'],
+    ['TABLICA',    'LISTA',      'SŁOWNIK',    'przechowuje wiele wartości na raz w jednym miejscu'],
+    ['PYTHON',     'JAVA',       'JAVASCRIPT', 'popularny język programowania łatwy na start'],
   ],
   sieci: [
-    ['ADRES IP','ADRES MAC','HOSTNAME'],
-    ['ROUTER','SWITCH','HUB'],
-    ['PROTOKÓŁ TCP','PROTOKÓŁ UDP','PROTOKÓŁ ICMP'],
-    ['DNS','DHCP','NAT'],
-    ['FIREWALL','PROXY','VPN'],
-    ['LAN','WAN','MAN'],
-    ['TOPOLOGIA GWIAZDY','TOPOLOGIA MAGISTRALI','TOPOLOGIA PIERŚCIENIA'],
-    ['PAKIET','RAMKA','DATAGRAM'],
-    ['PORT','GNIAZDO','KANAŁ'],
-    ['HTTP','HTTPS','FTP'],
-    ['MASKA PODSIECI','BRAMA DOMYŚLNA','PODSIEĆ'],
-    ['PING','TRACEROUTE','NSLOOKUP'],
+    ['ROUTER',     'SWITCH',     'HUB',        'przekierowuje dane między różnymi sieciami'],
+    ['ADRES IP',   'ADRES MAC',  'PORT',       'unikalny numer identyfikujący urządzenie w sieci'],
+    ['FIREWALL',   'ANTYWIRUS',  'PROXY',      'blokuje nieautoryzowany ruch sieciowy'],
+    ['SERWER',     'KLIENT',     'HOST',       'udostępnia zasoby i usługi innym urządzeniom'],
+    ['DNS',        'DHCP',       'NAT',        'zamienia adresy IP na nazwy czytelne dla ludzi'],
+    ['WIFI',       'BLUETOOTH',  'ETHERNET',   'bezprzewodowa sieć lokalna zasięgu kilkudziesięciu metrów'],
+    ['PAKIET',     'RAMKA',      'SEGMENT',    'mała porcja danych przesyłana przez sieć'],
+    ['PROTOKÓŁ',   'STANDARD',   'FORMAT',     'zestaw zasad komunikacji między urządzeniami'],
+    ['CHMURA',     'HOSTING',    'SERWER',     'przechowujesz dane zdalnie bez własnego sprzętu'],
+    ['HASŁO',      'LOGIN',      'TOKEN',      'ciąg znaków chroniący dostęp do konta w sieci'],
+    ['PING',       'TRACEROUTE', 'SKAN',       'sprawdza czy inne urządzenie jest dostępne w sieci'],
   ],
   bazy: [
-    ['SELECT','INSERT','UPDATE'],
-    ['TABELA','WIDOK','INDEKS'],
-    ['KLUCZ GŁÓWNY','KLUCZ OBCY','KLUCZ UNIKALNY'],
-    ['JOIN','UNION','PODZAPYTANIE'],
-    ['MYSQL','POSTGRESQL','SQLITE'],
-    ['TRANSAKCJA','COMMIT','ROLLBACK'],
-    ['NORMALIZACJA','DENORMALIZACJA','REDUNDANCJA'],
-    ['TRIGGER','PROCEDURA SKŁADOWANA','FUNKCJA'],
-    ['MONGODB','REDIS','CASSANDRA'],
-    ['DIAGRAM ERD','SCHEMAT','RELACJA'],
-    ['AGREGACJA','GROUP BY','HAVING'],
+    ['TABELA',        'WIDOK',       'ARKUSZ',    'dane ułożone w wiersze i kolumny jak Excel'],
+    ['ZAPYTANIE',     'POLECENIE',   'KOMENDA',   'pytasz bazę danych żeby coś zwróciła'],
+    ['KLUCZ GŁÓWNY',  'KLUCZ OBCY',  'INDEKS',    'unikalny identyfikator każdego wiersza w tabeli'],
+    ['RELACJA',       'POŁĄCZENIE',  'ZALEŻNOŚĆ', 'powiązanie między danymi w dwóch tabelach'],
+    ['TRANSAKCJA',    'OPERACJA',    'SESJA',     'zestaw zmian który albo cały przejdzie albo żaden'],
+    ['BACKUP',        'KOPIA',       'ARCHIWUM',  'zapasowa kopia danych na wypadek awarii'],
+    ['NULL',          'ZERO',        'PUSTE',     'specjalna wartość oznaczająca brak wartości'],
+    ['JOIN',          'UNION',       'MERGE',     'łączy dane z dwóch różnych tabel w jednym wyniku'],
+    ['INDEKS',        'KLUCZ',       'HASH',      'przyspiesza wyszukiwanie w dużej tabeli'],
+    ['MYSQL',         'POSTGRESQL',  'SQLITE',    'popularny system do zarządzania bazami danych'],
   ],
   sprzet: [
-    ['PROCESOR','KOPROCESOR','MIKROPROCESOR'],
-    ['RAM','ROM','CACHE'],
-    ['DYSK SSD','DYSK HDD','PENDRIVE'],
-    ['KARTA GRAFICZNA','KARTA SIECIOWA','KARTA DŹWIĘKOWA'],
-    ['PŁYTA GŁÓWNA','CHIPSET','SOCKET'],
-    ['ZASILACZ','UPS','AKUMULATOR'],
-    ['MONITOR','PROJEKTOR','EKRAN DOTYKOWY'],
-    ['DRUKARKA','SKANER','PLOTER'],
-    ['KLAWIATURA','MYSZ','TOUCHPAD'],
-    ['BIOS','UEFI','FIRMWARE'],
-    ['CHŁODZENIE CIECZĄ','WENTYLATOR','RADIATOR'],
+    ['PROCESOR',      'KOPROCESOR',  'CHIPSET',   'wykonuje wszystkie obliczenia w komputerze'],
+    ['RAM',           'ROM',         'CACHE',     'szybka pamięć operacyjna używana na bieżąco'],
+    ['DYSK SSD',      'DYSK HDD',    'PENDRIVE',  'na nim zapisujesz pliki i instalujesz system'],
+    ['KLAWIATURA',    'MYSZ',        'TOUCHPAD',  'podstawowe urządzenie do wprowadzania tekstu'],
+    ['MONITOR',       'PROJEKTOR',   'TABLET',    'wyświetla obraz generowany przez komputer'],
+    ['KARTA GRAFICZNA','KARTA SIECIOWA','KARTA DŹWIĘKOWA','odpowiada za wyświetlanie obrazu w grach'],
+    ['ZASILACZ',      'BATERIA',     'UPS',       'dostarcza prąd do wszystkich podzespołów'],
+    ['PŁYTA GŁÓWNA',  'MOSTEK',      'CHIPSET',   'łączy wszystkie podzespoły komputera w całość'],
+    ['DRUKARKA',      'SKANER',      'PLOTER',    'przenosi cyfrowy plik na papier'],
+    ['SŁUCHAWKI',     'GŁOŚNIKI',    'MIKROFON',  'urządzenie do słuchania dźwięku z komputera'],
   ],
   systemy: [
-    ['WINDOWS','LINUX','MACOS'],
-    ['KERNEL','POWŁOKA','STEROWNIK'],
-    ['PROCES','WĄTEK','DEMON'],
-    ['SYSTEM PLIKÓW','PARTYCJA','WOLUMIN'],
-    ['UPRAWNIENIA','UŻYTKOWNIK','GRUPA'],
-    ['REJESTR','KONFIGURACJA','ZMIENNA ŚRODOWISKOWA'],
-    ['WIRTUALIZACJA','KONTENER','DOCKER'],
-    ['NTFS','EXT4','FAT32'],
-    ['HARMONOGRAM ZADAŃ','CRONA','USŁUGA'],
-    ['TERMINAL','WIERSZ POLECEŃ','BASH'],
-    ['UBUNTU','DEBIAN','FEDORA'],
+    ['WINDOWS',       'LINUX',       'MACOS',     'system operacyjny który ma większość użytkowników'],
+    ['INSTALACJA',    'AKTUALIZACJA','KONFIGURACJA','proces dodawania nowego programu do komputera'],
+    ['TERMINAL',      'KONSOLA',     'WIERSZ POLECEŃ','okno do wpisywania tekstowych poleceń systemowych'],
+    ['STEROWNIK',     'FIRMWARE',    'WTYCZKA',   'pozwala systemowi komunikować się z danym sprzętem'],
+    ['PROCES',        'WĄTEK',       'USŁUGA',    'program który aktualnie działa w pamięci komputera'],
+    ['UPRAWNIENIA',   'KONTO',       'HASŁO',     'decydują co dany użytkownik może zrobić w systemie'],
+    ['KOSZ',          'FOLDER',      'ARCHIWUM',  'tymczasowe miejsce dla plików które usunąłeś'],
+    ['SKRÓT',         'ALIAS',       'DOWIĄZANIE','wskazuje na plik gdzieś indziej nie będąc nim samym'],
+    ['UBUNTU',        'DEBIAN',      'FEDORA',    'popularna darmowa dystrybucja systemu Linux'],
+    ['REJESTR',       'KONFIGURACJA','BAZA SYSTEMU','przechowuje ustawienia programów i samego systemu'],
   ],
   cyber: [
-    ['PHISHING','SPEAR PHISHING','SMISHING'],
-    ['MALWARE','RANSOMWARE','SPYWARE'],
-    ['SZYFROWANIE','HASZOWANIE','PODPIS CYFROWY'],
-    ['FIREWALL','IDS','IPS'],
-    ['ATAK BRUTE FORCE','ATAK SŁOWNIKOWY','RAINBOW TABLE'],
-    ['CERTYFIKAT SSL','HTTPS','TLS'],
-    ['BACKUP','ARCHIWUM','MIGAWKA'],
-    ['UWIERZYTELNIANIE','AUTORYZACJA','MFA'],
-    ['PENETRATION TESTING','AUDYT','SKAN PODATNOŚCI'],
-    ['SQL INJECTION','XSS','CSRF'],
-    ['BOTNET','TROJAN','ROOTKIT'],
-    ['ZERO-DAY','CVE','PATCH'],
+    ['HASŁO',         'PIN',         'PASSPHRASE','ciąg znaków który chroni dostęp do twojego konta'],
+    ['PHISHING',      'SPAM',        'SCAM',      'ktoś podszywa się pod kogoś zaufanego żeby wyłudzić dane'],
+    ['SZYFROWANIE',   'HASZOWANIE',  'KODOWANIE', 'ukrywa treść danych żeby nikt niepowołany nie odczytał'],
+    ['WIRUS',         'ROBAK',       'TROJAN',    'złośliwy program który niszczy lub kradnie dane'],
+    ['BACKUP',        'KOPIA',       'SNAPSHOT',  'kopia danych na wypadek ataku hakerskiego lub awarii'],
+    ['VPN',           'PROXY',       'TOR',       'ukrywa twoje prawdziwe IP i szyfruje połączenie'],
+    ['FIREWALL',      'ANTYWIRUS',   'SANDBOX',   'pierwsza linia obrony przed atakami z internetu'],
+    ['AKTUALIZACJA',  'PATCH',       'POPRAWKA',  'naprawia znane luki bezpieczeństwa w oprogramowaniu'],
+    ['WERYFIKACJA',   'AUTORYZACJA', 'LOGOWANIE', 'potwierdzasz że to naprawdę ty próbujesz się zalogować'],
+    ['ATAK',          'WŁAMANIE',    'EXPLOIT',   'próba nieuprawnionego dostępu do cudzego systemu'],
   ],
   /* ── INNE ── */
   kraje: [
-    ['🇯🇵 JAPONIA','🇰🇷 KOREA PŁD.','🇹🇼 TAJWAN'],
-    ['🇧🇷 BRAZYLIA','🇦🇷 ARGENTYNA','🇨🇱 CHILE'],
-    ['🇳🇴 NORWEGIA','🇸🇪 SZWECJA','🇫🇮 FINLANDIA'],
-    ['🇪🇬 EGIPT','🇲🇦 MAROKO','🇹🇳 TUNEZJA'],
-    ['🇮🇳 INDIE','🇵🇰 PAKISTAN','🇧🇩 BANGLADESZ'],
-    ['🇦🇺 AUSTRALIA','🇳🇿 NOWA ZELANDIA','🇫🇯 FIDŻI'],
-    ['🇨🇦 KANADA','🇺🇸 USA','🇲🇽 MEKSYK'],
-    ['🇩🇪 NIEMCY','🇦🇹 AUSTRIA','🇨🇭 SZWAJCARIA'],
-    ['🇵🇱 POLSKA','🇨🇿 CZECHY','🇸🇰 SŁOWACJA'],
-    ['🇹🇭 TAJLANDIA','🇻🇳 WIETNAM','🇰🇭 KAMBODŻA'],
-    ['🇳🇬 NIGERIA','🇬🇭 GHANA','🇸🇳 SENEGAL'],
-    ['🇵🇪 PERU','🇨🇴 KOLUMBIA','🇪🇨 EKWADOR'],
-    ['🇵🇹 PORTUGALIA','🇪🇸 HISZPANIA','🇮🇹 WŁOCHY'],
-    ['🇺🇦 UKRAINA','🇵🇱 POLSKA','🇧🇾 BIAŁORUŚ'],
-    ['🇸🇦 ARABIA SAUDYJSKA','🇦🇪 ZEA','🇶🇦 KATAR'],
-    ['🇬🇷 GRECJA','🇹🇷 TURCJA','🇨🇾 CYPR'],
-    ['🇮🇩 INDONEZJA','🇲🇾 MALEZJA','🇸🇬 SINGAPUR'],
-    ['🇿🇦 RPA','🇰🇪 KENIA','🇹🇿 TANZANIA'],
+    ['🇯🇵 JAPONIA',   '🇰🇷 KOREA PŁD.','🇹🇼 TAJWAN',    'kraj znany z technologii anime i samurajów'],
+    ['🇧🇷 BRAZYLIA',  '🇦🇷 ARGENTYNA', '🇨🇱 CHILE',     'największy kraj Ameryki Południowej z karnawałem'],
+    ['🇳🇴 NORWEGIA',  '🇸🇪 SZWECJA',   '🇫🇮 FINLANDIA', 'kraj skandynawski ze zorzą polarną i fiordami'],
+    ['🇪🇬 EGIPT',     '🇲🇦 MAROKO',    '🇹🇳 TUNEZJA',   'kraj z piramidami i słynną rzeką Nil'],
+    ['🇮🇳 INDIE',     '🇵🇰 PAKISTAN',  '🇧🇩 BANGLADESZ','kraj z miliardową populacją i Taj Mahal'],
+    ['🇦🇺 AUSTRALIA', '🇳🇿 NOWA ZELANDIA','🇫🇯 FIDŻI',  'kontynent i kraj jednocześnie z kangurami'],
+    ['🇨🇦 KANADA',    '🇺🇸 USA',       '🇲🇽 MEKSYK',    'duży kraj graniczący z USA od północy i klonami'],
+    ['🇩🇪 NIEMCY',    '🇦🇹 AUSTRIA',   '🇨🇭 SZWAJCARIA','największa gospodarka Europy z Berlinem'],
+    ['🇵🇱 POLSKA',    '🇨🇿 CZECHY',    '🇸🇰 SŁOWACJA',  'kraj w środku Europy ze stolicą w Warszawie'],
+    ['🇹🇭 TAJLANDIA', '🇻🇳 WIETNAM',   '🇰🇭 KAMBODŻA',  'kraj w Azji Wschodniej znany z plaż i świątyń'],
+    ['🇳🇬 NIGERIA',   '🇬🇭 GHANA',     '🇸🇳 SENEGAL',   'najbardziej zaludniony kraj na kontynencie afrykańskim'],
+    ['🇵🇹 PORTUGALIA','🇪🇸 HISZPANIA', '🇮🇹 WŁOCHY',    'kraj na Półwyspie Iberyjskim nad Atlantykiem'],
+    ['🇬🇷 GRECJA',    '🇹🇷 TURCJA',    '🇨🇾 CYPR',      'kraj przy Morzu Śródziemnym kolebka demokracji'],
+    ['🇮🇩 INDONEZJA', '🇲🇾 MALEZJA',   '🇸🇬 SINGAPUR',  'największy archipelag świata z tysiącami wysp'],
+    ['🇺🇦 UKRAINA',   '🇷🇴 RUMUNIA',   '🇧🇬 BUŁGARIA',  'duży kraj we wschodniej Europie z trójzębem'],
+    ['🇿🇦 RPA',       '🇰🇪 KENIA',     '🇹🇿 TANZANIA',  'kraj na południu Afryki z Kapsztadem i safari'],
+    ['🇫🇷 FRANCJA',   '🇧🇪 BELGIA',    '🇱🇺 LUKSEMBURG','kraj z Wieżą Eiffla i słynną kuchnią'],
+    ['🇮🇸 ISLANDIA',  '🇩🇰 DANIA',     '🇫🇴 WYSPY OWCZE','wyspa wulkaniczna z gejzerami i zorzą'],
   ],
   space: [
-    ['CZARNA DZIURA','NEUTRON','PULSAR'],
-    ['NEBULA','GALAKTYKA','KWAZAR'],
-    ['ASTRONAUTA','KOSMONAUTA','PIONIER'],
-    ['RAKIETA','PROM KOSMICZNY','KAPSUŁA'],
-    ['SATELITA','SONDA','ORBITER'],
-    ['METEOR','KOMETA','ASTEROIDA'],
-    ['GRAWITACJA','POLE MAGNETYCZNE','MASA'],
-    ['TELESKOP','OBSERWATORIUM','RADAR'],
-    ['STACJA KOSMICZNA','BAZA ORBITALNA','MODUŁ'],
-    ['MARS','JOWISZ','SATURN'],
-    ['ZAĆMIENIE','TRANZYT','KONIUNKCJA'],
+    ['PLANETA',       'KSIĘŻYC',     'GWIAZDA',   'duże ciało niebieskie krążące wokół gwiazdy'],
+    ['RAKIETA',       'PROM KOSMICZNY','KAPSUŁA',  'pojazd który wynosi ładunek lub ludzi w kosmos'],
+    ['CZARNA DZIURA', 'PULSAR',      'KWAZAR',    'pochłania wszystko w zasięgu nawet światło'],
+    ['SATELITA',      'SONDA',       'ORBITER',   'krąży wokół Ziemi i przesyła sygnały na dół'],
+    ['ASTRONAUTA',    'KOSMONAUTA',  'PILOT',     'człowiek który leci w przestrzeń kosmiczną'],
+    ['TELESKOP',      'OBSERWATORIUM','RADAR',     'pozwala obserwować obiekty bardzo daleko stąd'],
+    ['STACJA KOSMICZNA','BAZA ORBITALNA','LAB',   'na niej ludzie mieszkają i pracują na orbicie'],
+    ['METEOR',        'KOMETA',      'ASTEROIDA', 'skała kosmiczna która spala się w atmosferze'],
+    ['SŁOŃCE',        'GWIAZDA',     'GWIAZDA NEUTRONOWA','centrum naszego układu słonecznego'],
+    ['GRAWITACJA',    'PRZYCIĄGANIE','MASA',      'siła która przyciąga wszystkie obiekty do siebie'],
+    ['MARS',          'WENUS',       'JOWISZ',    'czerwona planeta sąsiadująca z Ziemią w układzie'],
   ],
   food: [
-    ['PIZZA','CALZONE','FOCACCIA'],
-    ['SUSHI','SASHIMI','ONIGIRI'],
-    ['BURGER','KANAPKA','WRAP'],
-    ['CZEKOLADA','GANACHE','TRUFLA'],
-    ['RAMEN','PHO','UDON'],
-    ['KAWA','ESPRESSO','LATTE'],
-    ['CROISSANT','BRIOCHE','BAGEL'],
-    ['AWOKADO','HUMMUS','GUACAMOLE'],
-    ['KEBAB','GYROS','SHAWARMA'],
-    ['TIRAMISU','PANNA COTTA','LODY'],
-    ['PIEROGI','KOPYTKA','USZKA'],
-    ['BIGOS','ŻUREK','FLAKI'],
+    ['PIZZA',         'CALZONE',     'FOCACCIA',  'włoski placek z ciasta z serem i dodatkami'],
+    ['SUSHI',         'SASHIMI',     'ONIGIRI',   'japońskie danie z ryżem i surową rybą'],
+    ['BURGER',        'KANAPKA',     'WRAP',      'bułka z mięsem warzywami i sosem w środku'],
+    ['PIEROGI',       'KOPYTKA',     'USZKA',     'polskie kluski z ciasta z nadzieniem w środku'],
+    ['KEBAB',         'GYROS',       'SHAWARMA',  'mięso z rożna zawijane w cienki placek'],
+    ['KAWA',          'ESPRESSO',    'LATTE',     'gorący napój który budzi rano i nie daje spać'],
+    ['CZEKOLADA',     'KARMEL',      'NUGAT',     'słodki smakołyk z ziaren kakaowca'],
+    ['RAMEN',         'PHO',         'UDON',      'azjatycka zupa z makaronem i bulionem'],
+    ['TIRAMISU',      'PANNA COTTA', 'LODY',      'włoski deser z mascarpone i kawą'],
+    ['FRYTKI',        'NACHOS',      'ONION RINGS','smażone w głębokim tłuszczu dodatki do dań'],
+    ['LODY',          'SORBET',      'MROŻONY JOGURT','zamrożony słodki deser jedzony latem'],
   ],
   animals: [
-    ['PINGWIN','FOKA','MORS'],
-    ['OŚMIORNICA','KALMAR','MĄTWA'],
-    ['FLAMING','CZAPLA','IBIS'],
-    ['KAMELEON','GEKON','AGAMA'],
-    ['NARWAL','BELUGA','DELFIN'],
-    ['AXOLOTL','TRASZKA','SALAMANDRA'],
-    ['KAPIBARA','NUTRIA','BÓBR'],
-    ['LENIWIEC','MRÓWKOJAD','PANCERNIK'],
-    ['FENNEK','SURYKATKA','MANGUSTA'],
-    ['WILK','LIS','JENOT'],
-    ['ŁOŚ','RENIFER','BIZON'],
+    ['PINGWIN',       'FOKA',        'MORS',      'nielotny ptak który mieszka w zimnych rejonach'],
+    ['OŚMIORNICA',    'KALMAR',      'MĄTWA',     'morskie stworzenie z ośmioma mackami'],
+    ['FLAMING',       'CZAPLA',      'IBIS',      'różowy ptak który stoi na jednej nodze'],
+    ['DELFIN',        'NARWAL',      'BELUGA',    'inteligentny ssak morski znany z echolokacji'],
+    ['KAPIBARA',      'NUTRIA',      'BÓBR',      'największy gryzoń świata lubiący wodę'],
+    ['LENIWIEC',      'MRÓWKOJAD',   'PANCERNIK', 'najwolniejszy ssak świata wiszący na gałęziach'],
+    ['SURYKATKA',     'MANGUSTA',    'FENNEK',    'małe pustynnne zwierzę które stoi na tylnych łapach'],
+    ['KAMELEON',      'GEKON',       'AGAMA',     'gad który zmienia kolor żeby się zamaskować'],
+    ['WILK',          'LIS',         'JENOT',     'drapieżnik który żyje i poluje w stadzie'],
+    ['ŁOŚ',           'RENIFER',     'BIZON',     'największy jeleń w Europie z ogromnymi rogami'],
   ],
   movies: [
-    ['MATRIX','TRON','EXISTENZ'],
-    ['INTERSTELLAR','CONTACT','GRAWITACJA'],
-    ['INCEPCJA','TENET','PRESTIŻ'],
-    ['ALIEN','THE THING','EVENT HORIZON'],
-    ['BREAKING BAD','OZARK','BETTER CALL SAUL'],
-    ['DARK','DARK MATTER','DEVS'],
-    ['SEVERANCE','WESTWORLD','PANTHEON'],
-    ['CZARNOBYL','THE LAST OF US','BAND OF BROTHERS'],
-    ['WIEDŹMIN','SQUID GAME','DARK TOURIST'],
-    ['DUNE','ARRIVAL','SOLARIS'],
+    ['MATRIX',        'TRON',        'EXISTENZ',  'film w którym cała rzeczywistość okazuje się symulacją'],
+    ['INTERSTELLAR',  'GRAVITY',     'CONTACT',   'film o podróży kosmicznej i poszukiwaniu nowego świata'],
+    ['INCEPCJA',      'TENET',       'PRESTIŻ',   'film Nolana w którym nic nie jest tym czym się wydaje'],
+    ['BREAKING BAD',  'OZARK',       'BETTER CALL SAUL','serial o zwykłym człowieku który staje się przestępcą'],
+    ['DARK',          'DARK MATTER', 'DEVS',      'klimatyczny serial z pętlą czasową i zaginiętymi dziećmi'],
+    ['SEVERANCE',     'WESTWORLD',   'PANTHEON',  'serial o pracownikach którzy nie pamiętają życia poza biurem'],
+    ['THE LAST OF US','CHERNOBYL',   'BAND OF BROTHERS','serial który był wydarzeniem kulturowym ostatnich lat'],
+    ['WIEDŹMIN',      'SQUID GAME',  'MONEY HEIST','serial który stał się globalnym hitem w krótkim czasie'],
+    ['ALIEN',         'THE THING',   'EVENT HORIZON','horror sci-fi gdzie coś złego kryje się w ciemności'],
+    ['DUNE',          'ARRIVAL',     'BLADE RUNNER 2049','epicka adaptacja science-fiction z imponującą wizją'],
   ],
   sports: [
-    ['PIŁKA NOŻNA','RUGBY','FUTBOL AUSTRALIJSKI'],
-    ['KOSZYKÓWKA','SIATKÓWKA','PIŁKA RĘCZNA'],
-    ['TENIS','SQUASH','BADMINTON'],
-    ['PŁYWANIE','TRIATLON','WIOŚLARSTWO'],
-    ['BOKS','MMA','JUDO'],
-    ['NARCIARSTWO','SNOWBOARD','BIATHLON'],
-    ['FORMUŁA 1','MOTOGP','RAJD'],
-    ['SZERMIERKA','ŁUCZNICTWO','STRZELECTWO'],
+    ['PIŁKA NOŻNA',   'RUGBY',       'FUTBOL AMERYKAŃSKI','sport z okrągłą piłką i bramkami grany nogami'],
+    ['KOSZYKÓWKA',    'SIATKÓWKA',   'PIŁKA RĘCZNA','sport w którym rzucasz piłką do kosza na wysokości'],
+    ['TENIS',         'SQUASH',      'BADMINTON',  'sport z rakietką i piłeczką przez siatkę lub ścianę'],
+    ['PŁYWANIE',      'WIOŚLARSTWO', 'TRIATLON',   'sport rozgrywany całkowicie w wodzie'],
+    ['BOKS',          'MMA',         'JUDO',       'sport walki gdzie uderzasz przeciwnika pięściami'],
+    ['NARCIARSTWO',   'SNOWBOARD',   'BIATHLON',   'sport zimowy na stoku ze śniegiem i białymi trasami'],
+    ['FORMUŁA 1',     'MOTOGP',      'RAJD',       'wyścigi samochodów które osiągają ponad 300 km/h'],
+    ['LEKKOATLETYKA', 'GIMNASTYKA',  'ŁUCZNICTWO', 'dyscypliny olimpijskie rozgrywane na stadionie'],
   ],
 };
 
@@ -908,7 +958,7 @@ const EVENTS = [
   { code:'paradoks',             type:'dwuznaczna wskazówka',   desc:'Wskazany gracz musi podać wskazówkę pasującą do tajnego słowa I do czegoś zupełnie innego.', hasTarget:true, log:t=>`${t} dawał dwuznaczną wskazówkę` },
 ];
 
-let G={players:[],word:'',impostors:[],decoyWords:{},revealIdx:0,timerSec:180,timerTotal:180,timerHandle:null,frozen:false,eventFired:false,eventHandle:null,eventLog:[],impostorGuessOk:false,opts:{decoy:true,event:true,double:false}};
+let G={players:[],word:'',impostors:[],decoyWords:{},impHint:'',revealIdx:0,timerSec:180,timerTotal:180,timerHandle:null,frozen:false,eventFired:false,eventHandle:null,eventLog:[],impostorGuessOk:false,opts:{decoy:true,event:true,double:false}};
 let playerCount=4;
 
 function setScreen(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');const m={'s-setup':'setup','s-reveal':'reveal','s-discuss':'discuss','s-vote':'vote','s-result':'result'};document.getElementById('h-phase').textContent=m[id]||id;}
@@ -937,7 +987,8 @@ document.getElementById('btn-start').onclick=()=>{
   let entry;
   if(cat==='custom'){G.word=(document.getElementById('custom-word').value.trim().toUpperCase())||'SLOWO';entry=[G.word,'SYMBOL','SYGNAŁ','OBIEKT'];}
   else{entry=rand(BANKS[cat]||BANKS.programowanie);G.word=entry[0];}
-  const decoys=entry.slice(1);
+  G.impHint=entry[3]||'';
+  const decoys=entry.slice(1,3);
   const idx=Array.from({length:playerCount},(_,i)=>i);
   for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
   G.impostors=G.opts.double?[idx[0],idx[1]]:[idx[0]];
@@ -964,19 +1015,46 @@ function loadReveal(idx){
 document.getElementById('btn-show').onclick=()=>{
   const idx=G.revealIdx,isImp=G.impostors.includes(idx);
   document.getElementById('rv-locked').style.display='none';
-  document.getElementById('rv-open').classList.add('show');
-  const tag=document.getElementById('rv-tag'),word=document.getElementById('rv-word'),hint=document.getElementById('rv-hint');
+  const open=document.getElementById('rv-open');
+  open.classList.add('show');
+  const word=document.getElementById('rv-word'),hint=document.getElementById('rv-hint');
+  const roleVal=document.getElementById('rv-role-val'),statusVal=document.getElementById('rv-status-val');
+  const hdr=document.getElementById('rv-clf-header');
   if(isImp){
     const decoy=G.decoyWords[idx];
+    const dbl=G.opts.double&&G.impostors.length>1;
     document.getElementById('rv-card').className='rv-card c-imp';
-    tag.className='rv-tag imp';tag.textContent=G.opts.double&&G.impostors.length>1?'impostor (podwójny)':'impostor';
-    if(G.opts.decoy&&decoy){word.className='rv-word imp';word.textContent=decoy;hint.textContent='to jest fałszywe słowo\ngrasz jakbyś je znał\nposłuchaj innych — spróbuj zgadnąć prawdziwe';}
-    else{word.className='rv-word imp';word.textContent='? ? ?';hint.textContent='nie znasz słowa\nsłuchaj wskazówek\nudawaj że wiesz';}
+    open.className='rv-open show imp-open';
+    hdr.textContent='PLIK ODSZYFROWANY — OSTRZEŻENIE BEZPIECZEŃSTWA';
+    roleVal.textContent=dbl?'IMPOSTOR (x2)':'IMPOSTOR';
+    roleVal.style.color='var(--red)';
+    statusVal.textContent='AGENT WROGA';
+    statusVal.style.color='var(--red)';
+    if(G.opts.decoy&&decoy){
+      word.className='rv-word imp';word.textContent=decoy;
+      hint.className='rv-hint imp-hint';
+      hint.textContent='to jest fałszywe słowo\ngrasz jakbyś je znał\nposłuchaj innych — spróbuj zgadnąć prawdziwe';
+    } else {
+      word.className='rv-word imp';word.textContent='? ? ?';
+      hint.className='rv-hint imp-hint';
+      hint.textContent='nie znasz słowa\nsłuchaj wskazówek\nudawaj że wiesz';
+    }
+    const impHintEl=document.getElementById('rv-imp-hint');
+    const impHintText=document.getElementById('rih-text');
+    if(G.impHint){impHintEl.classList.remove('hidden');impHintText.textContent=G.impHint;}
+    else{impHintEl.classList.add('hidden');}
   } else {
     document.getElementById('rv-card').className='rv-card c-crew';
-    tag.className='rv-tag crew';tag.textContent='AGENT ZAŁOGI';
+    open.className='rv-open show crew-open';
+    hdr.textContent='PLIK ODSZYFROWANY — DOSTĘP PRZYZNANY';
+    roleVal.textContent='AGENT ZAŁOGI';
+    roleVal.style.color='var(--green)';
+    statusVal.textContent='ZAUFANY';
+    statusVal.style.color='var(--dim)';
     word.className='rv-word crew';word.textContent=G.word;
+    hint.className='rv-hint crew-hint';
     hint.textContent='znasz tajne słowo\ndaj jedną wskazówkę\nznajdź impostora';
+    document.getElementById('rv-imp-hint').classList.add('hidden');
   }
   const last=idx===G.players.length-1;
   if(!last)document.getElementById('btn-next').classList.remove('hidden');
@@ -1083,8 +1161,9 @@ document.getElementById('btn-new-game').onclick=()=>{setScreen('s-setup');status
 document.getElementById('btn-same-players').onclick=()=>{
   const cat=document.getElementById('cat-sel').value;let entry;
   if(cat==='custom'){G.word=(document.getElementById('custom-word').value.trim().toUpperCase())||'SLOWO';entry=[G.word,'SYMBOL','SYGNAŁ'];}
-  else{const bank=BANKS[cat]||BANKS.space;do{entry=rand(bank);}while(entry[0]===G.word&&bank.length>1);G.word=entry[0];}
-  const decoys=entry.slice(1);
+  else{const bank=BANKS[cat]||BANKS.programowanie;do{entry=rand(bank);}while(entry[0]===G.word&&bank.length>1);G.word=entry[0];}
+  G.impHint=entry[3]||'';
+  const decoys=entry.slice(1,3);
   const idx=Array.from({length:G.players.length},(_,i)=>i);
   for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
   G.impostors=G.opts.double?[idx[0],idx[1]]:[idx[0]];
