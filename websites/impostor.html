@@ -1226,6 +1226,21 @@ function loadReveal(idx){
   status(`podaj urządzenie: ${name}`);
 }
 
+function decryptText(el,finalText,duration){
+  const chars='ABCDEFGHIJKLMNOPRSTUVWXYZ0123456789#@!%&?';
+  let frame=0;const total=Math.ceil(duration/40);
+  const iv=setInterval(()=>{
+    if(frame>=total){el.textContent=finalText;clearInterval(iv);return;}
+    const p=frame/total;
+    el.textContent=finalText.split('').map((c,i)=>{
+      if(c===' ')return ' ';
+      if(i/finalText.length<p)return c;
+      return chars[Math.floor(Math.random()*chars.length)];
+    }).join('');
+    frame++;
+  },40);
+}
+
 function showRvStep(step){
   G.revealStep=step;
   ['rv-s1','rv-s2','rv-s3'].forEach(id=>document.getElementById(id).classList.add('hidden'));
@@ -1243,18 +1258,18 @@ function showRvStep(step){
     const noteEl=document.getElementById('rv-cecha-note');
     if(isImp){
       labelEl.textContent='twój opis';
-      wordEl.textContent=G.cecha||'słuchaj uważnie';
       wordEl.style.cssText='font-size:clamp(16px,5vw,22px);line-height:1.5';
       wordEl.className='rv-step-big red';
       noteEl.classList.remove('hidden');
+      decryptText(wordEl, G.cecha||'???', 900);
     } else {
       labelEl.textContent='tajne hasło';
-      wordEl.textContent=G.word;
       wordEl.style.cssText='';
       wordEl.className='rv-step-big green';
       noteEl.classList.add('hidden');
+      decryptText(wordEl, G.word, 700);
     }
-    sndClick();haptic(20);
+    sndScan();haptic(30);setTimeout(()=>sndReveal(),400);
   } else if(step===3){
     document.getElementById('rv-s3').classList.remove('hidden');
     document.getElementById('rv-mission-text').textContent=isImp
