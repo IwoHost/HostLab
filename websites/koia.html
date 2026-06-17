@@ -179,7 +179,6 @@
   <div class="spacer"></div>
   <div class="actions">
     <button id="btnReviveAd" class="btn btn-primary">▶ Obejrzyj reklamę</button>
-    <button id="btnRevivePay" class="btn btn-gold">Zapłać 15 coinów</button>
     <button id="btnReviveSkip" class="btn btn-ghost">Odpuść</button>
   </div>
 </div>
@@ -900,9 +899,6 @@
     if(s==='shop'){ renderShop(); updateFreeBtns(); }
     if(s==='continue'){
       $('contSub').textContent='wynik '+score+' · wskrześ rybę i graj dalej';
-      const pay=$('btnRevivePay'), can=totalGold>=REVIVE_COST;
-      pay.disabled=!can;
-      pay.textContent = can ? ('Zapłać '+REVIVE_COST+' coinów') : ('Za mało coinów · '+totalGold+'/'+REVIVE_COST);
     }
     if(s==='over'){
       $('overScore').textContent=score;
@@ -974,7 +970,6 @@
   $('btnAgain').onclick=()=>{ sfx('click'); play(); };
   $('btnShop2').onclick=()=>{ sfx('click'); bars=[];gold=[];floaters=[]; state='shop'; };
   $('btnReviveAd').onclick =()=>{ sfx('click'); grantRevive(); };           // zaślepka reklamy
-  $('btnRevivePay').onclick=()=>{ if(totalGold<REVIVE_COST) return; sfx('click'); totalGold-=REVIVE_COST; persist(); grantRevive(); };
   $('btnReviveSkip').onclick=()=>{ sfx('click'); offerCont=false; };         // dokończ niepopad
   $('btnFreeMenu').onclick=claimCoins;
   $('btnFreeShop').onclick=claimCoins;
