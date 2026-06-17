@@ -22,7 +22,10 @@
     touch-action:none; -webkit-user-select:none; user-select:none;
     -webkit-tap-highlight-color:transparent; overscroll-behavior:none;
   }
-  #game { display:block; position:fixed; inset:0; touch-action:none; }
+  #bg { display:block; position:fixed; inset:0; width:100%; height:100%; z-index:0;
+        filter:blur(28px) brightness(.5) saturate(1.15); transform:scale(1.18); }
+  #game { display:block; position:fixed; z-index:1; touch-action:none;
+          box-shadow:0 0 50px rgba(0,0,0,.55); }
 
   /* —— nakładki UI (menu / sklep / koniec) —— */
   .screen{
@@ -113,6 +116,7 @@
 </style>
 </head>
 <body>
+<canvas id="bg"></canvas>
 <canvas id="game"></canvas>
 
 <div id="menu" class="screen">
@@ -146,7 +150,7 @@
     <button id="btnAgain" class="btn btn-primary">Jeszcze raz</button>
     <button id="btnShop2" class="btn btn-gold">Sklep</button>
   </div>
-  <div class="ver">KOIA · v11</div>
+  <div class="ver">KOIA · v14</div>
 </div>
 
 <button id="mute" aria-label="dźwięk">
@@ -159,6 +163,8 @@
 (() => {
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
+  const bg = document.getElementById('bg');
+  const bgctx = bg.getContext('2d');
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Yin (dół, mrok) + Yang (góra, światło) — kolory aury
@@ -183,12 +189,23 @@
   let W=0,H=0,dpr=1,ayA=0,ayB=0,seamY=0;
   const DOT_R = () => Math.max(9, Math.min(W,H)*0.026);
 
+  const ASPECT = 0.462; // szer/wys docelowe pole gry (~19.5:9, telefon pionowo)
   function resize(){
     dpr = Math.min(window.devicePixelRatio||1, 2);
-    W = window.innerWidth; H = window.innerHeight;
-    canvas.width = Math.floor(W*dpr); canvas.height = Math.floor(H*dpr);
-    canvas.style.width = W+'px'; canvas.style.height = H+'px';
+    const vw = window.innerWidth, vh = window.innerHeight;
+    // dopasuj stałe proporcje do ekranu (contain) — reszta to listewki
+    let pfW, pfH;
+    if(vw/vh > ASPECT){ pfH = vh; pfW = Math.round(vh*ASPECT); }
+    else { pfW = vw; pfH = Math.round(vw/ASPECT); }
+    W = pfW; H = pfH;
+    canvas.width = Math.floor(pfW*dpr); canvas.height = Math.floor(pfH*dpr);
+    canvas.style.width = pfW+'px'; canvas.style.height = pfH+'px';
+    canvas.style.left = Math.round((vw-pfW)/2)+'px';
+    canvas.style.top  = Math.round((vh-pfH)/2)+'px';
     ctx.setTransform(dpr,0,0,dpr,0,0);
+    // tło: niska rozdzielczość (i tak rozmyte) na cały ekran
+    bg.width = Math.max(1, Math.floor(vw/4));
+    bg.height = Math.max(1, Math.floor(vh/4));
     seamY = H/2; ayA = seamY - H*0.16; ayB = seamY + H*0.16;
     targetX = clampX(targetX||W/2); playerX = clampX(playerX||W/2);
     initAmbient();
@@ -352,7 +369,7 @@
 
   function die(lane){
     state='over'; deathT=0; deadLane=lane;
-    stopMusic();
+    stopMusic(); sfx('die');
     best=Math.max(best,score);
     totalGold+=goldCount; persist();
     if(lane==='A') burst(playerX,ayA,COL.yang); else burst(W-playerX,ayB,COL.yin);
@@ -408,7 +425,7 @@
       if(overlap&&!inGap){ die(b.lane); return; }
       if(!b.scored){
         const passed=b.lane==='A'?(b.y>dy+b.t/2+r):(b.y<dy-b.t/2-r);
-        if(passed){ b.scored=true; score++; seamFlash=Math.max(seamFlash,0.5);
+        if(passed){ b.scored=true; score++; seamFlash=Math.max(seamFlash,0.5); sfx('tick');
           if(nextBeat<BEATS.length && score>=BEATS[nextBeat][0]){ beat=BEATS[nextBeat][1]; beatT=0; nextBeat++; }
         }
       }
@@ -436,12 +453,12 @@
 
       const fy=o.lane==='A'?ayA:ayB;
       if(!o.got && Math.hypot(o.x-fx,o.y-fy) < r*1.7+o.r){
-        o.got=true; score+=5; goldCount++;
+        o.got=true; score+=5; goldCount++; sfx('coin');
         floaters.push({x:o.x,y:o.y,text:'+5',life:0.9,color:COL.gold});
         burst(o.x,o.y,COL.gold);
         seamFlash=Math.max(seamFlash,0.6);
         if(goldCount%5===0){
-          score+=10;
+          score+=10; sfx('harmony');
           floaters.push({x:W/2,y:seamY-DOT_R()*1.4,text:'HARMONIA +10',life:1.4,color:COL.gold});
           burst(playerX,ayA,COL.gold); burst(W-playerX,ayB,COL.gold);
         }
@@ -680,13 +697,15 @@
       }
     }
 
-    // Splot — linia świata
-    ctx.save();
-    const pulse=0.5+0.5*Math.sin(t*1.6);
-    ctx.shadowColor=COL.seam; ctx.shadowBlur=reduce?0:(14+seamFlash*40+pulse*6);
-    ctx.fillStyle=COL.seam; ctx.globalAlpha=(0.7+seamFlash*0.3)*(1-drain*0.7);
-    ctx.fillRect(0,seamY-1,W,2);
-    ctx.restore();
+    // Splot — linia świata (ukryta w sklepie)
+    if(state!=='shop'){
+      ctx.save();
+      const pulse=0.5+0.5*Math.sin(t*1.6);
+      ctx.shadowColor=COL.seam; ctx.shadowBlur=reduce?0:(14+seamFlash*40+pulse*6);
+      ctx.fillStyle=COL.seam; ctx.globalAlpha=(0.7+seamFlash*0.3)*(1-drain*0.7);
+      ctx.fillRect(0,seamY-1,W,2);
+      ctx.restore();
+    }
 
     if(state==='play'){
       drawTrail(trailA,COL.yang); drawTrail(trailB,COL.yin);
@@ -745,8 +764,8 @@
       }
     }
 
-    if(state==='start'){
-      // żywe logo: dwie koi krążące wokół Splotu (za półprzezroczystym menu HTML)
+    if(state==='start' || state==='shop'){
+      // żywe logo: dwie koi krążące wokół Splotu (za półprzezroczystym panelem HTML)
       const sway=Math.sin(t*0.8)*W*0.07;
       drawFish(W/2+sway, seamY-H*0.115, sway>=0?1:-1, COL.yang, COL.yin, t);
       drawFish(W/2-sway, seamY+H*0.115, sway>=0?-1:1, COL.yin, COL.yang, t);
@@ -766,6 +785,8 @@
     let dt=(tm-last)/1000; last=tm;
     if(dt>0.05) dt=0.05;
     update(dt); draw();
+    // rozmyta kopia gry w listewkach po bokach
+    if(bg.width>0 && bg.height>0) bgctx.drawImage(canvas, 0,0, bg.width, bg.height);
     requestAnimationFrame(frame);
   }
 
@@ -819,17 +840,17 @@
         '<span class="dot" style="background:'+p.yin+';color:'+p.yin+'"></span></div>'+
         '<div class="skin-name">'+p.name+'</div>'+
         '<div class="skin-status '+cls+'">'+status+'</div>';
-      row.onclick=()=>{ buyOrSelect('pal',p); renderShop(); };
+      row.onclick=()=>{ sfx('click'); buyOrSelect('pal',p); renderShop(); };
       list.appendChild(row);
     }
   }
   function ownedHas(id){ return owned.has(id); }
 
-  $('btnPlay').onclick =()=>{ play(); };
-  $('btnShop').onclick =()=>{ state='shop'; };
-  $('btnBack').onclick =()=>{ state='start'; };
-  $('btnAgain').onclick=()=>{ play(); };
-  $('btnShop2').onclick=()=>{ bars=[];gold=[];floaters=[]; state='shop'; };
+  $('btnPlay').onclick =()=>{ sfx('click'); play(); };
+  $('btnShop').onclick =()=>{ sfx('click'); state='shop'; };
+  $('btnBack').onclick =()=>{ sfx('click'); state='start'; };
+  $('btnAgain').onclick=()=>{ sfx('click'); play(); };
+  $('btnShop2').onclick=()=>{ sfx('click'); bars=[];gold=[];floaters=[]; state='shop'; };
   elMute.onclick=()=>{ toggleMusic(); elMute.classList.toggle('off',!musicOn); };
 
   // dołącz do pętli: pokaż właściwą nakładkę przy zmianie ekranu
