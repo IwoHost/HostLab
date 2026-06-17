@@ -26,6 +26,12 @@
         filter:blur(28px) brightness(.5) saturate(1.15); transform:scale(1.18); }
   #game { display:block; position:fixed; z-index:1; touch-action:none;
           box-shadow:0 0 50px rgba(0,0,0,.55); }
+  .btn:disabled { opacity:.4; filter:grayscale(.5); pointer-events:none; }
+  #toast { position:fixed; left:50%; bottom:9%; transform:translateX(-50%) translateY(10px);
+           background:rgba(8,10,18,.92); color:var(--seam); border:1px solid rgba(244,250,255,.18);
+           padding:12px 20px; border-radius:999px; font-family:var(--body); font-size:15px;
+           opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease; z-index:30; }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
   /* —— nakładki UI (menu / sklep / koniec) —— */
   .screen{
@@ -93,6 +99,17 @@
   .skin-status{ font-family:var(--display); font-weight:700; font-size:clamp(12px,3.4vw,14px); letter-spacing:.08em; white-space:nowrap; }
   .st-price{ color:var(--gold); } .st-price.cant{ color:rgba(255,210,74,.35); }
   .st-pick{ color:var(--dim); } .st-sel{ color:var(--seam); }
+  .st-lock{ color:rgba(244,250,255,.4); font-size:clamp(15px,4.4vw,18px); }
+  .skin.locked{ opacity:.62; }
+  .skin-info{ flex:1 1 auto; text-align:left; min-width:0; }
+  .skin-info .skin-name{ flex:none; }
+  .skin-desc{ font-size:clamp(11px,3vw,13px); color:var(--dim); line-height:1.25; margin-top:2px; }
+  .spinbox{ border-radius:18px; border:2px solid rgba(255,210,74,.3); background:rgba(255,210,74,.05);
+    padding:14px 16px; margin-bottom:6px; }
+  .spin-head{ display:flex; align-items:center; justify-content:space-between;
+    color:var(--seam); font-weight:700; font-size:clamp(14px,3.8vw,16px); margin-bottom:10px; }
+  .spin-prog{ font-family:var(--display); color:var(--gold); font-size:clamp(12px,3.4vw,14px); }
+  .spin-btn{ width:100%; }
 
   /* koniec gry */
   .over-score{ font-family:var(--display); font-weight:900; font-size:clamp(72px,24vw,150px); line-height:.9; color:var(--seam);
@@ -128,6 +145,7 @@
   <div class="actions">
     <button id="btnPlay" class="btn btn-primary">Graj</button>
     <button id="btnShop" class="btn btn-gold">Sklep</button>
+    <button id="btnFreeMenu" class="btn btn-ghost">+30 coinów · reklama</button>
     <div class="goldbar"><span class="coin"></span><span id="menuGold">0</span></div>
   </div>
 </div>
@@ -136,7 +154,7 @@
   <div class="panel-title">Sklep</div>
   <div class="goldbar"><span class="coin"></span><span id="shopGold">0</span></div>
   <div id="shopList" class="shoplist"></div>
-  <div class="actions"><button id="btnBack" class="btn btn-ghost">Wróć</button></div>
+  <div class="actions"><button id="btnFreeShop" class="btn btn-ghost">+30 coinów · reklama</button><button id="btnBack" class="btn btn-ghost">Wróć</button></div>
 </div>
 
 <div id="over" class="screen">
@@ -149,9 +167,24 @@
   <div class="actions">
     <button id="btnAgain" class="btn btn-primary">Jeszcze raz</button>
     <button id="btnShop2" class="btn btn-gold">Sklep</button>
+    <button id="btnShare" class="btn btn-ghost">Podziel się</button>
   </div>
-  <div class="ver">KOIA · v14</div>
+  <div class="ver">KOIA · v20</div>
 </div>
+
+<div id="continue" class="screen">
+  <div class="spacer"></div>
+  <div class="panel-title">Jeszcze nie koniec?</div>
+  <div class="over-sub" id="contSub">wynik 0 · wskrześ rybę i graj dalej</div>
+  <div class="spacer"></div>
+  <div class="actions">
+    <button id="btnReviveAd" class="btn btn-primary">▶ Obejrzyj reklamę</button>
+    <button id="btnRevivePay" class="btn btn-gold">Zapłać 15 coinów</button>
+    <button id="btnReviveSkip" class="btn btn-ghost">Odpuść</button>
+  </div>
+</div>
+
+<div id="toast"></div>
 
 <button id="mute" aria-label="dźwięk">
   <svg viewBox="0 0 24 24" fill="none">
@@ -170,7 +203,8 @@
   // Yin (dół, mrok) + Yang (góra, światło) — kolory aury
   const COL = {
     bg:'#05060d', yang:'#34e3ff', yin:'#ff4d9d', seam:'#f4faff',
-    gold:'#ffd24a', dim:'rgba(244,250,255,0.55)'
+    gold:'#ffd24a', dim:'rgba(244,250,255,0.55)',
+    bg1:'#081826', bg2:'#1c0a1d'
   };
 
   // —— lore: fragmenty mitu na progach punktowych ——
@@ -216,16 +250,25 @@
   let bars=[], particles=[], trailA=[], trailB=[];
   let score=0, best=0, spawnTimer=0, lastLane='B';
   let shake=0, seamFlash=0, deathT=0, deadLane=null;
+  let reviveUsed=false, invuln=0, offerCont=false, bankedThisRun=0;
+  const REVIVE_COST=15, COIN_AD_REWARD=30, COIN_AD_COOLDOWN=3600000;
+  const ADS_ENABLED=false;   // <- ustaw true gdy aplikacja trafi na Play (AdMob)
   let beat=null, beatT=0, nextBeat=0, last=0;
   let ambient=[];
   let gold=[], floaters=[], goldCount=0, goldTimer=0;
 
-  // —— sklep: skórki ryb + style przeszkód, kupowane za zebrane złoto ——
+  // —— sklep: skórki ryb. Każda ma własne kolory ryb + własne tło + opis ——
   const PALETTES = [
-    {id:'klasyk', name:'Yin & Yang', price:0,  yang:'#34e3ff', yin:'#ff4d9d'},
-    {id:'zloto',  name:'Złote Koi',  price:40, yang:'#ffd24a', yin:'#ff7a3c'},
-    {id:'widmo',  name:'Widma',      price:60, yang:'#9b7bff', yin:'#3cf0c8'},
-    {id:'ogien',  name:'Ogień i Lód',price:90, yang:'#5ad1ff', yin:'#ff5a4d'}
+    {id:'klasyk', name:'Yin & Yang',  yang:'#34e3ff', yin:'#ff4d9d', bg1:'#081826', bg2:'#1c0a1d', desc:'Dwie ryby, jeden palec. Tak zaczął się wszechświat.'},
+    {id:'zloto',  name:'Złote Koi',   yang:'#ffd24a', yin:'#ff7a3c', bg1:'#1c1505', bg2:'#1c0e05', desc:'Pływają w forsie. Ty na razie nie.'},
+    {id:'widmo',  name:'Widma',       yang:'#9b7bff', yin:'#3cf0c8', bg1:'#120a26', bg2:'#04201a', desc:'Oficjalnie nie istnieją. Nieoficjalnie — masz je.'},
+    {id:'ogien',  name:'Ogień i Lód', yang:'#5ad1ff', yin:'#ff5a4d', bg1:'#07182a', bg2:'#260807', desc:'Jedna parzy, druga ziębi. Razem: przeciąg.'},
+    {id:'neon',   name:'Neon',        yang:'#ff45e0', yin:'#b6ff3c', bg1:'#1f0426', bg2:'#16240a', desc:'Wracają z imprezy. O 4 rano. Świecą.'},
+    {id:'matrix', name:'Kod',         yang:'#39ff88', yin:'#1f9c4d', bg1:'#04140a', bg2:'#02160c', desc:'Widziały, że to symulacja. I pływają dalej.'},
+    {id:'cien',   name:'Cień',        yang:'#c8d2dc', yin:'#6b7682', bg1:'#0c0f12', bg2:'#07090b', desc:'Tryb ninja. Nie widzi ich nikt, łącznie z Tobą.'},
+    {id:'lawa',   name:'Lawa',        yang:'#ffb14a', yin:'#ff3b2f', bg1:'#1f0d04', bg2:'#240604', desc:'Gorące jak Twój streak. Którego nie masz.'},
+    {id:'arktyka',name:'Arktyka',     yang:'#aee9ff', yin:'#dff4ff', bg1:'#07141f', bg2:'#0c1822', desc:'Zimne ryby na zimne nerwy. Oddychaj.'},
+    {id:'cukierek',name:'Cukierek',   yang:'#ff8fd0', yin:'#ffe14a', bg1:'#260a1c', bg2:'#1f1804', desc:'Słodkie aż do bólu zębów.'}
   ];
   const OBSTACLES = [
     {id:'kreski', name:'Kreski', price:0},
@@ -233,23 +276,40 @@
   ];
   let totalGold=0, owned=new Set(['klasyk','kreski']), selPal='klasyk', selObs='kreski';
   let musicOn=true;
+  let lastCoinAd=0;
   let hits=[];  // klikalne pola UI, budowane co klatkę
   const SAVE='koia_save_v1';
   function persist(){
     try{ localStorage.setItem(SAVE, JSON.stringify(
-      {gold:totalGold, owned:[...owned], pal:selPal, obs:selObs, best:best, music:musicOn})); }catch(e){}
+      {gold:totalGold, owned:[...owned], pal:selPal, obs:selObs, best:best, music:musicOn, coinAd:lastCoinAd})); }catch(e){}
   }
   function loadSave(){
     try{ const s=localStorage.getItem(SAVE); if(s){
       const d=JSON.parse(s);
       totalGold=d.gold||0; owned=new Set(d.owned||['klasyk','kreski']);
       selPal=d.pal||'klasyk'; selObs=d.obs||'kreski'; best=d.best||0;
+      lastCoinAd=d.coinAd||0;
       if(d.music===false) musicOn=false;
     }}catch(e){}
   }
   function applyPalette(){
     const p=PALETTES.find(x=>x.id===selPal)||PALETTES[0];
     COL.yang=p.yang; COL.yin=p.yin;
+    COL.bg1=p.bg1||'#081826'; COL.bg2=p.bg2||'#1c0a1d';
+  }
+  const SPIN_COST=50;
+  function spinSkin(){
+    const locked=PALETTES.filter(p=>!owned.has(p.id));
+    if(locked.length===0){ showToast('Masz już wszystkie skiny! 🐟'); return; }
+    if(totalGold<SPIN_COST){ showToast('Brakuje monet — losowanie kosztuje 50'); sfx('tick'); return; }
+    totalGold-=SPIN_COST;
+    const won=locked[Math.floor(Math.random()*locked.length)];
+    owned.add(won.id);
+    selPal=won.id; applyPalette();        // od razu zakładamy nowy skin (efekt!)
+    persist();
+    sfx('harmony');
+    showToast('🎉 Wylosowano: '+won.name+'!');
+    renderShop();
   }
   function buyOrSelect(type,it){
     if(owned.has(it.id)){ doSelect(type,it); }
@@ -333,6 +393,7 @@
     playerX=targetX=prevX=W/2; dirA=1;
     spawnTimer=0.9; lastLane='B';
     shake=0; seamFlash=0; deathT=0; deadLane=null;
+    reviveUsed=false; invuln=0; offerCont=false; bankedThisRun=0;
     beat=null; beatT=0; nextBeat=0;
     gold=[]; floaters=[]; goldCount=0; goldTimer=2.4;
   }
@@ -371,14 +432,28 @@
     state='over'; deathT=0; deadLane=lane;
     stopMusic(); sfx('die');
     best=Math.max(best,score);
-    totalGold+=goldCount; persist();
+    const delta=goldCount-bankedThisRun; if(delta>0) totalGold+=delta;
+    bankedThisRun=goldCount; persist();
+    offerCont = !reviveUsed && (ADS_ENABLED || totalGold>=REVIVE_COST);   // wskrzeszenie tylko raz na grę
     if(lane==='A') burst(playerX,ayA,COL.yang); else burst(W-playerX,ayB,COL.yin);
     if(!reduce) shake=22; seamFlash=1;
+  }
+
+  function grantRevive(){
+    reviveUsed=true; offerCont=false;
+    state='play';
+    playerX=targetX=prevX=W/2; dirA=1;
+    bars=[]; floaters=[];                 // czysty start, żeby nie zginąć od razu
+    spawnTimer=Math.max(spawnTimer,1.2);
+    invuln=1.6;                           // chwila nietykalności
+    shake=0; seamFlash=0.7; deathT=0; deadLane=null;
+    startMusic();
   }
 
   function update(dt){
     if(state==='play'){
       prevX=playerX;
+      if(invuln>0) invuln=Math.max(0,invuln-dt);
       const al=1-Math.exp(-13*dt);
       playerX+=(targetX-playerX)*al; playerX=clampX(playerX);
       const vel=playerX-prevX;
@@ -422,7 +497,7 @@
       const dy=b.lane==='A'?ayA:ayB;
       const overlap=Math.abs(dy-b.y)<(b.t/2+r);
       const inGap=(dx-r>b.gapC-b.gapW/2)&&(dx+r<b.gapC+b.gapW/2);
-      if(overlap&&!inGap){ die(b.lane); return; }
+      if(overlap&&!inGap&&invuln<=0){ die(b.lane); return; }
       if(!b.scored){
         const passed=b.lane==='A'?(b.y>dy+b.t/2+r):(b.y<dy-b.t/2-r);
         if(passed){ b.scored=true; score++; seamFlash=Math.max(seamFlash,0.5); sfx('tick');
@@ -653,8 +728,8 @@
     const drain=state==='over'?Math.min(deathT/1.3,1):0;
 
     const g=ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0,'#081826'); g.addColorStop(0.49,'#05060d');
-    g.addColorStop(0.51,'#05060d'); g.addColorStop(1,'#1c0a1d');
+    g.addColorStop(0,COL.bg1); g.addColorStop(0.49,'#05060d');
+    g.addColorStop(0.51,'#05060d'); g.addColorStop(1,COL.bg2);
     ctx.fillStyle=g; ctx.fillRect(-40,-40,W+80,H+80);
 
     // tło — leniwie dryfujące drobinki w obu światach
@@ -709,8 +784,9 @@
 
     if(state==='play'){
       drawTrail(trailA,COL.yang); drawTrail(trailB,COL.yin);
-      drawFish(playerX,ayA, dirA, COL.yang, COL.yin, t);   // Yang
-      drawFish(W-playerX,ayB, -dirA, COL.yin, COL.yang, t); // Yin (odbicie)
+      const blink = invuln>0 ? (0.32+0.68*Math.abs(Math.sin(t*22))) : 1;
+      drawFish(playerX,ayA, dirA, COL.yang, COL.yin, t, blink);   // Yang
+      drawFish(W-playerX,ayB, -dirA, COL.yin, COL.yang, t, blink); // Yin (odbicie)
     }
 
     // świat osuwa się w niepopad
@@ -805,60 +881,145 @@
 
   // —— kontroler UI (nakładki HTML) ——
   const $=id=>document.getElementById(id);
-  const elMenu=$('menu'), elShop=$('shop'), elOver=$('over'), elMute=$('mute');
+  const elMenu=$('menu'), elShop=$('shop'), elOver=$('over'), elCont=$('continue'), elMute=$('mute');
   let lastScreen='';
   function curScreen(){
     if(state==='play') return 'play';
-    if(state==='over') return deathT>1.5?'over':'collapsing';
+    if(state==='over'){
+      if(offerCont) return deathT>0.45?'continue':'collapsing';
+      return deathT>1.5?'over':'collapsing';
+    }
     return state; // start | shop
   }
   function syncUI(s){
     elMenu.style.display = s==='start'?'flex':'none';
     elShop.style.display = s==='shop'?'flex':'none';
     elOver.style.display = s==='over'?'flex':'none';
-    if(s==='start') $('menuGold').textContent=totalGold;
-    if(s==='shop') renderShop();
+    elCont.style.display = s==='continue'?'flex':'none';
+    if(s==='start'){ $('menuGold').textContent=totalGold; updateFreeBtns(); }
+    if(s==='shop'){ renderShop(); updateFreeBtns(); }
+    if(s==='continue'){
+      $('contSub').textContent='wynik '+score+' · wskrześ rybę i graj dalej';
+      const pay=$('btnRevivePay'), can=totalGold>=REVIVE_COST;
+      pay.disabled=!can;
+      pay.textContent = can ? ('Zapłać '+REVIVE_COST+' coinów') : ('Za mało coinów · '+totalGold+'/'+REVIVE_COST);
+    }
     if(s==='over'){
       $('overScore').textContent=score;
       $('overSub').textContent='świat trwał '+score+' chwil · rekord '+best;
       $('overGold').textContent='złoto z gry: '+goldCount+'  ·  bank: '+totalGold;
     }
   }
+  function updateFreeBtns(){
+    if(!ADS_ENABLED) return;
+    const left=COIN_AD_COOLDOWN-(Date.now()-lastCoinAd), ready=left<=0;
+    const label = ready ? ('+'+COIN_AD_REWARD+' coinów · reklama')
+                        : ('coiny za '+Math.ceil(left/60000)+' min');
+    for(const id of ['btnFreeMenu','btnFreeShop']){
+      const b=$(id); if(!b) continue;
+      if(b.textContent!==label) b.textContent=label;
+      b.disabled=!ready;
+    }
+  }
+  function claimCoins(){
+    if(Date.now()-lastCoinAd < COIN_AD_COOLDOWN) return;
+    // —— zaślepka reklamy: tu podłączysz prawdziwy rewarded ad (AdMob) ——
+    totalGold+=COIN_AD_REWARD; lastCoinAd=Date.now(); persist(); sfx('coin');
+    $('menuGold').textContent=totalGold; $('shopGold').textContent=totalGold;
+    updateFreeBtns();
+  }
   function renderShop(){
     $('shopGold').textContent=totalGold;
     const list=$('shopList'); list.innerHTML='';
+    const ownedCount=PALETTES.filter(p=>owned.has(p.id)).length;
+    const allOwned=ownedCount>=PALETTES.length;
+
+    const spin=document.createElement('div');
+    spin.className='spinbox';
+    spin.innerHTML=
+      '<div class="spin-head">Losowanie skinów<span class="spin-prog">'+ownedCount+' / '+PALETTES.length+'</span></div>'+
+      '<button id="btnSpin" class="btn btn-gold spin-btn"'+(allOwned?' disabled':'')+'>'+
+        (allOwned?'Masz wszystkie 🐟':'🎰 Losuj skina · 50')+'</button>';
+    list.appendChild(spin);
+
     for(const p of PALETTES){
-      const owned=ownedHas(p.id), sel=selPal===p.id;
+      const own=owned.has(p.id), sel=selPal===p.id;
       const row=document.createElement('div');
-      row.className='skin'+(sel?' selected':(owned?' owned':''));
-      let status,cls;
-      if(sel){ status='Wybrane'; cls='st-sel'; }
-      else if(owned){ status='Wybierz'; cls='st-pick'; }
-      else { status=p.price+' zł'; cls='st-price'+(totalGold>=p.price?'':' cant'); }
+      row.className='skin'+(sel?' selected':(own?' owned':' locked'));
+      let status,cls,name,d1,d2,desc;
+      if(own){
+        name=p.name; d1=p.yang; d2=p.yin; desc=p.desc||'';
+        if(sel){ status='Wybrane'; cls='st-sel'; }
+        else { status='Wybierz'; cls='st-pick'; }
+      } else {
+        name='??????'; d1='#2a2f3a'; d2='#2a2f3a';
+        desc='Zablokowany — trafi się w losowaniu.'; status='🔒'; cls='st-lock';
+      }
       row.innerHTML=
-        '<div class="swatches"><span class="dot" style="background:'+p.yang+';color:'+p.yang+'"></span>'+
-        '<span class="dot" style="background:'+p.yin+';color:'+p.yin+'"></span></div>'+
-        '<div class="skin-name">'+p.name+'</div>'+
+        '<div class="swatches"><span class="dot" style="background:'+d1+';color:'+d1+'"></span>'+
+        '<span class="dot" style="background:'+d2+';color:'+d2+'"></span></div>'+
+        '<div class="skin-info"><div class="skin-name">'+name+'</div>'+
+        (desc?'<div class="skin-desc">'+desc+'</div>':'')+'</div>'+
         '<div class="skin-status '+cls+'">'+status+'</div>';
-      row.onclick=()=>{ sfx('click'); buyOrSelect('pal',p); renderShop(); };
+      if(own) row.onclick=()=>{ sfx('click'); selPal=p.id; applyPalette(); persist(); renderShop(); };
+      else row.onclick=()=>{ sfx('tick'); showToast('Najpierw wylosuj ten skin (50 monet)'); };
       list.appendChild(row);
     }
+    const sb=$('btnSpin'); if(sb && !allOwned) sb.onclick=()=>{ sfx('click'); spinSkin(); };
   }
-  function ownedHas(id){ return owned.has(id); }
 
   $('btnPlay').onclick =()=>{ sfx('click'); play(); };
   $('btnShop').onclick =()=>{ sfx('click'); state='shop'; };
   $('btnBack').onclick =()=>{ sfx('click'); state='start'; };
   $('btnAgain').onclick=()=>{ sfx('click'); play(); };
   $('btnShop2').onclick=()=>{ sfx('click'); bars=[];gold=[];floaters=[]; state='shop'; };
+  $('btnReviveAd').onclick =()=>{ sfx('click'); grantRevive(); };           // zaślepka reklamy
+  $('btnRevivePay').onclick=()=>{ if(totalGold<REVIVE_COST) return; sfx('click'); totalGold-=REVIVE_COST; persist(); grantRevive(); };
+  $('btnReviveSkip').onclick=()=>{ sfx('click'); offerCont=false; };         // dokończ niepopad
+  $('btnFreeMenu').onclick=claimCoins;
+  $('btnFreeShop').onclick=claimCoins;
+  $('btnShare').onclick=shareScore;
+
+  let toastT=null;
+  function showToast(m){
+    const el=$('toast'); el.textContent=m; el.classList.add('show');
+    clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),1600);
+  }
+  const SHARE_COUNT_URL='https://abacus.jasoncameron.dev/hit/koia-iwohost/share';
+  async function bumpShareCount(){
+    try{ const r=await fetch(SHARE_COUNT_URL); const d=await r.json();
+         return (d&&d.value!=null)?d.value:null; }
+    catch(e){ return null; }
+  }
+  async function shareScore(){
+    sfx('click');
+    const text='KOIA \u262f\ud83d\udc1f\nM\u00f3j wynik: '+score+'  \u00b7  rekord: '+best+'\nOgarniesz wi\u0119cej?\nhttps://iwohost.github.io/HostLab/websites/koia.html';
+    if(navigator.share){
+      try{ await navigator.share({title:'KOIA', text}); }
+      catch(e){ return; }                       // anulowane przez gracza — nie liczymy
+      const n=await bumpShareCount();
+      if(n!=null) showToast('Udost\u0119pniono \u00b7 \u0142\u0105cznie '+n+'\u00d7');
+      return;
+    }
+    try{
+      await navigator.clipboard.writeText(text);
+      const n=await bumpShareCount();
+      showToast(n!=null ? ('Skopiowano \u00b7 \u0142\u0105cznie '+n+'\u00d7') : 'Skopiowano do schowka');
+    }catch(e){ showToast('Nie uda\u0142o si\u0119 udost\u0119pni\u0107'); }
+  }
   elMute.onclick=()=>{ toggleMusic(); elMute.classList.toggle('off',!musicOn); };
 
   // dołącz do pętli: pokaż właściwą nakładkę przy zmianie ekranu
   const _frame=frame;
-  frame=function(tm){ _frame(tm); const s=curScreen(); if(s!==lastScreen){ syncUI(s); lastScreen=s; } };
+  frame=function(tm){ _frame(tm); const s=curScreen(); if(s!==lastScreen){ syncUI(s); lastScreen=s; } if(s==='start'||s==='shop') updateFreeBtns(); };
 
   loadSave();
   applyPalette();
+  if(!ADS_ENABLED){   // reklamy chwilowo wyłączone — guziki zostają w kodzie, tylko ukryte
+    for(const id of ['btnReviveAd','btnFreeMenu','btnFreeShop']){
+      const b=$(id); if(b) b.style.display='none';
+    }
+  }
   elMute.classList.toggle('off',!musicOn);
   resize();
   syncUI(curScreen());
