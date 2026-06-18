@@ -433,7 +433,7 @@
     best=Math.max(best,score);
     const delta=goldCount-bankedThisRun; if(delta>0) totalGold+=delta;
     bankedThisRun=goldCount; persist();
-    offerCont = !reviveUsed && (ADS_ENABLED || totalGold>=REVIVE_COST);   // wskrzeszenie tylko raz na grę
+    offerCont = false;
     if(lane==='A') burst(playerX,ayA,COL.yang); else burst(W-playerX,ayB,COL.yin);
     if(!reduce) shake=22; seamFlash=1;
   }
