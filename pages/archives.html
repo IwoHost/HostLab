@@ -240,8 +240,16 @@ header {
   color: inherit;
   animation: fadeUp 0.5s ease both;
   position: relative;
-  transition: background 0.35s ease, border-color 0.35s ease;
+  transition: background 0.35s ease, border-color 0.35s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  z-index: 1;
+}
+
+html.light .card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
 
 .card::before {
   content: '';
@@ -441,6 +449,10 @@ footer {
   color: var(--text-muted);
 }
 
+/* ── NAV LINKS ── */
+.nav-link { font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; color:var(--text-muted); text-decoration:none; transition:color .2s; }
+.nav-link:hover { color:var(--text-secondary); }
+
 /* ── THEME SWITCH ── */
 .theme-switch { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
 .switch-label { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); letter-spacing:0.12em; text-transform:uppercase; transition:color 0.35s ease; }
@@ -464,6 +476,8 @@ html.light .switch-track { background:#d0ceca; }
 <header>
   <a href="../index.html" class="logo">HOST<span>·</span>LAB<span class="sub"> / ARCHIVES</span></a>
   <div class="header-right">
+    <a href="games.html" class="nav-link">GAMES</a>
+    <a href="study.html" class="nav-link">STUDY</a>
     <div class="header-meta" id="site-count">— PROJECTS</div>
     <div class="theme-switch" id="theme-switch" title="Toggle light mode">
       <span class="switch-label" id="switch-label">LIGHT</span>

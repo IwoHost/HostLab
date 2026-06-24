@@ -439,6 +439,10 @@ footer {
 .footer-left { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; }
 .footer-right { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
 
+/* ── NAV LINKS ── */
+.nav-link { font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; color:var(--text-muted); text-decoration:none; transition:color .2s; }
+.nav-link:hover { color:var(--text-secondary); }
+
 /* ── THEME SWITCH ── */
 .theme-switch { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
 .switch-label { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); letter-spacing:0.12em; text-transform:uppercase; }
@@ -461,6 +465,8 @@ html.light .switch-track { background:#d0ceca; }
 <header>
   <a href="../index.html" class="logo">HOST<span>·</span>LAB<span class="sub"> / GAMES</span></a>
   <div class="header-right">
+    <a href="archives.html" class="nav-link">ARCHIVES</a>
+    <a href="study.html" class="nav-link">STUDY</a>
     <div class="header-meta" id="site-count">— GAMES</div>
     <div class="theme-switch" id="theme-switch" title="Toggle light mode">
       <span class="switch-label" id="switch-label">LIGHT</span>
