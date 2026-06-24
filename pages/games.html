@@ -453,10 +453,16 @@ html.light .switch-track { background:#d0ceca; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
-  header, .hero, .section-header, .grid, footer { padding-left: 24px; padding-right: 24px; }
-  .grid { grid-template-columns: 1fr; }
+  header { padding: 20px 24px 16px; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .header-right { width: 100%; gap: 14px; }
+  #site-count { display: none; }
+  .hero { padding: 40px 24px 36px; }
   .hero h1 { font-size: 44px; }
-  .hero-bg-symbol { font-size: 110px; right: 20px; }
+  .hero-bg-symbol { font-size: 80px; right: 16px; }
+  .itch-link { margin-top: 20px; }
+  .section-header { padding: 20px 24px 14px; }
+  .grid { padding: 0 24px 60px; grid-template-columns: 1fr; }
+  footer { padding: 16px 24px; }
 }
 </style>
 </head>
