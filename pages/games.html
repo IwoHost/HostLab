@@ -439,6 +439,10 @@ footer {
 .footer-left { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; }
 .footer-right { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
 
+/* ── NAV LINKS ── */
+.nav-link { font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; color:var(--text-muted); text-decoration:none; transition:color .2s; }
+.nav-link:hover { color:var(--text-secondary); }
+
 /* ── THEME SWITCH ── */
 .theme-switch { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
 .switch-label { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); letter-spacing:0.12em; text-transform:uppercase; }
@@ -449,10 +453,16 @@ html.light .switch-track { background:#d0ceca; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
-  header, .hero, .section-header, .grid, footer { padding-left: 24px; padding-right: 24px; }
-  .grid { grid-template-columns: 1fr; }
+  header { padding: 20px 24px 16px; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .header-right { width: 100%; gap: 14px; }
+  #site-count { display: none; }
+  .hero { padding: 40px 24px 36px; }
   .hero h1 { font-size: 44px; }
-  .hero-bg-symbol { font-size: 110px; right: 20px; }
+  .hero-bg-symbol { font-size: 80px; right: 16px; }
+  .itch-link { margin-top: 20px; }
+  .section-header { padding: 20px 24px 14px; }
+  .grid { padding: 0 24px 60px; grid-template-columns: 1fr; }
+  footer { padding: 16px 24px; }
 }
 </style>
 </head>
@@ -461,6 +471,8 @@ html.light .switch-track { background:#d0ceca; }
 <header>
   <a href="../index.html" class="logo">HOST<span>·</span>LAB<span class="sub"> / GAMES</span></a>
   <div class="header-right">
+    <a href="archives.html" class="nav-link">ARCHIVES</a>
+    <a href="study.html" class="nav-link">STUDY</a>
     <div class="header-meta" id="site-count">— GAMES</div>
     <div class="theme-switch" id="theme-switch" title="Toggle light mode">
       <span class="switch-label" id="switch-label">LIGHT</span>

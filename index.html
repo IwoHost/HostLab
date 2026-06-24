@@ -172,9 +172,6 @@ header {
 .tag-chip:hover { color: var(--text-secondary); border-color: var(--text-muted); }
 .tag-chip.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
-@media (max-width: 768px) {
-  #tag-filters { padding-left: 24px; padding-right: 24px; }
-}
 
 .grid {
   padding: 0 64px 80px;
@@ -357,6 +354,17 @@ html.light .card-icon img {
   stroke: #fff;
 }
 
+/* ── NAV LINKS ── */
+.nav-link {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-link:hover { color: var(--text-secondary); }
+
 /* ── FOOTER ── */
 footer {
   border-top: 1px solid var(--border);
@@ -407,14 +415,21 @@ html.light .card:hover .card-arrow svg path { stroke:#ffffff; }
 .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.5); }
 html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 
+/* ── HEADER RIGHT ── */
+.header-right { display: flex; align-items: center; gap: 24px; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
-  header, .hero, .grid-header, .grid, footer {
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-  .grid { grid-template-columns: 1fr; }
+  header { padding: 20px 24px 16px; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .header-right { width: 100%; gap: 14px; }
+  #site-count { display: none; }
+  .hero { padding: 40px 24px 36px; }
   .hero h1 { font-size: 48px; }
+  .hero-sub { max-width: 100%; }
+  .grid-header { padding: 20px 24px 14px; }
+  #tag-filters { padding: 0 24px 14px; }
+  .grid { padding: 0 24px 60px; grid-template-columns: 1fr; }
+  footer { padding: 16px 24px; }
 }
 </style>
 </head>
@@ -422,10 +437,10 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 
 <header>
   <a href="index.html" class="logo">HOST<span>·</span>LAB</a>
-  <div style="display:flex;align-items:center;gap:24px;">
-    <a href="pages/archives.html" style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;color:var(--text-muted);text-decoration:none;" onmouseover="this.style.color='var(--text-secondary)'" onmouseout="this.style.color='var(--text-muted)'">ARCHIVES</a>
-    <a href="pages/games.html" style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;color:var(--text-muted);text-decoration:none;" onmouseover="this.style.color='var(--text-secondary)'" onmouseout="this.style.color='var(--text-muted)'">GAMES</a>
-    <a href="pages/study.html" style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;color:var(--text-muted);text-decoration:none;" onmouseover="this.style.color='var(--text-secondary)'" onmouseout="this.style.color='var(--text-muted)'">STUDY</a>
+  <div class="header-right">
+    <a href="pages/archives.html" class="nav-link">ARCHIVES</a>
+    <a href="pages/games.html" class="nav-link">GAMES</a>
+    <a href="pages/study.html" class="nav-link">STUDY</a>
     <div class="header-meta" id="site-count">— PROJECTS</div>
     <div class="theme-switch" id="theme-switch" title="Toggle light mode">
       <span class="switch-label" id="switch-label">LIGHT</span>
@@ -456,7 +471,7 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 <main class="grid" id="grid"></main>
 
 <footer>
-  <div class="footer-left">HOSTLAB · LOCAL</div>
+  <div class="footer-left">HOSTLAB</div>
   <div class="footer-right" id="footer-date"></div>
 </footer>
 
@@ -473,25 +488,28 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
    ════════════════════════════════════════════ */
 const SECTIONS = [
   {
-    href:  'pages/games.html',
-    file:  'games.html',
-    icon:  'other/logo/HLab_Logo.png',
-    title: 'Games',
-    desc:  'Games and interactive experiments — some released on itch.io, some living right here in the browser.'
+    href:     'pages/games.html',
+    file:     'games.html',
+    icon:     'other/logo/HLab_Logo.png',
+    title:    'Games',
+    topColor: '#2d6b2d',
+    desc:     'Games and interactive experiments — some released on itch.io, some living right here in the browser.'
   },
   {
-    href:  'pages/archives.html',
-    file:  'archives.html',
-    icon:  'other/logo/HLab_Logo.png',
-    title: 'Archives',
-    desc:  'Projects that never made it. Killed by scope creep, lost motivation, bad timing, or the classic "I\'ll finish it later."'
+    href:     'pages/archives.html',
+    file:     'archives.html',
+    icon:     'other/logo/HLab_Logo.png',
+    title:    'Archives',
+    topColor: '#7a2020',
+    desc:     'Projects that never made it. Killed by scope creep, lost motivation, bad timing, or the classic "I\'ll finish it later."'
   },
   {
-    href:  'pages/study.html',
-    file:  'study.html',
-    icon:  'other/logo/HLab_Logo.png',
-    title: 'Study',
-    desc:  'Interactive terminal courses for the INF02 exam. Linux Bash and Windows batch files — learn by doing, one command at a time.'
+    href:     'pages/study.html',
+    file:     'study.html',
+    icon:     'other/logo/HLab_Logo.png',
+    title:    'Study',
+    topColor: '#1e3a6e',
+    desc:     'Interactive terminal courses for the INF02 exam. Linux Bash and Windows batch files — learn by doing, one command at a time.'
   },
 ];
 
@@ -649,6 +667,7 @@ function buildCard(project, index) {
   card.className = 'card';
   card.href = project.href || `websites/${file}`;
   if (project.external) { card.target = '_blank'; card.rel = 'noopener'; }
+  if (project.topColor) card.style.borderTop = `2px solid ${project.topColor}`;
 
   const thumb = document.createElement('div');
   thumb.className = 'card-thumb';
