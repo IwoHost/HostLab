@@ -146,6 +146,7 @@
   :focus-visible{outline:2px solid var(--brass); outline-offset:2px}
   @media(prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
 </style>
+<link rel="stylesheet" href="../other/backbutton.css">
 </head>
 <body>
 <div class="wrap">
@@ -564,5 +565,8 @@ preloadFonts();
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(render);
 render();
 </script>
+<a href="../index.html" class="back-home" title="Back to HostLab">
+    <img src="../other/logo/HLab_Logo.png" alt="HostLab">
+</a>
 </body>
 </html>
