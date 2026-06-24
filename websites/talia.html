@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talia · custom card deck maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&family=Cinzel:wght@500;700&family=Playfair+Display:wght@600;800&family=Oswald:wght@500;700&family=Rubik:wght@500;700&family=Bebas+Neue&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --felt:#1f4039; --felt-2:#19342e; --felt-3:#102420; --felt-hi:#2c574c;
+    --paper:#F7F2E6; --paper-2:#efe7d3; --paper-edge:#ddd2b6;
+    --ink:#181512; --red:#C42B33; --red-2:#a51f27;
+    --brass:#D2A85A; --brass-2:#b88a3c; --brass-deep:#8f6c2a;
+    --txt:#F3ECDC; --muted:rgba(243,236,220,.62); --faint:rgba(243,236,220,.4);
+    --hair:rgba(243,236,220,.13); --hair-2:rgba(243,236,220,.08);
+    --shadow:0 18px 44px rgba(0,0,0,.42);
+    --r:15px; --r-sm:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(135% 95% at 50% -12%, var(--felt-hi) 0%, var(--felt) 38%, var(--felt-2) 72%, var(--felt-3) 100%);
+    background-attachment:fixed;
+    color:var(--txt); font-family:'Inter',system-ui,sans-serif; line-height:1.5; min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{ /* faint woven felt texture */
+    content:""; position:fixed; inset:0; pointer-events:none; opacity:.5; z-index:0;
+    background:
+      repeating-linear-gradient(45deg, rgba(0,0,0,.022) 0 2px, transparent 2px 4px),
+      repeating-linear-gradient(-45deg, rgba(255,255,255,.014) 0 2px, transparent 2px 4px);
+  }
+  .wrap{max-width:1120px; margin:0 auto; padding:30px 22px 90px; position:relative; z-index:1}
+
+  /* ---------- header ---------- */
+  header{display:flex; align-items:center; justify-content:space-between; gap:28px; flex-wrap:wrap; margin-bottom:28px; padding-bottom:22px; border-bottom:1px solid var(--hair)}
+  .brand{display:flex; align-items:center; gap:20px}
+  .fan{position:relative; width:92px; height:74px; flex:none}
+  .fc{position:absolute; left:24px; top:6px; width:46px; height:64px; border-radius:7px; background:linear-gradient(160deg,#fff,var(--paper-2)); box-shadow:0 6px 16px rgba(0,0,0,.35); transform-origin:bottom center; display:grid; place-items:center; border:1px solid var(--paper-edge)}
+  .fc .ix{position:absolute; top:4px; left:6px; font-family:'Cinzel',serif; font-weight:700; font-size:11px; line-height:1}
+  .fc .sg{font-size:22px; line-height:1}
+  .fc.s1{transform:rotate(-16deg) translateX(-15px)}
+  .fc.s2{transform:rotate(0deg); z-index:2}
+  .fc.s3{transform:rotate(16deg) translateX(15px)}
+  .fc.red{color:var(--red)} .fc.blk{color:var(--ink)}
+  h1{font-family:'Cinzel',serif; font-weight:700; font-size:34px; letter-spacing:.06em; margin:0; line-height:1; color:var(--paper)}
+  .tag{font-family:'Space Mono',monospace; font-size:11px; color:var(--brass); letter-spacing:.22em; text-transform:uppercase; margin-top:8px}
+  .blurb{max-width:330px; font-size:13px; color:var(--muted); line-height:1.55}
+
+  /* ---------- layout ---------- */
+  .grid{display:grid; grid-template-columns:1fr 372px; gap:24px; align-items:start}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+  .panel{position:relative; background:linear-gradient(180deg, rgba(44,87,76,.34), rgba(25,52,46,.5)); border:1px solid var(--hair); border-radius:var(--r); padding:20px 20px 22px; box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+  .panel + .panel{margin-top:18px}
+  .panel h2{font-family:'Space Mono',monospace; font-weight:700; font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; margin:0 0 16px; color:var(--brass); display:flex; align-items:center; gap:10px}
+  .panel h2 .n{font-family:'Space Mono',monospace; font-size:11px; font-weight:700; color:var(--felt-3); background:linear-gradient(160deg,var(--brass),var(--brass-2)); border-radius:5px; padding:2px 7px; box-shadow:0 1px 2px rgba(0,0,0,.3)}
+
+  .field{margin-bottom:14px}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block; font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-bottom:7px}
+  .row{display:flex; gap:12px}
+  .row .field{flex:1; min-width:0}
+  input[type=number], select{width:100%; background:var(--felt-3); color:var(--paper); border:1px solid var(--hair); border-radius:var(--r-sm); padding:10px 11px; font-family:'Space Mono',monospace; font-size:13px; transition:border-color .15s, box-shadow .15s}
+  input[type=number]:focus, select:focus{outline:none; border-color:var(--brass); box-shadow:0 0 0 3px rgba(210,168,90,.18)}
+  select{appearance:none; background-image:linear-gradient(45deg,transparent 50%,var(--brass) 50%),linear-gradient(135deg,var(--brass) 50%,transparent 50%); background-position:calc(100% - 16px) 17px,calc(100% - 11px) 17px; background-size:5px 5px,5px 5px; background-repeat:no-repeat; cursor:pointer}
+
+  /* ---------- segmented ---------- */
+  .seg{display:flex; gap:6px; flex-wrap:wrap}
+  .seg button{flex:1 1 0; min-width:fit-content; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 8px; border-radius:var(--r-sm); border:1px solid var(--hair); background:rgba(16,36,32,.5); color:var(--txt); cursor:pointer; transition:.15s; font-family:inherit}
+  .seg button b{font-family:'Cinzel',serif; font-weight:700; font-size:13px; letter-spacing:.04em}
+  .seg button small{font-family:'Space Mono',monospace; font-size:9.5px; color:var(--faint); letter-spacing:.02em}
+  .seg button:hover{border-color:var(--brass-2); background:rgba(210,168,90,.06)}
+  .seg button.on{background:linear-gradient(165deg,var(--brass),var(--brass-2)); border-color:var(--brass); color:var(--felt-3)}
+  .seg button.on small{color:rgba(16,36,32,.62)}
+  .sw{display:flex; gap:4px; margin-bottom:1px}
+  .sw i{width:9px; height:9px; border-radius:50%; display:block; box-shadow:0 0 0 1px rgba(0,0,0,.15) inset}
+
+  /* ---------- font picker ---------- */
+  .fontpick{display:grid; grid-template-columns:repeat(2,1fr); gap:8px}
+  .fontpick button{display:flex; align-items:center; gap:11px; text-align:left; padding:10px 11px; border-radius:var(--r-sm); border:1px solid var(--hair); background:rgba(16,36,32,.5); color:var(--txt); cursor:pointer; transition:.15s; overflow:hidden; position:relative}
+  .fontpick button:hover{border-color:var(--brass-2); background:rgba(210,168,90,.06)}
+  .fontpick button.on{border-color:var(--brass); background:rgba(210,168,90,.14); box-shadow:inset 0 0 0 1px var(--brass)}
+  .fontpick button.on::after{content:"✓"; position:absolute; top:3px; right:6px; color:var(--brass); font-size:10px; font-weight:700}
+  .fontpick .samp{font-size:23px; line-height:1; color:var(--paper); flex:none; min-width:44px; text-align:center}
+  .fontpick button.on .samp{color:var(--brass)}
+  .fontpick .fname{display:flex; flex-direction:column; gap:2px; min-width:0}
+  .fontpick .fname b{font-family:'Inter',sans-serif; font-weight:600; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .fontpick .fname small{font-family:'Space Mono',monospace; font-size:9px; color:var(--faint); letter-spacing:.02em}
+
+  /* ---------- toggles ---------- */
+  .toggle{display:flex; align-items:flex-start; gap:11px; padding:10px 0 2px; cursor:pointer; font-size:13.5px; color:var(--txt)}
+  .toggle input{appearance:none; width:38px; height:22px; margin-top:1px; background:var(--felt-3); border:1px solid var(--hair); border-radius:99px; position:relative; cursor:pointer; flex:none; transition:.18s}
+  .toggle input::after{content:""; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:var(--paper); transition:.18s; box-shadow:0 1px 2px rgba(0,0,0,.3)}
+  .toggle input:checked{background:linear-gradient(160deg,var(--brass),var(--brass-2)); border-color:var(--brass)}
+  .toggle input:checked::after{transform:translateX(16px)}
+  .toggle .hint{display:block; font-size:11px; color:var(--faint); margin-top:3px; line-height:1.4}
+  .toggle input:disabled{cursor:not-allowed}
+  .locked{opacity:.38; pointer-events:none}
+
+  /* ---------- art slots ---------- */
+  .arts{display:grid; grid-template-columns:repeat(5,1fr); gap:10px}
+  .slot{aspect-ratio:.71; border-radius:9px; cursor:pointer; position:relative; overflow:hidden; display:grid; place-items:center; transition:.15s;
+    background:repeating-linear-gradient(45deg, rgba(210,168,90,.10) 0 6px, rgba(16,36,32,.55) 6px 12px); border:1.5px dashed var(--hair)}
+  .slot:hover, .slot.over{border-color:var(--brass); transform:translateY(-1px)}
+  .slot img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+  .slot .lab{position:relative; z-index:2; text-align:center; font-family:'Cinzel',serif; font-weight:700; font-size:13px; color:var(--paper); text-shadow:0 1px 3px rgba(0,0,0,.5); padding:4px}
+  .slot .lab small{display:block; font-family:'Space Mono',monospace; font-weight:400; font-size:9px; color:var(--brass); letter-spacing:.04em; margin-top:3px; text-shadow:none}
+  .slot.has{border-style:solid; border-color:var(--brass-2)}
+  .slot.has .lab{position:absolute; bottom:0; left:0; right:0; background:linear-gradient(0deg,rgba(16,36,32,.9),transparent); color:var(--brass); padding:14px 3px 4px; font-size:11px}
+  .slot .x{position:absolute; top:4px; right:4px; z-index:3; width:19px; height:19px; border-radius:50%; background:rgba(16,36,32,.72); color:#fff; border:1px solid rgba(255,255,255,.2); cursor:pointer; font-size:10px; line-height:1; display:none}
+  .slot.has .x{display:block}
+  .slot.has .x:hover{background:var(--red)}
+  .note{font-size:11.5px; color:var(--muted); margin:13px 0 0; line-height:1.5}
+
+  /* ---------- drop zones ---------- */
+  .drop{border:1.5px dashed var(--hair); border-radius:var(--r-sm); padding:15px; text-align:center; cursor:pointer; font-size:13px; color:var(--muted); transition:.15s; background:rgba(16,36,32,.35)}
+  .drop:hover,.drop.over{border-color:var(--brass); color:var(--paper); background:rgba(210,168,90,.06)}
+  .drop b{color:var(--brass); font-weight:600}
+  .backthumb{display:flex; align-items:center; gap:11px; margin-top:11px; background:var(--felt-3); border:1px solid var(--hair); border-radius:9px; padding:8px}
+  .backthumb img{width:32px; height:45px; object-fit:cover; border-radius:5px; box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  .backthumb span{font-size:13px; font-weight:500}
+  .backthumb .x{margin-left:auto; background:none; border:none; color:var(--faint); cursor:pointer; font-size:16px; line-height:1}
+  .backthumb .x:hover{color:var(--red)}
+
+  /* ---------- preview (signature) ---------- */
+  .stage{position:sticky; top:18px}
+  .sheet-frame{position:relative; background:radial-gradient(120% 100% at 50% 10%, var(--felt-hi), var(--felt-3)); border:1px solid var(--hair); border-radius:12px; padding:20px; display:grid; place-items:center; min-height:250px; box-shadow:inset 0 2px 14px rgba(0,0,0,.35)}
+  #sheet{max-width:100%; height:auto; background:#fff; border-radius:3px; box-shadow:var(--shadow); display:block}
+  .plabel{text-align:center; font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-top:12px}
+  .specbox{font-family:'Space Mono',monospace; font-size:12px; color:var(--txt); margin-top:16px; background:var(--felt-3); border:1px solid var(--hair); border-radius:var(--r-sm); padding:6px 14px}
+  .specbox .ln{display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--hair-2)}
+  .specbox .ln:last-child{border-bottom:none}
+  .specbox .ln span{color:var(--muted)}
+  .specbox .ln b{color:var(--brass); font-weight:700; font-size:13px}
+  .go{width:100%; margin-top:16px; background:linear-gradient(165deg,var(--red),var(--red-2)); color:#fff; border:none; border-radius:12px; padding:16px; font-family:'Cinzel',serif; font-weight:700; font-size:16px; letter-spacing:.05em; cursor:pointer; transition:transform .15s, box-shadow .15s, filter .15s; box-shadow:0 9px 22px rgba(196,43,51,.34)}
+  .go:hover{transform:translateY(-2px); box-shadow:0 13px 28px rgba(196,43,51,.44)}
+  .go:active{transform:translateY(0)}
+  .go:disabled{background:var(--felt-hi); color:var(--faint); box-shadow:none; cursor:not-allowed; transform:none}
+  .status{text-align:center; font-family:'Space Mono',monospace; font-size:11.5px; margin-top:11px; min-height:15px; color:var(--brass); letter-spacing:.02em}
+
+  :focus-visible{outline:2px solid var(--brass); outline-offset:2px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="fan">
+        <span class="fc s1 blk"><span class="ix">A</span><span class="sg">♠</span></span>
+        <span class="fc s3 blk"><span class="ix">K</span><span class="sg">♣</span></span>
+        <span class="fc s2 red"><span class="ix">A</span><span class="sg">♥</span></span>
+      </div>
+      <div><h1>Talia</h1><div class="tag">It builds · you supply the faces</div></div>
+    </div>
+    <p class="blurb">Pips 2 to 10 and the corner indices draw themselves. You just upload artwork for the faces (Jack, Queen, King, Ace), one image used across all four suits. The whole deck lands on a sheet, ready to cut.</p>
+  </header>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <h2><span class="n">1</span> Deck style</h2>
+        <div class="field full"><label>Rank &amp; number font</label>
+          <div class="fontpick" id="fontpick">
+            <button data-v="Cinzel" class="on"><span class="samp" style="font-family:'Cinzel',serif">A 10</span><span class="fname"><b>Cinzel</b><small>engraved</small></span></button>
+            <button data-v="Playfair Display"><span class="samp" style="font-family:'Playfair Display',serif">A 10</span><span class="fname"><b>Playfair</b><small>elegant serif</small></span></button>
+            <button data-v="DM Serif Display"><span class="samp" style="font-family:'DM Serif Display',serif">A 10</span><span class="fname"><b>DM Serif</b><small>bold serif</small></span></button>
+            <button data-v="Oswald"><span class="samp" style="font-family:'Oswald',sans-serif">A 10</span><span class="fname"><b>Oswald</b><small>condensed</small></span></button>
+            <button data-v="Bebas Neue"><span class="samp" style="font-family:'Bebas Neue',sans-serif">A 10</span><span class="fname"><b>Bebas Neue</b><small>poster caps</small></span></button>
+            <button data-v="Rubik"><span class="samp" style="font-family:'Rubik',sans-serif">A 10</span><span class="fname"><b>Rubik</b><small>rounded</small></span></button>
+            <button data-v="Space Mono"><span class="samp" style="font-family:'Space Mono',monospace">A 10</span><span class="fname"><b>Space Mono</b><small>monospace</small></span></button>
+            <button data-v="Bricolage Grotesque"><span class="samp" style="font-family:'Bricolage Grotesque',sans-serif">A 10</span><span class="fname"><b>Bricolage</b><small>grotesque</small></span></button>
+          </div>
+        </div>
+        <div class="field full"><label>Pip colors</label>
+          <div class="seg" id="palette">
+            <button data-v="classic" class="on"><span class="sw"><i style="background:#C42B33"></i><i style="background:#181512"></i></span><small>classic</small></button>
+            <button data-v="four"><span class="sw"><i style="background:#181512"></i><i style="background:#C42B33"></i><i style="background:#1f8a4c"></i><i style="background:#1f5fc4"></i></span><small>4-color</small></button>
+            <button data-v="mono"><span class="sw"><i style="background:#181512"></i></span><small>mono</small></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2><span class="n">2</span> Face, ace &amp; joker art</h2>
+        <div class="arts" id="arts"></div>
+        <input type="file" id="artInput" accept="image/*" hidden>
+        <p class="note">Each image sits in the center of the card. Faces appear in all four suits, with the suit symbol still drawn in the corner. Both jokers share the same image (one red, one black). Leave a slot empty and the app draws a large symbol instead.</p>
+      </div>
+
+      <div class="panel">
+        <h2><span class="n">3</span> Card back (optional)</h2>
+        <div class="drop" id="backDrop"><b>Drop a back image</b> for the whole deck</div>
+        <input type="file" id="backInput" accept="image/*" hidden>
+        <div id="backWrap"></div>
+        <label class="toggle"><input type="checkbox" id="mirror" checked><span>Mirror backs for double-sided printing</span></label>
+      </div>
+
+      <div class="panel">
+        <h2><span class="n">4</span> Size &amp; sheet</h2>
+        <div class="field full"><label>Card size</label>
+          <div class="seg" id="sizes">
+            <button data-w="35" data-h="50" class="on"><b>Mini</b><small>35×50</small></button>
+            <button data-w="44" data-h="63"><b>Midi</b><small>44×63</small></button>
+            <button data-w="63" data-h="88"><b>Poker</b><small>63×88</small></button>
+            <button data-w="57" data-h="88"><b>Bridge</b><small>57×88</small></button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Width (mm)</label><input type="number" id="cw" value="35" min="20" max="120" step="0.5"></div>
+          <div class="field"><label>Height (mm)</label><input type="number" id="ch" value="50" min="20" max="160" step="0.5"></div>
+          <div class="field"><label>Sheet</label><select id="page"><option value="a4">A4</option><option value="letter">Letter</option></select></div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="connect" checked><span>Join cards into one grid<small class="hint">cards share edges, so one line cuts two cards</small></span></label>
+        <div id="spacedOpts">
+          <div class="row">
+            <div class="field"><label>Bleed (mm)</label><input type="number" id="bleed" value="1" min="0" max="6" step="0.5"></div>
+            <div class="field"><label>Gap (mm)</label><input type="number" id="gap" value="0.5" min="0" max="8" step="0.5"></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="marks" checked><span>Corner crop marks<small class="hint">for separate cards printed with bleed</small></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="panel">
+        <h2>Sheet preview</h2>
+        <div class="sheet-frame"><canvas id="sheet"></canvas></div>
+        <div class="plabel" id="plabel">Page 1</div>
+        <div class="specbox" id="spec"></div>
+        <button class="go" id="go">Build the full deck PDF</button>
+        <div class="status" id="status"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const MM=25.4;
+const PAGES={a4:[210,297],letter:[215.9,279.4]};
+const SUITS=[
+  {k:'spade',  g:'♠', cat:'black'},
+  {k:'heart',  g:'♥', cat:'red'},
+  {k:'club',   g:'♣', cat:'black'},
+  {k:'diamond',g:'♦', cat:'red'},
+];
+const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const COURT=['A','J','Q','K'];
+
+// pip layouts (x,y as fraction of card). flip if y>0.5
+const L=0.30,C=0.5,R=0.70;
+const LAYOUT={
+  '2':[[C,.18],[C,.82]],
+  '3':[[C,.18],[C,.5],[C,.82]],
+  '4':[[L,.18],[R,.18],[L,.82],[R,.82]],
+  '5':[[L,.18],[R,.18],[C,.5],[L,.82],[R,.82]],
+  '6':[[L,.18],[R,.18],[L,.5],[R,.5],[L,.82],[R,.82]],
+  '7':[[L,.18],[R,.18],[C,.34],[L,.5],[R,.5],[L,.82],[R,.82]],
+  '8':[[L,.18],[R,.18],[C,.34],[L,.5],[R,.5],[C,.66],[L,.82],[R,.82]],
+  '9':[[L,.18],[R,.18],[L,.38],[R,.38],[C,.5],[L,.62],[R,.62],[L,.82],[R,.82]],
+  '10':[[L,.18],[R,.18],[C,.30],[L,.38],[R,.38],[L,.62],[R,.62],[C,.70],[L,.82],[R,.82]],
+};
+
+const state={
+  font:'Cinzel', palette:'classic', connect:true,
+  art:{A:null,J:null,Q:null,K:null}, jokerArt:null, back:null,
+  size:[35,50],
+};
+
+// ---------- ui wiring ----------
+function seg(id,onpick){ const w=$(id);
+  w.querySelectorAll('button').forEach(b=>b.onclick=()=>{ w.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); onpick(b); }); }
+seg('palette',b=>{state.palette=b.dataset.v;render();});
+seg('sizes',b=>{state.size=[+b.dataset.w,+b.dataset.h]; $('cw').value=b.dataset.w; $('ch').value=b.dataset.h; render();});
+seg('fontpick',b=>{ state.font=b.dataset.v; render(); try{ document.fonts.load(`700 40px "${state.font}"`).then(render).catch(()=>{}); }catch(e){} });
+['cw','ch','page','bleed','gap','marks','mirror'].forEach(id=>$(id).addEventListener('input',()=>{state.size=[+$('cw').value,+$('ch').value];render();}));
+function syncLock(){ const c=$('connect').checked; $('spacedOpts').classList.toggle('locked',c); ['bleed','gap','marks'].forEach(id=>$(id).disabled=c); }
+$('connect').onchange=()=>{state.connect=$('connect').checked; syncLock(); render();};
+syncLock();
+
+// art slots (figures + ace + joker, all uniform)
+const SLOTS=['A','J','Q','K','JOKER'];
+const ART_LABELS={A:'Ace',J:'Jack',Q:'Queen',K:'King',JOKER:'Joker'};
+const getArt=k=> k==='JOKER'?state.jokerArt:state.art[k];
+const setArt=(k,v)=>{ if(k==='JOKER')state.jokerArt=v; else state.art[k]=v; };
+let artTarget=null;
+const artsWrap=$('arts');
+SLOTS.forEach(r=>{
+  const d=document.createElement('div'); d.className='slot'; d.dataset.r=r;
+  d.innerHTML=`<button class="x">✕</button><div class="lab">${ART_LABELS[r]}<br><small>+ image</small></div>`;
+  d.onclick=e=>{ if(e.target.classList.contains('x'))return; artTarget=r; $('artInput').click(); };
+  d.querySelector('.x').onclick=()=>{ setArt(r,null); refreshSlot(r); render(); };
+  bindDnd(d, files=>loadArt(r,files[0]));
+  artsWrap.appendChild(d);
+});
+$('artInput').onchange=e=>{ if(artTarget) loadArt(artTarget,e.target.files[0]); $('artInput').value=''; };
+
+function refreshSlot(r){
+  const d=artsWrap.querySelector(`[data-r="${r}"]`);
+  const a=getArt(r);
+  d.classList.toggle('has',!!a);
+  d.querySelector('.lab').innerHTML = a? ART_LABELS[r] : `${ART_LABELS[r]}<br><small>+ image</small>`;
+  let im=d.querySelector('img'); if(a){ if(!im){im=document.createElement('img');d.insertBefore(im,d.firstChild);} im.src=a.dataURL; } else if(im) im.remove();
+}
+async function loadArt(r,file){ if(!file||!file.type.startsWith('image/'))return; setArt(r,await loadImg(file)); refreshSlot(r); render(); }
+
+// back
+bindDnd($('backDrop'),f=>loadBack(f[0]));
+$('backDrop').onclick=()=>$('backInput').click();
+$('backInput').onchange=e=>{loadBack(e.target.files[0]);$('backInput').value='';};
+async function loadBack(file){ if(!file||!file.type.startsWith('image/'))return; state.back=await loadImg(file); drawBackThumb(); render(); }
+function drawBackThumb(){ const w=$('backWrap'); w.innerHTML=''; if(!state.back)return;
+  const d=document.createElement('div'); d.className='backthumb';
+  d.innerHTML=`<img src="${state.back.dataURL}"><span>Deck back</span><button class="x">✕</button>`;
+  d.querySelector('.x').onclick=()=>{state.back=null;drawBackThumb();render();};
+  w.appendChild(d);
+}
+
+function bindDnd(el,handler){
+  ['dragover','dragenter'].forEach(ev=>el.addEventListener(ev,e=>{e.preventDefault();el.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>el.addEventListener(ev,e=>{e.preventDefault();el.classList.remove('over');}));
+  el.addEventListener('drop',e=>handler(e.dataTransfer.files));
+}
+function loadImg(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>res({dataURL:r.result,img:i});i.onerror=rej;i.src=r.result;};r.onerror=rej;r.readAsDataURL(file);});}
+
+// ---------- palette ----------
+function suitColor(s){
+  if(state.palette==='mono') return '#1A1714';
+  if(state.palette==='four') return {spade:'#1A1714',heart:'#C42B33',club:'#1f8a4c',diamond:'#1f5fc4'}[s.k];
+  return s.cat==='red' ? '#C42B33' : '#1A1714';
+}
+function rankLabel(r){ return r; }
+const SUITFONT='"Noto Sans Symbols2","DejaVu Sans","Segoe UI Symbol","Arial",sans-serif';
+
+// ---------- draw one card to a canvas ----------
+function drawCard(ctx,w,h,rank,suit){
+  ctx.save();
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h);
+  const bw=Math.max(1,w*0.012);
+  if(!state.connect){ ctx.strokeStyle='#1A1714'; ctx.lineWidth=bw; ctx.strokeRect(bw/2,bw/2,w-bw,h-bw); }
+  const col=suitColor(suit);
+  const glyph=suit.g+'\uFE0E';
+  const lab=rankLabel(rank);
+
+  // centre
+  if(rank==='A' && !state.art.A) drawGlyph(ctx,w*0.5,h*0.5,glyph,col,w*0.42,false);
+  else if(COURT.includes(rank) && state.art[rank]) drawCourtArt(ctx,w,h,state.art[rank],glyph,col,lab);
+  else if(COURT.includes(rank)) drawBigLetter(ctx,w,h,lab,glyph,col);
+  else { const lay=LAYOUT[rank]||[]; lay.forEach(([x,y])=>drawGlyph(ctx,x*w,y*h,glyph,col,w*0.20,y>0.5)); }
+
+  // corner indices (on top)
+  drawIndex(ctx,w,h,lab,glyph,col,false);
+  drawIndex(ctx,w,h,lab,glyph,col,true);
+  ctx.restore();
+}
+function drawGlyph(ctx,x,y,glyph,col,size,flip){
+  ctx.save(); ctx.fillStyle=col; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=`${size}px ${SUITFONT}`; ctx.translate(x,y); if(flip)ctx.rotate(Math.PI);
+  ctx.fillText(glyph,0,0); ctx.restore();
+}
+function drawIndex(ctx,w,h,lab,glyph,col,rot){
+  ctx.save(); if(rot){ctx.translate(w,h);ctx.rotate(Math.PI);}
+  ctx.fillStyle=col; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  const fs=w*(lab.length>1?0.17:0.20), x=w*0.135, y=h*0.135;
+  ctx.font=`700 ${fs}px "${state.font}", serif`;
+  // subtle halo so index reads over artwork
+  ctx.lineWidth=fs*0.18; ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.lineJoin='round';
+  ctx.strokeText(lab,x,y); ctx.fillText(lab,x,y);
+  ctx.font=`${fs*0.8}px ${SUITFONT}`;
+  ctx.strokeText(glyph,x,y+fs*0.92); ctx.fillText(glyph,x,y+fs*0.92);
+  ctx.restore();
+}
+function drawBigLetter(ctx,w,h,lab,glyph,col){
+  ctx.save(); ctx.fillStyle=col; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=`700 ${w*0.52}px "${state.font}", serif`; ctx.fillText(lab,w*0.5,h*0.46);
+  ctx.font=`${w*0.20}px ${SUITFONT}`; ctx.fillText(glyph,w*0.5,h*0.72);
+  ctx.restore();
+}
+function drawCourtArt(ctx,w,h,art,glyph,col,lab){
+  const bw=Math.max(1,w*0.012), inset=w*0.085;
+  const ax=inset, ay=h*0.16, aw=w-inset*2, ah=h-h*0.32;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(ax,ay,aw,ah); ctx.clip();
+  const img=art.img, ir=img.width/img.height, dr=aw/ah; let sw,sh,sx,sy;
+  if(ir>dr){sh=img.height;sw=sh*dr;sx=(img.width-sw)/2;sy=0;} else {sw=img.width;sh=sw/dr;sx=0;sy=(img.height-sh)/2;}
+  ctx.drawImage(img,sx,sy,sw,sh,ax,ay,aw,ah);
+  ctx.restore();
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=bw; ctx.strokeRect(ax,ay,aw,ah); ctx.restore();
+}
+function drawBackFace(ctx,w,h){
+  if(state.back){ const img=state.back.img, ir=img.width/img.height, dr=w/h; let sw,sh,sx,sy;
+    if(ir>dr){sh=img.height;sw=sh*dr;sx=(img.width-sw)/2;sy=0;} else {sw=img.width;sh=sw/dr;sx=0;sy=(img.height-sh)/2;}
+    ctx.drawImage(img,sx,sy,sw,sh,0,0,w,h);
+  } else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); }
+}
+
+// ---------- sequence + layout maths ----------
+function sequence(){
+  const seq=[];
+  SUITS.forEach(s=>RANKS.forEach(r=>seq.push({rank:r,suit:s})));
+  seq.push({joker:true,jcolor:'#C42B33'},{joker:true,jcolor:'#181512'});
+  return seq;
+}
+function gridCalc(){
+  const cw=+$('cw').value, ch=+$('ch').value;
+  const bl=state.connect?0:+$('bleed').value, gp=state.connect?0:+$('gap').value;
+  const [pw,ph]=PAGES[$('page').value], m=8, tw=cw+2*bl, th=ch+2*bl;
+  const cols=Math.max(1,Math.floor((pw-2*m+gp)/(tw+gp)));
+  const rows=Math.max(1,Math.floor((ph-2*m+gp)/(th+gp)));
+  return {cw,ch,bl,gp,pw,ph,m,tw,th,cols,rows,per:cols*rows};
+}
+function tileCanvas(item,g,dpi){
+  const cv=document.createElement('canvas');
+  cv.width=Math.round(g.tw/MM*dpi); cv.height=Math.round(g.th/MM*dpi);
+  const ctx=cv.getContext('2d');
+  const blpx=g.bl/MM*dpi, cwpx=g.cw/MM*dpi, chpx=g.ch/MM*dpi;
+  if(item.back){ ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.save(); ctx.translate(blpx,blpx); drawBackFace(ctx,cwpx,chpx); ctx.restore(); return cv; }
+  // bleed: extend card bg under bleed by drawing card slightly larger
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.save(); ctx.translate(blpx,blpx);
+  if(item.joker) drawJoker(ctx,cwpx,chpx,item.jcolor); else drawCard(ctx,cwpx,chpx,item.rank,item.suit);
+  ctx.restore();
+  return cv;
+}
+function drawJoker(ctx,w,h,color){
+  const col=color||'#C42B33';
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h);
+  const bw=Math.max(1,w*0.012); if(!state.connect){ ctx.strokeStyle='#1A1714'; ctx.lineWidth=bw; ctx.strokeRect(bw/2,bw/2,w-bw,h-bw); }
+  if(state.jokerArt){
+    drawCourtArt(ctx,w,h,state.jokerArt,'★\uFE0E',col,'J');
+    ['',''].forEach((_,i)=>{ ctx.save(); if(i){ctx.translate(w,h);ctx.rotate(Math.PI);}
+      ctx.fillStyle=col; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+      ctx.font=`700 ${w*0.16}px "${state.font}",serif`;
+      ctx.lineWidth=w*0.16*0.18; ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.lineJoin='round';
+      ctx.strokeText('J',w*0.14,h*0.15); ctx.fillText('J',w*0.14,h*0.15); ctx.restore(); });
+    return;
+  }
+  ctx.save(); ctx.fillStyle=col; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=`${w*0.4}px ${SUITFONT}`; ctx.fillText('★',w*0.5,h*0.42);
+  ctx.font=`700 ${w*0.12}px "${state.font}",serif`;
+  ctx.fillText('JOKER',w*0.5,h*0.66);
+  ['',''].forEach((_,i)=>{ ctx.save(); if(i)ctx.translate(w,h),ctx.rotate(Math.PI);
+    ctx.fillStyle=col; ctx.font=`700 ${w*0.16}px "${state.font}",serif`; ctx.textBaseline='alphabetic';
+    ctx.fillText('J',w*0.14,h*0.15); ctx.restore(); });
+  ctx.restore();
+}
+
+// ---------- live preview (page 1) ----------
+function render(){
+  const g=gridCalc(), seq=sequence();
+  const per=g.per, total=seq.length, pages=Math.ceil(total/per);
+
+  // preview canvas at modest dpi
+  const dpi=Math.min(150, 1400/(g.pw/MM));   // fit nicely
+  const sheet=$('sheet'); const sx=g.pw/MM*dpi, sy=g.ph/MM*dpi;
+  sheet.width=sx; sheet.height=sy;
+  const ctx=sheet.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,sx,sy);
+  ctx.fillStyle='#f3eee1'; ctx.fillRect(0,0,sx,sy);
+
+  const blockW=g.cols*g.tw+(g.cols-1)*g.gp, blockH=g.rows*g.th+(g.rows-1)*g.gp;
+  const ox=(g.pw-blockW)/2/MM*dpi, oy=(g.ph-blockH)/2/MM*dpi;
+  const twP=g.tw/MM*dpi, thP=g.th/MM*dpi;
+
+  for(let i=0;i<per && i<total;i++){
+    const item=seq[i], col=i%g.cols, row=Math.floor(i/g.cols);
+    const cv=tileCanvas(item,g,dpi);
+    ctx.drawImage(cv, ox+col*(twP+g.gp/MM*dpi), oy+row*(thP+g.gp/MM*dpi), twP, thP);
+  }
+  if($('marks').checked && !state.connect) drawPreviewMarks(ctx,g,dpi,ox,oy,twP,thP,Math.min(per,total));
+  if(state.connect){
+    const cwP=g.cw/MM*dpi, chP=g.ch/MM*dpi;
+    ctx.strokeStyle='#1A1714'; ctx.lineWidth=Math.max(1,0.18/MM*dpi);
+    connectGrid((x1,y1,x2,y2)=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}, ox,oy,cwP,chP,g.cols,Math.min(per,total));
+  }
+
+  $('plabel').textContent = pages>1?`Page 1 of ${pages} (fronts)`:`Whole deck on one sheet`;
+  $('spec').innerHTML=`
+    <div class="ln"><span>Card</span><b>${g.cw}×${g.ch} mm</b></div>
+    <div class="ln"><span>Per sheet</span><b>${g.cols}×${g.rows} = ${g.per}</b></div>
+    <div class="ln"><span>Total cards</span><b>${total} (incl. 2 jokers)</b></div>
+    <div class="ln"><span>PDF pages</span><b>${pages} front${state.back?` + ${pages} back`:''}</b></div>`;
+}
+function drawPreviewMarks(ctx,g,dpi,ox,oy,twP,thP,n){
+  ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=1; const blP=g.bl/MM*dpi, mk=2.2/MM*dpi;
+  for(let i=0;i<n;i++){ const col=i%g.cols,row=Math.floor(i/g.cols);
+    const x=ox+col*(twP+g.gp/MM*dpi), y=oy+row*(thP+g.gp/MM*dpi);
+    const cwP=g.cw/MM*dpi, chP=g.ch/MM*dpi;
+    [[x+blP,y+blP,-1,-1],[x+blP+cwP,y+blP,1,-1],[x+blP,y+blP+chP,-1,1],[x+blP+cwP,y+blP+chP,1,1]]
+      .forEach(([px,py,dx,dy])=>{ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+dx*mk,py);ctx.moveTo(px,py);ctx.lineTo(px,py+dy*mk);ctx.stroke();});
+  }
+}
+// uniform shared grid (line callback in same units as ox/oy/cw/ch). handles partial last row.
+function connectGrid(line, ox, oy, cw, ch, cols, count){
+  if(count<=0) return;
+  const complete=Math.floor(count/cols), rem=count%cols, totalRows=complete+(rem>0?1:0);
+  // horizontal lines
+  for(let i=0;i<=complete;i++){ const y=oy+i*ch; line(ox, y, ox+cols*cw, y); }
+  if(rem>0){ const y=oy+totalRows*ch; line(ox, y, ox+rem*cw, y); }
+  // vertical lines
+  for(let b=0;b<=cols;b++){
+    const deep = (rem>0 && b<=rem) ? totalRows : complete;
+    const x=ox+b*cw; line(x, oy, x, oy+deep*ch);
+  }
+}
+
+// ---------- build PDF ----------
+async function build(){
+  await document.fonts.load(`700 40px "${state.font}"`).catch(()=>{});
+  const g=gridCalc(), seq=sequence(), marks=$('marks').checked && !state.connect, mirror=$('mirror').checked, hasBack=!!state.back;
+  $('go').disabled=true; $('status').textContent='Rendering cards…'; await new Promise(r=>setTimeout(r,30));
+  const dpi=300;
+  const { jsPDF }=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:$('page').value,orientation:'portrait'});
+  const per=g.per, pages=Math.ceil(seq.length/per); let first=true;
+
+  const blockW=g.cols*g.tw+(g.cols-1)*g.gp, blockH=g.rows*g.th+(g.rows-1)*g.gp;
+  const ox=(g.pw-blockW)/2, oy=(g.ph-blockH)/2;
+  const place=(items)=>items.forEach(it=>{
+    const x=ox+it.col*(g.tw+g.gp), y=oy+it.row*(g.th+g.gp);
+    doc.addImage(it.data,'JPEG',x,y,g.tw,g.th);
+    if(marks){ doc.setDrawColor(120); doc.setLineWidth(0.08); const mm=2.5;
+      [[x+g.bl,y+g.bl,-1,-1],[x+g.bl+g.cw,y+g.bl,1,-1],[x+g.bl,y+g.bl+g.ch,-1,1],[x+g.bl+g.cw,y+g.bl+g.ch,1,1]]
+        .forEach(([px,py,dx,dy])=>{doc.line(px,py,px+dx*mm,py);doc.line(px,py,px,py+dy*mm);}); }
+  });
+
+  const gridPdf=(count)=>{ if(!state.connect)return;
+    doc.setDrawColor(26,23,20); doc.setLineWidth(0.18);
+    connectGrid((x1,y1,x2,y2)=>doc.line(x1,y1,x2,y2), ox,oy,g.cw,g.ch,g.cols,count); };
+
+  const backData = hasBack ? tileCanvas({back:true},g,dpi).toDataURL('image/jpeg',0.9) : null;
+
+  for(let p=0;p<pages;p++){
+    if(!first) doc.addPage(); first=false;
+    const fItems=[]; const fcount=Math.min(per,seq.length-p*per);
+    for(let i=0;i<per;i++){ const gi=p*per+i; if(gi>=seq.length)break;
+      fItems.push({col:i%g.cols,row:Math.floor(i/g.cols),data:tileCanvas(seq[gi],g,dpi).toDataURL('image/jpeg',0.9)}); }
+    place(fItems); gridPdf(fcount);
+    if(hasBack){ doc.addPage();
+      const count=Math.min(per,seq.length-p*per), bItems=[];
+      for(let i=0;i<count;i++){ let col=i%g.cols,row=Math.floor(i/g.cols); if(mirror)col=g.cols-1-col;
+        bItems.push({col,row,data:backData}); }
+      place(bItems); gridPdf(count);
+    }
+    $('status').textContent=`Building page ${p+1}/${pages}…`; await new Promise(r=>setTimeout(r,10));
+  }
+  doc.save('talia.pdf');
+  $('status').textContent=`Done. ${seq.length} cards across ${pages*(hasBack?2:1)} pages.`;
+  $('go').disabled=false;
+}
+$('go').onclick=build;
+
+// init
+const ALL_FONTS=['Cinzel','Playfair Display','DM Serif Display','Oswald','Bebas Neue','Rubik','Space Mono','Bricolage Grotesque'];
+function preloadFonts(){ ALL_FONTS.forEach(f=>{ try{ document.fonts.load(`700 40px "${f}"`).then(render).catch(()=>{}); }catch(e){} }); }
+preloadFonts();
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+render();
+</script>
+</body>
+</html>
