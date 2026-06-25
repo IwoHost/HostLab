@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+  <script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+  <script type="text/plain" data-cookiecategory="statistics">
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-R7MJHBKJVY');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Braille Trainer — HostLab</title>
+  <meta name="description" content="Learn the Braille alphabet through interactive exercises — read cells, write patterns, quiz yourself.">
+  <meta property="og:title" content="Braille Trainer">
+  <meta property="og:description" content="Learn the Braille alphabet through interactive exercises">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://iwohost.github.io/HostLab/websites/braille-trainer.html">
+  <meta property="og:image" content="https://iwohost.github.io/HostLab/other/p_braille.png">
+
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../other/backbutton.css">
+
+  <style>
+    /* THEME: Ice Station */
+    :root {
+      --bg:      #01080f;
+      --panel:   #04101c;
+      --border:  #0c2035;
+      --border2: #163348;
+      --text:    #a8d8ff;
+      --text2:   #4d7fa0;
+      --text3:   #1e3f55;
+      --accent:  #a8d8ff;
+      --accent2: #d4eeff;
+      --accent3: #0d2840;
+      --mono:    'Share Tech Mono', monospace;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 3px, rgba(0,0,0,.07) 3px);
+      pointer-events: none;
+      z-index: 200;
+    }
+
+    #app {
+      display: grid;
+      grid-template-rows: 42px 1fr 34px;
+      height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    #header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border2);
+      background: var(--panel);
+    }
+
+    #logo {
+      font-size: 13px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-shadow: 0 0 14px rgba(168,216,255,0.35);
+    }
+    #logo span { color: var(--text3); }
+
+    #hinfo {
+      display: flex;
+      gap: 20px;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      color: var(--text2);
+      text-transform: uppercase;
+    }
+    #hinfo b { color: var(--accent); }
+
+    /* ── MAIN ── */
+    #main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 16px 20px;
+      overflow: hidden;
+    }
+
+    /* ── CONTROL ROW ── */
+    #control-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tab-group { display: flex; gap: 2px; }
+
+    .tab, .set-tab {
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      background: transparent;
+      cursor: pointer;
+      border: 1px solid var(--border2);
+      color: var(--text2);
+      transition: all 0.15s;
+    }
+
+    .tab {
+      font-size: 10px;
+      padding: 6px 16px;
+    }
+
+    .set-tab {
+      font-size: 9px;
+      padding: 5px 12px;
+    }
+
+    .tab:hover, .set-tab:hover { color: var(--accent); border-color: var(--accent); }
+
+    .tab.active {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+    }
+
+    .set-tab.active {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* ── CARD ── */
+    #card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      animation: fadeUp 0.25s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes flashGreen {
+      0%   { background: rgba(100,220,130,0.12); }
+      100% { background: transparent; }
+    }
+
+    @keyframes flashRed {
+      0%   { background: rgba(255,80,80,0.10); }
+      100% { background: transparent; }
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    #card.ok  { animation: flashGreen 0.5s ease; }
+    #card.bad { animation: flashRed   0.5s ease; }
+
+    /* ── BRAILLE CELL ── */
+    .cell-wrap {
+      position: relative;
+      padding: 4px;
+    }
+
+    .cell-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border: 1px solid var(--border);
+    }
+
+    .braille-cell {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 22px 24px;
+      border: 1px solid var(--border2);
+      background: var(--panel);
+    }
+
+    /* dot indices in array: 0=dot1, 1=dot2, 2=dot3, 3=dot4, 4=dot5, 5=dot6
+       grid render order (col-major): dot1,dot4, dot2,dot5, dot3,dot6
+       → array positions: 0,3,1,4,2,5                                        */
+    .dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border2);
+      background: transparent;
+      transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+    }
+
+    .dot.on {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(168,216,255,0.45), 0 0 22px rgba(168,216,255,0.18);
+    }
+
+    .dot.clickable { cursor: pointer; }
+    .dot.clickable:hover { border-color: var(--accent2); background: var(--accent3); }
+    .dot.clickable.on   { background: var(--accent); }
+
+    /* dot number labels inside (learn mode only) */
+    .dot[data-num]::after {
+      display: none;
+    }
+
+    /* ── BIG LETTER DISPLAY ── */
+    #big-letter {
+      font-family: 'VT323', monospace;
+      font-size: 88px;
+      line-height: 1;
+      color: var(--accent);
+      text-shadow: 0 0 28px rgba(168,216,255,0.38);
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.25s;
+    }
+    #big-letter.hidden { opacity: 0; pointer-events: none; }
+
+    /* ── HINT LINE ── */
+    .hint {
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text3);
+      text-align: center;
+    }
+
+    /* ── NOTE (digit = same as letter) ── */
+    #note {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      color: var(--text2);
+      text-align: center;
+      min-height: 12px;
+    }
+
+    /* ── INPUT ── */
+    #ans-input {
+      font-family: var(--mono);
+      font-size: 36px;
+      width: 54px;
+      text-align: center;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border2);
+      color: var(--accent);
+      outline: none;
+      text-transform: uppercase;
+      caret-color: var(--accent);
+    }
+
+    /* ── FEEDBACK ── */
+    #feedback {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      min-height: 16px;
+      text-align: center;
+    }
+    #feedback.ok  { color: #72d98a; }
+    #feedback.bad { color: #ff6666; }
+
+    /* ── NAV BUTTONS ── */
+    #nav {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 8px 18px;
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn:hover { color: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+    .btn.primary {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+    }
+    .btn.primary:hover { background: var(--accent2); color: var(--bg); }
+
+    /* ── STATS ── */
+    #stats {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .stat { text-align: center; }
+    .stat-val {
+      display: block;
+      font-size: 26px;
+      color: var(--accent);
+      text-shadow: 0 0 10px rgba(168,216,255,0.28);
+    }
+    .stat-lbl {
+      display: block;
+      font-size: 8px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-top: 2px;
+    }
+
+    #prog-wrap { text-align: center; }
+    #prog-bar {
+      width: 180px;
+      height: 2px;
+      background: var(--border2);
+    }
+    #prog-fill {
+      height: 100%;
+      background: var(--accent);
+      box-shadow: 0 0 6px rgba(168,216,255,0.4);
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+    #prog-label {
+      font-size: 8px;
+      letter-spacing: 0.14em;
+      color: var(--text3);
+      text-transform: uppercase;
+      margin-top: 5px;
+    }
+
+    /* ── FOOTER ── */
+    #footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      border-top: 1px solid var(--border2);
+      background: var(--panel);
+      font-size: 8px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+    #footer #fc { color: var(--text2); }
+
+    /* ── MOBILE ── */
+    @media (max-width: 600px) {
+      #main { gap: 14px; padding: 12px; }
+      .dot { width: 22px; height: 22px; }
+      .braille-cell { gap: 11px; padding: 18px 20px; }
+      #big-letter { font-size: 66px; min-height: 68px; }
+      #stats { gap: 18px; }
+      .stat-val { font-size: 20px; }
+      #prog-bar { width: 130px; }
+      .btn { padding: 7px 13px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div id="header">
+    <span id="logo">BRAILLE<span>·</span>TRAINER</span>
+    <div id="hinfo">
+      <span>MODE <b id="mode-label">LEARN</b></span>
+      <span>VER <b>1.0</b></span>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="control-row">
+      <div class="tab-group" id="mode-tabs">
+        <button class="tab active" data-mode="learn">Learn</button>
+        <button class="tab" data-mode="read">Read</button>
+        <button class="tab" data-mode="write">Write</button>
+      </div>
+      <div class="tab-group" id="set-tabs">
+        <button class="set-tab active" data-set="letters">A–Z</button>
+        <button class="set-tab" data-set="digits">0–9</button>
+        <button class="set-tab" data-set="all">All</button>
+      </div>
+    </div>
+
+    <div id="card"></div>
+
+    <div id="stats">
+      <div class="stat">
+        <span class="stat-val" id="stat-score">0</span>
+        <span class="stat-lbl">Score</span>
+      </div>
+      <div id="prog-wrap">
+        <div id="prog-bar"><div id="prog-fill"></div></div>
+        <div id="prog-label">— / —</div>
+      </div>
+      <div class="stat">
+        <span class="stat-val" id="stat-streak">0</span>
+        <span class="stat-lbl">Streak</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">
+    <span>HOSTLAB / BRAILLE-TRAINER</span>
+    <span id="fc">GRADE 1 BRAILLE</span>
+    <span>© 2025</span>
+  </div>
+
+</div>
+<script>
+/* ── DATA ──────────────────────────────────────────────────────────
+   Each array: [dot1, dot2, dot3, dot4, dot5, dot6]
+   Cell layout (2-col grid, rendered as [0,3,1,4,2,5]):
+     dot1 dot4
+     dot2 dot5
+     dot3 dot6
+─────────────────────────────────────────────────────────────────── */
+const BD = {
+  A:[1,0,0,0,0,0], B:[1,1,0,0,0,0], C:[1,0,0,1,0,0],
+  D:[1,0,0,1,1,0], E:[1,0,0,0,1,0], F:[1,1,0,1,0,0],
+  G:[1,1,0,1,1,0], H:[1,1,0,0,1,0], I:[0,1,0,1,0,0],
+  J:[0,1,0,1,1,0], K:[1,0,1,0,0,0], L:[1,1,1,0,0,0],
+  M:[1,0,1,1,0,0], N:[1,0,1,1,1,0], O:[1,0,1,0,1,0],
+  P:[1,1,1,1,0,0], Q:[1,1,1,1,1,0], R:[1,1,1,0,1,0],
+  S:[0,1,1,1,0,0], T:[0,1,1,1,1,0], U:[1,0,1,0,0,1],
+  V:[1,1,1,0,0,1], W:[0,1,0,1,1,1], X:[1,0,1,1,0,1],
+  Y:[1,0,1,1,1,1], Z:[1,0,1,0,1,1],
+  1:[1,0,0,0,0,0], 2:[1,1,0,0,0,0], 3:[1,0,0,1,0,0],
+  4:[1,0,0,1,1,0], 5:[1,0,0,0,1,0], 6:[1,1,0,1,0,0],
+  7:[1,1,0,1,1,0], 8:[1,1,0,0,1,0], 9:[0,1,0,1,0,0],
+  0:[0,1,0,1,1,0]
+};
+
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const DIGITS  = '1234567890'.split('');
+const ALL     = [...LETTERS, ...DIGITS];
+
+// digit → same-pattern letter mapping
+const DIGIT_ALIAS = {1:'A',2:'B',3:'C',4:'D',5:'E',6:'F',7:'G',8:'H',9:'I',0:'J'};
+
+let mode    = 'learn';
+let setName = 'letters';
+let deck    = [...LETTERS];
+let idx     = 0;
+let shuffleOn = false;
+let score   = 0;
+let streak  = 0;
+let answered = false;
+let revealed = false;
+let userDots = [0,0,0,0,0,0];
+let keyFn   = null;
+
+/* ── AUDIO ─────────────────────────────────────────────────────── */
+let actx = null;
+function audio() { return actx || (actx = new (window.AudioContext || window.webkitAudioContext)()); }
+
+function tone(freq, dur, type='sine', vol=0.12) {
+  try {
+    const ctx = audio();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    o.start(); o.stop(ctx.currentTime + dur);
+  } catch(_) {}
+}
+
+function sndOk()     { tone(880,.08); setTimeout(()=>tone(1320,.12),70); }
+function sndBad()    { tone(200,.25,'sawtooth',0.07); }
+function sndReveal() { tone(528,.1); }
+function sndTick(i)  { tone(500+i*60,.05); }
+
+/* ── HELPERS ───────────────────────────────────────────────────── */
+function shuffle(arr) {
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function getSet() {
+  const base = setName==='letters' ? LETTERS : setName==='digits' ? DIGITS : ALL;
+  return shuffleOn ? shuffle(base) : [...base];
+}
+
+function resetDeck() {
+  deck = getSet(); idx = 0;
+  answered = false; revealed = false;
+  userDots = [0,0,0,0,0,0];
+}
+
+function updateMeta() {
+  document.getElementById('stat-score').textContent = score;
+  document.getElementById('stat-streak').textContent = streak;
+  const pct = deck.length ? (idx / deck.length * 100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent =
+    `${Math.min(idx+1, deck.length)} / ${deck.length}`;
+  document.getElementById('mode-label').textContent = mode.toUpperCase();
+  document.getElementById('fc').textContent =
+    `${LETTERS.length} LETTERS · ${DIGITS.length} DIGITS`;
+}
+
+/* ── CELL BUILDER ──────────────────────────────────────────────── */
+const GRID_ORDER = [0,3,1,4,2,5]; // renders left col top→bot then right col
+
+function makeCell(dots, clickable=false) {
+  const wrap = document.createElement('div');
+  wrap.className = 'cell-wrap';
+  const cell = document.createElement('div');
+  cell.className = 'braille-cell';
+  GRID_ORDER.forEach(di => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (dots[di] ? ' on' : '') + (clickable ? ' clickable' : '');
+    d.dataset.di = di;
+    if (clickable) {
+      d.addEventListener('click', () => {
+        userDots[di] ^= 1;
+        d.classList.toggle('on', !!userDots[di]);
+        sndTick(di);
+      });
+    }
+    cell.appendChild(d);
+  });
+  wrap.appendChild(cell);
+  return wrap;
+}
+
+function showCorrectInCell(cellWrap, correctDots) {
+  cellWrap.querySelectorAll('.dot').forEach(d => {
+    const di = parseInt(d.dataset.di);
+    d.classList.toggle('on', !!correctDots[di]);
+  });
+}
+
+/* ── KEY HANDLER ───────────────────────────────────────────────── */
+function setKey(fn) {
+  if (keyFn) document.removeEventListener('keydown', keyFn);
+  keyFn = fn;
+  if (fn) document.addEventListener('keydown', fn);
+}
+
+/* ── FLASH ─────────────────────────────────────────────────────── */
+function flash(cls) {
+  const c = document.getElementById('card');
+  c.classList.remove('ok','bad');
+  void c.offsetWidth;
+  c.classList.add(cls);
+}
+
+/* ── ADVANCE ───────────────────────────────────────────────────── */
+function advance(delay=900) {
+  setTimeout(() => {
+    idx = (idx + 1) % deck.length;
+    if (mode==='learn') renderLearn();
+    else if (mode==='read') renderRead();
+    else renderWrite();
+    updateMeta();
+  }, delay);
+}
+
+/* ────────────────────────────────────────────────────────────────
+   LEARN MODE
+───────────────────────────────────────────────────────────────── */
+function renderLearn() {
+  const card = document.getElementById('card');
+  card.className = '';
+  card.innerHTML = '';
+  void card.offsetWidth;
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = 'fadeUp 0.25s ease';
+
+  answered = false;
+  const key = deck[idx];
+  const dots = BD[key];
+  const isDigit = DIGITS.includes(key);
+
+  card.appendChild(makeCell(dots, false));
+
+  // Big letter (hidden)
+  const bl = document.createElement('div');
+  bl.id = 'big-letter';
+  bl.className = revealed ? '' : 'hidden';
+  bl.textContent = key;
+  card.appendChild(bl);
+
+  // Note (digit alias)
+  const note = document.createElement('div');
+  note.id = 'note';
+  if (isDigit && revealed) {
+    note.textContent = `same pattern as letter ${DIGIT_ALIAS[parseInt(key)]}`;
+  }
+  card.appendChild(note);
+
+  // Hint
+  const hint = document.createElement('div');
+  hint.className = 'hint';
+  hint.textContent = revealed
+    ? (isDigit ? `digit ${key}` : `letter ${key}`)
+    : 'space · click to reveal';
+  card.appendChild(hint);
+
+  // Nav
+  const nav = document.createElement('div');
+  nav.id = 'nav';
+
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'btn';
+  prevBtn.textContent = '← Prev';
+  prevBtn.onclick = () => {
+    idx = (idx - 1 + deck.length) % deck.length;
+    revealed = false;
+    renderLearn(); updateMeta();
+  };
+
+  const mainBtn = document.createElement('button');
+  mainBtn.className = 'btn primary';
+  mainBtn.textContent = revealed ? 'Next →' : 'Reveal';
+  mainBtn.onclick = () => {
+    if (!revealed) {
+      revealed = true;
+      sndReveal();
+      bl.classList.remove('hidden');
+      hint.textContent = isDigit ? `digit ${key}` : `letter ${key}`;
+      if (isDigit) note.textContent = `same pattern as letter ${DIGIT_ALIAS[parseInt(key)]}`;
+      mainBtn.textContent = 'Next →';
+    } else {
+      idx = (idx + 1) % deck.length;
+      revealed = false;
+      renderLearn(); updateMeta();
+    }
+  };
+
+  const shuffleBtn = document.createElement('button');
+  shuffleBtn.className = 'btn' + (shuffleOn ? ' primary' : '');
+  shuffleBtn.textContent = 'Shuffle';
+  shuffleBtn.onclick = () => {
+    shuffleOn = !shuffleOn;
+    resetDeck(); renderLearn(); updateMeta();
+  };
+
+  nav.appendChild(prevBtn);
+  nav.appendChild(mainBtn);
+  nav.appendChild(shuffleBtn);
+  card.appendChild(nav);
+
+  setKey(e => {
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    if (e.key === ' ') { e.preventDefault(); mainBtn.click(); }
+    else if (e.key === 'ArrowRight') {
+      idx=(idx+1)%deck.length; revealed=false; renderLearn(); updateMeta();
+    } else if (e.key === 'ArrowLeft') {
+      idx=(idx-1+deck.length)%deck.length; revealed=false; renderLearn(); updateMeta();
+    }
+  });
+}
+
+/* ────────────────────────────────────────────────────────────────
+   READ MODE  (see braille → type the character)
+───────────────────────────────────────────────────────────────── */
+function renderRead() {
+  const card = document.getElementById('card');
+  card.className = '';
+  card.innerHTML = '';
+  void card.offsetWidth;
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = 'fadeUp 0.25s ease';
+
+  answered = false;
+  const key = deck[idx];
+  const dots = BD[key];
+  const isDigit = DIGITS.includes(key);
+
+  card.appendChild(makeCell(dots, false));
+
+  const input = document.createElement('input');
+  input.id = 'ans-input';
+  input.type = 'text';
+  input.maxLength = 1;
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  input.placeholder = '?';
+  card.appendChild(input);
+
+  const fb = document.createElement('div');
+  fb.id = 'feedback';
+  card.appendChild(fb);
+
+  const hint = document.createElement('div');
+  hint.className = 'hint';
+  hint.textContent = isDigit ? 'type the digit shown' : 'type the letter shown';
+  card.appendChild(hint);
+
+  setTimeout(() => input.focus(), 30);
+
+  input.addEventListener('input', () => {
+    if (answered) return;
+    const val = input.value.toUpperCase();
+    if (!val) return;
+    answered = true;
+
+    const correct = isDigit ? key.toString() : key;
+    const guess   = isDigit ? val : val;
+
+    if (guess === correct) {
+      fb.textContent = 'Correct!'; fb.className = 'ok';
+      score++; streak++;
+      sndOk(); flash('ok');
+    } else {
+      fb.textContent = `Wrong — it was ${correct}`; fb.className = 'bad';
+      streak = 0;
+      sndBad(); flash('bad');
+    }
+    updateMeta();
+    advance(900);
+  });
+
+  setKey(null);
+}
+
+/* ────────────────────────────────────────────────────────────────
+   WRITE MODE  (see letter → click the dots)
+───────────────────────────────────────────────────────────────── */
+function renderWrite() {
+  const card = document.getElementById('card');
+  card.className = '';
+  card.innerHTML = '';
+  void card.offsetWidth;
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = 'fadeUp 0.25s ease';
+
+  answered = false;
+  userDots = [0,0,0,0,0,0];
+  const key = deck[idx];
+  const isDigit = DIGITS.includes(key);
+
+  const bl = document.createElement('div');
+  bl.id = 'big-letter';
+  bl.textContent = key;
+  card.appendChild(bl);
+
+  const hint0 = document.createElement('div');
+  hint0.className = 'hint';
+  hint0.textContent = isDigit ? `digit ${key}` : `letter ${key}`;
+  card.appendChild(hint0);
+
+  const cellWrap = makeCell(userDots, true);
+  card.appendChild(cellWrap);
+
+  const fb = document.createElement('div');
+  fb.id = 'feedback';
+  card.appendChild(fb);
+
+  const hint = document.createElement('div');
+  hint.className = 'hint';
+  hint.textContent = 'click raised dots · enter to submit';
+  card.appendChild(hint);
+
+  const submitBtn = document.createElement('button');
+  submitBtn.className = 'btn primary';
+  submitBtn.textContent = 'Submit';
+  submitBtn.onclick = () => {
+    if (answered) return;
+    answered = true;
+
+    const correct = BD[key];
+    const ok = correct.every((v,i) => v === userDots[i]);
+
+    if (ok) {
+      fb.textContent = 'Correct!'; fb.className = 'ok';
+      score++; streak++;
+      sndOk(); flash('ok');
+    } else {
+      fb.textContent = 'Wrong — correct pattern shown'; fb.className = 'bad';
+      streak = 0;
+      sndBad(); flash('bad');
+      setTimeout(() => showCorrectInCell(cellWrap, correct), 250);
+    }
+    updateMeta();
+    advance(1200);
+  };
+  card.appendChild(submitBtn);
+
+  setKey(e => {
+    if (e.key === 'Enter') submitBtn.click();
+  });
+}
+
+/* ── ROUTING ───────────────────────────────────────────────────── */
+function switchMode(m) {
+  mode = m;
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.mode === m));
+  resetDeck();
+  if (m==='learn') renderLearn();
+  else if (m==='read') renderRead();
+  else renderWrite();
+  updateMeta();
+}
+
+function switchSet(s) {
+  setName = s;
+  document.querySelectorAll('.set-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.set === s));
+  resetDeck();
+  if (mode==='learn') renderLearn();
+  else if (mode==='read') renderRead();
+  else renderWrite();
+  updateMeta();
+}
+
+document.querySelectorAll('.tab').forEach(t =>
+  t.addEventListener('click', () => { if(t.dataset.mode!==mode) switchMode(t.dataset.mode); }));
+
+document.querySelectorAll('.set-tab').forEach(t =>
+  t.addEventListener('click', () => { if(t.dataset.set!==setName) switchSet(t.dataset.set); }));
+
+/* ── BOOT ──────────────────────────────────────────────────────── */
+resetDeck();
+updateMeta();
+renderLearn();
+</script>
+</body>
+</html>
