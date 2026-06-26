@@ -247,6 +247,12 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 	case isAlt && key == tcell.KeyRune && (ch == 'x' || ch == 'X'):
 		e.cutLine()
 
+	// Ctrl+D → duplicate selection (or line if no selection)
+	case key == tcell.KeyCtrlD:
+		e.pushUndo()
+		e.duplicateSelection()
+		e.clearMessage()
+
 	// Alt+D → duplicate current line below
 	case isAlt && key == tcell.KeyRune && (ch == 'd' || ch == 'D'):
 		e.pushUndo()
@@ -1098,6 +1104,21 @@ func (e *Editor) duplicateLine() {
 	if e.cursor.Col > lineLen {
 		e.cursor.Col = lineLen
 	}
+}
+
+func (e *Editor) duplicateSelection() {
+	if !e.selActive {
+		e.duplicateLine()
+		return
+	}
+	from, to := e.normalizedSel()
+	text := e.buf.GetRange(from, to)
+	if text == "" {
+		return
+	}
+	newLine, newCol := e.buf.InsertText(to.Line, to.Col, text)
+	e.cursor = Pos{newLine, newCol}
+	e.selActive = false
 }
 
 // ── EDIT OPERATIONS ──────────────────────────────────────────────────────────
