@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -20,12 +21,27 @@ const (
 	ModeConfirmQuit  // [S]Save  [Q]Quit  [N]Cancel
 	ModeSaveAs       // typing filename
 	ModeSaveConflict // file exists: [O]verwrite  [C]opy  [N]Cancel
+	ModeGotoLine     // Ctrl+G: type a line number and jump
 )
 
 type snapshot struct {
 	lines    []string
 	cursor   Pos
 	modified bool
+}
+
+// tabEntry holds the full per-file state for multi-file editing.
+type tabEntry struct {
+	buf           *Buffer
+	cursor        Pos
+	scrollLine    int
+	scrollCol     int
+	selActive     bool
+	selAnchor     Pos
+	undoStack     []snapshot
+	redoStack     []snapshot
+	lastWasInsert bool
+	lang          *langDef
 }
 
 // Editor is the full editor state.
@@ -75,12 +91,15 @@ type Editor struct {
 	dragging bool
 	lang     *langDef // syntax highlighting language (nil = plain text)
 	softWrap bool     // visual soft-wrap (wraps display without changing buffer)
+
+	tabs      []tabEntry
+	tabIdx    int
+	gotoInput string
 }
 
-func NewEditor(filename string) (*Editor, error) {
-	buf, err := NewBuffer(filename)
-	if err != nil {
-		return nil, err
+func NewEditor(filenames []string) (*Editor, error) {
+	if len(filenames) == 0 {
+		filenames = []string{""}
 	}
 	screen, err := tcell.NewScreen()
 	if err != nil {
@@ -93,15 +112,64 @@ func NewEditor(filename string) (*Editor, error) {
 	screen.SetStyle(tcell.StyleDefault)
 
 	themes := DefaultThemes()
-	e := &Editor{
-		buf:    buf,
-		screen: screen,
-		themes: themes,
-	}
+	e := &Editor{screen: screen, themes: themes}
 	e.loadConfig()
-	e.lang = detectLang(buf.Filename)
 	e.softWrap = true
+
+	for _, fn := range filenames {
+		buf, err := NewBuffer(fn)
+		if err != nil {
+			screen.Fini()
+			return nil, err
+		}
+		e.tabs = append(e.tabs, tabEntry{
+			buf:  buf,
+			lang: detectLang(buf.Filename),
+		})
+	}
+	e.loadTab(0)
 	return e, nil
+}
+
+func (e *Editor) saveCurrentTab() {
+	e.tabs[e.tabIdx] = tabEntry{
+		buf:           e.buf,
+		cursor:        e.cursor,
+		scrollLine:    e.scrollLine,
+		scrollCol:     e.scrollCol,
+		selActive:     e.selActive,
+		selAnchor:     e.selAnchor,
+		undoStack:     e.undoStack,
+		redoStack:     e.redoStack,
+		lastWasInsert: e.lastWasInsert,
+		lang:          e.lang,
+	}
+}
+
+func (e *Editor) loadTab(idx int) {
+	te := e.tabs[idx]
+	e.tabIdx = idx
+	e.buf = te.buf
+	e.cursor = te.cursor
+	e.scrollLine = te.scrollLine
+	e.scrollCol = te.scrollCol
+	e.selActive = te.selActive
+	e.selAnchor = te.selAnchor
+	e.undoStack = te.undoStack
+	e.redoStack = te.redoStack
+	e.lastWasInsert = te.lastWasInsert
+	e.lang = te.lang
+	e.mode = ModeNormal
+	e.clearMessage()
+}
+
+func (e *Editor) switchTab() {
+	if len(e.tabs) <= 1 {
+		e.showMessage("One file open — pass multiple files: hedit a.txt b.txt")
+		return
+	}
+	e.saveCurrentTab()
+	e.loadTab((e.tabIdx + 1) % len(e.tabs))
 }
 
 func (e *Editor) Run() error {
@@ -151,6 +219,8 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		return e.handleSaveAsKey(ev)
 	case ModeSaveConflict:
 		return e.handleSaveConflictKey(ev)
+	case ModeGotoLine:
+		return e.handleGotoKey(ev)
 	}
 
 	mod := ev.Modifiers()
@@ -171,6 +241,16 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 	// Alt+X → cut entire line
 	case isAlt && key == tcell.KeyRune && (ch == 'x' || ch == 'X'):
 		e.cutLine()
+
+	// Alt+D → duplicate current line below
+	case isAlt && key == tcell.KeyRune && (ch == 'd' || ch == 'D'):
+		e.pushUndo()
+		e.duplicateLine()
+		e.clearMessage()
+
+	// Alt+G → go to end of logical line (works correctly even when soft-wrapped)
+	case isAlt && key == tcell.KeyRune && (ch == 'g' || ch == 'G'):
+		e.moveToLineEnd(false)
 
 	// Ctrl+Z → undo
 	case key == tcell.KeyCtrlZ:
@@ -224,6 +304,12 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		e.settingsIdx = e.themeIdx
 		e.clearMessage()
 
+	// Ctrl+G → go-to-line prompt
+	case key == tcell.KeyCtrlG:
+		e.mode = ModeGotoLine
+		e.gotoInput = ""
+		e.clearMessage()
+
 	// Ctrl+Left → word left
 	case key == tcell.KeyLeft && mod&tcell.ModCtrl != 0:
 		e.wordLeft(mod&tcell.ModShift != 0)
@@ -231,6 +317,16 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 	// Ctrl+Right → word right
 	case key == tcell.KeyRight && mod&tcell.ModCtrl != 0:
 		e.wordRight(mod&tcell.ModShift != 0)
+
+	// Alt+Up/Down → move entire logical line up or down (MUST come before plain Up/Down)
+	case isAlt && key == tcell.KeyUp:
+		e.pushUndo()
+		e.moveLineUp()
+		e.clearMessage()
+	case isAlt && key == tcell.KeyDown:
+		e.pushUndo()
+		e.moveLineDown()
+		e.clearMessage()
 
 	// Arrow keys — Ctrl variants MUST come before plain variants
 	case key == tcell.KeyUp:
@@ -314,6 +410,10 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 			e.cursor = Pos{e.cursor.Line, nc2}
 		}
 		e.clearMessage()
+
+	// Ctrl+Tab → cycle to next file tab
+	case key == tcell.KeyTab && mod&tcell.ModCtrl != 0:
+		e.switchTab()
 
 	case key == tcell.KeyTab:
 		e.pushUndo()
@@ -520,6 +620,35 @@ func (e *Editor) handleSaveAsKey(ev *tcell.EventKey) bool {
 		case unicode.IsPrint(ch):
 			e.saveInput += string(ch)
 		}
+	}
+	return false
+}
+
+func (e *Editor) handleGotoKey(ev *tcell.EventKey) bool {
+	key := ev.Key()
+	ch := ev.Rune()
+	switch {
+	case key == tcell.KeyEscape:
+		e.mode = ModeNormal
+		e.clearMessage()
+	case key == tcell.KeyBackspace || key == tcell.KeyBackspace2:
+		if len(e.gotoInput) > 0 {
+			e.gotoInput = e.gotoInput[:len(e.gotoInput)-1]
+		}
+	case key == tcell.KeyEnter:
+		n, err := strconv.Atoi(strings.TrimSpace(e.gotoInput))
+		if err == nil && n >= 1 {
+			line := n - 1
+			if line >= e.buf.LineCount() {
+				line = e.buf.LineCount() - 1
+			}
+			e.cursor = Pos{line, 0}
+			e.showMessage(fmt.Sprintf("Jumped to line %d", line+1))
+		}
+		e.mode = ModeNormal
+		e.gotoInput = ""
+	case key == tcell.KeyRune && ch >= '0' && ch <= '9':
+		e.gotoInput += string(ch)
 	}
 	return false
 }
@@ -869,6 +998,45 @@ func (e *Editor) deleteToEOL() {
 	}
 	e.buf.Lines[ln] = string(r[:e.cursor.Col])
 	e.buf.Modified = true
+}
+
+func (e *Editor) moveLineUp() {
+	ln := e.cursor.Line
+	if ln == 0 {
+		return
+	}
+	e.buf.Lines[ln-1], e.buf.Lines[ln] = e.buf.Lines[ln], e.buf.Lines[ln-1]
+	e.buf.Modified = true
+	e.cursor.Line = ln - 1
+	e.selActive = false
+}
+
+func (e *Editor) moveLineDown() {
+	ln := e.cursor.Line
+	if ln >= e.buf.LineCount()-1 {
+		return
+	}
+	e.buf.Lines[ln], e.buf.Lines[ln+1] = e.buf.Lines[ln+1], e.buf.Lines[ln]
+	e.buf.Modified = true
+	e.cursor.Line = ln + 1
+	e.selActive = false
+}
+
+func (e *Editor) duplicateLine() {
+	e.selActive = false
+	ln := e.cursor.Line
+	text := e.buf.Lines[ln]
+	newLines := make([]string, len(e.buf.Lines)+1)
+	copy(newLines[:ln+1], e.buf.Lines[:ln+1])
+	newLines[ln+1] = text
+	copy(newLines[ln+2:], e.buf.Lines[ln+1:])
+	e.buf.Lines = newLines
+	e.buf.Modified = true
+	e.cursor.Line = ln + 1
+	lineLen := len(runesOf(text))
+	if e.cursor.Col > lineLen {
+		e.cursor.Col = lineLen
+	}
 }
 
 // ── EDIT OPERATIONS ──────────────────────────────────────────────────────────
@@ -1272,6 +1440,9 @@ func (e *Editor) render() {
 	if filename == "" {
 		filename = "[ New File ]"
 	}
+	if len(e.tabs) > 1 {
+		filename = fmt.Sprintf("[%d/%d] %s", e.tabIdx+1, len(e.tabs), filename)
+	}
 	if e.buf.Modified {
 		filename += " ●"
 	}
@@ -1475,6 +1646,13 @@ func (e *Editor) render() {
 			{"O", "Overwrite"}, {"C", "Save copy"}, {"N/Esc", "Back"},
 		}, t)
 
+	case ModeGotoLine:
+		e.fillRow(msgRow, t.MsgBar)
+		e.fillRow(h1Row, t.Hints)
+		e.fillRow(h2Row, t.Hints)
+		e.drawStr(msgRow, 0, " Go to line: "+e.gotoInput+"_", t.MsgBar)
+		e.drawHints(h1Row, []hintItem{{"↵", "Jump"}, {"Esc", "Cancel"}}, t)
+
 	default:
 		e.fillRow(msgRow, t.MsgBar)
 		e.fillRow(h1Row, t.Hints)
@@ -1487,12 +1665,10 @@ func (e *Editor) render() {
 			e.drawStr(msgRow, 0, " "+e.message, style)
 		}
 		e.drawHints(h1Row, []hintItem{
-			{"^S", "Save"}, {"^Z", "Undo"}, {"^Y", "Redo"},
-			{"^F", "Find"}, {"^R", "Replace"}, {"^U", "Settings"},
+			{"^S", "Save"}, {"^Z", "Undo"}, {"^F", "Find"}, {"^R", "Replace"}, {"^G", "GoLine"}, {"^U", "Settings"},
 		}, t)
 		e.drawHints(h2Row, []hintItem{
-			{"^C", "Copy"}, {"^X", "Cut"}, {"^V", "Paste"},
-			{"Alt+A", "Select Line"}, {"Alt+BS", "Del Line"}, {"^Q", "Quit"},
+			{"Alt+↑↓", "Move Line"}, {"Alt+D", "Dup"}, {"Alt+BS", "Del Line"}, {"^Tab", "Next Tab"}, {"^Q", "Quit"},
 		}, t)
 	}
 

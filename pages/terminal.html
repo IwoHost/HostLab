@@ -493,19 +493,19 @@ html.light .card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.07); }
 .copy-btn:hover { color: var(--text-primary); border-color: var(--text-secondary); }
 .copy-btn.copied { color: var(--term-green-text); border-color: var(--term-green-bright); }
 
-/* ── MANUAL SECTION ── */
-.manual-section {
+/* ── INSTALL BLOCK ── */
+.install-block {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
 }
 
-.manual-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.18em;
+.install-icons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   color: var(--text-muted);
-  text-transform: uppercase;
+  padding-left: 2px;
 }
 
 /* ── CARD FOOTER ── */
@@ -694,8 +694,8 @@ const APPS = [
     status:   'beta',
     platforms: ['windows', 'macos', 'linux'],
     installers: [
-      { label: 'LINUX · MACOS', cmd: 'curl -fsSL https://iwohost.github.io/HostLab/hedit/install.sh | bash' },
-      { label: 'WINDOWS  (powershell)', cmd: 'irm https://iwohost.github.io/HostLab/hedit/install.ps1 | iex' },
+      { os: ['linux','macos'], label: 'LINUX · MACOS', cmd: 'curl -fsSL https://iwohost.github.io/HostLab/hedit/install.sh | bash' },
+      { os: ['windows'],       label: 'WINDOWS  (powershell)', cmd: 'irm https://iwohost.github.io/HostLab/hedit/install.ps1 | iex' },
     ],
     downloads: [
       { os: 'linux',   arch: 'amd64', label: 'LINUX · x64',    url: 'https://iwohost.github.io/HostLab/hedit/dist/hedit-linux-amd64' },
@@ -734,29 +734,21 @@ function buildCard(app, index) {
 
   // primary: installer one-liners
   const installerHTML = (installers && !isSoon)
-    ? installers.map(inst => `
-      <div class="install-cmd">
-        <span class="cmd-prompt">$</span>
-        <code class="cmd-text">${inst.cmd}</code>
-        <button class="copy-btn" onclick="copyCmd(this,'${escAttr(inst.cmd)}')">COPY</button>
-      </div>`).join('')
+    ? installers.map(inst => {
+        const icons = (inst.os || []).map(o => PLATFORM_ICONS[o] || '').join('');
+        return `
+      <div class="install-block">
+        <div class="install-icons">${icons}</div>
+        <div class="install-cmd">
+          <span class="cmd-prompt">$</span>
+          <code class="cmd-text">${inst.cmd}</code>
+          <button class="copy-btn" onclick="copyCmd(this,'${escAttr(inst.cmd)}')">COPY</button>
+        </div>
+      </div>`;
+      }).join('')
     : '';
 
-  // secondary: manual binary downloads
-  let manualHTML = '';
-  if (Array.isArray(downloads) && downloads.some(d => d.url) && !isSoon) {
-    const btns = downloads.map(d => {
-      const icon = PLATFORM_ICONS[d.os] || '';
-      return d.url
-        ? `<a href="${d.url}" class="platform-btn" download rel="noopener" data-os="${d.os}">${icon}${d.label}</a>`
-        : `<span class="platform-btn disabled" data-os="${d.os}">${icon}${d.label}</span>`;
-    }).join('');
-    manualHTML = `
-      <div class="manual-section">
-        <div class="manual-label">or grab the binary</div>
-        <div class="platform-row">${btns}</div>
-      </div>`;
-  }
+  // no binary download section
 
   const card = document.createElement('div');
   card.className = 'card';
@@ -776,7 +768,6 @@ function buildCard(app, index) {
       </div>
       <p class="card-desc">${desc}</p>
       ${installerHTML}
-      ${manualHTML}
       <div class="card-footer">
         <div class="card-tags">${tagHTML}</div>
       </div>
@@ -843,6 +834,7 @@ const tw = document.getElementById('tw');
 
 function type() {
   const phrase = phrases[phraseIdx];
+  const speed = Math.min(75, Math.floor(4000 / phrase.length));
   if (!deleting) {
     tw.textContent = phrase.substring(0, ++charIdx);
     if (charIdx === phrase.length) { deleting = true; setTimeout(type, 2000); return; }
@@ -855,7 +847,7 @@ function type() {
       return;
     }
   }
-  setTimeout(type, deleting ? 45 : 75);
+  setTimeout(type, speed);
 }
 setTimeout(type, 900);
 
