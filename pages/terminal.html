@@ -834,6 +834,7 @@ const tw = document.getElementById('tw');
 
 function type() {
   const phrase = phrases[phraseIdx];
+  const speed = Math.min(75, Math.floor(4000 / phrase.length));
   if (!deleting) {
     tw.textContent = phrase.substring(0, ++charIdx);
     if (charIdx === phrase.length) { deleting = true; setTimeout(type, 2000); return; }
@@ -846,7 +847,7 @@ function type() {
       return;
     }
   }
-  setTimeout(type, deleting ? 45 : 75);
+  setTimeout(type, speed);
 }
 setTimeout(type, 900);
 
