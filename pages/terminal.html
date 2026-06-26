@@ -881,32 +881,44 @@ document.getElementById('footer-date').textContent =
   const SECRET = 'szczebrzeszyn';
   let buf = '';
 
-  /* inject keyframe CSS once */
   const eggStyle = document.createElement('style');
   eggStyle.textContent = `
-    @keyframes partyFlash {
-      0%   { opacity: 1; }
-      100% { opacity: 0; }
+    @keyframes partyFlash  { 0% { opacity:1; } 100% { opacity:0; } }
+    @keyframes partyMsgIn  { from { opacity:0; transform:translate(-50%,calc(-50% - 24px)) scale(0.7); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+    @keyframes partyMsgOut { from { opacity:1; transform:translate(-50%,-50%) scale(1); } to { opacity:0; transform:translate(-50%,calc(-50% + 16px)) scale(0.9); } }
+    @keyframes partyRainbow { 0%{color:#ff6b6b;} 16%{color:#ffd93d;} 33%{color:#6bcb77;} 50%{color:#4d96ff;} 66%{color:#c77dff;} 83%{color:#ff9f40;} 100%{color:#ff6b6b;} }
+    @keyframes roachDance {
+      0%   { transform: rotate(-18deg) translateY(0px);   }
+      15%  { transform: rotate(20deg)  translateY(-15px); }
+      30%  { transform: rotate(-13deg) translateY(3px);   }
+      45%  { transform: rotate(17deg)  translateY(-12px); }
+      60%  { transform: rotate(-21deg) translateY(4px);   }
+      75%  { transform: rotate(15deg)  translateY(-10px); }
+      90%  { transform: rotate(-16deg) translateY(2px);   }
+      100% { transform: rotate(-18deg) translateY(0px);   }
     }
-    @keyframes partyMsgIn {
-      from { opacity: 0; transform: translate(-50%, calc(-50% - 24px)) scale(0.7); }
-      to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    }
-    @keyframes partyMsgOut {
-      from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-      to   { opacity: 0; transform: translate(-50%, calc(-50% + 16px)) scale(0.9); }
-    }
-    @keyframes partyRainbow {
-      0%   { color: #ff6b6b; }
-      16%  { color: #ffd93d; }
-      33%  { color: #6bcb77; }
-      50%  { color: #4d96ff; }
-      66%  { color: #c77dff; }
-      83%  { color: #ff9f40; }
-      100% { color: #ff6b6b; }
+    @keyframes roachIn { from { opacity:0; transform:scale(0.1); } to { opacity:1; transform:scale(1); } }
+    .party-roach-inner {
+      display: inline-block;
+      transform-origin: center center;
+      animation: roachDance 0.42s ease-in-out infinite, roachIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
     }
   `;
   document.head.appendChild(eggStyle);
+
+  const ROACH_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="36" viewBox="0 0 72 36">
+    <line x1="12" y1="11" x2="2"  y2="3"  stroke="#7a4e1a" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="12" y1="11" x2="6"  y2="1"  stroke="#7a4e1a" stroke-width="1.5" stroke-linecap="round"/>
+    <ellipse cx="14" cy="15" rx="8"  ry="7"  fill="#3d2009"/>
+    <ellipse cx="38" cy="17" rx="22" ry="13" fill="#6b3a10"/>
+    <ellipse cx="37" cy="16" rx="11" ry="6"  fill="#854c18" opacity="0.55"/>
+    <line x1="25" y1="26" x2="14" y2="33" stroke="#7a4e1a" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="37" y1="30" x2="29" y2="36" stroke="#7a4e1a" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="50" y1="28" x2="46" y2="35" stroke="#7a4e1a" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="25" y1="8"  x2="14" y2="3"  stroke="#7a4e1a" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="37" y1="4"  x2="29" y2="0"  stroke="#7a4e1a" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="50" y1="6"  x2="46" y2="1"  stroke="#7a4e1a" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`;
 
   document.addEventListener('keydown', e => {
     if (e.key.length !== 1) return;
@@ -915,29 +927,29 @@ document.getElementById('footer-date').textContent =
   });
 
   function triggerParty() {
+    const DURATION = 8000;
+    const W = window.innerWidth, H = window.innerHeight;
+
     /* white flash */
     const flash = document.createElement('div');
     flash.style.cssText = 'position:fixed;inset:0;z-index:10002;pointer-events:none;background:rgba(255,255,255,0.18);animation:partyFlash 0.6s ease-out forwards;';
     document.body.appendChild(flash);
     setTimeout(() => flash.remove(), 600);
 
-    /* center message */
+    /* center message — no emojis */
     const msg = document.createElement('div');
     msg.innerHTML = `
-      <div style="font-size:clamp(20px,4vw,44px);animation:partyRainbow 0.6s linear infinite;letter-spacing:-0.02em;">🎉 Szczebrzeszyn! 🎉</div>
-      <div style="font-size:clamp(9px,1.4vw,15px);opacity:0.75;margin-top:12px;letter-spacing:0.04em;font-style:italic;color:#ffe;">
-        w Szczebrzeszynie chrząszcz brzmi w trzcinie
-      </div>
-      <div style="font-size:10px;opacity:0.4;margin-top:8px;letter-spacing:0.15em;">🥳 congratulations on your keyboard 🥳</div>
+      <div style="font-size:clamp(20px,4vw,44px);animation:partyRainbow 0.6s linear infinite;letter-spacing:-0.02em;">Szczebrzeszyn!</div>
+      <div style="font-size:clamp(9px,1.4vw,15px);opacity:0.75;margin-top:12px;letter-spacing:0.04em;font-style:italic;color:#ffe;">w Szczebrzeszynie chrzaszcz brzmi w trzcinie</div>
+      <div style="font-size:10px;opacity:0.4;margin-top:8px;letter-spacing:0.15em;">congratulations on your keyboard</div>
     `;
     msg.style.cssText = `
-      position:fixed;top:50%;left:50%;
-      transform:translate(-50%,-50%);
+      position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
       z-index:10003;pointer-events:none;text-align:center;
       font-family:var(--font-mono);
       background:rgba(0,0,0,0.88);
       border:1px solid rgba(255,255,255,0.2);
-      box-shadow:0 0 60px rgba(255,220,80,0.15), 0 0 120px rgba(78,201,78,0.08);
+      box-shadow:0 0 60px rgba(255,220,80,0.15);
       padding:32px 52px;
       animation:partyMsgIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
     `;
@@ -945,66 +957,71 @@ document.getElementById('footer-date').textContent =
     setTimeout(() => {
       msg.style.animation = 'partyMsgOut 0.4s ease-in forwards';
       setTimeout(() => msg.remove(), 400);
-    }, 3400);
+    }, DURATION - 700);
+
+    /* dancing cockroaches */
+    const SPOTS = [
+      [W*0.08,H*0.14],[W*0.82,H*0.11],[W*0.04,H*0.57],[W*0.88,H*0.53],
+      [W*0.17,H*0.80],[W*0.73,H*0.77],[W*0.47,H*0.06],[W*0.43,H*0.88],
+      [W*0.28,H*0.38],[W*0.66,H*0.34],
+    ];
+    const roaches = SPOTS.map(([x, y], i) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = `position:fixed;left:${x}px;top:${y}px;z-index:10000;pointer-events:none;${i%2===0?'transform:scaleX(-1);':''}`;
+      const inner = document.createElement('div');
+      inner.className = 'party-roach-inner';
+      inner.style.animationDuration = `${0.30 + (i*0.04)%0.26}s, 0.3s`;
+      inner.style.animationDelay    = `${i*0.07}s, ${i*0.07}s`;
+      inner.innerHTML = ROACH_SVG;
+      wrap.appendChild(inner);
+      document.body.appendChild(wrap);
+      return wrap;
+    });
+    setTimeout(() => roaches.forEach(r => {
+      r.style.transition = 'opacity 0.5s';
+      r.style.opacity = '0';
+      setTimeout(() => r.remove(), 500);
+    }), DURATION - 700);
 
     /* confetti canvas */
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'position:fixed;inset:0;z-index:10001;pointer-events:none;';
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = W; canvas.height = H;
     document.body.appendChild(canvas);
     const ctx = canvas.getContext('2d');
-
     const COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff9f40','#c77dff','#4ec94e','#ff6bff','#48cae4','#ffb347'];
     const particles = Array.from({length: 220}, (_, i) => ({
-      x:     Math.random() * canvas.width,
-      y:     -30 - Math.random() * 180,
-      w:     Math.random() * 13 + 4,
-      h:     Math.random() * 7  + 3,
-      color: COLORS[i % COLORS.length],
-      vx:    (Math.random() - 0.5) * 6,
-      vy:    Math.random() * 3.5 + 1,
-      rot:   Math.random() * 360,
-      rv:    (Math.random() - 0.5) * 12,
-      shape: Math.random() < 0.25 ? 'circle' : 'rect',
+      x: Math.random()*W, y: -30 - Math.random()*180,
+      w: Math.random()*13+4, h: Math.random()*7+3,
+      color: COLORS[i%COLORS.length],
+      vx: (Math.random()-0.5)*6, vy: Math.random()*3.5+1,
+      rot: Math.random()*360, rv: (Math.random()-0.5)*12,
+      shape: Math.random()<0.25 ? 'circle' : 'rect',
     }));
-
-    const DURATION = 4500;
     const t0 = performance.now();
-
     (function draw(now) {
       const t = (now - t0) / DURATION;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const alpha = t > 0.65 ? Math.max(0, 1 - (t - 0.65) / 0.35) : 1;
+      ctx.clearRect(0, 0, W, H);
+      const alpha = t > 0.75 ? Math.max(0, 1-(t-0.75)/0.25) : 1;
       for (const p of particles) {
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot * Math.PI / 180);
+        ctx.rotate(p.rot * Math.PI/180);
         ctx.fillStyle = p.color;
-        if (p.shape === 'circle') {
-          ctx.beginPath();
-          ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-        }
+        if (p.shape === 'circle') { ctx.beginPath(); ctx.arc(0,0,p.w/2,0,Math.PI*2); ctx.fill(); }
+        else { ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); }
         ctx.restore();
-        p.x   += p.vx;
-        p.y   += p.vy;
-        p.vy  += 0.13;
-        p.vx  *= 0.99;
-        p.rot += p.rv;
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.vx*=0.995; p.rot+=p.rv;
       }
-      if (t < 1) requestAnimationFrame(draw);
-      else canvas.remove();
+      if (t < 1) requestAnimationFrame(draw); else canvas.remove();
     })(t0);
 
-    /* rainbow outline pulse around the viewport */
+    /* rainbow outline pulse */
     let tick = 0;
     const pulseId = setInterval(() => {
-      document.documentElement.style.outline = `3px solid hsl(${tick * 28 % 360}, 95%, 62%)`;
-      if (++tick > 14) { clearInterval(pulseId); document.documentElement.style.outline = ''; }
+      document.documentElement.style.outline = `3px solid hsl(${tick*24%360},95%,62%)`;
+      if (++tick > 24) { clearInterval(pulseId); document.documentElement.style.outline = ''; }
     }, 70);
   }
 })();
