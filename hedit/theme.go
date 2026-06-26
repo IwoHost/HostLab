@@ -16,6 +16,13 @@ type Theme struct {
 	MsgBarErr  tcell.Style // message bar (error)
 	FindHL     tcell.Style // search match highlight
 	FindCur    tcell.Style // current search match
+	// syntax highlighting
+	HLKeyword tcell.Style
+	HLType    tcell.Style
+	HLBuiltin tcell.Style
+	HLString  tcell.Style
+	HLComment tcell.Style
+	HLNumber  tcell.Style
 }
 
 func hex(v int32) tcell.Color { return tcell.NewHexColor(v) }
@@ -50,6 +57,12 @@ func ThemeGreen() *Theme {
 		MsgBarErr:  mkStyle(0xff6060, 0x1a0000),
 		FindHL:     mkStyle(0x101010, 0xc4a010),
 		FindCur:    mkStyle(0x101010, 0xffcc00),
+		HLKeyword:  tcell.StyleDefault.Foreground(hex(0x88ff88)).Background(hex(bg)).Bold(true),
+		HLType:     mkStyle(0x55ccaa, bg),
+		HLBuiltin:  mkStyle(0x66ddcc, bg),
+		HLString:   mkStyle(0xccaa44, bg),
+		HLComment:  mkStyle(0x3a6a3a, bg),
+		HLNumber:   mkStyle(0x80ccff, bg),
 	}
 }
 
@@ -68,6 +81,12 @@ func ThemeAmber() *Theme {
 		MsgBarErr:  mkStyle(0xff6060, 0x1a0000),
 		FindHL:     mkStyle(0x101010, 0x4a8a2a),
 		FindCur:    mkStyle(0x101010, 0x88cc44),
+		HLKeyword:  tcell.StyleDefault.Foreground(hex(0xffe066)).Background(hex(bg)).Bold(true),
+		HLType:     mkStyle(0xd48c44, bg),
+		HLBuiltin:  mkStyle(0xc0a040, bg),
+		HLString:   mkStyle(0x88cc66, bg),
+		HLComment:  mkStyle(0x6a4a18, bg),
+		HLNumber:   mkStyle(0x80ccee, bg),
 	}
 }
 
@@ -86,6 +105,12 @@ func ThemeBlue() *Theme {
 		MsgBarErr:  mkStyle(0xff6060, 0x1a0000),
 		FindHL:     mkStyle(0x101010, 0xc49010),
 		FindCur:    mkStyle(0x101010, 0xffcc00),
+		HLKeyword:  tcell.StyleDefault.Foreground(hex(0x88aaff)).Background(hex(bg)).Bold(true),
+		HLType:     mkStyle(0x44cccc, bg),
+		HLBuiltin:  mkStyle(0x66bbee, bg),
+		HLString:   mkStyle(0x88cc66, bg),
+		HLComment:  mkStyle(0x3a5878, bg),
+		HLNumber:   mkStyle(0xffcc66, bg),
 	}
 }
 
@@ -104,6 +129,12 @@ func ThemeMono() *Theme {
 		MsgBarErr:  mkStyle(0xff6060, 0x1a0000),
 		FindHL:     mkStyle(0x101010, 0xb0b010),
 		FindCur:    mkStyle(0x101010, 0xffff00),
+		HLKeyword:  tcell.StyleDefault.Foreground(hex(0xffffff)).Background(hex(bg)).Bold(true),
+		HLType:     mkStyle(0xcccccc, bg),
+		HLBuiltin:  mkStyle(0xb0b0b0, bg),
+		HLString:   mkStyle(0x888888, bg),
+		HLComment:  mkStyle(0x505050, bg),
+		HLNumber:   mkStyle(0xe0e0e0, bg),
 	}
 }
 
@@ -122,5 +153,11 @@ func ThemeLight() *Theme {
 		MsgBarErr:  mkStyle(0xcc2020, 0xffdede),
 		FindHL:     mkStyle(0x1a1a16, 0xf0d060),
 		FindCur:    mkStyle(0x101010, 0xffcc00),
+		HLKeyword:  tcell.StyleDefault.Foreground(hex(0x0055cc)).Background(hex(bg)).Bold(true),
+		HLType:     mkStyle(0x005588, bg),
+		HLBuiltin:  mkStyle(0x007766, bg),
+		HLString:   mkStyle(0x226600, bg),
+		HLComment:  mkStyle(0x909080, bg),
+		HLNumber:   mkStyle(0x882200, bg),
 	}
 }

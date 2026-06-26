@@ -73,6 +73,7 @@ type Editor struct {
 	pendingQuit bool
 
 	dragging bool
+	lang     *langDef // syntax highlighting language (nil = plain text)
 }
 
 func NewEditor(filename string) (*Editor, error) {
@@ -97,6 +98,7 @@ func NewEditor(filename string) (*Editor, error) {
 		themes: themes,
 	}
 	e.loadConfig()
+	e.lang = detectLang(buf.Filename)
 	return e, nil
 }
 
@@ -560,6 +562,7 @@ func (e *Editor) commitSave(filename string, updateFilename bool) bool {
 	if updateFilename {
 		e.buf.Filename = filename
 		e.buf.Modified = false
+		e.lang = detectLang(filename)
 		e.showMessage(fmt.Sprintf("Saved → %s", filename))
 	} else {
 		e.showMessage(fmt.Sprintf("Copy saved → %s", filename))
@@ -1112,6 +1115,25 @@ func (e *Editor) ensureVisible() {
 
 // ── RENDERING ────────────────────────────────────────────────────────────────
 
+func tokenStyle(k tokenKind, t *Theme) tcell.Style {
+	switch k {
+	case tkKeyword:
+		return t.HLKeyword
+	case tkType:
+		return t.HLType
+	case tkBuiltin:
+		return t.HLBuiltin
+	case tkString:
+		return t.HLString
+	case tkComment:
+		return t.HLComment
+	case tkNumber:
+		return t.HLNumber
+	default:
+		return t.Normal
+	}
+}
+
 func (e *Editor) theme() *Theme { return e.themes[e.themeIdx] }
 
 func (e *Editor) fillRow(row int, style tcell.Style) {
@@ -1169,6 +1191,15 @@ func (e *Editor) render() {
 	}
 
 	// ── CONTENT ──
+
+	// Pre-scan: compute highlight carry-state at the top of the viewport.
+	hlSt := hlNormal
+	if e.lang != nil {
+		for li := 0; li < e.scrollLine && li < e.buf.LineCount(); li++ {
+			_, hlSt = highlight(e.buf.Line(li), e.lang, hlSt)
+		}
+	}
+
 	for row := 0; row < cr; row++ {
 		lineIdx := e.scrollLine + row
 		screenRow := row + 1
@@ -1183,19 +1214,35 @@ func (e *Editor) render() {
 			e.screen.SetContent(x, screenRow, ' ', nil, t.Normal)
 		}
 		lineRunes := runesOf(e.buf.Line(lineIdx))
+
+		// Syntax tokens for this line (carries hlSt to next iteration).
+		var tokens []tokenKind
+		if e.lang != nil {
+			tokens, hlSt = highlight(e.buf.Line(lineIdx), e.lang, hlSt)
+		}
+
 		for col := 0; col < textW; col++ {
 			runeIdx := col + e.scrollCol
 			if runeIdx >= len(lineRunes) {
 				break
 			}
 			ch := lineRunes[runeIdx]
+
+			// Baseline: syntax color or Normal.
 			style := t.Normal
+			if tokens != nil && runeIdx < len(tokens) {
+				style = tokenStyle(tokens[runeIdx], t)
+			}
+
+			// Selection overrides syntax.
 			if e.selActive {
 				p := Pos{lineIdx, runeIdx}
 				if !p.Before(selFrom) && p.Before(selTo) {
 					style = t.Selection
 				}
 			}
+
+			// Find highlights override selection.
 			if e.mode == ModeFind && searchLen > 0 {
 				for _, mp := range e.findPos {
 					if mp.Line == lineIdx && runeIdx >= mp.Col && runeIdx < mp.Col+searchLen {
@@ -1208,6 +1255,7 @@ func (e *Editor) render() {
 					}
 				}
 			}
+
 			e.screen.SetContent(col+gutterW, screenRow, ch, nil, style)
 		}
 	}
