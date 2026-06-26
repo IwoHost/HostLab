@@ -601,7 +601,7 @@ html.light .switch-track { background:#d0ceca; }
     <div class="hero-bg-symbol">$_</div>
     <div class="hero-label">Command-line collection</div>
     <h1>Term<em>inal</em></h1>
-    <p class="hero-sub">Installable command-line tools for Windows, macOS, and Linux. Built with the HostLab aesthetic — because your terminal should look good too.</p>
+    <p class="hero-sub">single-binary tools for your terminal. windows, mac, linux — pre-compiled, drop in your PATH, done. no installers. no package managers. no nonsense.</p>
   </div>
 
   <div class="hero-terminal" aria-hidden="true">
@@ -661,9 +661,12 @@ html.light .switch-track { background:#d0ceca; }
      version   — semver string e.g. '1.0.0'
      desc      — short description
      status    — 'stable' | 'beta' | 'soon'
-     platforms — array of: 'windows', 'macos', 'linux'
-     downloads — { windows: url, macos: url, linux: url }
-                 empty string = no download yet
+     platforms — array of: 'windows', 'macos', 'linux'  (used for filter)
+     downloads — array of { os, arch, label, url }
+                 os    = 'windows' | 'macos' | 'linux'
+                 arch  = 'amd64' | 'arm64'
+                 label = display string e.g. 'LINUX · x64'
+                 url   = download URL (empty = disabled)
      install   — shell install command (optional)
      tags      — array of tag strings
      year      — release year
@@ -672,10 +675,16 @@ const APPS = [
   {
     title:    'HEdit',
     version:  '0.1',
-    desc:     'A nano-style terminal text editor with HostLab aesthetics. Lightweight and cross-platform. Open, edit, save — keyboard only, no mouse required.',
-    status:   'soon',
+    desc:     'nano, but it actually looks good. syntax highlighting, five themes, find & replace, CRLF-aware. one binary, zero config, no runtime required.',
+    status:   'beta',
     platforms: ['windows', 'macos', 'linux'],
-    downloads: { windows: '', macos: '', linux: '' },
+    downloads: [
+      { os: 'linux',   arch: 'amd64', label: 'LINUX · x64',    url: 'https://iwohost.github.io/HostLab/hedit/dist/hedit-linux-amd64' },
+      { os: 'linux',   arch: 'arm64', label: 'LINUX · ARM64',  url: 'https://iwohost.github.io/HostLab/hedit/dist/hedit-linux-arm64' },
+      { os: 'macos',   arch: 'arm64', label: 'MACOS · M-chip', url: 'https://iwohost.github.io/HostLab/hedit/dist/hedit-macos-arm64' },
+      { os: 'macos',   arch: 'amd64', label: 'MACOS · Intel',  url: 'https://iwohost.github.io/HostLab/hedit/dist/hedit-macos-amd64' },
+      { os: 'windows', arch: 'amd64', label: 'WINDOWS · x64',  url: 'https://iwohost.github.io/HostLab/hedit/dist/hedit-windows-amd64.exe' },
+    ],
     install:  'go install github.com/iwohost/hedit@latest',
     tags:     ['editor', 'text', 'go'],
     year:     '2025'
@@ -701,16 +710,27 @@ function buildCard(app, index) {
   const num = String(index + 1).padStart(2, '0');
   const isSoon = status === 'soon';
 
-  const platformBtns = platforms.map(p => {
-    const url = downloads[p] || '';
-    const active = url && !isSoon;
-    const icon = PLATFORM_ICONS[p] || '';
-    const label = PLATFORM_LABELS[p] || p.toUpperCase();
-    if (active) {
-      return `<a href="${url}" class="platform-btn" target="_blank" rel="noopener" data-os="${p}">${icon}${label}</a>`;
-    }
-    return `<span class="platform-btn disabled" data-os="${p}" title="${isSoon ? 'Coming soon' : 'Not available'}">${icon}${label}</span>`;
-  }).join('');
+  let platformBtns;
+  if (Array.isArray(downloads)) {
+    platformBtns = downloads.map(d => {
+      const icon = PLATFORM_ICONS[d.os] || '';
+      if (d.url && !isSoon) {
+        return `<a href="${d.url}" class="platform-btn" download target="_blank" rel="noopener" data-os="${d.os}">${icon}${d.label}</a>`;
+      }
+      return `<span class="platform-btn disabled" data-os="${d.os}" title="${isSoon ? 'coming soon' : 'not available'}">${icon}${d.label}</span>`;
+    }).join('');
+  } else {
+    platformBtns = platforms.map(p => {
+      const url = downloads[p] || '';
+      const active = url && !isSoon;
+      const icon = PLATFORM_ICONS[p] || '';
+      const label = PLATFORM_LABELS[p] || p.toUpperCase();
+      if (active) {
+        return `<a href="${url}" class="platform-btn" target="_blank" rel="noopener" data-os="${p}">${icon}${label}</a>`;
+      }
+      return `<span class="platform-btn disabled" data-os="${p}" title="${isSoon ? 'coming soon' : 'not available'}">${icon}${label}</span>`;
+    }).join('');
+  }
 
   const tagHTML = (tags || []).map(t => `<span class="tag">${t}</span>`).join('');
   const statusMap = { stable: 'STABLE', beta: 'BETA', soon: 'SOON' };
@@ -734,6 +754,11 @@ function buildCard(app, index) {
       </div>
       <p class="card-desc">${desc}</p>
       <div class="platform-row">${platformBtns}</div>
+      ${Array.isArray(downloads) && downloads.some(d => d.url) && !isSoon ? `
+      <div class="install-cmd" style="border-style:dashed; opacity:0.6;">
+        <span class="cmd-prompt" style="opacity:0.5">i</span>
+        <code class="cmd-text" style="font-size:10px; letter-spacing:0.06em;">download → chmod +x hedit → mv hedit /usr/local/bin/</code>
+      </div>` : ''}
       ${install ? `
       <div class="install-cmd">
         <span class="cmd-prompt">$</span>
@@ -793,7 +818,14 @@ document.getElementById('filter-bar').addEventListener('click', e => {
 });
 
 /* ── TYPEWRITER ── */
-const phrases = ['hedit notes.txt', 'hedit ~/.bashrc', 'hedit config.json', 'hedit README.md'];
+const phrases = [
+  'hedit notes.txt',
+  'hedit ~/resignation.txt',
+  'hedit .env',
+  'hedit spaghetti.js',
+  'hedit ~/.bashrc',
+  'hedit cursed.py',
+];
 let phraseIdx = 0, charIdx = 0, deleting = false;
 const tw = document.getElementById('tw');
 
