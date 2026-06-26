@@ -493,15 +493,19 @@ html.light .card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.07); }
 .copy-btn:hover { color: var(--text-primary); border-color: var(--text-secondary); }
 .copy-btn.copied { color: var(--term-green-text); border-color: var(--term-green-bright); }
 
-/* ── APP LOGO ── */
-.card-logo-area {
-  border-bottom: 1px solid var(--border);
-  padding: 28px 24px;
+/* ── INSTALL BLOCK ── */
+.install-block {
   display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.install-icons {
+  display: flex;
+  gap: 8px;
   align-items: center;
-  justify-content: center;
-  background: var(--surface2);
-  transition: background 0.35s ease, border-color 0.35s ease;
+  color: var(--text-muted);
+  padding-left: 2px;
 }
 
 /* ── CARD FOOTER ── */
@@ -689,27 +693,9 @@ const APPS = [
     desc:     'nano, but it actually looks good. syntax highlighting, five themes, find & replace, CRLF-aware. one binary, zero config, no runtime required.',
     status:   'beta',
     platforms: ['windows', 'macos', 'linux'],
-    logo: `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80" viewBox="0 0 200 80" aria-label="hedit logo">
-  <!-- terminal window frame -->
-  <rect x="8" y="8" width="184" height="64" rx="4" fill="#080f08" stroke="#1a3a1a" stroke-width="1"/>
-  <!-- title bar -->
-  <rect x="8" y="8" width="184" height="20" rx="4" fill="#0f1f0f"/>
-  <rect x="8" y="20" width="184" height="8" fill="#0f1f0f"/>
-  <circle cx="22" cy="18" r="4" fill="#1d3a1d"/>
-  <circle cx="35" cy="18" r="4" fill="#1d3a1d"/>
-  <circle cx="48" cy="18" r="4" fill="#1d3a1d"/>
-  <!-- app name in title bar -->
-  <text x="100" y="22" font-family="monospace" font-size="9" fill="#2d6b2d" text-anchor="middle" letter-spacing="2">hedit — notes.txt</text>
-  <!-- text lines -->
-  <rect x="22" y="36" width="60" height="2" rx="1" fill="#2d6b2d" opacity="0.6"/>
-  <rect x="22" y="43" width="100" height="2" rx="1" fill="#2d6b2d" opacity="0.35"/>
-  <rect x="22" y="50" width="78" height="2" rx="1" fill="#2d6b2d" opacity="0.35"/>
-  <!-- cursor block -->
-  <rect x="83" y="33" width="8" height="13" rx="1" fill="#4ec94e" opacity="0.9"/>
-</svg>`,
     installers: [
-      { label: 'LINUX · MACOS', cmd: 'curl -fsSL https://iwohost.github.io/HostLab/hedit/install.sh | bash' },
-      { label: 'WINDOWS  (powershell)', cmd: 'irm https://iwohost.github.io/HostLab/hedit/install.ps1 | iex' },
+      { os: ['linux','macos'], label: 'LINUX · MACOS', cmd: 'curl -fsSL https://iwohost.github.io/HostLab/hedit/install.sh | bash' },
+      { os: ['windows'],       label: 'WINDOWS  (powershell)', cmd: 'irm https://iwohost.github.io/HostLab/hedit/install.ps1 | iex' },
     ],
     downloads: [
       { os: 'linux',   arch: 'amd64', label: 'LINUX · x64',    url: 'https://iwohost.github.io/HostLab/hedit/dist/hedit-linux-amd64' },
@@ -748,12 +734,18 @@ function buildCard(app, index) {
 
   // primary: installer one-liners
   const installerHTML = (installers && !isSoon)
-    ? installers.map(inst => `
-      <div class="install-cmd">
-        <span class="cmd-prompt">$</span>
-        <code class="cmd-text">${inst.cmd}</code>
-        <button class="copy-btn" onclick="copyCmd(this,'${escAttr(inst.cmd)}')">COPY</button>
-      </div>`).join('')
+    ? installers.map(inst => {
+        const icons = (inst.os || []).map(o => PLATFORM_ICONS[o] || '').join('');
+        return `
+      <div class="install-block">
+        <div class="install-icons">${icons}</div>
+        <div class="install-cmd">
+          <span class="cmd-prompt">$</span>
+          <code class="cmd-text">${inst.cmd}</code>
+          <button class="copy-btn" onclick="copyCmd(this,'${escAttr(inst.cmd)}')">COPY</button>
+        </div>
+      </div>`;
+      }).join('')
     : '';
 
   // no binary download section
@@ -762,10 +754,7 @@ function buildCard(app, index) {
   card.className = 'card';
   card.dataset.platforms = platforms.join(' ');
 
-  const logoHTML = app.logo ? `<div class="card-logo-area">${app.logo}</div>` : '';
-
   card.innerHTML = `
-    ${logoHTML}
     <div class="card-body">
       <div class="card-header-row">
         <div class="card-title-block">
