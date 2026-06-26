@@ -418,6 +418,10 @@ func (e *Editor) handleFindKey(ev *tcell.EventKey) bool {
 	return false
 }
 
+// settingsItemCount returns total number of selectable items in the settings panel.
+// Items 0..len(themes)-1 are themes; item len(themes) is the CRLF toggle.
+func (e *Editor) settingsItemCount() int { return len(e.themes) + 1 }
+
 func (e *Editor) handleSettingsKey(ev *tcell.EventKey) bool {
 	switch ev.Key() {
 	case tcell.KeyUp:
@@ -425,14 +429,23 @@ func (e *Editor) handleSettingsKey(ev *tcell.EventKey) bool {
 			e.settingsIdx--
 		}
 	case tcell.KeyDown:
-		if e.settingsIdx < len(e.themes)-1 {
+		if e.settingsIdx < e.settingsItemCount()-1 {
 			e.settingsIdx++
 		}
 	case tcell.KeyEnter:
-		e.themeIdx = e.settingsIdx
+		if e.settingsIdx < len(e.themes) {
+			e.themeIdx = e.settingsIdx
+			e.saveConfig()
+			e.showMessage("Theme applied: " + e.themes[e.themeIdx].Name)
+		} else {
+			e.buf.CRLF = !e.buf.CRLF
+			lbl := "LF"
+			if e.buf.CRLF {
+				lbl = "CRLF"
+			}
+			e.showMessage("Line endings: " + lbl)
+		}
 		e.mode = ModeNormal
-		e.saveConfig()
-		e.showMessage("Theme applied: " + e.themes[e.themeIdx].Name)
 	case tcell.KeyEscape, tcell.KeyCtrlU:
 		e.mode = ModeNormal
 	}
@@ -537,7 +550,8 @@ func (e *Editor) resolvedSavePath() string {
 
 func (e *Editor) commitSave(filename string, updateFilename bool) bool {
 	_ = os.MkdirAll(filepath.Dir(filename), 0755)
-	content := strings.Join(e.buf.Lines, "\n") + "\n"
+	le := e.buf.lineEnding()
+	content := strings.Join(e.buf.Lines, le) + le
 	if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
 		e.showError(fmt.Sprintf("Save failed: %v", err))
 		e.mode = ModeNormal
@@ -1140,7 +1154,11 @@ func (e *Editor) render() {
 	if e.buf.Modified {
 		filename += " ●"
 	}
-	posStr := fmt.Sprintf("  Ln %d, Col %d ", e.cursor.Line+1, e.cursor.Col+1)
+	eol := "LF"
+	if e.buf.CRLF {
+		eol = "CRLF"
+	}
+	posStr := fmt.Sprintf("  %s  Ln %d, Col %d ", eol, e.cursor.Line+1, e.cursor.Col+1)
 	fnStart := (e.width - len([]rune(filename))) / 2
 	if fnStart < 8 {
 		fnStart = 8
@@ -1368,7 +1386,7 @@ func (e *Editor) drawHints(row int, items []hintItem, t *Theme) {
 
 func (e *Editor) renderSettings(t *Theme) {
 	panelW := 44
-	panelH := len(e.themes) + 7
+	panelH := len(e.themes) + 10 // themes + header + separator + crlf row + separator + footer
 	px := (e.width - panelW) / 2
 	py := (e.height - panelH) / 2
 	for row := 0; row < panelH; row++ {
@@ -1384,6 +1402,7 @@ func (e *Editor) renderSettings(t *Theme) {
 		e.screen.SetContent(px, py+row, '│', nil, t.HeaderAcct)
 		e.screen.SetContent(px+panelW-1, py+row, '│', nil, t.HeaderAcct)
 	}
+	// Theme section
 	e.drawStr(py+1, px+2, "  Settings — Color Theme", t.HeaderAcct)
 	e.drawStr(py+2, px+2, strings.Repeat("─", panelW-4), t.Hints)
 	for i, th := range e.themes {
@@ -1394,5 +1413,19 @@ func (e *Editor) renderSettings(t *Theme) {
 		}
 		e.drawStr(row, px+1, marker+th.Name, style)
 	}
+	// Line endings section
+	sepRow := py + 3 + len(e.themes)
+	e.drawStr(sepRow, px+2, strings.Repeat("─", panelW-4), t.Hints)
+	e.drawStr(sepRow+1, px+2, "  Line Endings", t.HeaderAcct)
+	crlfIdx := len(e.themes)
+	eolMarker, eolStyle := "  ○  ", t.Hints
+	if e.settingsIdx == crlfIdx {
+		eolMarker, eolStyle = "  ●  ", t.HintsKey
+	}
+	eolLabel := "LF  (Unix)"
+	if e.buf.CRLF {
+		eolLabel = "CRLF  (Windows)"
+	}
+	e.drawStr(sepRow+2, px+1, eolMarker+"Toggle: "+eolLabel, eolStyle)
 	e.drawStr(py+panelH-2, px+2, "↑↓ select   ↵ apply   Esc close", t.Hints)
 }

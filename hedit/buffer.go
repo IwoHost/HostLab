@@ -23,6 +23,7 @@ type Buffer struct {
 	Lines    []string
 	Filename string
 	Modified bool
+	CRLF     bool // true if the file originally used \r\n line endings
 }
 
 func NewBuffer(filename string) (*Buffer, error) {
@@ -40,7 +41,11 @@ func NewBuffer(filename string) (*Buffer, error) {
 		}
 		return nil, err
 	}
-	text := strings.ReplaceAll(string(data), "\r\n", "\n")
+	text := string(data)
+	if strings.Contains(text, "\r\n") {
+		b.CRLF = true
+		text = strings.ReplaceAll(text, "\r\n", "\n")
+	}
 	text = strings.TrimRight(text, "\n")
 	b.Lines = strings.Split(text, "\n")
 	if len(b.Lines) == 0 {
@@ -49,8 +54,16 @@ func NewBuffer(filename string) (*Buffer, error) {
 	return b, nil
 }
 
+func (b *Buffer) lineEnding() string {
+	if b.CRLF {
+		return "\r\n"
+	}
+	return "\n"
+}
+
 func (b *Buffer) Save() error {
-	content := strings.Join(b.Lines, "\n") + "\n"
+	le := b.lineEnding()
+	content := strings.Join(b.Lines, le) + le
 	if err := os.WriteFile(b.Filename, []byte(content), 0644); err != nil {
 		return err
 	}
