@@ -35,6 +35,7 @@ type tabEntry struct {
 	buf           *Buffer
 	cursor        Pos
 	scrollLine    int
+	scrollSubRow  int // first visible visual sub-row within scrollLine (soft-wrap)
 	scrollCol     int
 	selActive     bool
 	selAnchor     Pos
@@ -53,8 +54,9 @@ type Editor struct {
 	selActive bool
 	selAnchor Pos
 
-	scrollLine int
-	scrollCol  int
+	scrollLine   int
+	scrollSubRow int // first visible visual sub-row within scrollLine (soft-wrap only)
+	scrollCol    int
 
 	internalClip string
 
@@ -136,6 +138,7 @@ func (e *Editor) saveCurrentTab() {
 		buf:           e.buf,
 		cursor:        e.cursor,
 		scrollLine:    e.scrollLine,
+		scrollSubRow:  e.scrollSubRow,
 		scrollCol:     e.scrollCol,
 		selActive:     e.selActive,
 		selAnchor:     e.selAnchor,
@@ -152,6 +155,7 @@ func (e *Editor) loadTab(idx int) {
 	e.buf = te.buf
 	e.cursor = te.cursor
 	e.scrollLine = te.scrollLine
+	e.scrollSubRow = te.scrollSubRow
 	e.scrollCol = te.scrollCol
 	e.selActive = te.selActive
 	e.selAnchor = te.selAnchor
@@ -184,6 +188,7 @@ func (e *Editor) Run() error {
 		case *tcell.EventResize:
 			e.width, e.height = ev.Size()
 			e.screen.Sync()
+			e.ensureVisible()
 			e.render()
 
 		case *tcell.EventKey:
@@ -241,6 +246,12 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 	// Alt+X → cut entire line
 	case isAlt && key == tcell.KeyRune && (ch == 'x' || ch == 'X'):
 		e.cutLine()
+
+	// Ctrl+D → duplicate selection (or line if no selection)
+	case key == tcell.KeyCtrlD:
+		e.pushUndo()
+		e.duplicateSelection()
+		e.clearMessage()
 
 	// Alt+D → duplicate current line below
 	case isAlt && key == tcell.KeyRune && (ch == 'd' || ch == 'D'):
@@ -846,6 +857,34 @@ func (e *Editor) moveCursor(line, col int, extending bool) {
 }
 
 func (e *Editor) moveUp(ext bool) {
+	if e.softWrap {
+		cw := e.width - e.gutterWidth()
+		if cw < 1 {
+			cw = 1
+		}
+		curSub := e.cursor.Col / cw
+		visCol := e.cursor.Col % cw
+		if curSub > 0 {
+			// move to the visual row above within the same logical line
+			newCol := (curSub-1)*cw + visCol
+			lineLen := len(runesOf(e.buf.Line(e.cursor.Line)))
+			if newCol > lineLen {
+				newCol = lineLen
+			}
+			e.moveCursor(e.cursor.Line, newCol, ext)
+		} else if e.cursor.Line > 0 {
+			// jump to the last visual row of the previous logical line
+			prevLine := e.cursor.Line - 1
+			prevLen := len(runesOf(e.buf.Line(prevLine)))
+			lastSub := prevLen/cw // index of last sub-row (prevLen/cw + 1 - 1)
+			newCol := lastSub*cw + visCol
+			if newCol > prevLen {
+				newCol = prevLen
+			}
+			e.moveCursor(prevLine, newCol, ext)
+		}
+		return
+	}
 	if e.cursor.Line > 0 {
 		nl := e.cursor.Line - 1
 		nc := clampCol(e.cursor.Col, len(runesOf(e.buf.Line(nl))))
@@ -854,6 +893,34 @@ func (e *Editor) moveUp(ext bool) {
 }
 
 func (e *Editor) moveDown(ext bool) {
+	if e.softWrap {
+		cw := e.width - e.gutterWidth()
+		if cw < 1 {
+			cw = 1
+		}
+		lineLen := len(runesOf(e.buf.Line(e.cursor.Line)))
+		totalSubs := lineLen/cw + 1
+		curSub := e.cursor.Col / cw
+		visCol := e.cursor.Col % cw
+		if curSub+1 < totalSubs {
+			// move to the visual row below within the same logical line
+			newCol := (curSub+1)*cw + visCol
+			if newCol > lineLen {
+				newCol = lineLen
+			}
+			e.moveCursor(e.cursor.Line, newCol, ext)
+		} else if e.cursor.Line < e.buf.LineCount()-1 {
+			// jump to the first visual row of the next logical line
+			nextLine := e.cursor.Line + 1
+			nextLen := len(runesOf(e.buf.Line(nextLine)))
+			newCol := visCol
+			if newCol > nextLen {
+				newCol = nextLen
+			}
+			e.moveCursor(nextLine, newCol, ext)
+		}
+		return
+	}
 	if e.cursor.Line < e.buf.LineCount()-1 {
 		nl := e.cursor.Line + 1
 		nc := clampCol(e.cursor.Col, len(runesOf(e.buf.Line(nl))))
@@ -1037,6 +1104,20 @@ func (e *Editor) duplicateLine() {
 	if e.cursor.Col > lineLen {
 		e.cursor.Col = lineLen
 	}
+}
+
+func (e *Editor) duplicateSelection() {
+	if !e.selActive {
+		return
+	}
+	from, to := e.normalizedSel()
+	text := e.buf.GetRange(from, to)
+	if text == "" {
+		return
+	}
+	newLine, newCol := e.buf.InsertText(to.Line, to.Col, text)
+	e.cursor = Pos{newLine, newCol}
+	e.selActive = false
 }
 
 // ── EDIT OPERATIONS ──────────────────────────────────────────────────────────
@@ -1314,15 +1395,9 @@ func (e *Editor) lineVisualRows(idx int) int {
 	if cw < 1 {
 		return 1
 	}
-	r := runesOf(e.buf.Line(idx))
-	if len(r) == 0 {
-		return 1
-	}
-	n := len(r) / cw
-	if len(r)%cw != 0 {
-		n++
-	}
-	return n
+	// +1 because the cursor can sit one past the last character,
+	// landing on an extra blank visual row (matches the render's nsub formula).
+	return len(runesOf(e.buf.Line(idx)))/cw + 1
 }
 
 func (e *Editor) ensureVisible() {
@@ -1333,32 +1408,57 @@ func (e *Editor) ensureVisible() {
 		if cw < 1 {
 			cw = 1
 		}
-		if e.cursor.Line < e.scrollLine {
+
+		// Clamp scroll state to valid range after resizes or deletions.
+		if e.scrollLine >= e.buf.LineCount() {
+			e.scrollLine = e.buf.LineCount() - 1
+			e.scrollSubRow = 0
+		}
+		scrollLineSubs := len(runesOf(e.buf.Line(e.scrollLine)))/cw + 1
+		if e.scrollSubRow >= scrollLineSubs {
+			e.scrollSubRow = scrollLineSubs - 1
+		}
+		if e.scrollSubRow < 0 {
+			e.scrollSubRow = 0
+		}
+
+		cursorSub := e.cursor.Col / cw
+
+		// Cursor above the current scroll position?
+		if e.cursor.Line < e.scrollLine ||
+			(e.cursor.Line == e.scrollLine && cursorSub < e.scrollSubRow) {
 			e.scrollLine = e.cursor.Line
+			e.scrollSubRow = cursorSub
 			return
 		}
-		// Visual rows between scrollLine and cursor line
-		visAbove := 0
+
+		// Visual rows from (scrollLine, scrollSubRow) to cursor.
+		visFromScroll := -e.scrollSubRow
 		for li := e.scrollLine; li < e.cursor.Line; li++ {
-			visAbove += e.lineVisualRows(li)
+			visFromScroll += e.lineVisualRows(li)
 		}
-		curVisRow := visAbove + e.cursor.Col/cw
-		if curVisRow < cr {
-			return
+		visFromScroll += cursorSub
+
+		if visFromScroll < cr {
+			return // cursor already in view
 		}
-		// Cursor below viewport: advance scrollLine
-		needed := curVisRow - cr + 1
-		li := e.scrollLine
-		for needed > 0 && li < e.cursor.Line {
-			vr := e.lineVisualRows(li)
-			if needed >= vr {
-				needed -= vr
-			} else {
-				needed = 0
+
+		// Cursor below viewport: advance scroll so cursor lands on last visible row.
+		advance := visFromScroll - (cr - 1)
+		e.scrollSubRow += advance
+		// Normalise: carry-over sub-rows into scrollLine increments.
+		for e.scrollLine < e.buf.LineCount() {
+			subs := len(runesOf(e.buf.Line(e.scrollLine)))/cw + 1
+			if e.scrollSubRow < subs {
+				break
 			}
-			li++
+			e.scrollSubRow -= subs
+			e.scrollLine++
 		}
-		e.scrollLine = li
+		if e.scrollLine >= e.buf.LineCount() {
+			e.scrollLine = e.buf.LineCount() - 1
+			e.scrollSubRow = 0
+		}
 		return
 	}
 	cr := e.contentRows()
@@ -1484,7 +1584,11 @@ func (e *Editor) render() {
 			if len(r) == 0 {
 				nsub = 1
 			}
-			for sr := 0; sr < nsub && len(vis) < cr; sr++ {
+			startSr := 0
+			if li == e.scrollLine {
+				startSr = e.scrollSubRow
+			}
+			for sr := startSr; sr < nsub && len(vis) < cr; sr++ {
 				vis = append(vis, visRow{li, sr})
 			}
 		}
@@ -1687,7 +1791,8 @@ func (e *Editor) render() {
 		if cw < 1 {
 			cw = 1
 		}
-		visAbove := 0
+		// Offset from the scroll position (scrollSubRow rows of scrollLine are hidden).
+		visAbove := -e.scrollSubRow
 		for li := e.scrollLine; li < e.cursor.Line; li++ {
 			visAbove += e.lineVisualRows(li)
 		}
