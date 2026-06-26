@@ -1108,7 +1108,6 @@ func (e *Editor) duplicateLine() {
 
 func (e *Editor) duplicateSelection() {
 	if !e.selActive {
-		e.duplicateLine()
 		return
 	}
 	from, to := e.normalizedSel()
