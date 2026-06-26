@@ -707,6 +707,26 @@ const APPS = [
     tags:     ['editor', 'text', 'go'],
     year:     '2025'
   },
+  {
+    title:    'HType',
+    version:  '0.1',
+    desc:     'terminal typing speed test. live WPM, color-coded feedback, three modes — random words, code identifiers, famous quotes. tracks your personal best.',
+    status:   'beta',
+    platforms: ['windows', 'macos', 'linux'],
+    installers: [
+      { os: ['linux','macos'], label: 'LINUX · MACOS', cmd: 'curl -fsSL https://iwohost.github.io/HostLab/htype/install.sh | bash' },
+      { os: ['windows'],       label: 'WINDOWS  (powershell)', cmd: 'irm https://iwohost.github.io/HostLab/htype/install.ps1 | iex' },
+    ],
+    downloads: [
+      { os: 'linux',   arch: 'amd64', label: 'LINUX · x64',    url: 'https://iwohost.github.io/HostLab/htype/dist/htype-linux-amd64' },
+      { os: 'linux',   arch: 'arm64', label: 'LINUX · ARM64',  url: 'https://iwohost.github.io/HostLab/htype/dist/htype-linux-arm64' },
+      { os: 'macos',   arch: 'arm64', label: 'MACOS · M-chip', url: 'https://iwohost.github.io/HostLab/htype/dist/htype-macos-arm64' },
+      { os: 'macos',   arch: 'amd64', label: 'MACOS · Intel',  url: 'https://iwohost.github.io/HostLab/htype/dist/htype-macos-amd64' },
+      { os: 'windows', arch: 'amd64', label: 'WINDOWS · x64',  url: 'https://iwohost.github.io/HostLab/htype/dist/htype-windows-amd64.exe' },
+    ],
+    tags:     ['typing', 'wpm', 'go'],
+    year:     '2025'
+  },
   /* ────────────────────────────────────────────
      ADD MORE APPS BELOW
   ──────────────────────────────────────────── */
@@ -827,7 +847,10 @@ const phrases = [
   'hedit .env',
   'hedit spaghetti.js',
   'hedit ~/.bashrc',
-  'hedit cursed.py',
+  'htype',
+  'htype 50',
+  'htype -m code',
+  'htype -m quote',
 ];
 let phraseIdx = 0, charIdx = 0, deleting = false;
 const tw = document.getElementById('tw');
