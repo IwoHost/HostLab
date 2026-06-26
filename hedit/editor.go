@@ -846,6 +846,34 @@ func (e *Editor) moveCursor(line, col int, extending bool) {
 }
 
 func (e *Editor) moveUp(ext bool) {
+	if e.softWrap {
+		cw := e.width - e.gutterWidth()
+		if cw < 1 {
+			cw = 1
+		}
+		curSub := e.cursor.Col / cw
+		visCol := e.cursor.Col % cw
+		if curSub > 0 {
+			// move to the visual row above within the same logical line
+			newCol := (curSub-1)*cw + visCol
+			lineLen := len(runesOf(e.buf.Line(e.cursor.Line)))
+			if newCol > lineLen {
+				newCol = lineLen
+			}
+			e.moveCursor(e.cursor.Line, newCol, ext)
+		} else if e.cursor.Line > 0 {
+			// jump to the last visual row of the previous logical line
+			prevLine := e.cursor.Line - 1
+			prevLen := len(runesOf(e.buf.Line(prevLine)))
+			lastSub := prevLen/cw // index of last sub-row (prevLen/cw + 1 - 1)
+			newCol := lastSub*cw + visCol
+			if newCol > prevLen {
+				newCol = prevLen
+			}
+			e.moveCursor(prevLine, newCol, ext)
+		}
+		return
+	}
 	if e.cursor.Line > 0 {
 		nl := e.cursor.Line - 1
 		nc := clampCol(e.cursor.Col, len(runesOf(e.buf.Line(nl))))
@@ -854,6 +882,34 @@ func (e *Editor) moveUp(ext bool) {
 }
 
 func (e *Editor) moveDown(ext bool) {
+	if e.softWrap {
+		cw := e.width - e.gutterWidth()
+		if cw < 1 {
+			cw = 1
+		}
+		lineLen := len(runesOf(e.buf.Line(e.cursor.Line)))
+		totalSubs := lineLen/cw + 1
+		curSub := e.cursor.Col / cw
+		visCol := e.cursor.Col % cw
+		if curSub+1 < totalSubs {
+			// move to the visual row below within the same logical line
+			newCol := (curSub+1)*cw + visCol
+			if newCol > lineLen {
+				newCol = lineLen
+			}
+			e.moveCursor(e.cursor.Line, newCol, ext)
+		} else if e.cursor.Line < e.buf.LineCount()-1 {
+			// jump to the first visual row of the next logical line
+			nextLine := e.cursor.Line + 1
+			nextLen := len(runesOf(e.buf.Line(nextLine)))
+			newCol := visCol
+			if newCol > nextLen {
+				newCol = nextLen
+			}
+			e.moveCursor(nextLine, newCol, ext)
+		}
+		return
+	}
 	if e.cursor.Line < e.buf.LineCount()-1 {
 		nl := e.cursor.Line + 1
 		nc := clampCol(e.cursor.Col, len(runesOf(e.buf.Line(nl))))
@@ -1314,15 +1370,9 @@ func (e *Editor) lineVisualRows(idx int) int {
 	if cw < 1 {
 		return 1
 	}
-	r := runesOf(e.buf.Line(idx))
-	if len(r) == 0 {
-		return 1
-	}
-	n := len(r) / cw
-	if len(r)%cw != 0 {
-		n++
-	}
-	return n
+	// +1 because the cursor can sit one past the last character,
+	// landing on an extra blank visual row (matches the render's nsub formula).
+	return len(runesOf(e.buf.Line(idx)))/cw + 1
 }
 
 func (e *Editor) ensureVisible() {
