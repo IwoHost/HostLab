@@ -15,11 +15,9 @@ type Mode int
 
 const (
 	ModeNormal Mode = iota
-	ModeFind
+	ModeFind         // unified find / find+replace panel
 	ModeSettings
 	ModeConfirmQuit  // [S]Save  [Q]Quit  [N]Cancel
-	ModeReplaceFind
-	ModeReplaceWith
 	ModeSaveAs       // typing filename
 	ModeSaveConflict // file exists: [O]verwrite  [C]opy  [N]Cancel
 )
@@ -46,9 +44,14 @@ type Editor struct {
 
 	mode Mode
 
-	findStr string
-	findPos []Pos
-	findIdx int
+	// Find / replace panel state
+	findStr     string
+	findPos     []Pos
+	findIdx     int
+	findCase    bool   // true = case-sensitive (default: false)
+	findExpand  bool   // replace section visible
+	findReplStr string // replacement text
+	findFocus   int    // 0 = search field, 1 = replace field
 
 	settingsIdx int
 	themes      []*Theme
@@ -63,10 +66,6 @@ type Editor struct {
 	undoStack     []snapshot
 	redoStack     []snapshot
 	lastWasInsert bool
-
-	replaceFind  string
-	replaceWith  string
-	replaceScope int // 0=selection, 1=line
 
 	saveInput   string
 	saveDir     string
@@ -137,27 +136,23 @@ func (e *Editor) Run() error {
 // ── KEY HANDLING ────────────────────────────────────────────────────────────
 
 func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
+	switch e.mode {
+	case ModeFind:
+		return e.handleFindKey(ev)
+	case ModeSettings:
+		return e.handleSettingsKey(ev)
+	case ModeConfirmQuit:
+		return e.handleConfirmKey(ev)
+	case ModeSaveAs:
+		return e.handleSaveAsKey(ev)
+	case ModeSaveConflict:
+		return e.handleSaveConflictKey(ev)
+	}
+
 	mod := ev.Modifiers()
 	key := ev.Key()
 	ch := ev.Rune()
 	isAlt := mod&tcell.ModAlt != 0
-
-	switch e.mode {
-	case ModeFind:
-		return e.handleFindKey(key, ch)
-	case ModeSettings:
-		return e.handleSettingsKey(key)
-	case ModeConfirmQuit:
-		return e.handleConfirmKey(key, ch)
-	case ModeReplaceFind:
-		return e.handleReplaceFindKey(key, ch)
-	case ModeReplaceWith:
-		return e.handleReplaceWithKey(key, ch)
-	case ModeSaveAs:
-		return e.handleSaveAsKey(key, ch)
-	case ModeSaveConflict:
-		return e.handleSaveConflictKey(key, ch)
-	}
 
 	// ── Normal mode ──
 	switch {
@@ -173,14 +168,6 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 	case isAlt && key == tcell.KeyRune && (ch == 'x' || ch == 'X'):
 		e.cutLine()
 
-	// Alt+R → replace on current line
-	case isAlt && key == tcell.KeyRune && (ch == 'r' || ch == 'R'):
-		e.mode = ModeReplaceFind
-		e.replaceFind = ""
-		e.replaceWith = ""
-		e.replaceScope = 1
-		e.clearMessage()
-
 	// Ctrl+Z → undo
 	case key == tcell.KeyCtrlZ:
 		e.undo()
@@ -189,7 +176,7 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 	case key == tcell.KeyCtrlY:
 		e.redo()
 
-	// Ctrl+S → save (with filename prompt)
+	// Ctrl+S → save
 	case key == tcell.KeyCtrlS:
 		e.startSave(false)
 
@@ -219,20 +206,13 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		e.paste()
 		e.clearMessage()
 
-	// Ctrl+F → find
+	// Ctrl+F → find panel
 	case key == tcell.KeyCtrlF:
-		e.mode = ModeFind
-		e.findStr = ""
-		e.findPos = nil
-		e.clearMessage()
+		e.openFind(false)
 
-	// Ctrl+R → replace in selection
+	// Ctrl+R → find+replace panel
 	case key == tcell.KeyCtrlR:
-		e.mode = ModeReplaceFind
-		e.replaceFind = ""
-		e.replaceWith = ""
-		e.replaceScope = 0
-		e.clearMessage()
+		e.openFind(true)
 
 	// Ctrl+U → settings
 	case key == tcell.KeyCtrlU:
@@ -248,7 +228,7 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 	case key == tcell.KeyRight && mod&tcell.ModCtrl != 0:
 		e.wordRight(mod&tcell.ModShift != 0)
 
-	// Arrow keys (with optional Shift for selection) — Ctrl variants MUST come first
+	// Arrow keys — Ctrl variants MUST come before plain variants
 	case key == tcell.KeyUp:
 		e.moveUp(mod&tcell.ModShift != 0)
 	case key == tcell.KeyDown:
@@ -273,22 +253,19 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		}
 
 	case key == tcell.KeyPgUp:
-		contentRows := e.contentRows()
-		newLine := e.cursor.Line - contentRows
+		newLine := e.cursor.Line - e.contentRows()
 		if newLine < 0 {
 			newLine = 0
 		}
 		e.moveCursor(newLine, e.cursor.Col, false)
 
 	case key == tcell.KeyPgDn:
-		contentRows := e.contentRows()
-		newLine := e.cursor.Line + contentRows
+		newLine := e.cursor.Line + e.contentRows()
 		if newLine >= e.buf.LineCount() {
 			newLine = e.buf.LineCount() - 1
 		}
 		e.moveCursor(newLine, e.cursor.Col, false)
 
-	// Backspace
 	case key == tcell.KeyBackspace || key == tcell.KeyBackspace2:
 		e.pushUndo()
 		if e.selActive {
@@ -299,7 +276,6 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 			e.clearMessage()
 		}
 
-	// Delete
 	case key == tcell.KeyDelete:
 		e.pushUndo()
 		if e.selActive {
@@ -309,7 +285,6 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 			e.clearMessage()
 		}
 
-	// Enter — with auto-indent
 	case key == tcell.KeyEnter:
 		e.pushUndo()
 		indent := leadingWhitespace(e.buf.Line(e.cursor.Line))
@@ -324,7 +299,6 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		}
 		e.clearMessage()
 
-	// Tab → 4 spaces
 	case key == tcell.KeyTab:
 		e.pushUndo()
 		if e.selActive {
@@ -336,17 +310,14 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		}
 		e.clearMessage()
 
-	// Escape → clear selection / message
 	case key == tcell.KeyEscape:
 		e.selActive = false
 		e.clearMessage()
 
-	// Printable character — consecutive inserts are batched into one undo step
 	case key == tcell.KeyRune && !isAlt && unicode.IsPrint(ch):
 		if !e.lastWasInsert || e.selActive {
 			e.pushUndo()
 		} else {
-			// Still clear redo so you can't redo after new typing
 			e.redoStack = e.redoStack[:0]
 		}
 		e.lastWasInsert = true
@@ -361,23 +332,85 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 	return false
 }
 
-func (e *Editor) handleFindKey(key tcell.Key, ch rune) bool {
-	switch key {
-	case tcell.KeyEscape, tcell.KeyCtrlF:
+// ── FIND / REPLACE PANEL ─────────────────────────────────────────────────────
+
+func (e *Editor) openFind(withReplace bool) {
+	e.findExpand = withReplace
+	e.findFocus = 0
+	if !withReplace {
+		e.findReplStr = ""
+	}
+	e.mode = ModeFind
+	e.clearMessage()
+	e.updateFind()
+}
+
+func (e *Editor) handleFindKey(ev *tcell.EventKey) bool {
+	mod := ev.Modifiers()
+	key := ev.Key()
+	ch := ev.Rune()
+	isAlt := mod&tcell.ModAlt != 0
+
+	switch {
+	// Close panel
+	case key == tcell.KeyEscape, key == tcell.KeyCtrlF:
 		e.mode = ModeNormal
 		e.findPos = nil
-	case tcell.KeyEnter, tcell.KeyDown:
-		e.findNext()
-	case tcell.KeyUp:
-		e.findPrev()
-	case tcell.KeyBackspace, tcell.KeyBackspace2:
-		if len(e.findStr) > 0 {
-			r := runesOf(e.findStr)
-			e.findStr = string(r[:len(r)-1])
-			e.updateFind()
+
+	// Ctrl+R → toggle replace section
+	case key == tcell.KeyCtrlR:
+		e.findExpand = !e.findExpand
+		e.findFocus = 0
+
+	// Alt+S → toggle case sensitivity
+	case isAlt && key == tcell.KeyRune && (ch == 's' || ch == 'S'):
+		e.findCase = !e.findCase
+		e.updateFind()
+
+	// Tab → swap focus between search / replace fields
+	case key == tcell.KeyTab && e.findExpand:
+		e.findFocus = 1 - e.findFocus
+
+	// Enter → next match (search focus) or replace current (replace focus)
+	case key == tcell.KeyEnter:
+		if e.findExpand && e.findFocus == 1 {
+			e.performFindReplace()
+		} else {
+			e.findNext()
 		}
-	case tcell.KeyRune:
-		if unicode.IsPrint(ch) {
+
+	// Down / Alt+Down → next match
+	case key == tcell.KeyDown, isAlt && key == tcell.KeyDown:
+		e.findNext()
+
+	// Up / Alt+Up → prev match
+	case key == tcell.KeyUp, isAlt && key == tcell.KeyUp:
+		e.findPrev()
+
+	// Alt+A → replace all (only when replace section is visible)
+	case isAlt && key == tcell.KeyRune && (ch == 'a' || ch == 'A') && e.findExpand:
+		e.performReplaceAll()
+
+	// Backspace → delete from active field
+	case key == tcell.KeyBackspace || key == tcell.KeyBackspace2:
+		if e.findExpand && e.findFocus == 1 {
+			if len(e.findReplStr) > 0 {
+				r := runesOf(e.findReplStr)
+				e.findReplStr = string(r[:len(r)-1])
+			}
+		} else {
+			if len(e.findStr) > 0 {
+				r := runesOf(e.findStr)
+				e.findStr = string(r[:len(r)-1])
+				e.updateFind()
+			}
+		}
+
+	// Printable → append to active field
+	case key == tcell.KeyRune && !isAlt && unicode.IsPrint(ch):
+		if e.findExpand && e.findFocus == 1 {
+			e.findReplStr += string(ch)
+		} else {
 			e.findStr += string(ch)
 			e.updateFind()
 		}
@@ -385,8 +418,8 @@ func (e *Editor) handleFindKey(key tcell.Key, ch rune) bool {
 	return false
 }
 
-func (e *Editor) handleSettingsKey(key tcell.Key) bool {
-	switch key {
+func (e *Editor) handleSettingsKey(ev *tcell.EventKey) bool {
+	switch ev.Key() {
 	case tcell.KeyUp:
 		if e.settingsIdx > 0 {
 			e.settingsIdx--
@@ -406,12 +439,14 @@ func (e *Editor) handleSettingsKey(key tcell.Key) bool {
 	return false
 }
 
-func (e *Editor) handleConfirmKey(key tcell.Key, ch rune) bool {
+func (e *Editor) handleConfirmKey(ev *tcell.EventKey) bool {
+	key := ev.Key()
+	ch := ev.Rune()
 	switch {
 	case key == tcell.KeyRune && (ch == 's' || ch == 'S'):
-		e.startSave(true) // save then quit
+		e.startSave(true)
 	case key == tcell.KeyRune && (ch == 'q' || ch == 'Q'):
-		return true // quit without saving
+		return true
 	default:
 		e.mode = ModeNormal
 		e.clearMessage()
@@ -419,50 +454,9 @@ func (e *Editor) handleConfirmKey(key tcell.Key, ch rune) bool {
 	return false
 }
 
-func (e *Editor) handleReplaceFindKey(key tcell.Key, ch rune) bool {
-	switch key {
-	case tcell.KeyEscape:
-		e.mode = ModeNormal
-		e.clearMessage()
-	case tcell.KeyEnter:
-		if e.replaceFind != "" {
-			e.mode = ModeReplaceWith
-		}
-	case tcell.KeyBackspace, tcell.KeyBackspace2:
-		if len(e.replaceFind) > 0 {
-			r := runesOf(e.replaceFind)
-			e.replaceFind = string(r[:len(r)-1])
-		}
-	case tcell.KeyRune:
-		if unicode.IsPrint(ch) {
-			e.replaceFind += string(ch)
-		}
-	}
-	return false
-}
-
-func (e *Editor) handleReplaceWithKey(key tcell.Key, ch rune) bool {
-	switch key {
-	case tcell.KeyEscape:
-		e.mode = ModeNormal
-		e.clearMessage()
-	case tcell.KeyEnter:
-		e.performReplace()
-		e.mode = ModeNormal
-	case tcell.KeyBackspace, tcell.KeyBackspace2:
-		if len(e.replaceWith) > 0 {
-			r := runesOf(e.replaceWith)
-			e.replaceWith = string(r[:len(r)-1])
-		}
-	case tcell.KeyRune:
-		if unicode.IsPrint(ch) {
-			e.replaceWith += string(ch)
-		}
-	}
-	return false
-}
-
-func (e *Editor) handleSaveAsKey(key tcell.Key, ch rune) bool {
+func (e *Editor) handleSaveAsKey(ev *tcell.EventKey) bool {
+	key := ev.Key()
+	ch := ev.Rune()
 	switch key {
 	case tcell.KeyEscape:
 		e.pendingQuit = false
@@ -478,7 +472,6 @@ func (e *Editor) handleSaveAsKey(key tcell.Key, ch rune) bool {
 			return e.commitSave(name, true)
 		}
 		if _, err := os.Stat(name); err == nil {
-			// Normalize to full path so conflict handler uses correct name
 			e.saveInput = name
 			e.saveDirMode = true
 			e.mode = ModeSaveConflict
@@ -493,7 +486,6 @@ func (e *Editor) handleSaveAsKey(key tcell.Key, ch rune) bool {
 	case tcell.KeyRune:
 		switch {
 		case !e.saveDirMode && (ch == 'd' || ch == 'D'):
-			// Switch to full-path editing mode
 			e.saveInput = e.resolvedSavePath()
 			e.saveDirMode = true
 		case unicode.IsPrint(ch):
@@ -503,7 +495,9 @@ func (e *Editor) handleSaveAsKey(key tcell.Key, ch rune) bool {
 	return false
 }
 
-func (e *Editor) handleSaveConflictKey(key tcell.Key, ch rune) bool {
+func (e *Editor) handleSaveConflictKey(ev *tcell.EventKey) bool {
+	key := ev.Key()
+	ch := ev.Rune()
 	switch {
 	case key == tcell.KeyRune && (ch == 'o' || ch == 'O'):
 		return e.commitSave(e.saveInput, true)
@@ -542,6 +536,7 @@ func (e *Editor) resolvedSavePath() string {
 }
 
 func (e *Editor) commitSave(filename string, updateFilename bool) bool {
+	_ = os.MkdirAll(filepath.Dir(filename), 0755)
 	content := strings.Join(e.buf.Lines, "\n") + "\n"
 	if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
 		e.showError(fmt.Sprintf("Save failed: %v", err))
@@ -724,17 +719,14 @@ func (e *Editor) moveRight(ext bool) {
 	}
 }
 
-func (e *Editor) moveToLineStart(ext bool) {
-	e.moveCursor(e.cursor.Line, 0, ext)
-}
+func (e *Editor) moveToLineStart(ext bool) { e.moveCursor(e.cursor.Line, 0, ext) }
 
 func (e *Editor) moveToLineEnd(ext bool) {
 	e.moveCursor(e.cursor.Line, len(runesOf(e.buf.Line(e.cursor.Line))), ext)
 }
 
 func (e *Editor) wordLeft(ext bool) {
-	line := e.cursor.Line
-	col := e.cursor.Col
+	line, col := e.cursor.Line, e.cursor.Col
 	r := runesOf(e.buf.Line(line))
 	if col == 0 {
 		if line > 0 {
@@ -755,8 +747,7 @@ func (e *Editor) wordLeft(ext bool) {
 }
 
 func (e *Editor) wordRight(ext bool) {
-	line := e.cursor.Line
-	col := e.cursor.Col
+	line, col := e.cursor.Line, e.cursor.Col
 	r := runesOf(e.buf.Line(line))
 	if col >= len(r) {
 		if line < e.buf.LineCount()-1 {
@@ -787,7 +778,7 @@ func leadingWhitespace(s string) string {
 	return s
 }
 
-// ── SELECTION HELPERS ────────────────────────────────────────────────────────
+// ── SELECTION ────────────────────────────────────────────────────────────────
 
 func (e *Editor) normalizedSel() (from, to Pos) {
 	if !e.selActive {
@@ -825,14 +816,12 @@ func (e *Editor) copySelection() {
 		return
 	}
 	from, to := e.normalizedSel()
-	text := e.buf.GetRange(from, to)
-	e.writeClipboard(text)
+	e.writeClipboard(e.buf.GetRange(from, to))
 	e.showMessage("Copied")
 }
 
 func (e *Editor) copyLine() {
-	text := e.buf.Line(e.cursor.Line) + "\n"
-	e.writeClipboard(text)
+	e.writeClipboard(e.buf.Line(e.cursor.Line) + "\n")
 	e.showMessage("Line copied")
 }
 
@@ -842,8 +831,7 @@ func (e *Editor) cutSelection() {
 	}
 	e.pushUndo()
 	from, to := e.normalizedSel()
-	text := e.buf.GetRange(from, to)
-	e.writeClipboard(text)
+	e.writeClipboard(e.buf.GetRange(from, to))
 	e.cursor = e.buf.DeleteRange(from, to)
 	e.selActive = false
 	e.showMessage("Cut")
@@ -852,8 +840,7 @@ func (e *Editor) cutSelection() {
 func (e *Editor) cutLine() {
 	e.pushUndo()
 	line := e.cursor.Line
-	text := e.buf.Line(line) + "\n"
-	e.writeClipboard(text)
+	e.writeClipboard(e.buf.Line(line) + "\n")
 	if e.buf.LineCount() > 1 {
 		e.buf.Lines = append(e.buf.Lines[:line], e.buf.Lines[line+1:]...)
 	} else {
@@ -880,60 +867,57 @@ func (e *Editor) paste() {
 	e.cursor = Pos{nl, nc}
 }
 
-func (e *Editor) performReplace() {
-	if e.replaceFind == "" {
-		e.showError("Nothing to replace")
-		return
-	}
-	switch e.replaceScope {
-	case 0: // selection
-		if !e.selActive {
-			e.showError("No selection — select text first, then ^R")
-			return
-		}
-		from, to := e.normalizedSel()
-		text := e.buf.GetRange(from, to)
-		newText := strings.ReplaceAll(text, e.replaceFind, e.replaceWith)
-		if newText == text {
-			e.showMessage("No matches in selection")
-			return
-		}
-		e.pushUndo()
-		e.cursor = e.buf.DeleteRange(from, to)
-		nl, nc := e.buf.InsertText(e.cursor.Line, e.cursor.Col, newText)
-		e.cursor = Pos{nl, nc}
-		e.selActive = false
-		e.showMessage("Replaced in selection")
-	case 1: // current line
-		line := e.cursor.Line
-		text := e.buf.Lines[line]
-		newText := strings.ReplaceAll(text, e.replaceFind, e.replaceWith)
-		if newText == text {
-			e.showMessage("No matches on this line")
-			return
-		}
-		e.pushUndo()
-		e.buf.Lines[line] = newText
-		e.buf.Modified = true
-		lineLen := len(runesOf(newText))
-		if e.cursor.Col > lineLen {
-			e.cursor.Col = lineLen
-		}
-		e.showMessage(fmt.Sprintf("Replaced on line %d", line+1))
-	}
-}
+// ── FIND & REPLACE LOGIC ─────────────────────────────────────────────────────
 
-// ── FIND ─────────────────────────────────────────────────────────────────────
+// replaceAllFold replaces all occurrences of old with newStr in s.
+// When caseSensitive is false the match is case-insensitive; original
+// surrounding text casing is preserved.
+func replaceAllFold(s, old, newStr string, caseSensitive bool) (string, int) {
+	if old == "" {
+		return s, 0
+	}
+	if caseSensitive {
+		count := strings.Count(s, old)
+		return strings.ReplaceAll(s, old, newStr), count
+	}
+	lowerS := strings.ToLower(s)
+	lowerOld := strings.ToLower(old)
+	var result strings.Builder
+	count := 0
+	start := 0
+	for {
+		idx := strings.Index(lowerS[start:], lowerOld)
+		if idx < 0 {
+			result.WriteString(s[start:])
+			break
+		}
+		result.WriteString(s[start : start+idx])
+		result.WriteString(newStr)
+		start += idx + len(lowerOld)
+		count++
+	}
+	return result.String(), count
+}
 
 func (e *Editor) updateFind() {
 	e.findPos = e.findPos[:0]
 	if e.findStr == "" {
 		return
 	}
-	needle := []rune(strings.ToLower(e.findStr))
+	var needle []rune
+	if e.findCase {
+		needle = []rune(e.findStr)
+	} else {
+		needle = []rune(strings.ToLower(e.findStr))
+	}
 	nlen := len(needle)
 	for li, line := range e.buf.Lines {
-		haystack := []rune(strings.ToLower(line))
+		var haystack []rune
+		if e.findCase {
+			haystack = []rune(line)
+		} else {
+			haystack = []rune(strings.ToLower(line))
+		}
 		for ci := 0; ci <= len(haystack)-nlen; ci++ {
 			match := true
 			for i := 0; i < nlen; i++ {
@@ -974,6 +958,48 @@ func (e *Editor) findPrev() {
 	}
 	e.findIdx = (e.findIdx - 1 + len(e.findPos)) % len(e.findPos)
 	e.cursor = e.findPos[e.findIdx]
+}
+
+// performFindReplace replaces the current match and advances to the next.
+func (e *Editor) performFindReplace() {
+	if len(e.findPos) == 0 || e.findStr == "" {
+		return
+	}
+	pos := e.findPos[e.findIdx]
+	nlen := len(runesOf(e.findStr))
+	lineRunes := runesOf(e.buf.Line(pos.Line))
+	endCol := pos.Col + nlen
+	if endCol > len(lineRunes) {
+		endCol = len(lineRunes)
+	}
+	e.pushUndo()
+	e.cursor = e.buf.DeleteRange(pos, Pos{pos.Line, endCol})
+	nl, nc := e.buf.InsertText(e.cursor.Line, e.cursor.Col, e.findReplStr)
+	e.cursor = Pos{nl, nc}
+	e.updateFind()
+	if len(e.findPos) > 0 {
+		e.findNext()
+	}
+}
+
+// performReplaceAll replaces every match in the document.
+func (e *Editor) performReplaceAll() {
+	if e.findStr == "" || len(e.findPos) == 0 {
+		e.showMessage("No matches")
+		return
+	}
+	e.pushUndo()
+	total := 0
+	for i, line := range e.buf.Lines {
+		newLine, count := replaceAllFold(line, e.findStr, e.findReplStr, e.findCase)
+		if count > 0 {
+			e.buf.Lines[i] = newLine
+			total += count
+			e.buf.Modified = true
+		}
+	}
+	e.updateFind()
+	e.showMessage(fmt.Sprintf("Replaced %d occurrence(s)", total))
 }
 
 // ── CLIPBOARD ────────────────────────────────────────────────────────────────
@@ -1035,7 +1061,7 @@ func (e *Editor) clearMessage()          { e.message = ""; e.msgErr = false }
 // ── SCROLL ───────────────────────────────────────────────────────────────────
 
 func (e *Editor) contentRows() int {
-	n := e.height - 4 // header + msgbar + hints1 + hints2
+	n := e.height - 4
 	if n < 1 {
 		return 1
 	}
@@ -1080,7 +1106,7 @@ func (e *Editor) fillRow(row int, style tcell.Style) {
 	}
 }
 
-func (e *Editor) drawStr(row, col int, s string, style tcell.Style) {
+func (e *Editor) drawStr(row, col int, s string, style tcell.Style) int {
 	for _, ch := range s {
 		if col >= e.width {
 			break
@@ -1088,6 +1114,7 @@ func (e *Editor) drawStr(row, col int, s string, style tcell.Style) {
 		e.screen.SetContent(col, row, ch, nil, style)
 		col++
 	}
+	return col
 }
 
 func (e *Editor) render() {
@@ -1100,15 +1127,12 @@ func (e *Editor) render() {
 		textW = 0
 	}
 	cr := e.contentRows()
-
 	selFrom, selTo := e.normalizedSel()
 	searchLen := len(runesOf(e.findStr))
 
-	// ── HEADER (row 0) ──
+	// ── HEADER ──
 	e.fillRow(0, t.Header)
-	appName := " HEdit "
-	e.drawStr(0, 0, appName, t.HeaderAcct)
-
+	e.drawStr(0, 0, " HEdit ", t.HeaderAcct)
 	filename := e.buf.Filename
 	if filename == "" {
 		filename = "[ New File ]"
@@ -1116,11 +1140,10 @@ func (e *Editor) render() {
 	if e.buf.Modified {
 		filename += " ●"
 	}
-
 	posStr := fmt.Sprintf("  Ln %d, Col %d ", e.cursor.Line+1, e.cursor.Col+1)
 	fnStart := (e.width - len([]rune(filename))) / 2
-	if fnStart < len([]rune(appName))+1 {
-		fnStart = len([]rune(appName)) + 1
+	if fnStart < 8 {
+		fnStart = 8
 	}
 	e.drawStr(0, fnStart, filename, t.Header)
 	if e.width-len([]rune(posStr)) > 0 {
@@ -1131,39 +1154,30 @@ func (e *Editor) render() {
 	for row := 0; row < cr; row++ {
 		lineIdx := e.scrollLine + row
 		screenRow := row + 1
-
 		if lineIdx < e.buf.LineCount() {
-			numStr := fmt.Sprintf("%*d  ", gutterW-2, lineIdx+1)
-			e.drawStr(screenRow, 0, numStr, t.LineNum)
+			e.drawStr(screenRow, 0, fmt.Sprintf("%*d  ", gutterW-2, lineIdx+1), t.LineNum)
 		} else {
 			e.fillRow(screenRow, t.Normal)
 			e.screen.SetContent(0, screenRow, '~', nil, t.LineNum)
 			continue
 		}
-
 		for x := gutterW; x < e.width; x++ {
 			e.screen.SetContent(x, screenRow, ' ', nil, t.Normal)
 		}
-
 		lineRunes := runesOf(e.buf.Line(lineIdx))
-
 		for col := 0; col < textW; col++ {
 			runeIdx := col + e.scrollCol
-			screenCol := col + gutterW
 			if runeIdx >= len(lineRunes) {
-				e.screen.SetContent(screenCol, screenRow, ' ', nil, t.Normal)
-				continue
+				break
 			}
 			ch := lineRunes[runeIdx]
 			style := t.Normal
-
 			if e.selActive {
 				p := Pos{lineIdx, runeIdx}
 				if !p.Before(selFrom) && p.Before(selTo) {
 					style = t.Selection
 				}
 			}
-
 			if e.mode == ModeFind && searchLen > 0 {
 				for _, mp := range e.findPos {
 					if mp.Line == lineIdx && runeIdx >= mp.Col && runeIdx < mp.Col+searchLen {
@@ -1176,44 +1190,55 @@ func (e *Editor) render() {
 					}
 				}
 			}
-
-			e.screen.SetContent(screenCol, screenRow, ch, nil, style)
+			e.screen.SetContent(col+gutterW, screenRow, ch, nil, style)
 		}
 	}
 
-	// ── MESSAGE BAR (row height-3) ──
+	// ── BOTTOM ROWS ──
 	msgRow := e.height - 3
-	e.fillRow(msgRow, t.MsgBar)
+	h1Row := e.height - 2
+	h2Row := e.height - 1
+
 	switch e.mode {
 	case ModeFind:
-		indicator := ""
-		if e.findStr != "" {
-			if len(e.findPos) > 0 {
-				indicator = fmt.Sprintf("  [%d/%d]", e.findIdx+1, len(e.findPos))
-			} else {
-				indicator = "  [ not found ]"
-			}
-		}
-		e.drawStr(msgRow, 0, " Find: "+e.findStr+indicator, t.MsgBar)
-	case ModeReplaceFind:
-		scopeStr := "Selection"
-		if e.replaceScope == 1 {
-			scopeStr = "Line"
-		}
-		e.drawStr(msgRow, 0, fmt.Sprintf(" Replace (%s) — Find: %s", scopeStr, e.replaceFind), t.MsgBar)
-	case ModeReplaceWith:
-		e.drawStr(msgRow, 0, fmt.Sprintf(" Replace: %s  →  With: %s", e.replaceFind, e.replaceWith), t.MsgBar)
+		e.renderFindPanel(msgRow, h1Row, h2Row, t)
+
 	case ModeConfirmQuit:
+		e.fillRow(msgRow, t.MsgBarErr)
+		e.fillRow(h1Row, t.Hints)
+		e.fillRow(h2Row, t.Hints)
 		e.drawStr(msgRow, 0, " Unsaved changes.  [S] Save & Quit  [Q] Quit  [N] Cancel", t.MsgBarErr)
+		e.drawHints(h1Row, []hintItem{
+			{"S", "Save & Quit"}, {"Q", "Quit without saving"}, {"N/Esc", "Cancel"},
+		}, t)
+
 	case ModeSaveAs:
+		e.fillRow(msgRow, t.MsgBar)
+		e.fillRow(h1Row, t.Hints)
+		e.fillRow(h2Row, t.Hints)
 		if e.saveDirMode {
 			e.drawStr(msgRow, 0, " Path: "+e.saveInput+"_", t.MsgBar)
 		} else {
 			e.drawStr(msgRow, 0, " Save as: "+e.saveInput+"_", t.MsgBar)
+			e.drawStr(h2Row, 1, "in: "+e.saveDir, t.LineNum)
 		}
+		e.drawHints(h1Row, []hintItem{
+			{"↵", "Confirm"}, {"Esc", "Cancel"}, {"d", "Edit path"},
+		}, t)
+
 	case ModeSaveConflict:
+		e.fillRow(msgRow, t.MsgBarErr)
+		e.fillRow(h1Row, t.Hints)
+		e.fillRow(h2Row, t.Hints)
 		e.drawStr(msgRow, 0, fmt.Sprintf(" '%s' exists.  [O] Overwrite  [C] Copy  [N] Cancel", e.saveInput), t.MsgBarErr)
+		e.drawHints(h1Row, []hintItem{
+			{"O", "Overwrite"}, {"C", "Save copy"}, {"N/Esc", "Back"},
+		}, t)
+
 	default:
+		e.fillRow(msgRow, t.MsgBar)
+		e.fillRow(h1Row, t.Hints)
+		e.fillRow(h2Row, t.Hints)
 		if e.message != "" {
 			style := t.MsgBar
 			if e.msgErr {
@@ -1221,56 +1246,11 @@ func (e *Editor) render() {
 			}
 			e.drawStr(msgRow, 0, " "+e.message, style)
 		}
-	}
-
-	// ── HINTS ──
-	hints1Row := e.height - 2
-	hints2Row := e.height - 1
-	e.fillRow(hints1Row, t.Hints)
-	e.fillRow(hints2Row, t.Hints)
-
-	switch e.mode {
-	case ModeFind:
-		e.drawHints(hints1Row, []hintItem{
-			{"↵", "Next"}, {"↑", "Prev"}, {"↓", "Next"}, {"Esc", "Close"},
-		}, t)
-	case ModeReplaceFind:
-		e.drawHints(hints1Row, []hintItem{
-			{"↵", "Next Step"}, {"Esc", "Cancel"},
-		}, t)
-	case ModeReplaceWith:
-		e.drawHints(hints1Row, []hintItem{
-			{"↵", "Replace"}, {"Esc", "Cancel"},
-		}, t)
-	case ModeSettings:
-		e.drawHints(hints1Row, []hintItem{
-			{"↑↓", "Select Theme"}, {"↵", "Apply"}, {"Esc", "Close"},
-		}, t)
-	case ModeConfirmQuit:
-		e.drawHints(hints1Row, []hintItem{
-			{"S", "Save & Quit"}, {"Q", "Quit without saving"}, {"N/Esc", "Cancel"},
-		}, t)
-	case ModeSaveAs:
-		if e.saveDirMode {
-			e.drawHints(hints1Row, []hintItem{
-				{"↵", "Confirm"}, {"Esc", "Cancel"},
-			}, t)
-		} else {
-			e.drawHints(hints1Row, []hintItem{
-				{"↵", "Confirm"}, {"Esc", "Cancel"}, {"d", "Edit path"},
-			}, t)
-			e.drawStr(hints2Row, 1, "in: "+e.saveDir, t.LineNum)
-		}
-	case ModeSaveConflict:
-		e.drawHints(hints1Row, []hintItem{
-			{"O", "Overwrite"}, {"C", "Save copy"}, {"N/Esc", "Back"},
-		}, t)
-	default:
-		e.drawHints(hints1Row, []hintItem{
+		e.drawHints(h1Row, []hintItem{
 			{"^S", "Save"}, {"^Z", "Undo"}, {"^Y", "Redo"},
 			{"^F", "Find"}, {"^R", "Replace"}, {"^U", "Settings"},
 		}, t)
-		e.drawHints(hints2Row, []hintItem{
+		e.drawHints(h2Row, []hintItem{
 			{"^C", "Copy"}, {"^X", "Cut"}, {"^V", "Paste"},
 			{"^←→", "Word"}, {"Alt+A", "Sel Line"}, {"^Q", "Quit"},
 		}, t)
@@ -1278,6 +1258,9 @@ func (e *Editor) render() {
 
 	// ── SETTINGS OVERLAY ──
 	if e.mode == ModeSettings {
+		e.fillRow(msgRow, t.MsgBar)
+		e.fillRow(h1Row, t.Hints)
+		e.fillRow(h2Row, t.Hints)
 		e.renderSettings(t)
 	}
 
@@ -1289,8 +1272,83 @@ func (e *Editor) render() {
 	} else {
 		e.screen.HideCursor()
 	}
-
 	e.screen.Show()
+}
+
+// renderFindPanel draws the find (and optionally replace) panel across the
+// three bottom rows.
+func (e *Editor) renderFindPanel(msgRow, h1Row, h2Row int, t *Theme) {
+	e.fillRow(msgRow, t.MsgBar)
+	e.fillRow(h1Row, t.MsgBar)
+	e.fillRow(h2Row, t.Hints)
+
+	// Case indicator: bright when case-sensitive is ON
+	caseStyle := t.Hints
+	caseLabel := " [Aa] "
+	if e.findCase {
+		caseStyle = t.HintsKey
+	}
+
+	// Match counter
+	counter := ""
+	if e.findStr != "" {
+		if len(e.findPos) > 0 {
+			counter = fmt.Sprintf("  %d/%d", e.findIdx+1, len(e.findPos))
+		} else {
+			counter = "  no match"
+		}
+	}
+
+	if !e.findExpand {
+		// ── Find only ──
+		// Row: [ Find: text_   [Aa]   3/7 ]
+		label := " Find: "
+		col := e.drawStr(msgRow, 0, label, t.MsgBar)
+		input := e.findStr
+		if e.findFocus == 0 {
+			input += "_"
+		}
+		col = e.drawStr(msgRow, col, input, t.FindCur)
+		// right-align case + counter
+		suffix := caseLabel + counter + " "
+		if e.width-len([]rune(suffix)) > col {
+			e.drawStr(msgRow, e.width-len([]rune(suffix)), caseLabel, caseStyle)
+			e.drawStr(msgRow, e.width-len([]rune(counter+" ")), counter+" ", t.MsgBar)
+		}
+		// Hints row
+		e.drawHints(h1Row, []hintItem{
+			{"↵/↓", "Next"}, {"↑", "Prev"}, {"^R", "Replace"}, {"Alt+S", "Case"}, {"Esc", "Close"},
+		}, t)
+	} else {
+		// ── Find + Replace ──
+		// Find row
+		findLabel := " Find:    "
+		col := e.drawStr(msgRow, 0, findLabel, t.MsgBar)
+		findInput := e.findStr
+		if e.findFocus == 0 {
+			findInput += "_"
+		}
+		col = e.drawStr(msgRow, col, findInput, t.FindCur)
+		suffix := caseLabel + counter + " "
+		if e.width-len([]rune(suffix)) > col {
+			e.drawStr(msgRow, e.width-len([]rune(suffix)), caseLabel, caseStyle)
+			e.drawStr(msgRow, e.width-len([]rune(counter+" ")), counter+" ", t.MsgBar)
+		}
+
+		// Replace row (using h1Row with MsgBar style)
+		replLabel := " Replace: "
+		col = e.drawStr(h1Row, 0, replLabel, t.MsgBar)
+		replInput := e.findReplStr
+		if e.findFocus == 1 {
+			replInput += "_"
+		}
+		e.drawStr(h1Row, col, replInput, t.FindHL)
+
+		// Hints
+		e.drawHints(h2Row, []hintItem{
+			{"Tab", "Swap"}, {"↵", "Replace"}, {"Alt+A", "All"}, {"Alt+S", "Case"}, {"Esc", "Close"},
+		}, t)
+	}
 }
 
 type hintItem struct{ key, label string }
@@ -1313,13 +1371,11 @@ func (e *Editor) renderSettings(t *Theme) {
 	panelH := len(e.themes) + 7
 	px := (e.width - panelW) / 2
 	py := (e.height - panelH) / 2
-
 	for row := 0; row < panelH; row++ {
 		for col := 0; col < panelW; col++ {
 			e.screen.SetContent(px+col, py+row, ' ', nil, t.Header)
 		}
 	}
-
 	top := "┌" + strings.Repeat("─", panelW-2) + "┐"
 	bot := "└" + strings.Repeat("─", panelW-2) + "┘"
 	e.drawStr(py, px, top, t.HeaderAcct)
@@ -1328,20 +1384,15 @@ func (e *Editor) renderSettings(t *Theme) {
 		e.screen.SetContent(px, py+row, '│', nil, t.HeaderAcct)
 		e.screen.SetContent(px+panelW-1, py+row, '│', nil, t.HeaderAcct)
 	}
-
 	e.drawStr(py+1, px+2, "  Settings — Color Theme", t.HeaderAcct)
 	e.drawStr(py+2, px+2, strings.Repeat("─", panelW-4), t.Hints)
-
 	for i, th := range e.themes {
 		row := py + 3 + i
-		marker := "  ○  "
-		style := t.Hints
+		marker, style := "  ○  ", t.Hints
 		if i == e.settingsIdx {
-			marker = "  ●  "
-			style = t.HintsKey
+			marker, style = "  ●  ", t.HintsKey
 		}
 		e.drawStr(row, px+1, marker+th.Name, style)
 	}
-
 	e.drawStr(py+panelH-2, px+2, "↑↓ select   ↵ apply   Esc close", t.Hints)
 }
