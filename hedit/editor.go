@@ -69,6 +69,8 @@ type Editor struct {
 	replaceScope int // 0=selection, 1=line
 
 	saveInput   string
+	saveDir     string
+	saveDirMode bool
 	pendingQuit bool
 
 	dragging bool
@@ -467,15 +469,18 @@ func (e *Editor) handleSaveAsKey(key tcell.Key, ch rune) bool {
 		e.mode = ModeNormal
 		e.clearMessage()
 	case tcell.KeyEnter:
-		name := strings.TrimSpace(e.saveInput)
-		if name == "" {
+		if strings.TrimSpace(e.saveInput) == "" {
 			e.showError("Filename required")
 			return false
 		}
+		name := e.resolvedSavePath()
 		if name == e.buf.Filename {
 			return e.commitSave(name, true)
 		}
 		if _, err := os.Stat(name); err == nil {
+			// Normalize to full path so conflict handler uses correct name
+			e.saveInput = name
+			e.saveDirMode = true
 			e.mode = ModeSaveConflict
 		} else {
 			return e.commitSave(name, true)
@@ -486,7 +491,12 @@ func (e *Editor) handleSaveAsKey(key tcell.Key, ch rune) bool {
 			e.saveInput = string(r[:len(r)-1])
 		}
 	case tcell.KeyRune:
-		if unicode.IsPrint(ch) {
+		switch {
+		case !e.saveDirMode && (ch == 'd' || ch == 'D'):
+			// Switch to full-path editing mode
+			e.saveInput = e.resolvedSavePath()
+			e.saveDirMode = true
+		case unicode.IsPrint(ch):
 			e.saveInput += string(ch)
 		}
 	}
@@ -507,9 +517,28 @@ func (e *Editor) handleSaveConflictKey(key tcell.Key, ch rune) bool {
 
 func (e *Editor) startSave(quitAfter bool) {
 	e.pendingQuit = quitAfter
-	e.saveInput = e.buf.Filename
+	e.saveDirMode = false
+	if e.buf.Filename != "" {
+		e.saveInput = filepath.Base(e.buf.Filename)
+		e.saveDir = filepath.Dir(e.buf.Filename)
+	} else {
+		e.saveInput = ""
+		if dir, err := os.Getwd(); err == nil {
+			e.saveDir = dir
+		} else {
+			e.saveDir = "."
+		}
+	}
 	e.mode = ModeSaveAs
 	e.clearMessage()
+}
+
+func (e *Editor) resolvedSavePath() string {
+	name := strings.TrimSpace(e.saveInput)
+	if e.saveDirMode || filepath.IsAbs(name) {
+		return name
+	}
+	return filepath.Join(e.saveDir, name)
 }
 
 func (e *Editor) commitSave(filename string, updateFilename bool) bool {
@@ -1177,7 +1206,11 @@ func (e *Editor) render() {
 	case ModeConfirmQuit:
 		e.drawStr(msgRow, 0, " Unsaved changes.  [S] Save & Quit  [Q] Quit  [N] Cancel", t.MsgBarErr)
 	case ModeSaveAs:
-		e.drawStr(msgRow, 0, " Save as: "+e.saveInput+"_", t.MsgBar)
+		if e.saveDirMode {
+			e.drawStr(msgRow, 0, " Path: "+e.saveInput+"_", t.MsgBar)
+		} else {
+			e.drawStr(msgRow, 0, " Save as: "+e.saveInput+"_", t.MsgBar)
+		}
 	case ModeSaveConflict:
 		e.drawStr(msgRow, 0, fmt.Sprintf(" '%s' exists.  [O] Overwrite  [C] Copy  [N] Cancel", e.saveInput), t.MsgBarErr)
 	default:
@@ -1218,9 +1251,16 @@ func (e *Editor) render() {
 			{"S", "Save & Quit"}, {"Q", "Quit without saving"}, {"N/Esc", "Cancel"},
 		}, t)
 	case ModeSaveAs:
-		e.drawHints(hints1Row, []hintItem{
-			{"↵", "Confirm"}, {"Esc", "Cancel"},
-		}, t)
+		if e.saveDirMode {
+			e.drawHints(hints1Row, []hintItem{
+				{"↵", "Confirm"}, {"Esc", "Cancel"},
+			}, t)
+		} else {
+			e.drawHints(hints1Row, []hintItem{
+				{"↵", "Confirm"}, {"Esc", "Cancel"}, {"d", "Edit path"},
+			}, t)
+			e.drawStr(hints2Row, 1, "in: "+e.saveDir, t.LineNum)
+		}
 	case ModeSaveConflict:
 		e.drawHints(hints1Row, []hintItem{
 			{"O", "Overwrite"}, {"C", "Save copy"}, {"N/Esc", "Back"},
