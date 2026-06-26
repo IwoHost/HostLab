@@ -35,6 +35,7 @@ type tabEntry struct {
 	buf           *Buffer
 	cursor        Pos
 	scrollLine    int
+	scrollSubRow  int // first visible visual sub-row within scrollLine (soft-wrap)
 	scrollCol     int
 	selActive     bool
 	selAnchor     Pos
@@ -53,8 +54,9 @@ type Editor struct {
 	selActive bool
 	selAnchor Pos
 
-	scrollLine int
-	scrollCol  int
+	scrollLine   int
+	scrollSubRow int // first visible visual sub-row within scrollLine (soft-wrap only)
+	scrollCol    int
 
 	internalClip string
 
@@ -136,6 +138,7 @@ func (e *Editor) saveCurrentTab() {
 		buf:           e.buf,
 		cursor:        e.cursor,
 		scrollLine:    e.scrollLine,
+		scrollSubRow:  e.scrollSubRow,
 		scrollCol:     e.scrollCol,
 		selActive:     e.selActive,
 		selAnchor:     e.selAnchor,
@@ -152,6 +155,7 @@ func (e *Editor) loadTab(idx int) {
 	e.buf = te.buf
 	e.cursor = te.cursor
 	e.scrollLine = te.scrollLine
+	e.scrollSubRow = te.scrollSubRow
 	e.scrollCol = te.scrollCol
 	e.selActive = te.selActive
 	e.selAnchor = te.selAnchor
@@ -184,6 +188,7 @@ func (e *Editor) Run() error {
 		case *tcell.EventResize:
 			e.width, e.height = ev.Size()
 			e.screen.Sync()
+			e.ensureVisible()
 			e.render()
 
 		case *tcell.EventKey:
@@ -1383,32 +1388,57 @@ func (e *Editor) ensureVisible() {
 		if cw < 1 {
 			cw = 1
 		}
-		if e.cursor.Line < e.scrollLine {
+
+		// Clamp scroll state to valid range after resizes or deletions.
+		if e.scrollLine >= e.buf.LineCount() {
+			e.scrollLine = e.buf.LineCount() - 1
+			e.scrollSubRow = 0
+		}
+		scrollLineSubs := len(runesOf(e.buf.Line(e.scrollLine)))/cw + 1
+		if e.scrollSubRow >= scrollLineSubs {
+			e.scrollSubRow = scrollLineSubs - 1
+		}
+		if e.scrollSubRow < 0 {
+			e.scrollSubRow = 0
+		}
+
+		cursorSub := e.cursor.Col / cw
+
+		// Cursor above the current scroll position?
+		if e.cursor.Line < e.scrollLine ||
+			(e.cursor.Line == e.scrollLine && cursorSub < e.scrollSubRow) {
 			e.scrollLine = e.cursor.Line
+			e.scrollSubRow = cursorSub
 			return
 		}
-		// Visual rows between scrollLine and cursor line
-		visAbove := 0
+
+		// Visual rows from (scrollLine, scrollSubRow) to cursor.
+		visFromScroll := -e.scrollSubRow
 		for li := e.scrollLine; li < e.cursor.Line; li++ {
-			visAbove += e.lineVisualRows(li)
+			visFromScroll += e.lineVisualRows(li)
 		}
-		curVisRow := visAbove + e.cursor.Col/cw
-		if curVisRow < cr {
-			return
+		visFromScroll += cursorSub
+
+		if visFromScroll < cr {
+			return // cursor already in view
 		}
-		// Cursor below viewport: advance scrollLine
-		needed := curVisRow - cr + 1
-		li := e.scrollLine
-		for needed > 0 && li < e.cursor.Line {
-			vr := e.lineVisualRows(li)
-			if needed >= vr {
-				needed -= vr
-			} else {
-				needed = 0
+
+		// Cursor below viewport: advance scroll so cursor lands on last visible row.
+		advance := visFromScroll - (cr - 1)
+		e.scrollSubRow += advance
+		// Normalise: carry-over sub-rows into scrollLine increments.
+		for e.scrollLine < e.buf.LineCount() {
+			subs := len(runesOf(e.buf.Line(e.scrollLine)))/cw + 1
+			if e.scrollSubRow < subs {
+				break
 			}
-			li++
+			e.scrollSubRow -= subs
+			e.scrollLine++
 		}
-		e.scrollLine = li
+		if e.scrollLine >= e.buf.LineCount() {
+			e.scrollLine = e.buf.LineCount() - 1
+			e.scrollSubRow = 0
+		}
 		return
 	}
 	cr := e.contentRows()
@@ -1534,7 +1564,11 @@ func (e *Editor) render() {
 			if len(r) == 0 {
 				nsub = 1
 			}
-			for sr := 0; sr < nsub && len(vis) < cr; sr++ {
+			startSr := 0
+			if li == e.scrollLine {
+				startSr = e.scrollSubRow
+			}
+			for sr := startSr; sr < nsub && len(vis) < cr; sr++ {
 				vis = append(vis, visRow{li, sr})
 			}
 		}
@@ -1737,7 +1771,8 @@ func (e *Editor) render() {
 		if cw < 1 {
 			cw = 1
 		}
-		visAbove := 0
+		// Offset from the scroll position (scrollSubRow rows of scrollLine are hidden).
+		visAbove := -e.scrollSubRow
 		for li := e.scrollLine; li < e.cursor.Line; li++ {
 			visAbove += e.lineVisualRows(li)
 		}
