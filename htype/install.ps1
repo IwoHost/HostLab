@@ -19,9 +19,10 @@ if ($currentPath -notlike "*$InstallDir*") {
 }
 
 Write-Host ""
-Write-Host "  htype             # 25 random words"
+Write-Host "  htype             # 25 words"
 Write-Host "  htype 50          # 50 words"
-Write-Host "  htype -m code     # programming identifiers"
+Write-Host "  htype -t 60       # 60-second timed test"
+Write-Host "  htype -m code     # code identifiers"
 Write-Host "  htype -m quote    # famous quotes"
 Write-Host ""
-Write-Host "  Tab cycles mode . +/- adjusts word count . ESC quits"
+Write-Host "  Tab mode . T time . +/- words . ESC quit"

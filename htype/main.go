@@ -16,7 +16,7 @@ import (
 
 // ── VERSION ───────────────────────────────────────────────────────────────────
 
-const version = "0.1"
+const version = "0.2"
 
 // ── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -57,9 +57,14 @@ var (
 // ── PERSONAL BEST ─────────────────────────────────────────────────────────────
 
 type bestScores struct {
-	Words int `json:"words"`
-	Code  int `json:"code"`
-	Quote int `json:"quote"`
+	Words int            `json:"words"`
+	Code  int            `json:"code"`
+	Quote int            `json:"quote"`
+	Timed map[string]int `json:"timed,omitempty"` // "words-60", "code-30", etc.
+}
+
+func timedBestKey(md runMode, tl int) string {
+	return fmt.Sprintf("%s-%d", strings.ToLower(modeName(md)), tl)
 }
 
 func (b *bestScores) get(md runMode) int {
@@ -82,6 +87,20 @@ func (b *bestScores) set(md runMode, wpm int) {
 	default:
 		b.Words = wpm
 	}
+}
+
+func (b *bestScores) getT(md runMode, tl int) int {
+	if b.Timed == nil {
+		return 0
+	}
+	return b.Timed[timedBestKey(md, tl)]
+}
+
+func (b *bestScores) setT(md runMode, tl int, wpm int) {
+	if b.Timed == nil {
+		b.Timed = make(map[string]int)
+	}
+	b.Timed[timedBestKey(md, tl)] = wpm
 }
 
 func bestPath() string {
@@ -123,6 +142,7 @@ type game struct {
 	mode          runMode
 	wordCount     int // effective display count (may reflect quote length)
 	baseWordCount int // user's configured word count, preserved across mode switches
+	timeLimit     int // 0 = word-count mode; positive = timed mode in seconds
 	startTime     time.Time
 	endTime       time.Time
 	errors        int
@@ -134,18 +154,29 @@ type game struct {
 	lineStarts []int
 }
 
-func newGame(sc tcell.Screen, md runMode, wc int) *game {
-	g := &game{sc: sc, mode: md, wordCount: wc, baseWordCount: wc, best: loadBest()}
+func newGame(sc tcell.Screen, md runMode, wc int, tl int) *game {
+	g := &game{sc: sc, mode: md, wordCount: wc, baseWordCount: wc, timeLimit: tl, best: loadBest()}
 	g.reset()
 	return g
 }
 
 func (g *game) reset() {
-	g.text = generateText(g.mode, g.baseWordCount)
+	wc := g.baseWordCount
+	if g.timeLimit > 0 {
+		// enough text for timeLimit seconds at 200 WPM with 1.5× safety margin
+		wc = int(float64(g.timeLimit)/60.0*200*1.5)
+		if wc < 60 {
+			wc = 60
+		}
+		if wc > 500 {
+			wc = 500
+		}
+	}
+	g.text = generateText(g.mode, wc)
 	if g.mode == modeQuote {
 		g.wordCount = len(strings.Fields(string(g.text)))
 	} else {
-		g.wordCount = g.baseWordCount
+		g.wordCount = wc
 	}
 	n := len(g.text)
 	g.typed = make([]rune, n)
@@ -168,6 +199,18 @@ func (g *game) reflow() {
 	}
 	g.lineWidth = lw
 	g.lines, g.lineStarts = wrapText(g.text, lw)
+}
+
+func (g *game) cycleTimeLimit() {
+	presets := []int{0, 15, 30, 60, 120}
+	idx := 0
+	for i, p := range presets {
+		if p == g.timeLimit {
+			idx = i
+			break
+		}
+	}
+	g.timeLimit = presets[(idx+1)%len(presets)]
 }
 
 func generateText(md runMode, wc int) []rune {
@@ -238,9 +281,27 @@ func (g *game) currentLineIdx() int {
 }
 
 func (g *game) correctChars() int {
+	// in timed mode results g.pos marks where typing ended, not len(g.correct)
+	limit := g.pos
+	if g.state == stateResults && g.timeLimit == 0 {
+		limit = len(g.correct)
+	}
 	n := 0
-	for _, ok := range g.correct {
-		if ok {
+	for i := 0; i < limit; i++ {
+		if g.correct[i] {
+			n++
+		}
+	}
+	return n
+}
+
+func (g *game) wordsTyped() int {
+	if g.pos == 0 {
+		return 0
+	}
+	n := 1
+	for i := 0; i < g.pos && i < len(g.text); i++ {
+		if g.text[i] == ' ' {
 			n++
 		}
 	}
@@ -260,8 +321,9 @@ func (g *game) wpm() int {
 	if elapsed <= 0 {
 		return 0
 	}
+	// in timed mode results use g.pos (timer stopped before all text was typed)
 	limit := g.pos
-	if g.state == stateResults {
+	if g.state == stateResults && g.timeLimit == 0 {
 		limit = len(g.correct)
 	}
 	correct := 0
@@ -281,12 +343,16 @@ func (g *game) rawWPM() int {
 	if elapsed <= 0 {
 		return 0
 	}
-	return int(float64(len(g.text)) / 5.0 / elapsed)
+	total := len(g.text)
+	if g.timeLimit > 0 {
+		total = g.pos // only count what was actually typed
+	}
+	return int(float64(total) / 5.0 / elapsed)
 }
 
 func (g *game) accuracy() float64 {
 	total := g.pos
-	if g.state == stateResults {
+	if g.state == stateResults && g.timeLimit == 0 {
 		total = len(g.correct)
 	}
 	if total == 0 {
@@ -313,6 +379,30 @@ func (g *game) elapsedStr() string {
 	return fmt.Sprintf("%02d:%02d", s/60, s%60)
 }
 
+// timedCountdown returns a short remaining-time string, e.g. "45s" or "1:30".
+func (g *game) timedCountdown() string {
+	if g.timeLimit <= 0 {
+		return ""
+	}
+	var remaining time.Duration
+	switch g.state {
+	case stateTyping:
+		remaining = time.Duration(g.timeLimit)*time.Second - time.Since(g.startTime)
+	case stateWaiting:
+		remaining = time.Duration(g.timeLimit) * time.Second
+	default:
+		remaining = 0
+	}
+	if remaining < 0 {
+		remaining = 0
+	}
+	s := int(remaining.Seconds())
+	if s >= 60 {
+		return fmt.Sprintf("%d:%02d", s/60, s%60)
+	}
+	return fmt.Sprintf("%ds", s)
+}
+
 // ── INPUT ─────────────────────────────────────────────────────────────────────
 
 // handleKey returns true when the app should quit.
@@ -328,10 +418,17 @@ func (g *game) handleKey(ev *tcell.EventKey) bool {
 		case tcell.KeyRune:
 			r := ev.Rune()
 			if r == '+' || r == '=' {
-				g.baseWordCount = clampWC(g.baseWordCount + 10)
-				g.reset()
+				if g.timeLimit == 0 {
+					g.baseWordCount = clampWC(g.baseWordCount + 10)
+					g.reset()
+				}
 			} else if r == '-' {
-				g.baseWordCount = clampWC(g.baseWordCount - 10)
+				if g.timeLimit == 0 {
+					g.baseWordCount = clampWC(g.baseWordCount - 10)
+					g.reset()
+				}
+			} else if r == 't' || r == 'T' {
+				g.cycleTimeLimit()
 				g.reset()
 			} else {
 				g.state = stateTyping
@@ -388,16 +485,41 @@ func (g *game) typeRune(r rune) {
 		g.errors++
 	}
 	g.pos++
-	if g.pos >= len(g.text) {
+	// only end on text completion in word-count mode
+	if g.pos >= len(g.text) && g.timeLimit == 0 {
 		g.state = stateResults
 		g.endTime = time.Now()
-		wpm := g.wpm()
+		g.finishGame()
+	}
+}
+
+func (g *game) finishGame() {
+	wpm := g.wpm()
+	if g.timeLimit > 0 {
+		prev := g.best.getT(g.mode, g.timeLimit)
+		if wpm > prev {
+			g.newBest = true
+			g.best.setT(g.mode, g.timeLimit, wpm)
+			saveBest(g.best)
+		}
+	} else {
 		prev := g.best.get(g.mode)
 		if wpm > prev {
 			g.newBest = true
 			g.best.set(g.mode, wpm)
 			saveBest(g.best)
 		}
+	}
+}
+
+func (g *game) checkTimeOut() {
+	if g.timeLimit <= 0 || g.state != stateTyping {
+		return
+	}
+	if time.Since(g.startTime) >= time.Duration(g.timeLimit)*time.Second {
+		g.state = stateResults
+		g.endTime = g.startTime.Add(time.Duration(g.timeLimit) * time.Second)
+		g.finishGame()
 	}
 }
 
@@ -435,33 +557,68 @@ func (g *game) renderTyping(sw, sh int) {
 	// ── header ──
 	fillRow(sc, 0, sw, stHeader)
 	var headerLeft string
-	if g.mode == modeQuote {
+	if g.timeLimit > 0 {
+		headerLeft = fmt.Sprintf(" htype · %s · %ds", modeName(g.mode), g.timeLimit)
+	} else if g.mode == modeQuote {
 		headerLeft = fmt.Sprintf(" htype · QUOTE · %d chars", len(g.text))
 	} else {
 		headerLeft = fmt.Sprintf(" htype · %s · %d words", modeName(g.mode), g.wordCount)
 	}
 	puts(sc, 0, 0, headerLeft, stHeader)
 
-	bestWPM := g.best.get(g.mode)
-	var headerRight string
+	// header right
 	if g.state == stateTyping {
 		wpm := g.wpm()
-		headerRight = fmt.Sprintf("WPM: %d ", wpm)
-		// color the number
-		prefix := "WPM: "
-		numStr := fmt.Sprintf("%d ", wpm)
-		rx := sw - len(headerRight)
-		if rx > 0 {
-			puts(sc, rx, 0, prefix, stHeader)
-			numSt := stHeader
-			if wpm >= 80 {
-				numSt = stHeader.Foreground(tcell.NewHexColor(0x1a6a1a)).Bold(true)
-			} else if wpm >= 50 {
-				numSt = stHeader.Foreground(tcell.NewHexColor(0x7a5200))
+		if g.timeLimit > 0 {
+			// show countdown + live WPM
+			cd := g.timedCountdown()
+			remaining := time.Duration(g.timeLimit)*time.Second - time.Since(g.startTime)
+			headerRight := fmt.Sprintf("%s  WPM: %d ", cd, wpm)
+			rx := sw - len(headerRight)
+			if rx > 0 {
+				// time portion
+				timeSt := stHeader.Foreground(tcell.NewHexColor(0x2a8a2a))
+				if remaining < 10*time.Second {
+					timeSt = stHeader.Foreground(tcell.NewHexColor(0x9a3a00)).Bold(true)
+				} else if remaining < 20*time.Second {
+					timeSt = stHeader.Foreground(tcell.NewHexColor(0x7a5200))
+				}
+				puts(sc, rx, 0, cd, timeSt)
+				puts(sc, rx+len(cd), 0, "  WPM: ", stHeader)
+				numSt := stHeader
+				if wpm >= 80 {
+					numSt = stHeader.Foreground(tcell.NewHexColor(0x1a6a1a)).Bold(true)
+				} else if wpm >= 50 {
+					numSt = stHeader.Foreground(tcell.NewHexColor(0x7a5200))
+				}
+				puts(sc, rx+len(cd)+7, 0, fmt.Sprintf("%d ", wpm), numSt)
 			}
-			puts(sc, rx+len(prefix), 0, numStr, numSt)
+		} else {
+			// show live WPM
+			headerRight := fmt.Sprintf("WPM: %d ", wpm)
+			prefix := "WPM: "
+			numStr := fmt.Sprintf("%d ", wpm)
+			rx := sw - len(headerRight)
+			if rx > 0 {
+				puts(sc, rx, 0, prefix, stHeader)
+				numSt := stHeader
+				if wpm >= 80 {
+					numSt = stHeader.Foreground(tcell.NewHexColor(0x1a6a1a)).Bold(true)
+				} else if wpm >= 50 {
+					numSt = stHeader.Foreground(tcell.NewHexColor(0x7a5200))
+				}
+				puts(sc, rx+len(prefix), 0, numStr, numSt)
+			}
 		}
 	} else {
+		// waiting state: show best score
+		var bestWPM int
+		if g.timeLimit > 0 {
+			bestWPM = g.best.getT(g.mode, g.timeLimit)
+		} else {
+			bestWPM = g.best.get(g.mode)
+		}
+		var headerRight string
 		if bestWPM > 0 {
 			headerRight = fmt.Sprintf("best: %d wpm ", bestWPM)
 		} else {
@@ -520,9 +677,13 @@ func (g *game) renderTyping(sw, sh int) {
 	// ── footer ──
 	fillRow(sc, sh-1, sw, stFooter)
 	if g.state == stateWaiting {
-		puts(sc, 2, sh-1, "any key to start  ·  Tab cycle mode  ·  +/- words", stFooter)
 		hint := "ESC quit "
 		puts(sc, sw-len(hint), sh-1, hint, stFooter)
+		if g.timeLimit > 0 {
+			puts(sc, 2, sh-1, "any key to start  ·  Tab mode  ·  T time  ·  ESC quit", stFooter)
+		} else {
+			puts(sc, 2, sh-1, "any key to start  ·  Tab mode  ·  T time  ·  +/- words", stFooter)
+		}
 	} else {
 		left := fmt.Sprintf(" ACC: %.1f%%  ·  %s", g.accuracy(), g.elapsedStr())
 		puts(sc, 0, sh-1, left, stFooter)
@@ -566,33 +727,55 @@ func (g *game) renderTextLine(li, x, y, curLine int) {
 }
 
 func (g *game) renderProgress(x, y, barW int) {
-	frac := 0.0
-	if len(g.text) > 0 {
-		frac = float64(g.pos) / float64(len(g.text))
-	}
-	filled := int(frac * float64(barW))
-	for i := 0; i < barW; i++ {
-		if i < filled {
-			put(g.sc, x+i, y, '█', stGreen)
-		} else {
-			put(g.sc, x+i, y, '░', stDim)
+	if g.timeLimit > 0 && g.state == stateTyping {
+		// time bar — amber fill showing elapsed fraction
+		elapsed := time.Since(g.startTime)
+		frac := elapsed.Seconds() / float64(g.timeLimit)
+		if frac > 1 {
+			frac = 1
 		}
-	}
-
-	// word/char counter
-	var label string
-	if g.mode == modeQuote {
-		label = fmt.Sprintf("  %d / %d chars", g.pos, len(g.text))
-	} else {
-		wordsTyped := 0
-		for i := 0; i < g.pos; i++ {
-			if g.text[i] == ' ' {
-				wordsTyped++
+		filled := int(frac * float64(barW))
+		barSt := stAmber
+		if elapsed >= time.Duration(g.timeLimit)*time.Second-10*time.Second {
+			barSt = stAmber.Bold(true)
+		}
+		for i := 0; i < barW; i++ {
+			if i < filled {
+				put(g.sc, x+i, y, '█', barSt)
+			} else {
+				put(g.sc, x+i, y, '░', stDim)
 			}
 		}
-		label = fmt.Sprintf("  %d / %d words", wordsTyped, g.wordCount)
+		wt := g.wordsTyped()
+		label := fmt.Sprintf("  %d words", wt)
+		puts(g.sc, x+barW, y, label, stDim)
+	} else {
+		// word/char progress bar — green fill
+		frac := 0.0
+		if len(g.text) > 0 {
+			frac = float64(g.pos) / float64(len(g.text))
+		}
+		filled := int(frac * float64(barW))
+		for i := 0; i < barW; i++ {
+			if i < filled {
+				put(g.sc, x+i, y, '█', stGreen)
+			} else {
+				put(g.sc, x+i, y, '░', stDim)
+			}
+		}
+		var label string
+		if g.mode == modeQuote {
+			label = fmt.Sprintf("  %d / %d chars", g.pos, len(g.text))
+		} else {
+			wordsTyped := g.wordsTyped()
+			wc := g.baseWordCount
+			if g.mode == modeQuote {
+				wc = g.wordCount
+			}
+			label = fmt.Sprintf("  %d / %d words", wordsTyped, wc)
+		}
+		puts(g.sc, x+barW, y, label, stDim)
 	}
-	puts(g.sc, x+barW, y, label, stDim)
 }
 
 // ── RESULTS SCREEN ────────────────────────────────────────────────────────────
@@ -606,7 +789,13 @@ func (g *game) renderResults(sw, sh int) {
 	secs := int(elapsed.Seconds())
 	ms := int(elapsed.Milliseconds() % 1000 / 100)
 	timeStr := fmt.Sprintf("%02d:%02d.%d", secs/60, secs%60, ms)
-	prev := g.best.get(g.mode)
+
+	var prev int
+	if g.timeLimit > 0 {
+		prev = g.best.getT(g.mode, g.timeLimit)
+	} else {
+		prev = g.best.get(g.mode)
+	}
 
 	const bw = 48
 	const bh = 16
@@ -636,6 +825,10 @@ func (g *game) renderResults(sw, sh int) {
 	// title
 	title := "COMPLETE"
 	titleSt := stSub
+	if g.timeLimit > 0 {
+		title = "TIME'S UP"
+		titleSt = stAmber
+	}
 	if g.newBest {
 		title = "★  NEW BEST  ★"
 		titleSt = stGreen.Bold(true)
@@ -676,12 +869,20 @@ func (g *game) renderResults(sw, sh int) {
 		val   string
 		frac  float64
 	}
+
+	var lastRow row
+	if g.timeLimit > 0 {
+		lastRow = row{"words", strconv.Itoa(g.wordsTyped()), 0}
+	} else {
+		lastRow = row{"chars", fmt.Sprintf("%d / %d", g.correctChars(), len(g.text)), 0}
+	}
+
 	rows := []row{
 		{"accuracy", fmt.Sprintf("%.1f%%", acc), acc / 100.0},
 		{"raw wpm", strconv.Itoa(raw), float64(raw) / 150.0},
 		{"time", timeStr, 0},
 		{"errors", strconv.Itoa(g.errors), 0},
-		{"chars", fmt.Sprintf("%d / %d", g.correctChars(), len(g.text)), 0},
+		lastRow,
 	}
 
 	for i, r := range rows {
@@ -769,8 +970,10 @@ func main() {
 
 	var modeStr string
 	var wordCount int
+	var timeLimit int
 	flag.StringVar(&modeStr, "m", "words", "mode: words, code, quote")
-	flag.IntVar(&wordCount, "n", 25, "word count (ignored in quote mode)")
+	flag.IntVar(&wordCount, "n", 25, "word count (word-count mode only)")
+	flag.IntVar(&timeLimit, "t", 0, "time limit in seconds (0=word count mode; try 15, 30, 60, 120)")
 	flag.Parse()
 
 	// positional arg overrides -n
@@ -780,6 +983,9 @@ func main() {
 		}
 	}
 	wordCount = clampWC(wordCount)
+	if timeLimit < 0 {
+		timeLimit = 0
+	}
 
 	md := modeWords
 	switch strings.ToLower(modeStr) {
@@ -803,7 +1009,7 @@ func main() {
 	sc.SetStyle(stBg)
 	sc.Clear()
 
-	g := newGame(sc, md, wordCount)
+	g := newGame(sc, md, wordCount, timeLimit)
 	g.render()
 
 	evCh := make(chan tcell.Event, 8)
@@ -824,6 +1030,7 @@ func main() {
 		select {
 		case <-ticker.C:
 			if g.state == stateTyping {
+				g.checkTimeOut() // no-op when timeLimit==0 or not yet expired
 				g.render()
 			}
 		case ev := <-evCh:

@@ -709,8 +709,8 @@ const APPS = [
   },
   {
     title:    'HType',
-    version:  '0.1',
-    desc:     'terminal typing speed test. live WPM, color-coded feedback, three modes — random words, code identifiers, famous quotes. tracks your personal best.',
+    version:  '0.2',
+    desc:     'terminal typing speed test. live WPM, color-coded feedback. word-count mode or timed mode (15s/30s/60s/120s). three text modes — random words, code identifiers, famous quotes. tracks personal bests.',
     status:   'beta',
     platforms: ['windows', 'macos', 'linux'],
     installers: [
@@ -851,6 +851,8 @@ const phrases = [
   'htype 50',
   'htype -m code',
   'htype -m quote',
+  'htype -t 60',
+  'htype -t 30 -m code',
 ];
 let phraseIdx = 0, charIdx = 0, deleting = false;
 const tw = document.getElementById('tw');

@@ -58,9 +58,10 @@ if [[ ":$PATH:" != *":${INSTALL_DIR}:"* ]]; then
 fi
 
 echo ""
-echo "  htype             # 25 random words"
+echo "  htype             # 25 words"
 echo "  htype 50          # 50 words"
-echo "  htype -m code     # programming identifiers"
+echo "  htype -t 60       # 60-second timed test"
+echo "  htype -m code     # code identifiers"
 echo "  htype -m quote    # famous quotes"
 echo ""
-echo "  Tab cycles mode · +/- adjusts word count · ESC quits"
+echo "  Tab mode · T time · +/- words · ESC quit"
