@@ -3,11 +3,11 @@
 
 $ErrorActionPreference = 'Stop'
 
-$base    = 'https://iwohost.github.io/HostLab/hedit/dist'
-$binary  = 'hedit-windows-amd64.exe'
-$url     = "$base/$binary"
+$base       = 'https://iwohost.github.io/HostLab/hedit/dist'
+$binary     = 'hedit-windows-amd64.exe'
+$url        = "$base/$binary"
 $installDir = "$env:LOCALAPPDATA\hedit"
-$dest    = "$installDir\hedit.exe"
+$dest       = "$installDir\hedit.exe"
 
 Write-Host ""
 Write-Host "  hedit installer" -ForegroundColor White
@@ -19,26 +19,26 @@ if (-not (Test-Path $installDir)) {
     New-Item -ItemType Directory -Path $installDir | Out-Null
 }
 
-Write-Host "  -> downloading $binary..." -ForegroundColor Yellow
+Write-Host "  -> downloading hedit..." -ForegroundColor Yellow
 Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
 Write-Host "  v installed -> $dest" -ForegroundColor Green
 
-# add to user PATH if missing
+# add to user PATH (persistent, survives reboots)
 $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
 if ($userPath -notlike "*$installDir*") {
     [Environment]::SetEnvironmentVariable('Path', "$userPath;$installDir", 'User')
-    Write-Host "  v added to PATH" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "  ! restart your terminal, then:" -ForegroundColor Yellow
-} else {
-    Write-Host ""
-    Write-Host "  ready:" -ForegroundColor White
+    Write-Host "  v added to PATH (user)" -ForegroundColor Green
+}
+
+# also update PATH in THIS session so hedit works immediately — no restart needed
+if ($env:PATH -notlike "*$installDir*") {
+    $env:PATH = "$env:PATH;$installDir"
 }
 
 Write-Host ""
-Write-Host "  usage:  hedit <file>" -ForegroundColor White
-Write-Host "          hedit notes.txt"
-Write-Host "          hedit C:\Users\you\Desktop\todo.txt"
+Write-Host "  ready — type this right now:" -ForegroundColor White
 Write-Host ""
-Write-Host "  ^S save  ^Q quit  ^F find  ^T themes" -ForegroundColor Green
+Write-Host "    hedit notes.txt" -ForegroundColor Green
+Write-Host ""
+Write-Host "  ^S save   ^Q quit   ^F find   ^U themes   Alt+BS del line" -ForegroundColor DarkGreen
 Write-Host ""
