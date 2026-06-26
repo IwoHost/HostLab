@@ -16,6 +16,8 @@ const (
 	ModeFind
 	ModeSettings
 	ModeConfirmQuit
+	ModeReplaceFind // typing the search string for replace
+	ModeReplaceWith // typing the replacement string
 )
 
 // Editor is the full editor state.
@@ -33,6 +35,10 @@ type Editor struct {
 	internalClip string
 
 	mode Mode
+
+	replaceFind  string
+	replaceWith  string
+	replaceScope int // 0=selection, 1=line
 
 	findStr string
 	findPos []Pos
@@ -118,10 +124,18 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		return e.handleSettingsKey(key)
 	case ModeConfirmQuit:
 		return e.handleConfirmKey(key, ch)
+	case ModeReplaceFind:
+		return e.handleReplaceFindKey(key, ch)
+	case ModeReplaceWith:
+		return e.handleReplaceWithKey(key, ch)
 	}
 
 	// ── Normal mode ──
 	switch {
+	// Alt+A → select current line
+	case isAlt && key == tcell.KeyRune && (ch == 'a' || ch == 'A'):
+		e.selectLine()
+
 	// Alt+C → copy entire line
 	case isAlt && key == tcell.KeyRune && (ch == 'c' || ch == 'C'):
 		e.copyLine()
@@ -129,6 +143,14 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 	// Alt+X → cut entire line
 	case isAlt && key == tcell.KeyRune && (ch == 'x' || ch == 'X'):
 		e.cutLine()
+
+	// Alt+R → replace on current line
+	case isAlt && key == tcell.KeyRune && (ch == 'r' || ch == 'R'):
+		e.mode = ModeReplaceFind
+		e.replaceFind = ""
+		e.replaceWith = ""
+		e.replaceScope = 1
+		e.clearMessage()
 
 	// Ctrl+S → save
 	case key == tcell.KeyCtrlS:
@@ -164,6 +186,14 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		e.mode = ModeFind
 		e.findStr = ""
 		e.findPos = nil
+		e.clearMessage()
+
+	// Ctrl+R → replace in selection
+	case key == tcell.KeyCtrlR:
+		e.mode = ModeReplaceFind
+		e.replaceFind = ""
+		e.replaceWith = ""
+		e.replaceScope = 0
 		e.clearMessage()
 
 	// Ctrl+U → settings
@@ -321,6 +351,49 @@ func (e *Editor) handleConfirmKey(key tcell.Key, ch rune) bool {
 	return false
 }
 
+func (e *Editor) handleReplaceFindKey(key tcell.Key, ch rune) bool {
+	switch key {
+	case tcell.KeyEscape:
+		e.mode = ModeNormal
+		e.clearMessage()
+	case tcell.KeyEnter:
+		if e.replaceFind != "" {
+			e.mode = ModeReplaceWith
+		}
+	case tcell.KeyBackspace, tcell.KeyBackspace2:
+		if len(e.replaceFind) > 0 {
+			r := runesOf(e.replaceFind)
+			e.replaceFind = string(r[:len(r)-1])
+		}
+	case tcell.KeyRune:
+		if unicode.IsPrint(ch) {
+			e.replaceFind += string(ch)
+		}
+	}
+	return false
+}
+
+func (e *Editor) handleReplaceWithKey(key tcell.Key, ch rune) bool {
+	switch key {
+	case tcell.KeyEscape:
+		e.mode = ModeNormal
+		e.clearMessage()
+	case tcell.KeyEnter:
+		e.performReplace()
+		e.mode = ModeNormal
+	case tcell.KeyBackspace, tcell.KeyBackspace2:
+		if len(e.replaceWith) > 0 {
+			r := runesOf(e.replaceWith)
+			e.replaceWith = string(r[:len(r)-1])
+		}
+	case tcell.KeyRune:
+		if unicode.IsPrint(ch) {
+			e.replaceWith += string(ch)
+		}
+	}
+	return false
+}
+
 // ── MOUSE HANDLING ───────────────────────────────────────────────────────────
 
 func (e *Editor) handleMouse(ev *tcell.EventMouse) {
@@ -454,6 +527,12 @@ func (e *Editor) selectAll() {
 	e.selActive = true
 }
 
+func (e *Editor) selectLine() {
+	e.selAnchor = Pos{e.cursor.Line, 0}
+	e.cursor = Pos{e.cursor.Line, len(runesOf(e.buf.Line(e.cursor.Line)))}
+	e.selActive = true
+}
+
 func (e *Editor) deleteSelection() {
 	from, to := e.normalizedSel()
 	e.cursor = e.buf.DeleteRange(from, to)
@@ -518,6 +597,47 @@ func (e *Editor) paste() {
 	}
 	nl, nc := e.buf.InsertText(e.cursor.Line, e.cursor.Col, text)
 	e.cursor = Pos{nl, nc}
+}
+
+func (e *Editor) performReplace() {
+	if e.replaceFind == "" {
+		e.showError("Nothing to replace")
+		return
+	}
+	switch e.replaceScope {
+	case 0: // selection
+		if !e.selActive {
+			e.showError("No selection — select text first, then ^R")
+			return
+		}
+		from, to := e.normalizedSel()
+		text := e.buf.GetRange(from, to)
+		newText := strings.ReplaceAll(text, e.replaceFind, e.replaceWith)
+		if newText == text {
+			e.showMessage("No matches in selection")
+			return
+		}
+		e.cursor = e.buf.DeleteRange(from, to)
+		nl, nc := e.buf.InsertText(e.cursor.Line, e.cursor.Col, newText)
+		e.cursor = Pos{nl, nc}
+		e.selActive = false
+		e.showMessage("Replaced in selection")
+	case 1: // current line
+		line := e.cursor.Line
+		text := e.buf.Lines[line]
+		newText := strings.ReplaceAll(text, e.replaceFind, e.replaceWith)
+		if newText == text {
+			e.showMessage("No matches on this line")
+			return
+		}
+		e.buf.Lines[line] = newText
+		e.buf.Modified = true
+		lineLen := len(runesOf(newText))
+		if e.cursor.Col > lineLen {
+			e.cursor.Col = lineLen
+		}
+		e.showMessage(fmt.Sprintf("Replaced on line %d", line+1))
+	}
 }
 
 func (e *Editor) save() {
@@ -797,6 +917,14 @@ func (e *Editor) render() {
 			}
 		}
 		e.drawStr(msgRow, 0, " Find: "+e.findStr+indicator, t.MsgBar)
+	case ModeReplaceFind:
+		scopeStr := "Selection"
+		if e.replaceScope == 1 {
+			scopeStr = "Line"
+		}
+		e.drawStr(msgRow, 0, fmt.Sprintf(" Replace (%s) — Find: %s", scopeStr, e.replaceFind), t.MsgBar)
+	case ModeReplaceWith:
+		e.drawStr(msgRow, 0, fmt.Sprintf(" Replace: %s  →  With: %s", e.replaceFind, e.replaceWith), t.MsgBar)
 	case ModeConfirmQuit:
 		e.drawStr(msgRow, 0, " Unsaved changes. Quit? (y/n) ", t.MsgBarErr)
 	default:
@@ -820,6 +948,14 @@ func (e *Editor) render() {
 		e.drawHints(hints1Row, []hintItem{
 			{"↵", "Next"}, {"↑", "Prev"}, {"↓", "Next"}, {"Esc", "Close Find"},
 		}, t)
+	case ModeReplaceFind:
+		e.drawHints(hints1Row, []hintItem{
+			{"↵", "Next Step"}, {"Esc", "Cancel"},
+		}, t)
+	case ModeReplaceWith:
+		e.drawHints(hints1Row, []hintItem{
+			{"↵", "Replace"}, {"Esc", "Cancel"},
+		}, t)
 	case ModeSettings:
 		e.drawHints(hints1Row, []hintItem{
 			{"↑↓", "Select Theme"}, {"↵", "Apply"}, {"Esc", "Close"},
@@ -831,11 +967,11 @@ func (e *Editor) render() {
 	default:
 		e.drawHints(hints1Row, []hintItem{
 			{"^S", "Save"}, {"^Q", "Quit"}, {"^F", "Find"},
-			{"^A", "Sel All"}, {"^U", "Settings"},
+			{"^R", "Replace Sel"}, {"^U", "Settings"},
 		}, t)
 		e.drawHints(hints2Row, []hintItem{
 			{"^C", "Copy"}, {"^X", "Cut"}, {"^V", "Paste"},
-			{"Alt+C", "Copy Line"}, {"Alt+X", "Cut Line"},
+			{"Alt+A", "Sel Line"}, {"Alt+R", "Replace Line"},
 		}, t)
 	}
 
