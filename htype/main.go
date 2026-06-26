@@ -114,19 +114,20 @@ func saveBest(b bestScores) {
 // ── GAME ──────────────────────────────────────────────────────────────────────
 
 type game struct {
-	sc        tcell.Screen
-	text      []rune
-	typed     []rune
-	correct   []bool
-	pos       int
-	state     gameState
-	mode      runMode
-	wordCount int // ignored in quote mode — reflects actual word count
-	startTime time.Time
-	endTime   time.Time
-	errors    int
-	newBest   bool
-	best      bestScores
+	sc            tcell.Screen
+	text          []rune
+	typed         []rune
+	correct       []bool
+	pos           int
+	state         gameState
+	mode          runMode
+	wordCount     int // effective display count (may reflect quote length)
+	baseWordCount int // user's configured word count, preserved across mode switches
+	startTime     time.Time
+	endTime       time.Time
+	errors        int
+	newBest       bool
+	best          bestScores
 	// layout
 	lineWidth  int
 	lines      []string
@@ -134,15 +135,17 @@ type game struct {
 }
 
 func newGame(sc tcell.Screen, md runMode, wc int) *game {
-	g := &game{sc: sc, mode: md, wordCount: wc, best: loadBest()}
+	g := &game{sc: sc, mode: md, wordCount: wc, baseWordCount: wc, best: loadBest()}
 	g.reset()
 	return g
 }
 
 func (g *game) reset() {
-	g.text = generateText(g.mode, g.wordCount)
+	g.text = generateText(g.mode, g.baseWordCount)
 	if g.mode == modeQuote {
 		g.wordCount = len(strings.Fields(string(g.text)))
+	} else {
+		g.wordCount = g.baseWordCount
 	}
 	n := len(g.text)
 	g.typed = make([]rune, n)
@@ -325,10 +328,10 @@ func (g *game) handleKey(ev *tcell.EventKey) bool {
 		case tcell.KeyRune:
 			r := ev.Rune()
 			if r == '+' || r == '=' {
-				g.wordCount = clampWC(g.wordCount + 10)
+				g.baseWordCount = clampWC(g.baseWordCount + 10)
 				g.reset()
 			} else if r == '-' {
-				g.wordCount = clampWC(g.wordCount - 10)
+				g.baseWordCount = clampWC(g.baseWordCount - 10)
 				g.reset()
 			} else {
 				g.state = stateTyping
@@ -488,8 +491,13 @@ func (g *game) renderTyping(sw, sh int) {
 		textLeft = 4
 	}
 
-	textTop := 3
 	const lineStep = 2
+	const contentH = 8 // 3 lines (at +0,+2,+4) + progress (at +7)
+	available := sh - 2
+	textTop := (available-contentH)/2 + 1
+	if textTop < 2 {
+		textTop = 2
+	}
 
 	for i := 0; i < 3; i++ {
 		li := viewStart + i
