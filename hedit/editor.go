@@ -74,6 +74,7 @@ type Editor struct {
 
 	dragging bool
 	lang     *langDef // syntax highlighting language (nil = plain text)
+	softWrap bool     // visual soft-wrap (wraps display without changing buffer)
 }
 
 func NewEditor(filename string) (*Editor, error) {
@@ -99,6 +100,7 @@ func NewEditor(filename string) (*Editor, error) {
 	}
 	e.loadConfig()
 	e.lang = detectLang(buf.Filename)
+	e.softWrap = true
 	return e, nil
 }
 
@@ -267,6 +269,18 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 			newLine = e.buf.LineCount() - 1
 		}
 		e.moveCursor(newLine, e.cursor.Col, false)
+
+	// Alt+Backspace → delete entire current line
+	case isAlt && (key == tcell.KeyBackspace || key == tcell.KeyBackspace2):
+		e.pushUndo()
+		e.deleteLine()
+		e.clearMessage()
+
+	// Alt+Delete → delete from cursor to end of line
+	case isAlt && key == tcell.KeyDelete:
+		e.pushUndo()
+		e.deleteToEOL()
+		e.clearMessage()
 
 	case key == tcell.KeyBackspace || key == tcell.KeyBackspace2:
 		e.pushUndo()
@@ -826,6 +840,37 @@ func (e *Editor) deleteSelection() {
 	e.selActive = false
 }
 
+func (e *Editor) deleteLine() {
+	e.selActive = false
+	ln := e.cursor.Line
+	if e.buf.LineCount() == 1 {
+		e.buf.Lines[0] = ""
+		e.cursor = Pos{0, 0}
+		e.buf.Modified = true
+		return
+	}
+	e.buf.Lines = append(e.buf.Lines[:ln], e.buf.Lines[ln+1:]...)
+	e.buf.Modified = true
+	if e.cursor.Line >= e.buf.LineCount() {
+		e.cursor.Line = e.buf.LineCount() - 1
+	}
+	lineLen := len(runesOf(e.buf.Line(e.cursor.Line)))
+	if e.cursor.Col > lineLen {
+		e.cursor.Col = lineLen
+	}
+}
+
+func (e *Editor) deleteToEOL() {
+	e.selActive = false
+	ln := e.cursor.Line
+	r := runesOf(e.buf.Line(ln))
+	if e.cursor.Col >= len(r) {
+		return
+	}
+	e.buf.Lines[ln] = string(r[:e.cursor.Col])
+	e.buf.Modified = true
+}
+
 // ── EDIT OPERATIONS ──────────────────────────────────────────────────────────
 
 func (e *Editor) copySelection() {
@@ -1093,7 +1138,61 @@ func (e *Editor) gutterWidth() int {
 	return w
 }
 
+func (e *Editor) lineVisualRows(idx int) int {
+	if !e.softWrap {
+		return 1
+	}
+	cw := e.width - e.gutterWidth()
+	if cw < 1 {
+		return 1
+	}
+	r := runesOf(e.buf.Line(idx))
+	if len(r) == 0 {
+		return 1
+	}
+	n := len(r) / cw
+	if len(r)%cw != 0 {
+		n++
+	}
+	return n
+}
+
 func (e *Editor) ensureVisible() {
+	if e.softWrap {
+		e.scrollCol = 0
+		cr := e.contentRows()
+		cw := e.width - e.gutterWidth()
+		if cw < 1 {
+			cw = 1
+		}
+		if e.cursor.Line < e.scrollLine {
+			e.scrollLine = e.cursor.Line
+			return
+		}
+		// Visual rows between scrollLine and cursor line
+		visAbove := 0
+		for li := e.scrollLine; li < e.cursor.Line; li++ {
+			visAbove += e.lineVisualRows(li)
+		}
+		curVisRow := visAbove + e.cursor.Col/cw
+		if curVisRow < cr {
+			return
+		}
+		// Cursor below viewport: advance scrollLine
+		needed := curVisRow - cr + 1
+		li := e.scrollLine
+		for needed > 0 && li < e.cursor.Line {
+			vr := e.lineVisualRows(li)
+			if needed >= vr {
+				needed -= vr
+			} else {
+				needed = 0
+			}
+			li++
+		}
+		e.scrollLine = li
+		return
+	}
 	cr := e.contentRows()
 	if e.cursor.Line < e.scrollLine {
 		e.scrollLine = e.cursor.Line
@@ -1200,63 +1299,138 @@ func (e *Editor) render() {
 		}
 	}
 
-	for row := 0; row < cr; row++ {
-		lineIdx := e.scrollLine + row
-		screenRow := row + 1
-		if lineIdx < e.buf.LineCount() {
-			e.drawStr(screenRow, 0, fmt.Sprintf("%*d  ", gutterW-2, lineIdx+1), t.LineNum)
-		} else {
-			e.fillRow(screenRow, t.Normal)
-			e.screen.SetContent(0, screenRow, '~', nil, t.LineNum)
-			continue
+	if e.softWrap {
+		cw := e.width - gutterW
+		if cw < 1 {
+			cw = 1
 		}
-		for x := gutterW; x < e.width; x++ {
-			e.screen.SetContent(x, screenRow, ' ', nil, t.Normal)
+		// Build list of (logicalLine, subRow) for visible visual rows.
+		type visRow struct{ line, sub int }
+		vis := make([]visRow, 0, cr+4)
+		for li := e.scrollLine; li < e.buf.LineCount() && len(vis) < cr; li++ {
+			r := runesOf(e.buf.Line(li))
+			nsub := len(r)/cw + 1
+			if len(r) == 0 {
+				nsub = 1
+			}
+			for sr := 0; sr < nsub && len(vis) < cr; sr++ {
+				vis = append(vis, visRow{li, sr})
+			}
 		}
-		lineRunes := runesOf(e.buf.Line(lineIdx))
-
-		// Syntax tokens for this line (carries hlSt to next iteration).
-		var tokens []tokenKind
+		// Precompute syntax tokens for each visible logical line.
+		lineTokens := make(map[int][]tokenKind, cr)
 		if e.lang != nil {
-			tokens, hlSt = highlight(e.buf.Line(lineIdx), e.lang, hlSt)
+			scanSt := hlSt
+			for li := e.scrollLine; li < e.scrollLine+cr+1 && li < e.buf.LineCount(); li++ {
+				var toks []tokenKind
+				toks, scanSt = highlight(e.buf.Line(li), e.lang, scanSt)
+				lineTokens[li] = toks
+			}
 		}
-
-		for col := 0; col < textW; col++ {
-			runeIdx := col + e.scrollCol
-			if runeIdx >= len(lineRunes) {
-				break
+		for i, vr := range vis {
+			screenRow := i + 1
+			lineRunes := runesOf(e.buf.Line(vr.line))
+			tokens := lineTokens[vr.line]
+			// Clear row.
+			for x := 0; x < e.width; x++ {
+				e.screen.SetContent(x, screenRow, ' ', nil, t.Normal)
 			}
-			ch := lineRunes[runeIdx]
-
-			// Baseline: syntax color or Normal.
-			style := t.Normal
-			if tokens != nil && runeIdx < len(tokens) {
-				style = tokenStyle(tokens[runeIdx], t)
-			}
-
-			// Selection overrides syntax.
-			if e.selActive {
-				p := Pos{lineIdx, runeIdx}
-				if !p.Before(selFrom) && p.Before(selTo) {
-					style = t.Selection
+			// Gutter: line number on first sub-row, blank continuation on rest.
+			if vr.sub == 0 {
+				e.drawStr(screenRow, 0, fmt.Sprintf("%*d  ", gutterW-2, vr.line+1), t.LineNum)
+			} else {
+				for x := 0; x < gutterW; x++ {
+					e.screen.SetContent(x, screenRow, ' ', nil, t.LineNum)
 				}
 			}
-
-			// Find highlights override selection.
-			if e.mode == ModeFind && searchLen > 0 {
-				for _, mp := range e.findPos {
-					if mp.Line == lineIdx && runeIdx >= mp.Col && runeIdx < mp.Col+searchLen {
-						if e.findPos[e.findIdx] == mp {
-							style = t.FindCur
-						} else {
-							style = t.FindHL
-						}
-						break
+			// Draw runes for this visual sub-row.
+			startRune := vr.sub * cw
+			for col := 0; col < cw; col++ {
+				runeIdx := startRune + col
+				if runeIdx >= len(lineRunes) {
+					break
+				}
+				ch := lineRunes[runeIdx]
+				style := t.Normal
+				if tokens != nil && runeIdx < len(tokens) {
+					style = tokenStyle(tokens[runeIdx], t)
+				}
+				if e.selActive {
+					p := Pos{vr.line, runeIdx}
+					if !p.Before(selFrom) && p.Before(selTo) {
+						style = t.Selection
 					}
 				}
+				if e.mode == ModeFind && searchLen > 0 {
+					for _, mp := range e.findPos {
+						if mp.Line == vr.line && runeIdx >= mp.Col && runeIdx < mp.Col+searchLen {
+							if e.findPos[e.findIdx] == mp {
+								style = t.FindCur
+							} else {
+								style = t.FindHL
+							}
+							break
+						}
+					}
+				}
+				e.screen.SetContent(col+gutterW, screenRow, ch, nil, style)
 			}
-
-			e.screen.SetContent(col+gutterW, screenRow, ch, nil, style)
+		}
+		// Fill rows past end of file with ~.
+		for row := len(vis); row < cr; row++ {
+			screenRow := row + 1
+			e.fillRow(screenRow, t.Normal)
+			e.screen.SetContent(0, screenRow, '~', nil, t.LineNum)
+		}
+	} else {
+		for row := 0; row < cr; row++ {
+			lineIdx := e.scrollLine + row
+			screenRow := row + 1
+			if lineIdx < e.buf.LineCount() {
+				e.drawStr(screenRow, 0, fmt.Sprintf("%*d  ", gutterW-2, lineIdx+1), t.LineNum)
+			} else {
+				e.fillRow(screenRow, t.Normal)
+				e.screen.SetContent(0, screenRow, '~', nil, t.LineNum)
+				continue
+			}
+			for x := gutterW; x < e.width; x++ {
+				e.screen.SetContent(x, screenRow, ' ', nil, t.Normal)
+			}
+			lineRunes := runesOf(e.buf.Line(lineIdx))
+			var tokens []tokenKind
+			if e.lang != nil {
+				tokens, hlSt = highlight(e.buf.Line(lineIdx), e.lang, hlSt)
+			}
+			for col := 0; col < textW; col++ {
+				runeIdx := col + e.scrollCol
+				if runeIdx >= len(lineRunes) {
+					break
+				}
+				ch := lineRunes[runeIdx]
+				style := t.Normal
+				if tokens != nil && runeIdx < len(tokens) {
+					style = tokenStyle(tokens[runeIdx], t)
+				}
+				if e.selActive {
+					p := Pos{lineIdx, runeIdx}
+					if !p.Before(selFrom) && p.Before(selTo) {
+						style = t.Selection
+					}
+				}
+				if e.mode == ModeFind && searchLen > 0 {
+					for _, mp := range e.findPos {
+						if mp.Line == lineIdx && runeIdx >= mp.Col && runeIdx < mp.Col+searchLen {
+							if e.findPos[e.findIdx] == mp {
+								style = t.FindCur
+							} else {
+								style = t.FindHL
+							}
+							break
+						}
+					}
+				}
+				e.screen.SetContent(col+gutterW, screenRow, ch, nil, style)
+			}
 		}
 	}
 
@@ -1318,7 +1492,7 @@ func (e *Editor) render() {
 		}, t)
 		e.drawHints(h2Row, []hintItem{
 			{"^C", "Copy"}, {"^X", "Cut"}, {"^V", "Paste"},
-			{"^←→", "Word"}, {"Alt+A", "Sel Line"}, {"^Q", "Quit"},
+			{"Alt+A", "Select Line"}, {"Alt+BS", "Del Line"}, {"^Q", "Quit"},
 		}, t)
 	}
 
@@ -1331,8 +1505,22 @@ func (e *Editor) render() {
 	}
 
 	// ── CURSOR ──
-	cursorScreenRow := e.cursor.Line - e.scrollLine + 1
-	cursorScreenCol := e.cursor.Col - e.scrollCol + gutterW
+	var cursorScreenRow, cursorScreenCol int
+	if e.softWrap {
+		cw := e.width - gutterW
+		if cw < 1 {
+			cw = 1
+		}
+		visAbove := 0
+		for li := e.scrollLine; li < e.cursor.Line; li++ {
+			visAbove += e.lineVisualRows(li)
+		}
+		cursorScreenRow = visAbove + e.cursor.Col/cw + 1
+		cursorScreenCol = e.cursor.Col%cw + gutterW
+	} else {
+		cursorScreenRow = e.cursor.Line - e.scrollLine + 1
+		cursorScreenCol = e.cursor.Col - e.scrollCol + gutterW
+	}
 	if cursorScreenRow >= 1 && cursorScreenRow <= cr && cursorScreenCol >= gutterW {
 		e.screen.ShowCursor(cursorScreenCol, cursorScreenRow)
 	} else {

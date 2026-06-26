@@ -74,9 +74,9 @@ if [ "$INSTALL_DIR" = "$HOME/.local/bin" ]; then
   echo ""
 fi
 
-echo -e "  ${B}usage:${N}  hedit <file>"
-echo -e "          hedit notes.txt"
-echo -e "          hedit ~/.bashrc"
+echo -e "  ${B}ready — type this right now:${N}"
 echo ""
-echo -e "  ${G}^S${N} save  ${G}^Q${N} quit  ${G}^F${N} find  ${G}^T${N} themes"
+echo -e "    ${G}hedit notes.txt${N}"
+echo ""
+echo -e "  ${G}^S${N} save  ${G}^Q${N} quit  ${G}^F${N} find  ${G}^U${N} themes  ${G}Alt+BS${N} del line"
 echo ""
