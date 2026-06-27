@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
@@ -62,8 +62,6 @@ html.light .card:hover{box-shadow:0 12px 40px rgba(0,0,0,.08)}
 .card:hover .card-thumb img{transform:scale(1.04)}
 .card-thumb-text{font-family:var(--font-mono);font-size:clamp(18px,3vw,32px);color:var(--border);letter-spacing:.05em;user-select:none}
 .card:hover .card-thumb-text{color:var(--text-muted);transition:color .3s}
-.card-thumb-text{font-family:var(--font-mono);font-size:clamp(18px,3vw,32px);color:var(--border);letter-spacing:.05em;user-select:none}
-.card:hover .card-thumb-text{color:var(--text-muted);transition:color .3s}
 
 .card-body{padding:18px 22px 20px;flex:1;display:flex;flex-direction:column;gap:10px}
 .card-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
@@ -113,7 +111,7 @@ html.light .switch-track{background:#d0ceca}
     <a href="archives.html" class="nav-link">ARCHIVES</a>
     <a href="games.html" class="nav-link">GAMES</a>
     <a href="terminal.html" class="nav-link">TERMINAL</a>
-    <div class="header-meta" id="site-count">– STUDY</div>
+    <div class="header-meta" id="site-count"></div>
     <div class="theme-switch" id="theme-switch" title="Toggle light mode">
       <span class="switch-label" id="switch-label">LIGHT</span>
       <div class="switch-track"><div class="switch-thumb"></div></div>
@@ -122,13 +120,13 @@ html.light .switch-track{background:#d0ceca}
 </header>
 
 <section class="hero">
-  <div class="hero-label">Nauka do egzaminu</div>
+  <div class="hero-label">Learn by doing</div>
   <h1>Stu<em>dy</em></h1>
-  <p class="hero-sub">Kursy i materiały do egzaminu INF02. Linux Bash, pliki wsadowe, ściągi – od zera, krok po kroku.</p>
+  <p class="hero-sub">Interactive courses — write real code, run it, see results. No passive reading, just hands-on practice.</p>
 </section>
 
 <div class="grid-header">
-  <span class="grid-label">Wszystkie materiały</span>
+  <span class="grid-label">Courses</span>
   <span class="count-badge" id="count-badge">0</span>
 </div>
 
@@ -141,20 +139,16 @@ html.light .switch-track{background:#d0ceca}
 
 <script>
 const TOOLS=[
-  {url:'../websites/bash-learn.html',title:'Linux Bash',badge:'LINUX',tags:['bash','linux','inf02'],
-   desc:'18 lekcji w 2 rozdziałach — Podstawy (zmienne, if, pętle, funkcje) + Egzamin (mkdir, date, whoami, przekierowania > >>). Edytor z terminalem.'},
-  {url:'../websites/batch-learn.html',title:'Pliki Wsadowe',badge:'CMD',tags:['batch','.bat','cmd','inf02'],
-   desc:'18 lekcji w 2 rozdziałach — Podstawy (set, if, for, goto, call) + Egzamin (md, date /t, hostname, przekierowania > >>). Edytor z terminalem.'},
-  {url:'../websites/inf02-prep.html',title:'ściąga INF02',badge:'NOTES',tags:['ściąga','komendy','sieć','inf02'],
-   desc:'Szybka ściąga do egzaminu. Komendy bash i CMD, uprawnienia chmod, porty, model OSI, subnetting – wszystko na jednej stronie.'},
-  {url:'../websites/inf02-3czerwca.html',title:'3 Czerwca',badge:'EXAM DAY',tags:['egzamin','inf02','3czerwca'],
-   desc:'Strona na dzień egzaminu. Ostatnie przypomnienia, kluczowe fakty, które musisz pamiętać. Nie panikuj – wszystko jest tutaj.'},
+  {url:'../websites/bash-learn.html',title:'Linux Bash',badge:'LINUX',tags:['bash','linux','shell'],
+   desc:'18 lessons across 2 chapters — Basics (variables, if, loops, functions) + Practice (mkdir, date, whoami, redirects). Built-in editor with a live terminal.'},
+  {url:'../websites/batch-learn.html',title:'Batch Scripting',badge:'CMD',tags:['batch','.bat','cmd','windows'],
+   desc:'18 lessons across 2 chapters — Basics (set, if, for, goto, call) + Practice (md, date /t, hostname, redirects). Built-in editor with a live terminal.'},
 ];
 function imgSrc(url){return'../other/p_'+url.split('/').pop().replace('.html','')+'.png'}
 
 document.getElementById('footer-date').textContent=new Date().toLocaleDateString('en-GB',{year:'numeric',month:'long',day:'numeric'}).toUpperCase();
 document.getElementById('count-badge').textContent=TOOLS.length;
-document.getElementById('site-count').textContent=TOOLS.length+' NARZĘDZI';
+document.getElementById('site-count').textContent=TOOLS.length+' COURSES';
 
 const ts=document.getElementById('theme-switch');
 const sl=document.getElementById('switch-label');
@@ -196,6 +190,3 @@ TOOLS.forEach((t,i)=>{
 </script>
 </body>
 </html>
-
-
-
