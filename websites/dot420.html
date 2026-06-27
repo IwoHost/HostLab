@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>.420</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --text:#1d1d1f; --muted:#86868b;
+    --hair:rgba(0,0,0,.08); --hair2:rgba(0,0,0,.05);
+    --blue:#0071e3; --blue-h:#0077ed; --green:#34c759; --orange:#ff9500; --red:#ff3b30;
+    --r-card:24px; --r-inner:14px; --pill:980px; --maxw:1000px;
+    --glass:rgba(255,255,255,.38);
+    --glass-brd:rgba(255,255,255,.55);
+    --glass-sh:0 8px 40px rgba(20,40,80,.12), inset 0 1px 0 rgba(255,255,255,.6);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{
+    color:var(--text); position:relative; min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",system-ui,sans-serif;
+    line-height:1.47; -webkit-font-smoothing:antialiased; font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,#eef1f6,#e7ebf2) fixed;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+  button{font-family:inherit;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(0,113,227,.35)}
+
+  /* animated background */
+  #bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;transform:translateZ(0)}
+  .blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.7;animation:drift 28s ease-in-out infinite alternate}
+  .blob.b1{width:52vw;height:52vw;left:-8vw;top:-8vh;background:radial-gradient(circle,#9cc8ff,transparent 70%)}
+  .blob.b2{width:46vw;height:46vw;right:-6vw;top:6vh;background:radial-gradient(circle,#b1f0c4,transparent 70%);animation-duration:34s}
+  .blob.b3{width:48vw;height:48vw;left:24vw;top:34vh;background:radial-gradient(circle,#ffd9a8,transparent 70%);animation-duration:24s}
+  .blob.b4{width:40vw;height:40vw;left:34vw;bottom:-10vh;background:radial-gradient(circle,#e3c2ff,transparent 70%);animation-duration:30s}
+  @keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(6vw,5vh) scale(1.18)}}
+  .tok{position:absolute;top:0;left:0;font-weight:700;letter-spacing:-.03em;pointer-events:none;user-select:none;opacity:0;will-change:transform,opacity}
+
+  /* nav (glass) */
+  nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.5);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(255,255,255,.5)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:54px}
+  .brand{font-weight:600;font-size:1.15rem;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}
+  .brand .mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#0071e3,#34c759);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.62rem;font-weight:700;box-shadow:0 2px 8px rgba(0,113,227,.4)}
+  .tabs{display:flex;gap:2px}
+  .tabs button{font-size:.85rem;font-weight:400;color:var(--muted);background:none;border:none;padding:7px 14px;border-radius:var(--pill);transition:.18s}
+  .tabs button:hover{color:var(--text)}
+  .tabs button.on{color:var(--text);font-weight:500;background:rgba(255,255,255,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+
+  .view{display:none;position:relative;z-index:1}
+  .view.active{display:block}
+  .view.active.in-right{animation:slideR .42s cubic-bezier(.22,1,.36,1)}
+  .view.active.in-left{animation:slideL .42s cubic-bezier(.22,1,.36,1)}
+  @keyframes slideR{from{opacity:0;transform:translateX(7%)}to{opacity:1;transform:none}}
+  @keyframes slideL{from{opacity:0;transform:translateX(-7%)}to{opacity:1;transform:none}}
+
+  .hero{text-align:center;padding:72px 0 40px}
+  .hero h1{font-size:clamp(2.6rem,7vw,4rem);font-weight:600;letter-spacing:-.03em;line-height:1.04}
+  .hero h1 .dot{color:var(--blue)}
+  .hero .lead{font-size:clamp(1.1rem,2.6vw,1.4rem);color:#515154;font-weight:400;max-width:38ch;margin:18px auto 0;line-height:1.4}
+
+  /* glass cards */
+  .card{background:var(--glass);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);
+    border:1px solid var(--glass-brd);border-radius:var(--r-card);box-shadow:var(--glass-sh);overflow:hidden}
+  .card .pad{padding:30px}
+  .card .ttl{font-size:.78rem;font-weight:600;letter-spacing:.02em;color:var(--muted);text-transform:uppercase;margin-bottom:20px}
+
+  .drop{background:var(--glass);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);
+    border:1px solid var(--glass-brd);border-radius:var(--r-card);box-shadow:var(--glass-sh);
+    padding:64px 28px;text-align:center;cursor:pointer;transition:.2s}
+  .drop:hover{transform:translateY(-2px);box-shadow:0 14px 50px rgba(20,40,80,.16),inset 0 1px 0 rgba(255,255,255,.8)}
+  .drop.hot{border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,113,227,.2),var(--glass-sh)}
+  .drop .big{font-size:1.45rem;font-weight:600;letter-spacing:-.01em}
+  .drop .small{color:var(--muted);font-size:1rem;margin-top:10px}
+  .drop .fakebtn{display:inline-block;margin-top:22px;color:#fff;font-weight:500;font-size:.95rem;padding:11px 24px;border-radius:var(--pill);
+    background:linear-gradient(135deg,rgba(0,113,227,.95),rgba(0,113,227,.78));border:1px solid rgba(255,255,255,.35);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 18px rgba(0,113,227,.32)}
+
+  .bench{display:grid;grid-template-columns:360px 1fr;gap:22px;align-items:start;margin-top:8px}
+  @media(max-width:860px){.bench{grid-template-columns:1fr}}
+
+  .src{display:flex;gap:15px;align-items:center;padding-bottom:22px;margin-bottom:6px;border-bottom:1px solid var(--hair)}
+  .src img{width:60px;height:60px;object-fit:cover;border-radius:13px;background:#000}
+  .src .meta b{display:block;font-weight:600;font-size:.95rem;word-break:break-all}
+  .src .meta span{color:var(--muted);font-size:.85rem}
+
+  .field{padding:16px 0;border-bottom:1px solid var(--hair)}
+  .field:last-of-type{border-bottom:none}
+  .field .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+  .field label{font-size:.95rem;font-weight:500}
+  .field .val{font-size:.85rem;color:var(--muted)}
+  input[type=range]{width:100%;accent-color:var(--blue);height:4px}
+
+  .seg{display:inline-flex;background:rgba(255,255,255,.28);backdrop-filter:blur(12px) saturate(180%);-webkit-backdrop-filter:blur(12px) saturate(180%);border:1px solid rgba(255,255,255,.45);border-radius:12px;padding:3px;gap:3px}
+  .chip{font-size:.85rem;font-weight:500;padding:6px 16px;border-radius:9px;color:var(--text);user-select:none;transition:.15s;background:transparent}
+  .chip.on{background:rgba(255,255,255,.62);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 2px 8px rgba(20,40,80,.12)}
+  .chip:not(.on){color:var(--muted)}
+
+  .minidrop{margin-top:11px;background:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.6);border-radius:var(--r-inner);padding:14px;text-align:center;font-size:.88rem;color:var(--muted);cursor:pointer;transition:.15s}
+  .minidrop:hover{background:rgba(255,255,255,.7)}
+  .minidrop.has{color:var(--blue);font-weight:500}
+
+  /* glass buttons */
+  .pill-btn,.btn{border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 18px rgba(0,113,227,.28);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  .pill-btn{width:100%;color:#fff;border-radius:var(--pill);padding:15px;font-weight:600;font-size:1.02rem;transition:.15s;margin-top:24px;
+    background:linear-gradient(135deg,rgba(0,113,227,.95),rgba(0,113,227,.78))}
+  .pill-btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+  .pill-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+  .prog{height:7px;background:rgba(120,120,128,.2);border-radius:var(--pill);overflow:hidden;margin-top:18px;display:none}
+  .prog.show{display:block}
+  .prog .bar{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:var(--pill);transition:width .15s}
+  .progtxt{font-size:.82rem;color:var(--muted);margin-top:10px;text-align:center;min-height:1em}
+
+  .preview-box{position:relative;width:100%;aspect-ratio:16/10;background:rgba(255,255,255,.22);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);overflow:hidden;touch-action:pan-y;cursor:ew-resize;user-select:none}
+  .preview-box img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+  .preview-box .top{clip-path:inset(0 0 0 var(--split,50%))}
+  .cmp-handle{position:absolute;top:0;bottom:0;left:var(--split,50%);width:2px;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.15);transform:translateX(-1px);pointer-events:none}
+  .cmp-handle::after{content:"";position:absolute;top:50%;left:50%;width:36px;height:36px;transform:translate(-50%,-50%);background:rgba(255,255,255,.75);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.8);border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+  .cmp-handle::before{content:"‹ ›";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;color:var(--blue);font-size:.9rem;font-weight:700;letter-spacing:2px}
+  .cmp-range{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
+  .cmp-tags{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none}
+  .cmp-tags span{font-size:.72rem;font-weight:500;background:rgba(255,255,255,.7);backdrop-filter:blur(8px);padding:4px 10px;border-radius:var(--pill);color:var(--text)}
+
+  .scoreline{display:flex;align-items:center;gap:16px;padding:24px 28px;flex-wrap:wrap;border-bottom:1px solid var(--hair)}
+  .score-big{font-size:2.6rem;font-weight:600;letter-spacing:-.02em;line-height:1}
+  .score-lbl{font-size:.82rem;color:var(--muted);margin-top:3px}
+  .delta{margin-left:auto;font-size:.9rem;font-weight:500;color:#1a8c3a;text-align:right}
+
+  .statgrid{display:flex;flex-direction:column}
+  .stat{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 28px;border-bottom:1px solid var(--hair)}
+  .stat .k{font-size:.92rem;color:var(--muted)}
+  .stat .v{font-weight:500;font-size:.92rem;text-align:right}
+
+  .actions{display:flex;gap:11px;flex-wrap:wrap;padding:22px 28px}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:500;font-size:.95rem;border-radius:var(--pill);padding:11px 22px;transition:.15s}
+  .btn.primary{color:#fff;background:linear-gradient(135deg,rgba(0,113,227,.95),rgba(0,113,227,.78))}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.ghost{color:var(--text);background:rgba(255,255,255,.4);backdrop-filter:blur(10px) saturate(160%);-webkit-backdrop-filter:blur(10px) saturate(160%);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 4px 14px rgba(20,40,80,.08)}
+  .btn.ghost:hover{background:rgba(255,255,255,.6)}
+
+  .search-sec{margin-top:22px}
+  .plotwrap{display:grid;grid-template-columns:1.25fr 1fr;gap:26px;align-items:start}
+  @media(max-width:860px){.plotwrap{grid-template-columns:1fr}}
+  svg.scatter{display:block;width:100%;height:auto;background:rgba(255,255,255,.45);border-radius:var(--r-inner)}
+  table.cand{width:100%;border-collapse:collapse;font-size:.86rem}
+  table.cand th,table.cand td{padding:9px 6px;text-align:right;border-bottom:1px solid var(--hair)}
+  table.cand th{color:var(--muted);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  table.cand td:first-child,table.cand th:first-child{text-align:left}
+  table.cand tr.win td{color:var(--blue);font-weight:600}
+  .swatch{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:middle}
+  .search-note{color:var(--muted);font-size:.9rem;margin-top:16px;line-height:1.5}
+
+  .toolbar-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:16px 28px;border-bottom:1px solid var(--hair)}
+  .toolbar-row .hint{font-size:.88rem;color:var(--muted)}
+  .hum-btn{font-size:.88rem;font-weight:500;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.4);backdrop-filter:blur(10px) saturate(160%);-webkit-backdrop-filter:blur(10px) saturate(160%);color:var(--text);border-radius:var(--pill);padding:9px 16px;transition:.15s}
+  .hum-btn:hover{background:rgba(255,255,255,.62)}
+  .hum-btn.on{background:linear-gradient(135deg,rgba(0,113,227,.95),rgba(0,113,227,.78));color:#fff;border-color:rgba(255,255,255,.4)}
+
+  .explainer{padding:8px 0 64px;max-width:720px;margin:0 auto}
+  .explainer p{color:#3a3a3c;font-size:1.08rem;line-height:1.6;margin:0 0 18px}
+  .explainer h2{font-size:1.6rem;font-weight:600;letter-spacing:-.02em;margin:40px 0 14px}
+  .explainer h2 .dot{color:var(--blue)}
+  .explainer b{color:var(--text)}
+  .explainer code{font-family:ui-monospace,"SF Mono",Menlo,monospace;background:rgba(255,255,255,.6);border:1px solid var(--hair);padding:2px 7px;border-radius:7px;color:var(--blue);font-size:.88em}
+  .explainer .step{background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--glass-brd);border-radius:var(--r-inner);box-shadow:var(--glass-sh);padding:18px 22px;margin-bottom:14px;font-size:1rem;color:#3a3a3c}
+
+  .status{font-size:.92rem;color:var(--muted);text-align:center;margin:18px 0;min-height:1.1em}
+  .status .live{color:#1a8c3a;font-weight:500} .status .bad{color:var(--red);font-weight:500}
+
+  footer{position:relative;z-index:1;padding:40px 0 56px;text-align:center;color:var(--muted);font-size:.8rem;line-height:1.7}
+  footer b{color:#6e6e73}
+
+  .hide{display:none!important}
+
+  /* ---- mobile ---- */
+  @media(max-width:640px){
+    .wrap{padding:0 16px}
+    nav .wrap{height:auto;flex-direction:column;gap:6px;padding-top:9px;padding-bottom:9px}
+    .tabs{width:100%;justify-content:center}
+    .tabs button{padding:9px 16px;font-size:.92rem}
+    .hero{padding:30px 0 24px}
+    .hero .lead{font-size:1.05rem}
+    .card .pad{padding:20px}
+    .drop{padding:44px 20px}
+    .scoreline{padding:18px 20px}
+    .stat{padding:13px 20px}
+    .toolbar-row{padding:14px 20px;gap:10px}
+    .actions{padding:18px 20px;flex-direction:column}
+    .actions .btn{width:100%;justify-content:center;padding:14px 22px;font-size:1rem}
+    .hum-btn{padding:11px 16px}
+    .preview-box{aspect-ratio:4/3}
+    .dec-hint,.toolbar-row .hint{font-size:.82rem}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .view{animation:none!important}.view.active.in-right,.view.active.in-left{animation:none!important}.drop:hover{transform:none}
+    .blob,.tok{animation:none!important}
+    .tok{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div id="bg">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+  <div id="tokens"></div>
+</div>
+
+<nav>
+  <div class="wrap">
+    <div class="brand"><span class="mark">420</span><span><span style="color:var(--blue)">.</span>420</span></div>
+    <div class="tabs">
+      <button data-tab="encode" class="on">Encode</button>
+      <button data-tab="decode">Decode</button>
+      <button data-tab="how">How it works</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ ENCODE ============ -->
+<div class="view active" id="view-encode">
+  <div class="wrap">
+    <div class="hero">
+      <h1>Crush to <span class="dot">.</span>420</h1>
+      <p class="lead">Any image, encoded to exactly 420,000 bytes — and made to look as good as that budget allows.</p>
+    </div>
+
+    <div id="enc-drop-stage">
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Drop or choose an image">
+        <div class="big">Drop an image</div>
+        <div class="small">or choose a file — nothing is ever uploaded</div>
+        <span class="fakebtn">Choose image</span>
+        <input type="file" id="file" accept="image/*" hidden>
+      </div>
+    </div>
+
+    <div id="enc-bench" class="bench hide">
+      <div class="card"><div class="pad">
+        <div class="ttl">Source &amp; options</div>
+        <div class="src">
+          <img id="src-thumb" alt="source">
+          <div class="meta"><b id="src-name">—</b><span id="src-info">—</span></div>
+        </div>
+        <div class="field">
+          <div class="row"><label>Codecs to race</label></div>
+          <div class="seg" id="codec-chips">
+            <span class="chip on" data-codec="image/webp">WebP</span>
+            <span class="chip on" data-codec="image/jpeg">JPEG</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="row"><label>Resolution candidates</label><span class="val" id="scale-val">6</span></div>
+          <input type="range" id="scale-count" min="3" max="8" value="6">
+        </div>
+        <div class="field">
+          <div class="row"><label>Denoise first</label><span class="val" id="dn-val">Off</span></div>
+          <input type="range" id="denoise" min="0" max="4" value="0">
+        </div>
+        <div class="field">
+          <div class="row"><label>Sharpen after shrink</label><span class="val" id="sh-val">Off</span></div>
+          <input type="range" id="sharpen" min="0" max="3" value="0">
+        </div>
+        <div class="field">
+          <div class="row"><label>Hide a second image</label></div>
+          <div class="minidrop" id="hidden-drop" tabindex="0" role="button"><span id="hidden-label">Stash a secret image in the padding</span>
+            <input type="file" id="hidden-file" accept="image/*" hidden></div>
+        </div>
+        <button class="pill-btn" id="crush-btn">Run the engine</button>
+        <div class="prog" id="prog"><div class="bar" id="prog-bar"></div></div>
+        <div class="progtxt" id="prog-txt"></div>
+      </div></div>
+
+      <div class="card" id="result-card">
+        <div class="preview-box" id="preview-box">
+          <img id="pv-output" alt="encoded output">
+          <img id="pv-original" class="top" alt="original">
+          <div class="cmp-handle"></div>
+          <div class="cmp-tags"><span>.420 output</span><span>original</span></div>
+        </div>
+        <div class="scoreline">
+          <div><div class="score-big" id="score-big">—</div><div class="score-lbl">SSIM perceptual score</div></div>
+          <div class="delta" id="score-delta"></div>
+        </div>
+        <div class="statgrid">
+          <div class="stat"><span class="k">Output size</span><span class="v" id="r-out">420,000 B</span></div>
+          <div class="stat"><span class="k">Winner</span><span class="v" id="r-winner">—</span></div>
+          <div class="stat"><span class="k">Resolution</span><span class="v" id="r-dim">—</span></div>
+          <div class="stat"><span class="k">Quality</span><span class="v" id="r-q">—</span></div>
+          <div class="stat"><span class="k">Data destroyed</span><span class="v" id="r-dead">—</span></div>
+          <div class="stat"><span class="k">Extras packed</span><span class="v" id="r-extra">—</span></div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="dl-420">Download .420</button>
+          <button class="btn ghost" id="enc-again">Crush another</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-sec hide" id="search-sec">
+      <div class="card"><div class="pad">
+        <div class="ttl">The search — every candidate it tried</div>
+        <div class="plotwrap">
+          <svg class="scatter" id="scatter" viewBox="0 0 460 300" aria-label="candidate scatter plot"></svg>
+          <div>
+            <table class="cand" id="cand-table"></table>
+            <p class="search-note" id="search-note"></p>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DECODE ============ -->
+<div class="view" id="view-decode">
+  <div class="wrap">
+    <div class="hero">
+      <h1>Open a <span class="dot">.</span>420</h1>
+      <p class="lead">Recover the image, reveal what's hidden inside, and export it back to PNG.</p>
+    </div>
+    <div class="drop" id="ddrop" tabindex="0" role="button" aria-label="Drop a .420 file">
+      <div class="big">Drop a .420 file</div>
+      <div class="small">recovers the image · reveals secrets · plays its hum</div>
+      <span class="fakebtn">Choose file</span>
+      <input type="file" id="dfile" hidden>
+    </div>
+    <div class="status" id="dec-status"></div>
+
+    <div class="card hide" id="dresult" style="margin-top:8px">
+      <div class="toolbar-row">
+        <span class="hint" id="dec-hint">Tap the image to peek at the hidden one</span>
+        <button class="hum-btn" id="reveal-btn" style="display:none">Reveal hidden</button>
+        <button class="hum-btn" id="hum-btn" style="margin-left:auto">♪ Play hum</button>
+      </div>
+      <div class="preview-box" id="dpreview" style="cursor:pointer" title="tap to reveal hidden image">
+        <img id="dec-img" alt="decoded image">
+      </div>
+      <div class="statgrid">
+        <div class="stat"><span class="k">Container</span><span class="v" id="d-magic">—</span></div>
+        <div class="stat"><span class="k">Main codec</span><span class="v" id="d-codec">—</span></div>
+        <div class="stat"><span class="k">Recovered size</span><span class="v" id="d-dim">—</span></div>
+        <div class="stat"><span class="k">Hidden image</span><span class="v" id="d-hidden">—</span></div>
+        <div class="stat"><span class="k">Embedded hum</span><span class="v" id="d-hum">—</span></div>
+        <div class="stat"><span class="k">Padding stripped</span><span class="v" id="d-pad">—</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="dl-png">Download as PNG</button>
+        <button class="btn ghost" id="dl-hidden">Save hidden image</button>
+        <button class="btn ghost" id="dec-again">Open another</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HOW ============ -->
+<div class="view" id="view-how">
+  <div class="wrap explainer">
+    <div class="hero" style="text-align:left;padding:48px 0 8px"><h1>How it works</h1></div>
+    <p>The whole format rests on one rule: every file is exactly <b>420,000 bytes</b>. Not a target, not an average — a hard, constant size. That's impossible to do losslessly, so .420 is proudly lossy. The interesting part is spending those bytes well.</p>
+    <h2><span class="dot">1.</span> Bytes become a budget</h2>
+    <p>420,000 bytes × 8 = 3,360,000 bits. Divide by the number of pixels and you get <code>bits per pixel</code> — the real currency of compression. A small image gets a fat budget per pixel and looks great; a huge image gets starved. So the first job is deciding how big the image should even be.</p>
+    <h2><span class="dot">2.</span> The 2D sweep</h2>
+    <p>The naive way keeps your image full-size and just lowers quality until it fits. That's usually a mistake — a clean, slightly smaller image beats a full-size blocky one almost every time. So .420 searches a grid instead: several resolutions, each encoded in both WebP and JPEG, each binary-searched to land just under budget.</p>
+    <div class="step"><b>For each resolution × codec:</b> shrink the image, binary-search the quality slider about seven times until the encode fits in 420,000 bytes, keep that survivor.</div>
+    <h2><span class="dot">3.</span> Judging with SSIM</h2>
+    <p>Every survivor fits the budget, so which is best? You can't trust the raw quality number across different resolutions. Instead each candidate is decoded, scaled back to a common size, and compared to the original with <b>SSIM</b> — a perceptual metric that models how human vision weighs brightness, contrast, and structure. The highest SSIM wins. You can watch the whole race in the scatter plot on the Encode tab.</p>
+    <h2><span class="dot">4.</span> Optional cleanup</h2>
+    <p>Noise is random, and random doesn't compress — the codec wastes bits drawing grain nobody asked for. An optional <code>denoise</code> pass smooths that away first. After shrinking, an optional <code>sharpen</code> pass restores a little perceived crispness. Both are off by default because they only help certain images.</p>
+    <h2><span class="dot">5.</span> Padding with personality</h2>
+    <p>The winning image rarely fills 420,000 bytes exactly. Rather than pad with zeros, .420 fills the gap with an optional <b>hidden second image</b> (revealed by tapping the image when decoding) and a tiny <b>Bytebeat</b> formula — a one-line piece of math that generates an ambient hum, seeded from your file. Whatever's left is zero-filled to hit the magic number.</p>
+    <h2><span class="dot">6.</span> The container</h2>
+    <p>It's wrapped in a 24-byte <code>F420</code> header: magic bytes, version, which codecs were used, and the byte-lengths of the main image, the hidden image, and the hum. The decoder reads those offsets, slices out each piece, and ignores the padding. Older v1 files still open.</p>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap"><b>F420 v2</b> · always 420,000 bytes · everything runs locally in your browser</div>
+</footer>
+
+<script>
+"use strict";
+const BUDGET = 420000;
+const HEADER = 24;
+const CODEC_WEBP=0, CODEC_JPEG=1;
+const codecName = c => c===CODEC_WEBP ? 'WebP' : 'JPEG';
+const codecMime = c => c===CODEC_WEBP ? 'image/webp' : 'image/jpeg';
+const mimeCodec = m => m==='image/webp' ? CODEC_WEBP : CODEC_JPEG;
+
+/* floating 420 background — pixel-based rAF so scrolling (mobile address-bar resize) can't reposition them */
+(function(){
+  if(window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const box=document.getElementById('tokens'); const tints=['#0071e3','#34c759','#ff9500','#1d1d1f'];
+  let BW=innerWidth, BH=innerHeight;
+  // only react to real layout changes (width/orientation), not address-bar show/hide on scroll
+  addEventListener('resize',()=>{ if(Math.abs(innerWidth-BW)>1){ BW=innerWidth; BH=innerHeight; } });
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  const toks=[];
+  function reset(t, initial){
+    t.size=12+Math.random()*46;
+    t.baseX=Math.random()*BW;
+    t.sway=rnd(10,55); t.swayPhase=rnd(0,Math.PI*2); t.swaySpeed=rnd(.12,.5);
+    t.speed=rnd(22,64);                  // px/sec upward
+    t.rot=rnd(-12,12); t.rotSpeed=rnd(-5,5);
+    t.op=0.08+Math.random()*0.14;
+    t.span=BH+t.size*2+80;
+    t.y=initial ? rnd(-t.size, BH) : BH+t.size+rnd(10,80);
+    t.el.style.fontSize=t.size+'px';
+    t.el.textContent=Math.random()<0.3?'.420':'420';
+    t.el.style.color=tints[(Math.random()*tints.length)|0];
+    t.el.style.filter=t.size>34?'blur(1px)':'none';
+  }
+  for(let i=0;i<22;i++){
+    const el=document.createElement('span'); el.className='tok'; box.appendChild(el);
+    const t={el}; reset(t,true); toks.push(t);
+  }
+  const edgeFade=p=> p<0.08 ? p/0.08 : (p>0.92 ? (1-p)/0.08 : 1);
+  let last=performance.now();
+  function frame(now){
+    const dt=Math.min(0.05,(now-last)/1000); last=now; const time=now/1000;
+    for(const t of toks){
+      t.y-=t.speed*dt; t.rot+=t.rotSpeed*dt;
+      if(t.y < -t.size-60) reset(t,false);
+      const travel=(BH+t.size+80)-t.y; const prog=travel/t.span;
+      const x=t.baseX+Math.sin(time*t.swaySpeed+t.swayPhase)*t.sway;
+      t.el.style.transform=`translate3d(${x.toFixed(1)}px,${t.y.toFixed(1)}px,0) rotate(${t.rot.toFixed(1)}deg)`;
+      t.el.style.opacity=(t.op*Math.max(0,edgeFade(prog))).toFixed(3);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+const TAB_ORDER=['encode','decode','how'];
+let curTab=0;
+document.querySelectorAll('.tabs button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const t=b.dataset.tab; const newIdx=TAB_ORDER.indexOf(t);
+    if(newIdx===curTab && document.getElementById('view-'+t).classList.contains('active')) return;
+    const dir = newIdx>=curTab ? 'in-right' : 'in-left';
+    curTab=newIdx;
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+    document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+t));
+    const v=document.getElementById('view-'+t);
+    v.classList.remove('in-right','in-left'); void v.offsetWidth; v.classList.add(dir);
+    window.scrollTo({top:0});
+  });
+});
+
+const $ = id => document.getElementById(id);
+function fmtBytes(n){ if(n>=1048576)return(n/1048576).toFixed(2)+' MB'; if(n>=1000)return(n/1000).toFixed(1)+' kB'; return n+' B'; }
+function toBlobAsync(c,m,q){ return new Promise(r=>c.toBlob(b=>r(b),m,q)); }
+function loadImg(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('decode failed')); i.src=src; }); }
+function fileToImg(file){ return loadImg(URL.createObjectURL(file)); }
+async function blobToImg(blob){ return loadImg(URL.createObjectURL(blob)); }
+async function detectWebP(){ const c=document.createElement('canvas');c.width=c.height=2;const b=await toBlobAsync(c,'image/webp',0.5);return !!b&&b.type==='image/webp'; }
+
+const work = document.createElement('canvas');
+const wctx = work.getContext('2d',{willReadFrequently:true});
+function drawScaled(img, w, h){ work.width=w; work.height=h; wctx.clearRect(0,0,w,h); wctx.imageSmoothingQuality='high'; wctx.drawImage(img,0,0,w,h); }
+
+function blurWork(radius){
+  if(radius<=0) return;
+  const w=work.width,h=work.height; const src=wctx.getImageData(0,0,w,h); const d=src.data;
+  const tmp=new Uint8ClampedArray(d.length); const r=radius, win=r*2+1;
+  for(let c=0;c<3;c++){
+    for(let y=0;y<h;y++){ let sum=0; const row=y*w*4;
+      for(let x=-r;x<=r;x++){ const xx=Math.min(w-1,Math.max(0,x)); sum+=d[row+xx*4+c]; }
+      for(let x=0;x<w;x++){ tmp[row+x*4+c]=sum/win; const add=Math.min(w-1,x+r+1), sub=Math.max(0,x-r); sum+=d[row+add*4+c]-d[row+sub*4+c]; } }
+    for(let x=0;x<w;x++){ let sum=0;
+      for(let y=-r;y<=r;y++){ const yy=Math.min(h-1,Math.max(0,y)); sum+=tmp[(yy*w+x)*4+c]; }
+      for(let y=0;y<h;y++){ d[(y*w+x)*4+c]=sum/win; const add=Math.min(h-1,y+r+1), sub=Math.max(0,y-r); sum+=tmp[(add*w+x)*4+c]-tmp[(sub*w+x)*4+c]; } }
+  }
+  wctx.putImageData(src,0,0);
+}
+function sharpenWork(amount){
+  if(amount<=0) return;
+  const w=work.width,h=work.height; const img=wctx.getImageData(0,0,w,h); const d=img.data; const o=Uint8ClampedArray.from(d); const k=amount*0.25;
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++)for(let c=0;c<3;c++){ const i=(y*w+x)*4+c; const lap=4*o[i]-o[i-4]-o[i+4]-o[i-w*4]-o[i+w*4]; d[i]=o[i]+k*lap; }
+  wctx.putImageData(img,0,0);
+}
+
+const lumaCanvas=document.createElement('canvas'); const lctx=lumaCanvas.getContext('2d',{willReadFrequently:true});
+function lumaOf(img, w, h){
+  lumaCanvas.width=w; lumaCanvas.height=h; lctx.clearRect(0,0,w,h); lctx.imageSmoothingQuality='high'; lctx.drawImage(img,0,0,w,h);
+  const d=lctx.getImageData(0,0,w,h).data; const out=new Float64Array(w*h);
+  for(let i=0,p=0;i<d.length;i+=4,p++) out[p]=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+  return out;
+}
+function ssim(a,b,w,h){
+  const C1=6.5025,C2=58.5225,win=8,stride=8; let total=0,count=0;
+  for(let y=0;y+win<=h;y+=stride)for(let x=0;x+win<=w;x+=stride){
+    let ma=0,mb=0;
+    for(let j=0;j<win;j++)for(let i=0;i<win;i++){const idx=(y+j)*w+(x+i);ma+=a[idx];mb+=b[idx];}
+    const N=win*win; ma/=N; mb/=N; let va=0,vb=0,cov=0;
+    for(let j=0;j<win;j++)for(let i=0;i<win;i++){const idx=(y+j)*w+(x+i);const da=a[idx]-ma,db=b[idx]-mb;va+=da*da;vb+=db*db;cov+=da*db;}
+    va/=N-1;vb/=N-1;cov/=N-1;
+    total+=((2*ma*mb+C1)*(2*cov+C2))/((ma*ma+mb*mb+C1)*(va+vb+C2)); count++;
+  }
+  return count?total/count:0;
+}
+function compDims(w,h){ const M=320,s=Math.min(1,M/Math.max(w,h)); return [Math.max(8,Math.round(w*s)),Math.max(8,Math.round(h*s))]; }
+
+const BEATS=["t*((t>>9|t>>13)&25&t>>6)","(t*5&t>>7)|(t*3&t>>10)","t*(t>>11&t>>8&123&t>>3)","(t>>6|t|t>>(t>>16))*10+((t>>11)&7)","t*9&t>>4|t*5&t>>7|t*3&t>>9","((t>>10)&42)*t>>(t>>14&7)"];
+let humStop=null;
+function playHum(formula, seconds){
+  if(!/^[-0-9t&|^<>%*+()/ .]+$/.test(formula)) return null;
+  let fn; try{ fn=new Function('t','return ('+formula+')'); }catch(e){ return null; }
+  const sr=8000, n=Math.floor(sr*(seconds||4.2)); const AC=window.AudioContext||window.webkitAudioContext; const ctx=new AC();
+  const buf=ctx.createBuffer(1,n,sr); const ch=buf.getChannelData(0);
+  for(let t=0;t<n;t++){ let v; try{v=fn(t)&255;}catch(e){v=0;} ch[t]=(v/128)-1; }
+  const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true;
+  const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1600;
+  const g=ctx.createGain(); g.gain.value=0.16;
+  src.connect(lp).connect(g).connect(ctx.destination); src.start();
+  return ()=>{ try{src.stop();}catch(e){} ctx.close(); };
+}
+
+function wireDrop(zone,input,handler){
+  zone.addEventListener('click',()=>input.click());
+  zone.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();input.click();}});
+  input.addEventListener('change',()=>{if(input.files[0])handler(input.files[0]);input.value='';});
+  ['dragenter','dragover'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.add('hot');}));
+  ['dragleave','drop'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.remove('hot');}));
+  zone.addEventListener('drop',e=>{const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(f)handler(f);});
+}
+
+let WEBP_OK=true, srcImg=null, srcFile=null, hiddenFile=null, hiddenImg=null, lastEnc=null;
+detectWebP().then(ok=>{ WEBP_OK=ok; if(!ok){ const c=document.querySelector('[data-codec="image/webp"]'); if(c){c.classList.remove('on');c.style.opacity=.4;c.style.pointerEvents='none';c.textContent='WebP (n/a)';} }});
+
+$('codec-chips').addEventListener('click',e=>{ const c=e.target.closest('.chip'); if(c&&c.style.pointerEvents!=='none') c.classList.toggle('on'); });
+$('scale-count').addEventListener('input',e=>$('scale-val').textContent=e.target.value);
+$('denoise').addEventListener('input',e=>$('dn-val').textContent=e.target.value==='0'?'Off':e.target.value);
+$('sharpen').addEventListener('input',e=>$('sh-val').textContent=e.target.value==='0'?'Off':e.target.value);
+
+async function onSource(file){
+  if(!file.type.startsWith('image/')) return;
+  srcFile=file; srcImg=await fileToImg(file);
+  $('src-thumb').src=srcImg.src; $('src-name').textContent=file.name;
+  $('src-info').textContent=`${srcImg.width}×${srcImg.height} · ${fmtBytes(file.size)}`;
+  $('enc-drop-stage').classList.add('hide'); $('enc-bench').classList.remove('hide'); $('result-card').classList.add('hide');
+}
+wireDrop($('drop'),$('file'),onSource);
+wireDrop($('hidden-drop'),$('hidden-file'),async f=>{
+  if(!f.type.startsWith('image/'))return; hiddenFile=f; hiddenImg=await fileToImg(f);
+  $('hidden-drop').classList.add('has'); $('hidden-label').textContent='✓ Secret stashed: '+f.name;
+});
+
+function chosenCodecs(){ const arr=[]; document.querySelectorAll('#codec-chips .chip.on').forEach(c=>arr.push(mimeCodec(c.dataset.codec))); return arr.length?arr:[CODEC_JPEG]; }
+function scaleList(n){ return [1,0.85,0.72,0.6,0.5,0.42,0.35,0.28].slice(0,n); }
+
+async function fitQuality(canvas,mime,maxBytes){
+  const floor=await toBlobAsync(canvas,mime,0.03); if(!floor) return null;
+  if(floor.size>maxBytes) return null;
+  let lo=0.03,hi=1,best=floor,bq=0.03;
+  for(let i=0;i<7;i++){ const q=(lo+hi)/2; const b=await toBlobAsync(canvas,mime,q); if(b&&b.size<=maxBytes){best=b;bq=q;lo=q;}else hi=q; }
+  return {blob:best,q:bq,size:best.size};
+}
+async function encodeHidden(maxBytes){
+  if(!hiddenImg) return null;
+  const M=360,s=Math.min(1,M/Math.max(hiddenImg.width,hiddenImg.height));
+  const w=Math.max(8,Math.round(hiddenImg.width*s)),h=Math.max(8,Math.round(hiddenImg.height*s));
+  drawScaled(hiddenImg,w,h); const mime = WEBP_OK ? 'image/webp' : 'image/jpeg';
+  const fit=await fitQuality(work,mime,maxBytes); if(!fit) return null;
+  return {bytes:new Uint8Array(await fit.blob.arrayBuffer()),codec:mimeCodec(mime),w,h};
+}
+
+async function runEngine(){
+  if(!srcImg) return;
+  const btn=$('crush-btn'); btn.disabled=true; $('prog').classList.add('show');
+  const setProg=(p,txt)=>{ $('prog-bar').style.width=(p*100)+'%'; $('prog-txt').textContent=txt; };
+  const denoise=+$('denoise').value, sharpen=+$('sharpen').value;
+  const codecs=chosenCodecs(), scales=scaleList(+$('scale-count').value);
+  const beat=BEATS[Math.abs((srcFile.size+srcImg.width+srcImg.height))%BEATS.length];
+  const beatBytes=new TextEncoder().encode(beat);
+  let hidden=null; setProg(0.02,'Packing hidden image…');
+  if(hiddenImg){ hidden=await encodeHidden(45000); }
+  const reserve=HEADER+beatBytes.length+(hidden?hidden.bytes.length:0); const mainBudget=BUDGET-reserve;
+  const [cw,ch]=compDims(srcImg.width,srcImg.height); const ref=lumaOf(srcImg,cw,ch);
+  const finalists=[]; let step=0; const totalSteps=codecs.length*scales.length;
+  for(const codec of codecs){
+    if(codec===CODEC_WEBP && !WEBP_OK) continue; const mime=codecMime(codec);
+    for(const scale of scales){
+      step++; setProg(0.05+0.8*(step/totalSteps), `Probing ${Math.round(scale*100)}% · ${codecName(codec)}…`);
+      const w=Math.max(8,Math.round(srcImg.width*scale)), h=Math.max(8,Math.round(srcImg.height*scale));
+      drawScaled(srcImg,w,h); if(denoise>0) blurWork(denoise); if(sharpen>0 && scale<1) sharpenWork(sharpen);
+      const fit=await fitQuality(work,mime,mainBudget); if(!fit) continue;
+      const dimg=await blobToImg(fit.blob); const cand=lumaOf(dimg,cw,ch); const score=ssim(ref,cand,cw,ch);
+      finalists.push({codec,scale,w,h,bytes:fit.size,q:fit.q,score,blob:fit.blob,url:dimg.src});
+      await new Promise(r=>setTimeout(r,0));
+    }
+  }
+  if(!finalists.length){ $('prog-txt').textContent='Nothing fit — try fewer extras'; btn.disabled=false; return; }
+  setProg(0.9,'Scoring & assembling…');
+  finalists.sort((a,b)=>b.score-a.score); const win=finalists[0];
+  const payload=new Uint8Array(await win.blob.arrayBuffer());
+  const out=new Uint8Array(BUDGET);
+  out[0]=0x46;out[1]=0x34;out[2]=0x32;out[3]=0x30; out[4]=2; out[5]=win.codec; out[6]=hidden?hidden.codec:0;
+  out[7]=(hidden?1:0)|(beatBytes.length?2:0);
+  const dv=new DataView(out.buffer); dv.setUint32(8,payload.length,true); dv.setUint32(12,hidden?hidden.bytes.length:0,true); dv.setUint16(16,beatBytes.length,true);
+  let off=HEADER; out.set(payload,off); off+=payload.length;
+  if(hidden){ out.set(hidden.bytes,off); off+=hidden.bytes.length; }
+  if(beatBytes.length){ out.set(beatBytes,off); off+=beatBytes.length; }
+  const pad=BUDGET-off;
+  const baseline=finalists.find(f=>f.scale===1 && f.codec===win.codec) || finalists.filter(f=>f.codec===win.codec).sort((a,b)=>b.scale-a.scale)[0];
+  lastEnc={out,name:(srcFile.name.replace(/\.[^.]+$/,'')||'image')+'.420',win,finalists,baseline,origBytes:srcFile.size,pad,hidden,beat,payloadLen:payload.length};
+  renderResult(); renderSearch(); setProg(1,'Locked at 420,000 bytes.');
+  setTimeout(()=>$('prog').classList.remove('show'),700); btn.disabled=false;
+}
+$('crush-btn').addEventListener('click',runEngine);
+
+function renderResult(){
+  const {win,baseline,origBytes,pad,hidden,beat}=lastEnc;
+  $('result-card').classList.remove('hide');
+  $('pv-output').src=win.url; $('pv-original').src=srcImg.src;
+  setSplit(50); // reset compare slider to centre
+  $('score-big').textContent=(win.score*100).toFixed(1);
+  if(baseline && baseline!==win){ const d=(win.score-baseline.score)*100; $('score-delta').textContent=(d>=0?'+':'')+d.toFixed(1)+' SSIM vs full-res '+codecName(baseline.codec); }
+  else { $('score-delta').textContent='full resolution won'; }
+  $('r-winner').textContent=codecName(win.codec)+' · '+Math.round(win.scale*100)+'%';
+  $('r-dim').textContent=win.w+'×'+win.h; $('r-q').textContent='q'+Math.round(win.q*100);
+  $('r-dead').textContent=Math.max(0,(1-lastEnc.payloadLen/origBytes)*100).toFixed(1)+'%';
+  const extras=[]; if(hidden)extras.push('hidden img'); if(beat)extras.push('hum'); extras.push(fmtBytes(pad)+' pad');
+  $('r-extra').textContent=extras.join(' · ');
+}
+function renderSearch(){
+  $('search-sec').classList.remove('hide');
+  const {finalists,win}=lastEnc;
+  const W=460,H=300,padL=48,padR=14,padT=16,padB=34;
+  const xs=finalists.map(f=>f.bytes), ys=finalists.map(f=>f.score*100);
+  const xmin=Math.min(...xs,BUDGET*0.4), xmax=BUDGET*1.02;
+  const ymin=Math.max(0,Math.min(...ys)-4), ymax=Math.min(100,Math.max(...ys)+4);
+  const X=v=>padL+(v-xmin)/(xmax-xmin)*(W-padL-padR);
+  const Y=v=>H-padB-(v-ymin)/(ymax-ymin)*(H-padT-padB);
+  const col=c=>c===CODEC_WEBP?'#0071e3':'#34c759';
+  let s='';
+  s+=`<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="#c7ccd6"/>`;
+  s+=`<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#c7ccd6"/>`;
+  const bx=X(BUDGET);
+  s+=`<line x1="${bx}" y1="${padT}" x2="${bx}" y2="${H-padB}" stroke="#ff9500" stroke-dasharray="4 3"/>`;
+  s+=`<text x="${bx-4}" y="${padT+10}" fill="#ff9500" font-size="9" text-anchor="end" font-family="Inter">420k budget</text>`;
+  s+=`<text x="${padL}" y="${H-padB+22}" fill="#86868b" font-size="9" font-family="Inter">file size →</text>`;
+  s+=`<text x="${padL-6}" y="${padT+4}" fill="#86868b" font-size="9" text-anchor="end" font-family="Inter">SSIM</text>`;
+  finalists.forEach(f=>{ const x=X(f.bytes),y=Y(f.score*100),isWin=f===win;
+    if(isWin) s+=`<circle cx="${x}" cy="${y}" r="9" fill="none" stroke="#0071e3" stroke-width="2"/>`;
+    s+=`<circle cx="${x}" cy="${y}" r="4" fill="${col(f.codec)}"/>`;
+    s+=`<text x="${x}" y="${y-8}" fill="#86868b" font-size="8" text-anchor="middle" font-family="Inter">${Math.round(f.scale*100)}%</text>`; });
+  s+=`<circle cx="${W-120}" cy="${H-10}" r="4" fill="#0071e3"/><text x="${W-112}" y="${H-7}" fill="#86868b" font-size="9" font-family="Inter">WebP</text>`;
+  s+=`<circle cx="${W-66}" cy="${H-10}" r="4" fill="#34c759"/><text x="${W-58}" y="${H-7}" fill="#86868b" font-size="9" font-family="Inter">JPEG</text>`;
+  $('scatter').innerHTML=s;
+  let rows='<tr><th>Try</th><th>Size</th><th>Quality</th><th>SSIM</th></tr>';
+  finalists.forEach(f=>{ rows+=`<tr class="${f===win?'win':''}"><td><span class="swatch" style="background:${col(f.codec)}"></span>${codecName(f.codec)} ${Math.round(f.scale*100)}%</td><td>${fmtBytes(f.bytes)}</td><td>q${Math.round(f.q*100)}</td><td>${(f.score*100).toFixed(1)}</td></tr>`; });
+  $('cand-table').innerHTML=rows;
+  const b=lastEnc.baseline;
+  if(b && b!==win){ $('search-note').textContent=`The winner (${codecName(win.codec)} at ${Math.round(win.scale*100)}%) scored ${(win.score*100).toFixed(1)}, beating the naive full-resolution ${codecName(b.codec)} encode (${(b.score*100).toFixed(1)}) by ${((win.score-b.score)*100).toFixed(1)} SSIM points. That gap is the whole reason for the sweep.`; }
+  else { $('search-note').textContent=`This image was small enough that full resolution won outright — the sweep confirmed there was nothing to gain by shrinking.`; }
+}
+// compare slider — pointer/touch drag anywhere on the preview
+function setSplit(pct){
+  pct=Math.max(0,Math.min(100,pct));
+  const pb=$('preview-box'); if(!pb)return;
+  pb.style.setProperty('--split',pct+'%');
+  const h=pb.querySelector('.cmp-handle'); if(h) h.style.left=pct+'%';
+}
+(function(){
+  const pb=$('preview-box'); if(!pb)return;
+  let active=false, decided=false, sx=0, sy=0, pid=null;
+  const pct=cx=>{ const r=pb.getBoundingClientRect(); return ((cx-r.left)/r.width)*100; };
+  pb.addEventListener('pointerdown',e=>{ active=true; decided=false; sx=e.clientX; sy=e.clientY; pid=e.pointerId; });
+  pb.addEventListener('pointermove',e=>{
+    if(!active) return;
+    if(!decided){
+      const dx=Math.abs(e.clientX-sx), dy=Math.abs(e.clientY-sy);
+      if(dx<8 && dy<8) return;            // not enough movement to decide yet
+      if(dy>dx){ active=false; return; }  // vertical intent → let the page scroll
+      decided=true; try{pb.setPointerCapture(pid);}catch(_){}
+    }
+    e.preventDefault();
+    setSplit(pct(e.clientX));
+  });
+  const end=()=>{ active=false; decided=false; };
+  pb.addEventListener('pointerup',end);
+  pb.addEventListener('pointercancel',end);
+})();
+$('dl-420').addEventListener('click',()=>{ if(!lastEnc)return; const b=new Blob([lastEnc.out],{type:'application/octet-stream'}); const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=lastEnc.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000); });
+$('enc-again').addEventListener('click',()=>{ srcImg=null;hiddenImg=null;hiddenFile=null;lastEnc=null; $('enc-bench').classList.add('hide');$('search-sec').classList.add('hide');$('result-card').classList.add('hide');$('enc-drop-stage').classList.remove('hide'); $('hidden-drop').classList.remove('has');$('hidden-label').textContent='Stash a secret image in the padding'; });
+
+let lastDec=null;
+// On phones, default to the Decode tab — that's the common mobile use.
+if(window.matchMedia('(max-width:640px)').matches){
+  const db=document.querySelector('.tabs button[data-tab="decode"]'); if(db) db.click();
+}
+async function onDecode(file){
+  $('dec-status').innerHTML='<span class="live">Reading header…</span>';
+  if(humStop){humStop();humStop=null;$('hum-btn').classList.remove('on');$('hum-btn').textContent='♪ Play hum';}
+  try{
+    const buf=new Uint8Array(await file.arrayBuffer());
+    if(buf.length<12||buf[0]!==0x46||buf[1]!==0x34||buf[2]!==0x32||buf[3]!==0x30) throw new Error('Not a valid .420 file (bad magic)');
+    const ver=buf[4]; const dv=new DataView(buf.buffer);
+    let mainCodec,mainLen,hiddenLen=0,hiddenCodec=0,beatLen=0,off;
+    if(ver>=2){ mainCodec=buf[5]; hiddenCodec=buf[6]; const flags=buf[7]; mainLen=dv.getUint32(8,true); hiddenLen=(flags&1)?dv.getUint32(12,true):0; beatLen=(flags&2)?dv.getUint16(16,true):0; off=HEADER; }
+    else { mainCodec=buf[5]; mainLen=dv.getUint32(8,true); off=12; }
+    if(off+mainLen>buf.length) throw new Error('Payload length corrupt');
+    const mainBytes=buf.slice(off,off+mainLen); off+=mainLen;
+    let hiddenBytes=null; if(hiddenLen){ hiddenBytes=buf.slice(off,off+hiddenLen); off+=hiddenLen; }
+    let beat=null; if(beatLen){ beat=new TextDecoder().decode(buf.slice(off,off+beatLen)); off+=beatLen; }
+    const padStripped=buf.length-off;
+    const mainUrl=URL.createObjectURL(new Blob([mainBytes],{type:codecMime(mainCodec)})); const mainImg=await loadImg(mainUrl);
+    const hiddenUrl=hiddenBytes?URL.createObjectURL(new Blob([hiddenBytes],{type:codecMime(hiddenCodec)})):null;
+    lastDec={mainImg,mainUrl,mainCodec,hiddenUrl,hiddenBytes,hiddenCodec,beat,base:(file.name.replace(/\.420$/i,'')||'recovered')};
+    $('dec-img').src=mainUrl; $('dpreview').dataset.showing='main';
+    $('d-magic').textContent='F420 v'+(ver||1); $('d-codec').textContent=codecName(mainCodec);
+    $('d-dim').textContent=mainImg.naturalWidth+'×'+mainImg.naturalHeight;
+    $('d-hidden').textContent=hiddenBytes?fmtBytes(hiddenBytes.length)+' image':'none';
+    $('d-hum').textContent=beat?'yes':'none'; $('d-pad').textContent=fmtBytes(padStripped);
+    $('dec-hint').textContent=hiddenBytes?'Tap the image to peek at the hidden one':'No hidden image in this file';
+    $('hum-btn').style.display=beat?'':'none'; $('dl-hidden').style.display=hiddenBytes?'':'none';
+    $('reveal-btn').style.display=hiddenBytes?'':'none'; $('reveal-btn').textContent='Reveal hidden';
+    $('dresult').classList.remove('hide'); $('dec-status').innerHTML='<span class="live">Recovered.</span>';
+    if(beat){ humStop=playHum(beat,4.2); if(humStop){$('hum-btn').classList.add('on');$('hum-btn').textContent='♪ Stop hum';} }
+  }catch(e){ $('dec-status').innerHTML='<span class="bad">'+e.message+'</span>'; }
+}
+wireDrop($('ddrop'),$('dfile'),onDecode);
+function toggleHidden(){
+  if(!lastDec||!lastDec.hiddenUrl)return;
+  const showing=$('dpreview').dataset.showing;
+  if(showing==='main'){ $('dec-img').src=lastDec.hiddenUrl; $('dpreview').dataset.showing='hidden'; $('dec-hint').textContent='Showing hidden image — tap to go back'; $('reveal-btn').textContent='Show main'; }
+  else { $('dec-img').src=lastDec.mainUrl; $('dpreview').dataset.showing='main'; $('dec-hint').textContent='Tap the image to peek at the hidden one'; $('reveal-btn').textContent='Reveal hidden'; }
+}
+$('dpreview').addEventListener('click',toggleHidden);
+$('reveal-btn').addEventListener('click',toggleHidden);
+$('hum-btn').addEventListener('click',()=>{
+  if(!lastDec||!lastDec.beat)return;
+  if(humStop){humStop();humStop=null;$('hum-btn').classList.remove('on');$('hum-btn').textContent='♪ Play hum';}
+  else { humStop=playHum(lastDec.beat,4.2); if(humStop){$('hum-btn').classList.add('on');$('hum-btn').textContent='♪ Stop hum';} }
+});
+$('dl-png').addEventListener('click',async()=>{
+  if(!lastDec)return; const img=lastDec.mainImg; const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);
+  const blob=await toBlobAsync(c,'image/png'); const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=lastDec.base+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+$('dl-hidden').addEventListener('click',()=>{
+  if(!lastDec||!lastDec.hiddenBytes)return; const ext=lastDec.hiddenCodec===CODEC_WEBP?'webp':'jpg';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lastDec.hiddenBytes],{type:codecMime(lastDec.hiddenCodec)}));a.download=lastDec.base+'-hidden.'+ext;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+$('dec-again').addEventListener('click',()=>{ if(humStop){humStop();humStop=null;} $('dresult').classList.add('hide');$('dec-status').textContent=''; });
+</script>
+</body>
+</html>
