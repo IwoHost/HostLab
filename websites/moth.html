@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>MOTH — a game of light and wanting</title>
+<meta name="description" content="A pass-and-play card game for 2–4 players. Moths follow the brightest lantern.">
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-R7MJHBKJVY');
+</script>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --bg:      #08070C;
+  --surface: #110E1A;
+  --surf2:   #1A1628;
+  --border:  #2A2440;
+  --text:    #D4CFC8;
+  --dim:     #5C5470;
+  --amber:   #E8A735;
+  --moth:    #A89FD4;
+  --snuff:   #6AB0D4;
+  --flutter: #C4637A;
+  --swarm:   #6DB87A;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+}
+
+#app {
+  min-height: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================================
+   SETUP
+   ========================================================= */
+.setup {
+  flex: 1;
+  padding: 2.5rem 1.4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 4rem;
+  letter-spacing: 0.18em;
+  color: var(--amber);
+  text-align: center;
+  line-height: 1;
+}
+
+.tagline {
+  font-family: 'Courier New', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  color: var(--dim);
+  text-align: center;
+  text-transform: uppercase;
+  margin-top: -0.8rem;
+}
+
+.field-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 0.45rem;
+}
+
+.count-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.count-btn {
+  flex: 1;
+  padding: 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--dim);
+  font-family: 'Courier New', monospace;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+
+.count-btn.sel {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: rgba(232,167,53,0.07);
+}
+
+.names {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.name-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 0.88rem;
+  padding: 0.65rem 0.9rem;
+  letter-spacing: 0.1em;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.12s;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.name-input:focus { border-color: var(--amber); }
+.name-input::placeholder { color: var(--dim); }
+
+.begin-btn {
+  padding: 0.95rem;
+  background: var(--amber);
+  color: #08070C;
+  border: none;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  font-weight: bold;
+  letter-spacing: 0.28em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: opacity 0.1s;
+}
+
+.begin-btn:active { opacity: 0.88; }
+
+.rules-toggle {
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  color: var(--dim);
+  text-align: center;
+  cursor: pointer;
+  letter-spacing: 0.12em;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+}
+
+.rules-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1rem 1.1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  line-height: 1.85;
+  color: var(--dim);
+}
+
+.rules-panel b   { color: var(--text); }
+.rules-panel .ra { color: var(--amber); }
+.rules-panel .rm { color: var(--moth); }
+.rules-panel .rs { color: var(--snuff); }
+.rules-panel .rf { color: var(--flutter); }
+.rules-panel .rg { color: var(--swarm); }
+
+/* =========================================================
+   PASS SCREEN
+   ========================================================= */
+.pass-screen {
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.pass-inner {
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  pointer-events: none;
+}
+
+.pass-to {
+  font-family: 'Courier New', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.4em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.pass-name {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 3rem;
+  letter-spacing: 0.12em;
+  color: var(--amber);
+  line-height: 1;
+}
+
+.pass-hint {
+  font-family: 'Courier New', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--dim);
+  animation: blink 1.6s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.12; }
+}
+
+.moth-particle {
+  position: absolute;
+  color: var(--moth);
+  opacity: 0;
+  pointer-events: none;
+  animation: moth-rise linear infinite;
+}
+
+@keyframes moth-rise {
+  0%   { opacity: 0;    transform: translateY(14px)  rotate(-8deg)  scale(0.85); }
+  18%  { opacity: 0.22; }
+  55%  { opacity: 0.13; transform: translateY(-55px) rotate(7deg)   scale(1.08); }
+  88%  { opacity: 0.1; }
+  100% { opacity: 0;    transform: translateY(-95px) rotate(-4deg)  scale(0.9); }
+}
+
+/* =========================================================
+   GAME SCREEN
+   ========================================================= */
+.game-screen {
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.bag-lbl {
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  color: var(--moth);
+  letter-spacing: 0.1em;
+}
+
+.turn-lbl {
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+}
+
+.stats {
+  border-bottom: 1px solid var(--border);
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  padding: 0.45rem 1rem;
+  border-bottom: 1px solid var(--border);
+  gap: 0.6rem;
+  transition: background 0.1s;
+}
+
+.stat-row:last-child { border-bottom: none; }
+.stat-row.active     { background: rgba(232,167,53,0.04); }
+
+.stat-name {
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.07em;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat-row.active .stat-name { color: var(--amber); }
+
+.stat-bright, .stat-moths {
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  min-width: 3.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-bright { color: var(--amber); }
+.stat-moths  { color: var(--moth); }
+
+.msg-area {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  color: var(--dim);
+  line-height: 1.75;
+  min-height: 3.8rem;
+  background: rgba(255,255,255,0.012);
+}
+
+.hand {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  align-content: start;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 90px;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+.card:active {
+  border-color: var(--card-clr, var(--amber));
+  background: var(--surf2);
+}
+
+.card-glyph {
+  font-size: 1.25rem;
+  color: var(--card-clr, var(--text));
+  line-height: 1;
+}
+
+.card-name {
+  font-family: 'Courier New', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  color: var(--card-clr, var(--text));
+  text-transform: uppercase;
+}
+
+.card-desc {
+  font-family: 'Courier New', monospace;
+  font-size: 0.63rem;
+  color: var(--dim);
+  line-height: 1.4;
+}
+
+.game-footer {
+  border-top: 1px solid var(--border);
+  padding: 0.55rem 0.65rem;
+}
+
+.skip-btn {
+  width: 100%;
+  padding: 0.6rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.skip-btn:active {
+  border-color: var(--dim);
+  color: var(--text);
+}
+
+/* =========================================================
+   TARGET SCREEN
+   ========================================================= */
+.target-screen {
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.4rem;
+  gap: 0.8rem;
+}
+
+.target-heading {
+  font-family: 'Courier New', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.28em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.card-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.preview-glyph {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.preview-name {
+  font-family: 'Courier New', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+
+.preview-desc {
+  font-family: 'Courier New', monospace;
+  font-size: 0.63rem;
+  color: var(--dim);
+}
+
+.target-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.target-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.1s;
+}
+
+.target-btn:active {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.target-stats {
+  font-size: 0.68rem;
+  color: var(--dim);
+  letter-spacing: 0.04em;
+}
+
+.no-targets {
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  color: var(--dim);
+  padding: 1rem;
+  text-align: center;
+}
+
+.cancel-btn {
+  padding: 0.65rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.cancel-btn:active { color: var(--text); }
+
+/* =========================================================
+   END SCREEN
+   ========================================================= */
+.end-screen {
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem 1.4rem 2rem;
+  gap: 1.4rem;
+}
+
+.end-eyebrow {
+  font-family: 'Courier New', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.32em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.end-winner {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 2.2rem;
+  letter-spacing: 0.07em;
+  color: var(--amber);
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.scoreboard {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border);
+  gap: 0.7rem;
+}
+
+.score-row:last-child { border-bottom: none; }
+
+.score-rank {
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  color: var(--dim);
+  min-width: 1.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-name {
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  flex: 1;
+  letter-spacing: 0.05em;
+}
+
+.score-moths {
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  color: var(--moth);
+  font-variant-numeric: tabular-nums;
+}
+
+.replay-btn {
+  padding: 0.95rem;
+  background: var(--amber);
+  color: #08070C;
+  border: none;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  font-weight: bold;
+  letter-spacing: 0.28em;
+  cursor: pointer;
+  transition: opacity 0.1s;
+}
+
+.replay-btn:active { opacity: 0.88; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ============================================================
+// STATE
+// ============================================================
+var G = {
+  screen: 'setup',
+  numPlayers: 2,
+  players: [],
+  bag: 20,
+  deck: [],
+  hands: [],
+  current: 0,
+  flickerActive: false,
+  message: '',
+  pendingCard: null,
+  showRules: false,
+  nameVals: ['', '', '', '']
+}
+
+// ============================================================
+// CARDS
+// ============================================================
+var CARDS = {
+  ILLUMINATE: { name: 'Illuminate', glyph: '◈', desc: 'Your brightness +2',            color: '#E8A735', needsTarget: false, count: 12 },
+  SNUFF:      { name: 'Snuff',      glyph: '◌', desc: "Target's brightness −2",         color: '#6AB0D4', needsTarget: true,  count: 10 },
+  FLUTTER:    { name: 'Flutter',    glyph: '◉', desc: 'Steal 1 moth from target',       color: '#C4637A', needsTarget: true,  count: 8  },
+  SWARM:      { name: 'Swarm',      glyph: '◎', desc: 'Take 2 moths from the bag',      color: '#6DB87A', needsTarget: false, count: 6  },
+  FLICKER:    { name: 'Flicker',    glyph: '◆', desc: 'Attract 2 moths this turn',      color: '#A89FD4', needsTarget: false, count: 4  }
+}
+
+function makeDeck() {
+  var d = []
+  var keys = Object.keys(CARDS)
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i]
+    for (var j = 0; j < CARDS[k].count; j++) d.push(k)
+  }
+  return shuffle(d)
+}
+
+function shuffle(arr) {
+  var a = arr.slice()
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1))
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp
+  }
+  return a
+}
+
+function drawCard() {
+  return G.deck.length > 0 ? G.deck.pop() : null
+}
+
+// ============================================================
+// SETUP
+// ============================================================
+function setNumPlayers(n) {
+  G.numPlayers = n
+  render()
+}
+
+function toggleRules() {
+  G.showRules = !G.showRules
+  render()
+}
+
+function startGame() {
+  var inputs = document.querySelectorAll('.name-input')
+  var names = []
+  for (var i = 0; i < inputs.length; i++) {
+    G.nameVals[i] = inputs[i].value.trim()
+    names.push((inputs[i].value.trim() || 'PLAYER ' + (i + 1)).toUpperCase())
+  }
+
+  G.players = names.map(function(n) { return { name: n, brightness: 1, moths: 0 } })
+  G.bag = 20
+  G.deck = makeDeck()
+  G.hands = G.players.map(function() {
+    var h = []
+    for (var i = 0; i < 4; i++) { var c = drawCard(); if (c) h.push(c) }
+    return h
+  })
+  G.current = 0
+  G.flickerActive = false
+  G.message = 'The night begins. Moths stir in the dark.'
+  G.pendingCard = null
+  G.screen = 'pass'
+  render()
+}
+
+// ============================================================
+// GAME LOGIC
+// ============================================================
+function attractMoths(forPlayer, flicker) {
+  var msgs = []
+  if (G.bag <= 0) return msgs
+
+  var maxB = 0
+  for (var i = 0; i < G.players.length; i++) {
+    if (G.players[i].brightness > maxB) maxB = G.players[i].brightness
+  }
+  if (maxB <= 0) {
+    msgs.push('No lanterns burn — moths drift alone.')
+    return msgs
+  }
+
+  for (var j = 0; j < G.players.length; j++) {
+    if (G.bag <= 0) break
+    var bp = G.players[j]
+    if (bp.brightness !== maxB) continue
+    var isFlicker = flicker && bp === forPlayer
+    var amt = Math.min(isFlicker ? 2 : 1, G.bag)
+    bp.moths += amt
+    G.bag -= amt
+    msgs.push('Moths drift to ' + bp.name + '  (+' + amt + ')')
+  }
+  return msgs
+}
+
+function onCardClick(cardType) {
+  var c = CARDS[cardType]
+  if (!c) return
+  if (c.needsTarget) {
+    G.pendingCard = cardType
+    G.screen = 'target'
+    render()
+    return
+  }
+  resolveCard(cardType, null)
+}
+
+function selectTarget(targetIdx) {
+  var card = G.pendingCard
+  G.pendingCard = null
+  G.screen = 'game'
+  resolveCard(card, targetIdx)
+}
+
+function cancelTarget() {
+  G.pendingCard = null
+  G.screen = 'game'
+  render()
+}
+
+function resolveCard(cardType, targetIdx) {
+  var hand = G.hands[G.current]
+  var ci = hand.indexOf(cardType)
+  if (ci === -1) return
+  hand.splice(ci, 1)
+
+  var p = G.players[G.current]
+  var msgs = []
+  var skipDrift = false
+
+  switch (cardType) {
+    case 'ILLUMINATE':
+      p.brightness += 2
+      msgs.push(p.name + ' lifts their lantern.  [brightness ' + p.brightness + ']')
+      break
+
+    case 'SNUFF':
+      var t = G.players[targetIdx]
+      t.brightness = Math.max(0, t.brightness - 2)
+      msgs.push(p.name + ' snuffs ' + t.name + '.  [brightness ' + t.brightness + ']')
+      break
+
+    case 'FLUTTER':
+      var v = G.players[targetIdx]
+      if (v.moths > 0) {
+        v.moths--
+        p.moths++
+        msgs.push(p.name + ' steals a moth from ' + v.name + '.')
+      } else {
+        msgs.push(v.name + ' has no moths — nothing to take.')
+      }
+      break
+
+    case 'SWARM':
+      var take = Math.min(2, G.bag)
+      p.moths += take
+      G.bag -= take
+      msgs.push(p.name + ' draws ' + take + ' moth' + (take !== 1 ? 's' : '') + ' from the bag.')
+      skipDrift = true
+      break
+
+    case 'FLICKER':
+      G.flickerActive = true
+      msgs.push(p.name + ' flickers — double draw if brightest.')
+      break
+  }
+
+  if (!skipDrift) {
+    var driftMsgs = attractMoths(p, G.flickerActive)
+    for (var i = 0; i < driftMsgs.length; i++) msgs.push(driftMsgs[i])
+  }
+  G.flickerActive = false
+
+  var drawn = drawCard()
+  if (drawn) hand.push(drawn)
+
+  G.message = msgs.join('\n')
+  endTurn()
+}
+
+function passTurn() {
+  var p = G.players[G.current]
+  var msgs = [p.name + ' holds still.']
+  var driftMsgs = attractMoths(p, false)
+  for (var i = 0; i < driftMsgs.length; i++) msgs.push(driftMsgs[i])
+  G.message = msgs.join('\n')
+  endTurn()
+}
+
+function endTurn() {
+  if (G.bag <= 0) {
+    G.screen = 'end'
+    render()
+    return
+  }
+  G.current = (G.current + 1) % G.players.length
+  G.screen = 'pass'
+  render()
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  var app = document.getElementById('app')
+  switch (G.screen) {
+    case 'setup':  app.innerHTML = renderSetup();  break
+    case 'pass':   app.innerHTML = renderPass();   break
+    case 'game':   app.innerHTML = renderGame();   break
+    case 'target': app.innerHTML = renderTarget(); break
+    case 'end':    app.innerHTML = renderEnd();    break
+  }
+}
+
+function renderSetup() {
+  var countBtns = [2, 3, 4].map(function(n) {
+    return '<button class="count-btn' + (G.numPlayers === n ? ' sel' : '') +
+      '" onclick="setNumPlayers(' + n + ')">' + n + '</button>'
+  }).join('')
+
+  var nameInputs = ''
+  for (var i = 0; i < G.numPlayers; i++) {
+    nameInputs += '<input class="name-input" type="text" maxlength="12"' +
+      ' placeholder="PLAYER ' + (i + 1) + '"' +
+      ' value="' + esc(G.nameVals[i] || '') + '"' +
+      ' oninput="G.nameVals[' + i + ']=this.value"' +
+      ' autocomplete="off" autocorrect="off" spellcheck="false"/>'
+  }
+
+  var rules = ''
+  if (G.showRules) {
+    rules = '<div class="rules-panel">' +
+      '<b>Goal</b> — collect the most moths when the bag empties.<br><br>' +
+      '<b>Each turn</b> — play 1 card, then draw 1 card.<br>' +
+      'After each turn, the <span class="ra">brightest</span> player attracts 1 moth from the bag.<br>' +
+      'If players are tied for brightness, all tied players attract a moth.<br><br>' +
+      '<span class="ra">◈ ILLUMINATE</span> — your brightness +2 (stacks)<br>' +
+      '<span class="rs">◌ SNUFF</span> — any lantern −2 brightness<br>' +
+      '<span class="rf">◉ FLUTTER</span> — steal 1 moth from any player<br>' +
+      '<span class="rg">◎ SWARM</span> — take 2 moths from bag immediately<br>' +
+      '<span class="rm">◆ FLICKER</span> — attract 2 moths this turn if brightest<br><br>' +
+      '<b>Skip turn</b> — moths still drift; no card played or drawn.' +
+      '</div>'
+  }
+
+  return '<div class="setup">' +
+    '<div class="title">MOTH</div>' +
+    '<div class="tagline">a game of light and wanting</div>' +
+    '<div><div class="field-label">players</div><div class="count-row">' + countBtns + '</div></div>' +
+    '<div><div class="field-label">names</div><div class="names">' + nameInputs + '</div></div>' +
+    '<button class="begin-btn" onclick="startGame()">BEGIN</button>' +
+    '<div class="rules-toggle" onclick="toggleRules()">' + (G.showRules ? '— hide rules' : '+ how to play') + '</div>' +
+    rules +
+    '</div>'
+}
+
+function renderPass() {
+  var p = G.players[G.current]
+  var particles = ''
+  var positions = [
+    [12,15],[30,70],[55,25],[72,60],[85,40],[20,85],[65,10],[45,80]
+  ]
+  for (var i = 0; i < positions.length; i++) {
+    var x = positions[i][0], y = positions[i][1]
+    var dur = 6 + (i * 1.7) % 7
+    var delay = -(i * 1.3) % 8
+    var sz = 10 + (i * 3) % 14
+    particles += '<svg class="moth-particle" style="left:' + x + '%;top:' + y +
+      '%;width:' + sz + 'px;height:' + sz + 'px;animation-duration:' + dur.toFixed(1) +
+      's;animation-delay:' + delay.toFixed(1) + 's" viewBox="0 0 20 12" fill="currentColor">' +
+      '<ellipse cx="10" cy="7" rx="2" ry="2.5"/>' +
+      '<path d="M10 6 Q4 2 2 5 Q4 8 10 7" opacity="0.55"/>' +
+      '<path d="M10 6 Q16 2 18 5 Q16 8 10 7" opacity="0.55"/>' +
+      '<path d="M10 9 Q6 9 5 11 Q8 11 10 10" opacity="0.28"/>' +
+      '<path d="M10 9 Q14 9 15 11 Q12 11 10 10" opacity="0.28"/>' +
+      '</svg>'
+  }
+
+  return '<div class="pass-screen" onclick="G.screen=\'game\'; render()">' +
+    particles +
+    '<div class="pass-inner">' +
+    '<div class="pass-to">PASS TO</div>' +
+    '<div class="pass-name">' + esc(p.name) + '</div>' +
+    '<div class="pass-hint">tap anywhere to reveal hand</div>' +
+    '</div>' +
+    '</div>'
+}
+
+function renderGame() {
+  var p = G.players[G.current]
+  var hand = G.hands[G.current]
+
+  var statsHtml = ''
+  for (var i = 0; i < G.players.length; i++) {
+    var pl = G.players[i]
+    statsHtml += '<div class="stat-row' + (i === G.current ? ' active' : '') + '">' +
+      '<span class="stat-name">' + esc(pl.name) + '</span>' +
+      '<span class="stat-bright">◈ ' + pl.brightness + '</span>' +
+      '<span class="stat-moths">◉ ' + pl.moths + '</span>' +
+      '</div>'
+  }
+
+  var handHtml = ''
+  if (hand.length > 0) {
+    for (var j = 0; j < hand.length; j++) {
+      var ct = hand[j]
+      var c = CARDS[ct]
+      handHtml += '<div class="card" style="--card-clr:' + c.color + '" onclick="onCardClick(\'' + ct + '\')">' +
+        '<div class="card-glyph">' + c.glyph + '</div>' +
+        '<div class="card-name">' + c.name + '</div>' +
+        '<div class="card-desc">' + c.desc + '</div>' +
+        '</div>'
+    }
+  } else {
+    handHtml = '<div style="font-family:\'Courier New\',monospace;font-size:0.72rem;color:var(--dim);grid-column:1/-1;padding:1rem">No cards in hand.</div>'
+  }
+
+  var msgLines = G.message ? G.message.split('\n').map(function(l) { return esc(l) }).join('<br>') : '—'
+
+  return '<div class="game-screen">' +
+    '<div class="game-hdr">' +
+    '<div class="bag-lbl">◉ bag: ' + G.bag + '</div>' +
+    '<div class="turn-lbl">' + esc(p.name) + '</div>' +
+    '</div>' +
+    '<div class="stats">' + statsHtml + '</div>' +
+    '<div class="msg-area">' + msgLines + '</div>' +
+    '<div class="hand">' + handHtml + '</div>' +
+    '<div class="game-footer"><button class="skip-btn" onclick="passTurn()">SKIP TURN &rarr;</button></div>' +
+    '</div>'
+}
+
+function renderTarget() {
+  var ct = G.pendingCard
+  var c = CARDS[ct]
+
+  var targetHtml = ''
+  var hasTargets = false
+
+  for (var i = 0; i < G.players.length; i++) {
+    if (i === G.current) continue
+    var pl = G.players[i]
+    if (ct === 'SNUFF'   && pl.brightness <= 0) continue
+    if (ct === 'FLUTTER' && pl.moths <= 0)      continue
+    hasTargets = true
+    targetHtml += '<button class="target-btn" onclick="selectTarget(' + i + ')">' +
+      '<span>' + esc(pl.name) + '</span>' +
+      '<span class="target-stats">◈' + pl.brightness + '  ◉' + pl.moths + '</span>' +
+      '</button>'
+  }
+
+  if (!hasTargets) {
+    targetHtml = '<div class="no-targets">No valid targets right now.</div>'
+  }
+
+  return '<div class="target-screen">' +
+    '<div class="target-heading">Select a target</div>' +
+    '<div class="card-preview">' +
+    '<div class="preview-glyph" style="color:' + c.color + '">' + c.glyph + '</div>' +
+    '<div><div class="preview-name" style="color:' + c.color + '">' + c.name + '</div>' +
+    '<div class="preview-desc">' + c.desc + '</div></div>' +
+    '</div>' +
+    '<div class="target-list">' + targetHtml + '</div>' +
+    '<button class="cancel-btn" onclick="cancelTarget()">CANCEL</button>' +
+    '</div>'
+}
+
+function renderEnd() {
+  var sorted = G.players.slice().sort(function(a, b) { return b.moths - a.moths })
+  var topScore = sorted[0].moths
+  var winners = sorted.filter(function(p) { return p.moths === topScore })
+  var winnerText = winners.length > 1
+    ? winners.map(function(p) { return p.name }).join(' & ') + ' — tied'
+    : winners[0].name
+
+  var rows = ''
+  for (var i = 0; i < sorted.length; i++) {
+    rows += '<div class="score-row">' +
+      '<span class="score-rank">#' + (i + 1) + '</span>' +
+      '<span class="score-name">' + esc(sorted[i].name) + '</span>' +
+      '<span class="score-moths">◉ ' + sorted[i].moths + '</span>' +
+      '</div>'
+  }
+
+  return '<div class="end-screen">' +
+    '<div class="end-eyebrow">The bag is empty.</div>' +
+    '<div class="end-winner">' + esc(winnerText) + '</div>' +
+    '<div class="scoreboard">' + rows + '</div>' +
+    '<button class="replay-btn" onclick="G.screen=\'setup\'; G.showRules=false; render()">PLAY AGAIN</button>' +
+    '</div>'
+}
+
+render()
+</script>
+</body>
+</html>
