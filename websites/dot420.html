@@ -65,6 +65,11 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  /* view-transition ripple */
+  ::view-transition-old(root){ animation:none; }
+  ::view-transition-new(root){ animation:theme-ripple .55s cubic-bezier(.4,0,.2,1) both; }
+  @keyframes theme-ripple{ from{clip-path:var(--ripple-from)} to{clip-path:var(--ripple-to)} }
+  /* fade fallback */
   html.theme-transitioning *,html.theme-transitioning *::before,html.theme-transitioning *::after{
     transition:background .4s ease,background-color .4s ease,border-color .4s ease,color .4s ease,box-shadow .4s ease!important;
   }
@@ -453,19 +458,31 @@
   const DARK = 'dark', LIGHT = 'light';
   const stored = localStorage.getItem('dot420-theme');
   let theme = stored || DARK;
-  function apply(t, animate){
+  function applyTheme(t){
     theme = t;
-    if(animate){ root.classList.add('theme-transitioning'); setTimeout(()=>root.classList.remove('theme-transitioning'),420); }
     if(t === LIGHT){ root.setAttribute('data-theme','light'); btn.textContent='Dark'; }
     else { root.removeAttribute('data-theme'); btn.textContent='Light'; }
-    /* update floating token tints */
     window._dot420Tints = t === LIGHT
       ? ['#0071e3','#34c759','#ff9500','#ff3b30']
       : ['#3b8ef3','#30d158','#ff9f0a','#bf5af2'];
     localStorage.setItem('dot420-theme', t);
   }
-  apply(theme);
-  btn.addEventListener('click', ()=> apply(theme === LIGHT ? DARK : LIGHT, true));
+  applyTheme(theme);
+  btn.addEventListener('click', ()=>{
+    const next = theme === LIGHT ? DARK : LIGHT;
+    const r = btn.getBoundingClientRect();
+    const cx = Math.round(r.left + r.width/2), cy = Math.round(r.top + r.height/2);
+    const maxR = Math.hypot(Math.max(cx, innerWidth-cx), Math.max(cy, innerHeight-cy));
+    if(!document.startViewTransition){
+      root.classList.add('theme-transitioning');
+      applyTheme(next);
+      setTimeout(()=>root.classList.remove('theme-transitioning'), 420);
+      return;
+    }
+    root.style.setProperty('--ripple-from',`circle(0px at ${cx}px ${cy}px)`);
+    root.style.setProperty('--ripple-to',`circle(${Math.ceil(maxR)}px at ${cx}px ${cy}px)`);
+    document.startViewTransition(()=>applyTheme(next));
+  });
 })();
 
 const BUDGET = 420000;
