@@ -65,6 +65,9 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  html.theme-transitioning *,html.theme-transitioning *::before,html.theme-transitioning *::after{
+    transition:background .4s ease,background-color .4s ease,border-color .4s ease,color .4s ease,box-shadow .4s ease!important;
+  }
   body{
     color:var(--text); position:relative; min-height:100vh;
     font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",system-ui,sans-serif;
@@ -450,8 +453,9 @@
   const DARK = 'dark', LIGHT = 'light';
   const stored = localStorage.getItem('dot420-theme');
   let theme = stored || DARK;
-  function apply(t){
+  function apply(t, animate){
     theme = t;
+    if(animate){ root.classList.add('theme-transitioning'); setTimeout(()=>root.classList.remove('theme-transitioning'),420); }
     if(t === LIGHT){ root.setAttribute('data-theme','light'); btn.textContent='Dark'; }
     else { root.removeAttribute('data-theme'); btn.textContent='Light'; }
     /* update floating token tints */
@@ -461,7 +465,7 @@
     localStorage.setItem('dot420-theme', t);
   }
   apply(theme);
-  btn.addEventListener('click', ()=> apply(theme === LIGHT ? DARK : LIGHT));
+  btn.addEventListener('click', ()=> apply(theme === LIGHT ? DARK : LIGHT, true));
 })();
 
 const BUDGET = 420000;
