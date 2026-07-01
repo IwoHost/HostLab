@@ -14,6 +14,7 @@
 <title>THE WALL — DJ Queue</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Archivo+Black&family=Roboto+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <style>
   :root{
     --wall:#242220; --wall-dark:#1A1816;
@@ -93,6 +94,11 @@
     box-shadow:0 8px 14px rgba(0,0,0,.4); position:relative;
   }
   .sticky-note b{font-family:'Archivo Black',sans-serif;}
+
+  .share-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  .qr-canvas{background:var(--paper);border:2px solid var(--ink);image-rendering:pixelated;flex-shrink:0;}
+  .share-info{flex:1;min-width:150px;}
+  .share-hint{font-size:12px;color:var(--muted-ink);margin:0 0 10px;line-height:1.4;}
 
   .board-title{
     font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:.06em;text-transform:uppercase;
@@ -221,6 +227,18 @@
     <b>Prototype mode:</b> no Spotify hookup yet — titles are typed by hand. Room code: <b id="roomCodeDisplay"></b> <button class="reset-link" id="copyCodeBtn" style="color:#2a2107;">(copy)</button>
   </div>
 
+  <section class="poster rot-l">
+    <div class="tape-corner tc-tl"></div>
+    <p class="board-title">🎫 Scan To Join</p>
+    <div class="share-row">
+      <canvas id="qrCanvas" class="qr-canvas"></canvas>
+      <div class="share-info">
+        <p class="share-hint">Point a camera here — no app, no typing, straight into the wall.</p>
+        <button class="ticket-action" id="copyLinkBtn">COPY JOIN LINK</button>
+      </div>
+    </div>
+  </section>
+
   <section class="poster rot-r">
     <div class="tape-corner tc-tc"></div>
     <p class="board-title">📻 What's Spinning</p>
@@ -271,7 +289,7 @@ let roomUrl = null;
 let votedMap = {};
 let settings = { upThreshold: 5, downThreshold: 5 };
 
-function defaultState(){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5 } }; }
+function defaultState(){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5 }, version: 0 }; }
 
 async function fetchState() {
   const res = await fetch(roomUrl, { headers: { 'Accept': 'application/json' } });
@@ -285,6 +303,34 @@ async function saveState(state) {
     body: JSON.stringify(state)
   });
   if (!res.ok) throw new Error('save failed');
+}
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// The JSON bin backing this room is a single blob with no server-side locking:
+// a plain fetch-mutate-PUT cycle silently loses one side's change whenever two
+// people act at the same time. withState guards that by re-fetching right
+// before writing and comparing a version counter — if someone else wrote in
+// between, it discards the attempt and retries against the fresh state instead
+// of overwriting it.
+async function withState(mutator, maxAttempts = 5) {
+  let state = await fetchState();
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (typeof state.version !== 'number') state.version = 0;
+    const baseVersion = state.version;
+    const working = JSON.parse(JSON.stringify(state));
+    const result = mutator(working);
+    working.version = baseVersion + 1;
+
+    const latest = await fetchState();
+    if ((typeof latest.version === 'number' ? latest.version : 0) !== baseVersion) {
+      state = latest;
+      await delay(120 + Math.random() * 300);
+      continue;
+    }
+    await saveState(working);
+    return result;
+  }
+  throw new Error('busy, try again');
 }
 
 function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
@@ -351,48 +397,48 @@ async function castVote(id, dir) {
   votedMap[id] = dir;
   localStorage.setItem('wallVotedMap', JSON.stringify(votedMap));
   try {
-    const state = await fetchState();
-    const idx = state.candidates.findIndex(c => c.id === id);
-    if (idx === -1) return;
-    state.candidates[idx][dir] += 1;
-    const c = state.candidates[idx];
-    if (c.up >= state.settings.upThreshold) {
-      state.candidates.splice(idx, 1);
-      state.queue.push({ id: c.id, title: c.title, artist: c.artist });
-    } else if (c.down >= state.settings.downThreshold) {
-      state.candidates.splice(idx, 1);
-    }
-    await saveState(state);
+    await withState(state => {
+      const idx = state.candidates.findIndex(c => c.id === id);
+      if (idx === -1) return;
+      state.candidates[idx][dir] += 1;
+      const c = state.candidates[idx];
+      if (c.up >= state.settings.upThreshold) {
+        state.candidates.splice(idx, 1);
+        state.queue.push({ id: c.id, title: c.title, artist: c.artist });
+      } else if (c.down >= state.settings.downThreshold) {
+        state.candidates.splice(idx, 1);
+      }
+    });
   } catch (e) {}
   loadAll();
 }
 
 async function sendToQueue(id) {
   try {
-    const state = await fetchState();
-    const idx = state.candidates.findIndex(c => c.id === id);
-    if (idx === -1) return;
-    const [track] = state.candidates.splice(idx, 1);
-    state.queue.push({ id: track.id, title: track.title, artist: track.artist });
-    await saveState(state);
+    await withState(state => {
+      const idx = state.candidates.findIndex(c => c.id === id);
+      if (idx === -1) return;
+      const [track] = state.candidates.splice(idx, 1);
+      state.queue.push({ id: track.id, title: track.title, artist: track.artist });
+    });
   } catch (e) {}
   loadAll();
 }
 
 async function rejectCandidate(id) {
   try {
-    const state = await fetchState();
-    state.candidates = state.candidates.filter(c => c.id !== id);
-    await saveState(state);
+    await withState(state => {
+      state.candidates = state.candidates.filter(c => c.id !== id);
+    });
   } catch (e) {}
   loadAll();
 }
 
 async function markPlayed(id) {
   try {
-    const state = await fetchState();
-    state.queue = state.queue.filter(t => t.id !== id);
-    await saveState(state);
+    await withState(state => {
+      state.queue = state.queue.filter(t => t.id !== id);
+    });
   } catch (e) {}
   loadAll();
 }
@@ -407,9 +453,9 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
   if (!title || !artist) return;
   btn.disabled = true;
   try {
-    const state = await fetchState();
-    state.candidates.push({ id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title, artist, up: 0, down: 0 });
-    await saveState(state);
+    await withState(state => {
+      state.candidates.push({ id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title, artist, up: 0, down: 0 });
+    });
   } catch (e) {}
   titleInput.value = ''; artistInput.value = ''; btn.disabled = false;
   loadAll();
@@ -418,9 +464,9 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
 document.getElementById('resetBtn').addEventListener('click', async () => {
   if (!confirm('Wipe all submissions and the queue?')) return;
   try {
-    const state = await fetchState();
-    state.candidates = []; state.queue = [];
-    await saveState(state);
+    await withState(state => {
+      state.candidates = []; state.queue = [];
+    });
   } catch (e) {}
   votedMap = {}; localStorage.removeItem('wallVotedMap');
   loadAll();
@@ -439,15 +485,38 @@ document.getElementById('settingsSave').addEventListener('click', async () => {
   const up = parseInt(document.getElementById('upThreshInput').value, 10) || 5;
   const down = parseInt(document.getElementById('downThreshInput').value, 10) || 5;
   try {
-    const state = await fetchState();
-    state.settings = { upThreshold: up, downThreshold: down };
-    await saveState(state);
+    await withState(state => {
+      state.settings = { upThreshold: up, downThreshold: down };
+    });
   } catch (e) {}
   document.getElementById('settingsOverlay').classList.remove('open');
   loadAll();
 });
 
 function extractIdFromUrl(url) { return url.trim().split('/').filter(Boolean).pop(); }
+
+function buildJoinUrl(id) { return location.origin + location.pathname + '?room=' + encodeURIComponent(id); }
+
+function renderShareQR(id) {
+  const canvas = document.getElementById('qrCanvas');
+  if (!canvas || typeof qrcode !== 'function') return;
+  const qr = qrcode(0, 'M');
+  qr.addData(buildJoinUrl(id));
+  qr.make();
+  const count = qr.getModuleCount();
+  const cell = 6, margin = 2;
+  const size = (count + margin * 2) * cell;
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#EFE6D0';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#221D16';
+  for (let r = 0; r < count; r++) {
+    for (let c = 0; c < count; c++) {
+      if (qr.isDark(r, c)) ctx.fillRect((c + margin) * cell, (r + margin) * cell, cell, cell);
+    }
+  }
+}
 
 function enterRoom(id) {
   roomUrl = API + '/' + id;
@@ -456,6 +525,7 @@ function enterRoom(id) {
   document.getElementById('splashScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
   document.getElementById('gearBtn').style.display = 'block';
+  renderShareQR(id);
   const saved = localStorage.getItem('wallVotedMap');
   votedMap = saved ? JSON.parse(saved) : {};
   loadAll();
@@ -506,9 +576,34 @@ document.getElementById('copyCodeBtn').addEventListener('click', () => {
   if (navigator.clipboard) navigator.clipboard.writeText(id);
 });
 
-// auto-rejoin if this device already has a room saved
-const savedRoom = localStorage.getItem('wallRoomId');
-if (savedRoom) { enterRoom(savedRoom); }
+document.getElementById('copyLinkBtn').addEventListener('click', () => {
+  const id = localStorage.getItem('wallRoomId');
+  if (navigator.clipboard) navigator.clipboard.writeText(buildJoinUrl(id));
+  const btn = document.getElementById('copyLinkBtn');
+  const original = btn.textContent;
+  btn.textContent = 'COPIED!';
+  setTimeout(() => { btn.textContent = original; }, 1400);
+});
+
+// Scanning a shared QR/link lands here as ?room=<id> — join it straight away.
+// Fall back to a saved room only when there's no link to honor.
+async function boot() {
+  const urlRoom = new URLSearchParams(location.search).get('room');
+  if (urlRoom) {
+    history.replaceState(null, '', location.pathname);
+    try {
+      const res = await fetch(API + '/' + urlRoom);
+      if (!res.ok) throw new Error();
+      enterRoom(urlRoom);
+    } catch (e) {
+      document.getElementById('splashErr').textContent = 'That wall link isn\'t working anymore — start a new one or enter a code.';
+    }
+    return;
+  }
+  const savedRoom = localStorage.getItem('wallRoomId');
+  if (savedRoom) { enterRoom(savedRoom); }
+}
+boot();
 </script>
 </body>
 </html>
