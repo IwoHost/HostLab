@@ -486,6 +486,7 @@ const API = 'https://json.extendsclass.com/bin';
 const API_KEY = '4332b69b-7561-11f1-b6b0-0242ac110005';
 let roomUrl = null;
 let votedMap = {};
+let queueVotedMap = {};
 let isHost = false;
 let settings = { upThreshold: 5, downThreshold: 5, submitCooldown: 15 };
 let selectedTheme = 'original';
@@ -589,11 +590,16 @@ function escapeHtml(str) { const d = document.createElement('div'); d.textConten
 function renderQueue(queue) {
   const el = document.getElementById('queueList');
   if (!queue.length) { el.innerHTML = '<p class="empty">Nothing queued yet.</p>'; return; }
-  el.innerHTML = queue.map(t => `
+  // Queued tracks can be upvoted too — the more votes, the higher up the list.
+  const sorted = [...queue].sort((a, b) => (b.up || 0) - (a.up || 0));
+  el.innerHTML = sorted.map(t => `
     <div class="ticket">
       <div class="ticket-info"><div class="ticket-title">${escapeHtml(t.title)}</div><div class="ticket-artist">${escapeHtml(t.artist)}</div></div>
+      <button class="stamp-btn up ${queueVotedMap[t.id] === 'up' ? 'voted' : ''}" data-qvote="${t.id}"></button>
+      <span class="stamp-count">${t.up || 0}</span>
       <div class="manual-actions"><button class="ticket-action" data-played="${t.id}">PLAYED</button></div>
     </div>`).join('');
+  el.querySelectorAll('[data-qvote]').forEach(btn => btn.onclick = () => castQueueUpvote(btn.getAttribute('data-qvote')));
   el.querySelectorAll('[data-played]').forEach(btn => btn.onclick = () => markPlayed(btn.getAttribute('data-played')));
 }
 
@@ -699,10 +705,29 @@ async function castVote(id, dir) {
       if (next === 'down') c.down += 1;
       if (c.up >= state.settings.upThreshold) {
         state.candidates.splice(idx, 1);
-        state.queue.push({ id: c.id, title: c.title, artist: c.artist });
+        state.queue.push({ id: c.id, title: c.title, artist: c.artist, up: 0 });
       } else if (c.down >= state.settings.downThreshold) {
         state.candidates.splice(idx, 1);
       }
+    });
+  } catch (e) {}
+  loadAll();
+}
+
+// Queued tracks get their own upvote, separate from the wall vote that got
+// them there — toggle-only (no down), since this is just "play this sooner".
+async function castQueueUpvote(id) {
+  const prev = queueVotedMap[id] || null;
+  const next = prev === 'up' ? null : 'up';
+  if (next) queueVotedMap[id] = next; else delete queueVotedMap[id];
+  localStorage.setItem('wallQueueVotedMap', JSON.stringify(queueVotedMap));
+  try {
+    await withState(state => {
+      const track = state.queue.find(t => t.id === id);
+      if (!track) return;
+      if (typeof track.up !== 'number') track.up = 0;
+      if (prev === 'up') track.up = Math.max(0, track.up - 1);
+      if (next === 'up') track.up += 1;
     });
   } catch (e) {}
   loadAll();
@@ -757,6 +782,7 @@ document.getElementById('resetBtn').addEventListener('click', async () => {
     });
   } catch (e) {}
   votedMap = {}; localStorage.removeItem('wallVotedMap');
+  queueVotedMap = {}; localStorage.removeItem('wallQueueVotedMap');
   loadAll();
 });
 
@@ -764,6 +790,7 @@ document.getElementById('leaveBtn').addEventListener('click', () => {
   if (!confirm('Leave this wall?')) return;
   localStorage.removeItem('wallRoomId');
   localStorage.removeItem('wallVotedMap');
+  localStorage.removeItem('wallQueueVotedMap');
   localStorage.removeItem('wallIsHost');
   location.reload();
 });
@@ -836,6 +863,8 @@ function enterRoom(id, opts = {}) {
   renderShareQR(id);
   const saved = localStorage.getItem('wallVotedMap');
   votedMap = saved ? JSON.parse(saved) : {};
+  const savedQ = localStorage.getItem('wallQueueVotedMap');
+  queueVotedMap = savedQ ? JSON.parse(savedQ) : {};
   loadAll();
   setInterval(loadAll, 2000);
 }
