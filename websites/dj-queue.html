@@ -147,14 +147,6 @@
     --body-bg-image:none;
   }
 
-  /* animated theme switch — same view-transition ripple as dot420.html, with a fade fallback */
-  ::view-transition-old(root){ animation:none; }
-  ::view-transition-new(root){ animation:theme-ripple .55s cubic-bezier(.4,0,.2,1) both; }
-  @keyframes theme-ripple{ from{clip-path:var(--ripple-from)} to{clip-path:var(--ripple-to)} }
-  html.theme-transitioning *,html.theme-transitioning *::before,html.theme-transitioning *::after{
-    transition:background .4s ease,background-color .4s ease,border-color .4s ease,color .4s ease,box-shadow .4s ease,border-radius .4s ease!important;
-  }
-
   /* same drifting-blob background as dot420.html's #bg, on for Apple only */
   #bg-blobs{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;display:var(--blobs);}
   .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.75;animation:blobDrift 28s ease-in-out infinite alternate;}
@@ -530,41 +522,20 @@ function renderThemePicker(containerId, onPick) {
   el.innerHTML = THEMES.map(t =>
     `<button type="button" class="theme-swatch" data-theme-id="${t.id}" title="${t.label}" aria-label="${t.label}" style="--sw-bg:${t.swatch};--sw-radius:${t.radius};--sw-rot:${t.rot}">${t.icon}</button>`
   ).join('');
-  // Pass the click event through, not the button — a button's own
-  // bounding box can already be mid hover/scale transform at click time,
-  // which threw off where the ripple's "explosion" actually started from.
-  // The pointer position itself is exact regardless of any transform.
-  el.querySelectorAll('.theme-swatch').forEach(btn => btn.addEventListener('click', (e) => onPick(btn.getAttribute('data-theme-id'), e)));
+  el.querySelectorAll('.theme-swatch').forEach(btn => btn.addEventListener('click', () => onPick(btn.getAttribute('data-theme-id'))));
   syncThemePickers(currentTheme());
 }
 
-// Same animated theme switch as dot420.html: a circular view-transition
-// ripple expanding from the point you clicked, with a plain fade fallback
-// for browsers without the View Transitions API (or reduced-motion).
-function applyTheme(theme, evt) {
+function applyTheme(theme) {
   const root = document.documentElement;
-  const doApply = () => {
-    if (theme === 'original') root.removeAttribute('data-theme');
-    else root.setAttribute('data-theme', theme);
-    syncThemePickers(theme);
-    if (roomUrl) { const id = localStorage.getItem('wallRoomId'); if (id) renderShareQR(id); }
-  };
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !document.startViewTransition) {
-    root.classList.add('theme-transitioning');
-    doApply();
-    setTimeout(() => root.classList.remove('theme-transitioning'), 420);
-    return;
-  }
-  let cx = innerWidth / 2, cy = innerHeight / 2;
-  if (evt && typeof evt.clientX === 'number') { cx = evt.clientX; cy = evt.clientY; }
-  const maxR = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy));
-  root.style.setProperty('--ripple-from', `circle(0px at ${cx}px ${cy}px)`);
-  root.style.setProperty('--ripple-to', `circle(${Math.ceil(maxR)}px at ${cx}px ${cy}px)`);
-  document.startViewTransition(doApply);
+  if (theme === 'original') root.removeAttribute('data-theme');
+  else root.setAttribute('data-theme', theme);
+  syncThemePickers(theme);
+  if (roomUrl) { const id = localStorage.getItem('wallRoomId'); if (id) renderShareQR(id); }
 }
 
-renderThemePicker('themePicker', (id, evt) => { selectedTheme = id; applyTheme(id, evt); });
-renderThemePicker('themePickerHost', (id, evt) => { selectedTheme = id; applyTheme(id, evt); });
+renderThemePicker('themePicker', id => { selectedTheme = id; applyTheme(id); });
+renderThemePicker('themePickerHost', id => { selectedTheme = id; applyTheme(id); });
 
 // Bust browser/carrier caches on every read — a plain GET here was getting
 // served stale by intermediary caches, which is why a submit or vote from
