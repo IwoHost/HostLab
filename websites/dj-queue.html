@@ -294,7 +294,7 @@
   .bar-row{display:flex;align-items:center;gap:6px;}
   .bar-label{font-size:9px;width:32px;color:var(--muted-ink);font-family:var(--font-label);}
   .bar-track{flex:1;height:5px;background:rgba(34,29,22,.12);border-radius:3px;overflow:hidden;}
-  .bar-fill{height:100%;}
+  .bar-fill{height:100%;transition:width .5s ease;}
   .bar-fill.up{background:var(--stamp-green);}
   .bar-fill.down{background:var(--stamp-red);}
   .manual-actions{display:none;gap:6px;}
@@ -645,23 +645,47 @@ function renderQueue(queue) {
   el.querySelectorAll('[data-played]').forEach(btn => btn.onclick = () => markPlayed(btn.getAttribute('data-played')));
 }
 
+let lastChartIds = null;
 function renderChart(candidates) {
   const el = document.getElementById('chartList');
   const sorted = [...candidates].sort((a, b) => (b.up - b.down) - (a.up - a.down));
-  if (!sorted.length) { el.innerHTML = '<p class="empty">No tags on the wall yet — start it off.</p>'; return; }
+  if (!sorted.length) { el.innerHTML = '<p class="empty">No tags on the wall yet — start it off.</p>'; lastChartIds = null; return; }
+
+  const ids = sorted.map(c => c.id).join(',');
+  if (ids === lastChartIds) {
+    // Same cards, same order as last render — update the numbers on the
+    // existing DOM nodes instead of rebuilding via innerHTML, so the bar-fill
+    // width transition can actually animate instead of snapping instantly.
+    sorted.forEach(c => {
+      const item = el.querySelector(`.wall-item[data-item="${c.id}"]`);
+      if (!item) return;
+      const myVote = votedMap[c.id];
+      const upPct = Math.min(100, (c.up / settings.upThreshold) * 100);
+      const downPct = Math.min(100, (c.down / settings.downThreshold) * 100);
+      item.querySelector('.bar-fill.up').style.width = upPct + '%';
+      item.querySelector('.bar-fill.down').style.width = downPct + '%';
+      item.querySelector('[data-count="up"]').textContent = c.up;
+      item.querySelector('[data-count="down"]').textContent = c.down;
+      item.querySelector('[data-vote$=":up"]').classList.toggle('voted', myVote === 'up');
+      item.querySelector('[data-vote$=":down"]').classList.toggle('voted', myVote === 'down');
+    });
+    return;
+  }
+  lastChartIds = ids;
+
   el.innerHTML = sorted.map(c => {
     const myVote = votedMap[c.id];
     const upPct = Math.min(100, (c.up / settings.upThreshold) * 100);
     const downPct = Math.min(100, (c.down / settings.downThreshold) * 100);
     return `
-    <div class="wall-item">
+    <div class="wall-item" data-item="${c.id}">
       <div class="wall-row">
         ${trackArtHtml(c)}
         <div class="wall-info"><div class="wall-title">${escapeHtml(c.title)}</div><div class="wall-artist">${escapeHtml(c.artist)}</div></div>
         <button class="stamp-btn up ${myVote === 'up' ? 'voted' : ''}" data-vote="${c.id}:up"></button>
-        <span class="stamp-count">${c.up}</span>
+        <span class="stamp-count" data-count="up">${c.up}</span>
         <button class="stamp-btn down ${myVote === 'down' ? 'voted' : ''}" data-vote="${c.id}:down"></button>
-        <span class="stamp-count">${c.down}</span>
+        <span class="stamp-count" data-count="down">${c.down}</span>
       </div>
       <div class="bars">
         <div class="bar-row"><span class="bar-label">UP</span><div class="bar-track"><div class="bar-fill up" style="width:${upPct}%"></div></div></div>
