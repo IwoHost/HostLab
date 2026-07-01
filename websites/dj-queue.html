@@ -117,6 +117,24 @@
     --body-bg-image:none;
   }
 
+  /* ---- theme: dark — Simple's flat, sharp-cornered look, inverted ---- */
+  html[data-theme="dark"]{
+    --wall:#0A0A0A; --wall-dark:#000000;
+    --paper:#161616; --ink:#F5F5F5; --muted-ink:#9A9A9A;
+    --stamp-red:#F87171; --stamp-green:#34D399; --tape:#2A2A2A;
+    --line:rgba(255,255,255,.1);
+    --font-head:system-ui,-apple-system,sans-serif; --font-hand:system-ui,-apple-system,sans-serif;
+    --font-label:system-ui,-apple-system,sans-serif; --font-body:system-ui,-apple-system,sans-serif;
+    --poster-clip:none; --poster-radius:0px;
+    --card-shadow:0 0 0 1px rgba(255,255,255,.1);
+    --btn-radius:0px; --stampbtn-radius:0px;
+    --rivet-bg:var(--ink);
+    --qr-bg:#FFFFFF; --qr-fg:#0A0A0A;
+    --deco:none; --deco-stamp:none;
+    --tilt-l:0deg; --tilt-r:0deg; --tilt-s:0deg; --tilt-note:0deg; --tilt-card:0deg;
+    --body-bg-image:none;
+  }
+
   /* ---- theme: apple — glass + the indigo/pink-red marketing duotone ---- */
   html[data-theme="apple"]{
     --wall:#F2F2F7; --wall-dark:#E5E5EA;
@@ -537,6 +555,7 @@ const THEMES = [
   { id: 'pink', label: 'Cute', icon: svgIcon('<path d="M12 21s-7.5-4.6-10-9.2C.7 8.6 2 5 5.6 4.2 8 3.6 10 4.8 12 7c2-2.2 4-3.4 6.4-2.8C21.9 5 23.3 8.6 22 11.8 19.5 16.4 12 21 12 21Z"/>'), swatch: 'linear-gradient(135deg,#FFF6FB 0%,#FF3D81 55%,#00C2A8 100%)', radius: '50%', rot: '6deg' },
   { id: 'party', label: 'Party', icon: svgIcon('<path d="M12 2v6M12 16v6M2 12h6M16 12h6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M19.1 4.9l-4.2 4.2M9.1 14.9l-4.2 4.2"/>'), swatch: 'linear-gradient(135deg,#7C3AED 0%,#1F0A33 55%,#C6FF3C 100%)', radius: '2px', rot: '-5deg' },
   { id: 'simple', label: 'Simple', icon: svgIcon('<rect x="6" y="6" width="12" height="12"/>'), swatch: 'linear-gradient(135deg,#FFFFFF 0%,#FFFFFF 50%,#0A0A0A 100%)', radius: '0px', rot: '0deg' },
+  { id: 'dark', label: 'Dark', icon: svgIcon('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" fill="currentColor" stroke="none"/>'), swatch: 'linear-gradient(135deg,#0A0A0A 0%,#0A0A0A 50%,#F5F5F5 100%)', radius: '0px', rot: '3deg' },
   { id: 'apple', label: 'Apple', icon: svgIcon('<rect x="4" y="4" width="16" height="16" rx="6"/>'), swatch: 'linear-gradient(135deg,#F2F2F7 0%,#5E5CE6 55%,#FF375F 100%)', radius: '30%', rot: '4deg' },
 ];
 
