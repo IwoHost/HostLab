@@ -590,8 +590,9 @@ function escapeHtml(str) { const d = document.createElement('div'); d.textConten
 function renderQueue(queue) {
   const el = document.getElementById('queueList');
   if (!queue.length) { el.innerHTML = '<p class="empty">Nothing queued yet.</p>'; return; }
-  // Queued tracks can be upvoted too — the more votes, the higher up the list.
-  const sorted = [...queue].sort((a, b) => (b.up || 0) - (a.up || 0));
+  // Queued tracks can be upvoted too — more votes moves a track up. Ties go
+  // to whichever's been waiting longest (earliest addedAt), not alphabetical.
+  const sorted = [...queue].sort((a, b) => (b.up || 0) - (a.up || 0) || (a.addedAt || 0) - (b.addedAt || 0));
   el.innerHTML = sorted.map(t => `
     <div class="ticket">
       <div class="ticket-info"><div class="ticket-title">${escapeHtml(t.title)}</div><div class="ticket-artist">${escapeHtml(t.artist)}</div></div>
@@ -705,7 +706,7 @@ async function castVote(id, dir) {
       if (next === 'down') c.down += 1;
       if (c.up >= state.settings.upThreshold) {
         state.candidates.splice(idx, 1);
-        state.queue.push({ id: c.id, title: c.title, artist: c.artist, up: 0 });
+        state.queue.push({ id: c.id, title: c.title, artist: c.artist, up: 0, addedAt: Date.now() });
       } else if (c.down >= state.settings.downThreshold) {
         state.candidates.splice(idx, 1);
       }
