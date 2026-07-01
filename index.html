@@ -431,9 +431,24 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
   .grid { padding: 0 24px 60px; grid-template-columns: 1fr; }
   footer { padding: 16px 24px; }
 }
+
+/* ── hidden "host" keyword easter egg ── */
+#egg-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(12px);
+  background: var(--surface); border: 1px solid var(--border); color: var(--text-primary);
+  font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.5px;
+  padding: 10px 18px; border-radius: 4px; z-index: 9999;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+}
+#egg-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#egg-toast .cursor { display: inline-block; width: 7px; height: 13px; background: var(--text-primary); margin-left: 2px; vertical-align: -1px; animation: egg-blink 0.9s steps(1) infinite; }
+@keyframes egg-blink { 50% { opacity: 0; } }
 </style>
 </head>
 <body>
+
+<div id="egg-toast"></div>
 
 <header>
   <a href="index.html" class="logo">HOST<span>·</span>LAB</a>
@@ -773,6 +788,25 @@ function init() {
 }
 
 init();
+
+/* type "host" anywhere on the page to find something */
+(function () {
+  const KEY = 'host';
+  let buffer = '';
+  document.addEventListener('keydown', (e) => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key.length !== 1) return;
+    buffer = (buffer + e.key.toLowerCase()).slice(-KEY.length);
+    if (buffer === KEY) {
+      buffer = '';
+      const toast = document.getElementById('egg-toast');
+      toast.innerHTML = '&gt; access granted<span class="cursor"></span>';
+      toast.classList.add('show');
+      setTimeout(() => { window.location.href = 'websites/chronicle.html'; }, 850);
+    }
+  });
+})();
 </script>
 </body>
 </html>
