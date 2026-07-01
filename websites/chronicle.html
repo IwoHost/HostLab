@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+
+<!-- Google tag (gtag.js) -->
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-R7MJHBKJVY');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HostLab · Chronicle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../other/backbutton.css">
+<style>
+:root{
+  --bg:#0b0b0b; --panel:#111110; --fg:#ddddd8; --accent:#6dff3a;
+  --dim:#5a5a54; --faint:#33332e; --warn:#ffc050; --err:#ff5b5b;
+  --glow:0 0 10px rgba(109,255,58,.28);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:'Share Tech Mono',monospace;
+  min-height:100vh; overflow-x:hidden;
+  display:flex; flex-direction:column;
+}
+body::after{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.07) 3px,rgba(0,0,0,.07) 4px);
+}
+h1,h2{font-family:'VT323',monospace; font-weight:400; letter-spacing:1px;}
+.a{color:var(--accent); text-shadow:var(--glow);}
+.d{color:var(--dim);}
+
+/* ── boot screen ─────────────────────────────────────── */
+#boot{
+  flex:1; display:flex; flex-direction:column; justify-content:center;
+  padding:24px; max-width:640px; margin:0 auto; width:100%;
+  font-size:14px; line-height:1.8; min-height:100vh;
+}
+#boot .ln{opacity:0; white-space:pre-wrap;}
+#boot .ln.show{opacity:1;}
+#boot .cur{display:inline-block; width:8px; height:15px; background:var(--accent); animation:blink 1s steps(1) infinite; vertical-align:-2px;}
+@keyframes blink{50%{opacity:0;}}
+#skip{
+  margin-top:28px; align-self:flex-start; background:none; border:1px solid var(--faint);
+  color:var(--dim); font-family:inherit; font-size:12px; padding:8px 16px; cursor:pointer;
+  letter-spacing:2px; text-transform:uppercase; opacity:0; transition:opacity .4s;
+}
+#skip.show{opacity:1;}
+#skip:hover{border-color:var(--accent); color:var(--accent);}
+
+/* ── app shell ────────────────────────────────────────── */
+#app{display:none; flex:1; flex-direction:column; min-height:100vh;}
+#app.show{display:flex;}
+
+header.top{
+  padding:18px 22px 14px; border-bottom:1px solid var(--faint);
+}
+header.top h1{font-size:26px; color:var(--fg);}
+header.top h1 span{color:var(--accent); text-shadow:var(--glow);}
+.sub{font-size:12px; color:var(--dim); margin-top:4px; letter-spacing:.5px;}
+
+.prbar{margin-top:14px; display:flex; align-items:center; gap:10px; font-size:11px; color:var(--dim); letter-spacing:1px;}
+.prbar .track{flex:1; height:6px; background:var(--faint); position:relative; overflow:hidden;}
+.prbar .fill{position:absolute; inset:0 auto 0 0; width:0%; background:var(--accent); box-shadow:var(--glow); transition:width .8s ease;}
+.prbar .n{color:var(--accent); min-width:64px; text-align:right;}
+
+#stage{flex:1; padding:26px 22px 10px; max-width:720px; margin:0 auto; width:100%;}
+.tag{display:inline-block; font-size:11px; letter-spacing:3px; color:var(--dim); text-transform:uppercase; border:1px solid var(--faint); padding:3px 9px; margin-bottom:12px;}
+.chapnum{color:var(--accent);}
+#stage h2{font-size:30px; color:var(--fg); margin-bottom:4px;}
+.daterange{font-size:12px; color:var(--dim); margin-bottom:18px; letter-spacing:1px;}
+.prose p{font-size:15px; line-height:1.75; margin-bottom:14px; color:var(--fg);}
+.prose b{color:var(--accent); font-weight:400;}
+
+.log{
+  margin:18px 0 6px; border-left:2px solid var(--faint); padding-left:14px;
+}
+.log .row{font-size:12.5px; color:var(--dim); margin-bottom:6px; white-space:pre-wrap;}
+.log .row::before{content:'$ '; color:var(--faint);}
+.log .row b{color:#8a8a80; font-weight:400;}
+
+.stats{display:flex; gap:18px; flex-wrap:wrap; margin-top:20px; font-size:11px; color:var(--dim); letter-spacing:.5px;}
+.stats .s b{display:block; color:var(--accent); font-size:16px; font-family:'VT323',monospace;}
+
+nav.ctrl{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 22px 22px; max-width:720px; margin:0 auto; width:100%; gap:14px;
+}
+nav.ctrl button{
+  background:none; border:1px solid var(--faint); color:var(--fg);
+  font-family:inherit; font-size:13px; padding:10px 18px; cursor:pointer;
+  letter-spacing:2px; text-transform:uppercase; transition:all .2s;
+}
+nav.ctrl button:hover:not(:disabled){border-color:var(--accent); color:var(--accent); box-shadow:var(--glow);}
+nav.ctrl button:disabled{opacity:.25; cursor:default;}
+.dots{display:flex; gap:6px;}
+.dots span{width:6px; height:6px; border-radius:50%; background:var(--faint);}
+.dots span.on{background:var(--accent); box-shadow:var(--glow);}
+
+/* ── finale ───────────────────────────────────────────── */
+.finale-num{
+  font-family:'VT323',monospace; font-size:min(30vw,180px); line-height:1; color:var(--accent);
+  text-shadow:0 0 30px rgba(109,255,58,.4); text-align:center; margin:6px 0 4px;
+}
+.confetti{position:relative; height:0; overflow:visible;}
+.confetti span{
+  position:absolute; top:-40px; font-size:14px; color:var(--accent); opacity:0;
+  animation:fall linear forwards;
+}
+@keyframes fall{
+  0%{opacity:0; transform:translateY(-20px) rotate(0deg);}
+  10%{opacity:1;}
+  100%{opacity:0; transform:translateY(340px) rotate(240deg);}
+}
+.toolgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; margin-top:16px;}
+.toolgrid .t{
+  border:1px solid var(--faint); padding:8px 10px; font-size:11px; color:var(--dim);
+  opacity:0; transform:translateY(6px); transition:opacity .35s, transform .35s, border-color .2s, color .2s;
+}
+.toolgrid .t.show{opacity:1; transform:none;}
+.toolgrid .t:hover{border-color:var(--accent); color:var(--accent);}
+
+footer.status{
+  border-top:1px solid var(--faint); padding:10px 22px; font-size:11px; color:var(--dim);
+  display:flex; justify-content:space-between; letter-spacing:1px; flex-wrap:wrap; gap:6px;
+}
+footer.status .a{color:var(--accent);}
+
+@media (max-width:560px){
+  header.top h1{font-size:21px;}
+  #stage h2{font-size:23px;}
+  .finale-num{font-size:26vw;}
+  nav.ctrl button{padding:9px 12px; font-size:12px;}
+  .prose p{font-size:14px;}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-home" title="Back to HostLab"><img src="../other/logo/HLab_Logo.png" alt="HostLab"></a>
+
+<div id="boot">
+  <div id="boot-lines"></div>
+  <button id="skip">skip boot →</button>
+</div>
+
+<div id="app">
+  <header class="top">
+    <h1>THE <span>CHRONICLE</span></h1>
+    <div class="sub">a story assembled from 365 real commits to this repository — nothing here is generated live, it's all pulled from the actual git log</div>
+    <div class="prbar">
+      <span>PR</span>
+      <div class="track"><div class="fill" id="prfill"></div></div>
+      <span class="n" id="prn">0 / 98</span>
+    </div>
+  </header>
+
+  <div id="stage"></div>
+
+  <nav class="ctrl">
+    <button id="prev">◂ back</button>
+    <div class="dots" id="dots"></div>
+    <button id="next">next ▸</button>
+  </nav>
+
+  <footer class="status">
+    <span>STATUS: <span class="a" id="stChap">chapter 1/10</span></span>
+    <span id="stExtra">33 tools live · 365 commits · est. 2026-05-06</span>
+  </footer>
+</div>
+
+<script>
+const CHAPTERS = [
+{
+  tag:"MAY 6, 2026", title:"GENESIS", range:"day one — 21 commits before sundown",
+  pr:0,
+  prose:[
+    "It starts with a zip file. Someone uploads <b>HostLab.zip</b> to an empty repository, deletes it a minute later, and immediately starts arguing with the folder structure — a <b>websites</b> directory gets created, deleted, and recreated with a <b>.gitkeep</b> file that itself gets updated and then deleted, all inside the same hour.",
+    "Then the actual building starts. A page goes up, gets renamed, gets photos. A feature called <b>voice</b> appears and is gone by the next commit, replaced by one literally titled <b>novoice</b>. Twenty-one commits in, the day ends on a single frustrated line."
+  ],
+  log:["Add files via upload","Delete HostLab.zip","Create websites.gitkeep","reorganized","new website","bug fix","gap_year","voice","novoice","notemplate :<"],
+  statline:["21 commits","1 day","0 pull requests yet"]
+},
+{
+  tag:"MAY 8 – MAY 25", title:"THE QUIET STRETCH", range:"three sparse weeks, working alone",
+  pr:0,
+  prose:[
+    "No daily habit yet — just scattered nights. A flag-maker tool gets built twice in a row (<b>flagmaker</b>, <b>flagmaker2</b>). Favicons get added. And on May 8th, three small commits quietly mark the very first attempt at using AI to help write code: <b>git ai</b>, <b>git ai2</b>, <b>git ai3</b>.",
+    "The gaps between sessions stretch to a week, then two. He wrestles with a cookie-consent banner (<b>no law breking no more</b>), squints at his own color choices (<b>no eye hurt, ipviz</b>), and adds a back button that needs fixing twice in the same sitting. It's a hobby, not yet a routine."
+  ],
+  log:["flagmaker2","git ai3","back button added fixed 2","no law breking no more","dark verions ipviz (not the best)","annoyens fixed","radio radio radio now!","no mak"],
+  statline:["~35 commits","4 sessions across 17 days","0 pull requests yet"]
+},
+{
+  tag:"MAY 31, 2026", title:"BEFORE THE STORM", range:"one long, tired, productive night",
+  pr:0,
+  prose:[
+    "Games & Archives pages get added — the site is starting to look like a collection instead of a pile. But the commit log tells the real story of the night: a voice synthesizer update spirals into a rambling, half-coherent commit message about importing packages, followed by three commits that just say <b>uhhhhhhhh</b>.",
+    "It ends, somehow, on a genuine note of relief."
+  ],
+  log:["Add Games & Archives pages and index entries","photos commited!","fun stuff, voice synth update","uhhhhhhhh","uhhhhhhh 2","uhhhh 3 voice still","update yippe"],
+  statline:["8 commits","1 sitting","0 pull requests yet"]
+},
+{
+  tag:"JUNE 1 – 2", title:"KEVIN", range:"peak solo chaos, right before everything changed",
+  pr:0,
+  prose:[
+    "The last stretch working completely alone is the loudest one. A running joke called <b>Kevin</b> takes over the log for eleven commits straight — <b>Kevin Update</b>, <b>kevin is lovly guy</b>, <b>KEVIN!!!</b>, <b>kevin!!</b>, <b>Kevin fix</b> — nobody outside that session will ever know what Kevin was.",
+    "In between the jokes, real things ship: back buttons, cookie handling, a Polish note-to-self (<b>eh jakies zminy</b> — \"eh, some changes\"). And then, at the very end of the run, one small word that reads like an exhale: <b>dziala</b>. It works."
+  ],
+  log:["Dope Ass Code Generator","Procrastintion no more","pip guy still working with you","KEVIN!!!","kevin!!","secret","Inf!!!","dziala"],
+  statline:["24 commits","2 days","0 pull requests yet"]
+},
+{
+  tag:"JUNE 2 – 3", title:"THE TURN", range:"an AI collaborator joins the repository",
+  pr:8,
+  prose:[
+    "The first commit ever authored by Claude lands quietly on June 2nd — <i>\"Rewrite dry project descriptions with more personality\"</i> — right on the heels of Kevin and dziala. It's a small, almost invisible edit. It is also, not coincidentally, the same day <b>Pull Request #1</b> gets opened. Before this, everything went straight to main. From here on, changes get reviewed before they land.",
+    "The very next day, an entire terminal CLI toolkit exists that didn't exist that morning — a Python REPL, a Cloudflare Worker for curl access, a QR generator, an image-to-ASCII converter. Eight pull requests merge in two days. This is the pivot point: not a bigger idea, just a faster, steadier hand at the wheel."
+  ],
+  log:["Rewrite dry project descriptions with more personality","feat: add hostlab terminal toolkit (Python CLI)","feat: hostlab CLI now has interactive REPL mode","feat: add Cloudflare Worker for Lynx/curl access","feat: spin uses real 3-word format, add QR forge and img→ASCII"],
+  statline:["23 commits","8 pull requests merged","PR #1 → #8"]
+},
+{
+  tag:"JUNE 4, 2026", title:"THIRTY-THREE COMMITS", range:"the single busiest day this repo has ever had",
+  pr:25,
+  prose:[
+    "Two entirely different tools get born and refined in parallel on the same day. On one thread: a VHS glitch-video processor gets tape hiss, camera shake, and an outro sequence that fades to static. On the other: a procedural liminal-space explorer called <b>The Backrooms</b> goes through thirteen straight iterations — room shapes, wall shadows computed via a BFS distance map, a crash from an invalid hex literal (<code>0xWA77_1337</code>) caught and fixed within the hour.",
+    "And it isn't a solo AI show — IwoHost is still shipping his own fixes in the same window, patching the batch-file interpreter and untangling garbled Polish characters between everything else. Seventeen pull requests merge before the day is out."
+  ],
+  log:["feat: more realistic VHS look + heavy glitch episodes + outro sequence","Vary room shapes: L-rooms, corridor strips, mixed passage widths","Fix syntax error in wall pattern seed (invalid hex literal 0xWA77_1337)","Proper wall shadows via BFS distance map — no compounding","fix: %%i loop variables not expanding in batch interpreter"],
+  statline:["33 commits","17 pull requests merged","PR #9 → #25"]
+},
+{
+  tag:"JUNE 5 – 17", title:"LORE, MASKS, AND YIN & YANG", range:"tools stop being jokes and start having systems",
+  pr:62,
+  prose:[
+    "This stretch is where things get built, not just shipped. <b>PARSEC</b> — a dispatch game — grows a full lore system, operative personalities, a prestige mechanic, and eventually gets split across five separate JS files because one file couldn't hold it anymore. A party game called <b>Impostor</b> gets rebuilt from scratch three times, ending up with a classified-file terminal reveal screen and a fingerprint-scanner unlock. A Yin & Yang puzzle game named <b>KOIA</b> joins the games tab.",
+    "Buried in the middle of all that, on June 9th, one quiet meta-commit: <b>Add /vibe skill and CLAUDE.md for HostLab page generation</b> — the project starts writing down its own rules, and building the generator that will help build the next fifty tools."
+  ],
+  log:["feat(parsec): lore system, 2D corridor animation, remove passive AW","PARSEC: major content expansion — stress, level events, new levels, anomalies, New Fragment prestige","Add /vibe skill and CLAUDE.md for HostLab page generation","Replace generic reveal lock screen with classified-file terminal UI","Add KOIA — Yin & Yang game to games tab"],
+  statline:["~55 commits","37 pull requests merged","PR #26 → #62"]
+},
+{
+  tag:"JUNE 24 – 27", title:"THE EDITOR", range:"the most ambitious single build in the repo's history",
+  pr:85,
+  prose:[
+    "June 26th is the second-busiest day on record — 24 commits — and almost all of them build one thing: <b>HEdit</b>, a nano-style terminal text editor written from nothing, with undo/redo, multi-file tabs, syntax highlighting for eight languages, a unified find-and-replace panel, Windows CRLF handling, and one-liner installers for three operating systems. It ships the same day it's born.",
+    "It ends, true to form, with a joke nobody asked for: an Easter egg on the terminal page that swaps the emoji out for dancing cockroaches. In between, a card-deck maker (<b>Talia</b>), a custom image codec (<b>.420</b>), and a full teardown of the old school-specific Study page into something more general."
+  ],
+  log:["Add HEdit v0.1 — nano-style terminal text editor","hedit: syntax highlighting for Go, Python, JS/TS, C/C++, Rust, Shell, JSON, SQL","hedit: unified find+replace panel (Ctrl+F / Ctrl+R)","Easter egg: remove emojis, add dancing cockroaches, extend to 8s","Add .420 image encoder/decoder tool"],
+  statline:["~40 commits","23 pull requests merged","PR #63 → #85"]
+},
+{
+  tag:"JUNE 28 – JULY 1", title:"RIGHT NOW", range:"the sprint that's still warm",
+  pr:98,
+  prose:[
+    "A racing game called <b>Vindigator</b> gets a cover image and a spot at the top of the games list. <b>dot420</b> — the image codec from a few days earlier — gets a dark mode, then a full theme system, then an Apple-style frosted-glass theme with a drifting blob background and an animated ripple on the toggle.",
+    "And <b>DJ Queue</b> — a live, multiplayer request wall with QR-code join, host moderation, a spam cooldown, and a real-time style picker — goes from nothing to fully featured in a single day, then keeps getting refined: cache-busting, faster polling, race-condition fixes for when two people act at once. This chapter ends at pull request <b>#98</b>. You're reading the next one."
+  ],
+  log:["Add Vindigator cover image and wire it to games page","Add DJ Queue wall tool","Fix DJ Queue lost-update race when multiple people act at once","Add wall style picker with live preview and animated theme switch","Give the Apple theme dot420's drifting-blob background"],
+  statline:["~20 commits","13 pull requests merged","PR #86 → #98"]
+}
+];
+
+const TOOLS = ["IPvisualizer","SuperStrona","analog-horror","app-idea-spinner","backrooms","bash-learn","batch-learn","blob-diagram","burnnote","checklist","contract-machine","dither-lab","dj-queue","dot420","flagmark","floatingphotos","focus-room","gap-relativity","gate","gatekeeper","impostor","koia","packet-journey","parsec","pierogi","qr-forge","signal-noise-radio","talia","terminal","text-animator","vindigators-wrapped","voicesynth","waveform-sculptor","hedit (CLI)"];
+
+let idx = 0;
+const TOTAL_PR = 98;
+
+function renderChapter(i){
+  const c = CHAPTERS[i];
+  const stage = document.getElementById('stage');
+  stage.innerHTML = `
+    <span class="tag">CHAPTER <span class="chapnum">${i+1}/${CHAPTERS.length}</span> — ${c.tag}</span>
+    <h2>${c.title}</h2>
+    <div class="daterange">${c.range}</div>
+    <div class="prose">${c.prose.map(p=>`<p>${p}</p>`).join('')}</div>
+    <div class="log">${c.log.map(l=>`<div class="row">${l}</div>`).join('')}</div>
+    <div class="stats">${c.statline.map(s=>`<div class="s">${s}</div>`).join('')}</div>
+  `;
+  document.getElementById('prfill').style.width = (c.pr/TOTAL_PR*100)+'%';
+  document.getElementById('prn').textContent = c.pr+' / '+TOTAL_PR;
+  document.getElementById('stChap').textContent = `chapter ${i+1}/${CHAPTERS.length}`;
+  document.getElementById('prev').disabled = i===0;
+  document.getElementById('next').textContent = i===CHAPTERS.length-1 ? 'the 100th ▸' : 'next ▸';
+  const dots = document.getElementById('dots');
+  dots.innerHTML = CHAPTERS.map((_,j)=>`<span class="${j===i?'on':''}"></span>`).join('');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderFinale(){
+  const stage = document.getElementById('stage');
+  const confetti = Array.from({length:26},(_,k)=>{
+    const left = Math.random()*100;
+    const delay = Math.random()*1.2;
+    const dur = 1.6+Math.random()*1.2;
+    const ch = ['*','+','·','#','░'][Math.floor(Math.random()*5)];
+    return `<span style="left:${left}%; animation-delay:${delay}s; animation-duration:${dur}s;">${ch}</span>`;
+  }).join('');
+  stage.innerHTML = `
+    <span class="tag">FINALE — TODAY</span>
+    <h2>ONE HUNDRED</h2>
+    <div class="daterange">give or take a merge, this is that moment</div>
+    <div class="confetti">${confetti}</div>
+    <div class="finale-num">${TOTAL_PR}</div>
+    <div class="prose">
+      <p>Ninety-eight pull requests were merged by the time this page was written — close enough to a hundred that it felt worth stopping to look back. It started with a zip file and a folder that got created and deleted three times in one hour. It's ending, for now, with a live request wall, a text editor with real installers, and a hallway of procedurally-generated rooms that shouldn't exist but do.</p>
+      <p>Along the way: <b>365 commits</b>, roughly <b>58,000 lines</b> written and <b>16,700</b> torn back out, one running joke named Kevin, one Polish exhale that just said <i>dziala</i>, and one quiet commit on June 2nd where an AI collaborator started pulling weight alongside a person who'd been doing this alone for a month.</p>
+      <p>Here's everything that's live right now:</p>
+    </div>
+    <div class="toolgrid" id="toolgrid"></div>
+    <div class="stats" style="margin-top:22px;">
+      <div class="s">365<b style="display:inline;font-size:11px;color:var(--dim);"> commits</b></div>
+      <div class="s">${TOTAL_PR}<b style="display:inline;font-size:11px;color:var(--dim);"> pull requests</b></div>
+      <div class="s">${TOOLS.length}<b style="display:inline;font-size:11px;color:var(--dim);"> tools shipped</b></div>
+      <div class="s">1<b style="display:inline;font-size:11px;color:var(--dim);"> zip file, once</b></div>
+    </div>
+  `;
+  const grid = document.getElementById('toolgrid');
+  TOOLS.forEach((t,k)=>{
+    const d = document.createElement('div');
+    d.className='t'; d.textContent=t;
+    grid.appendChild(d);
+    setTimeout(()=>d.classList.add('show'), 40*k);
+  });
+  document.getElementById('prfill').style.width='100%';
+  document.getElementById('prn').textContent = TOTAL_PR+' / '+TOTAL_PR+' →';
+  document.getElementById('stChap').textContent = 'the chronicle · complete';
+  document.getElementById('prev').disabled = false;
+  document.getElementById('next').textContent = 'restart ↺';
+  document.getElementById('dots').innerHTML = CHAPTERS.map(()=>`<span class="on"></span>`).join('');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function goTo(i){
+  idx = i;
+  if(i >= CHAPTERS.length){ renderFinale(); return; }
+  renderChapter(i);
+}
+
+document.getElementById('next').addEventListener('click',()=>{
+  if(idx >= CHAPTERS.length){ idx=0; renderChapter(0); return; }
+  goTo(idx+1);
+});
+document.getElementById('prev').addEventListener('click',()=>{
+  if(idx>0) goTo(idx-1);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight') document.getElementById('next').click();
+  if(e.key==='ArrowLeft') document.getElementById('prev').click();
+});
+
+/* ── boot sequence ─────────────────────────────────────── */
+const BOOT_LINES = [
+  "$ git log --all --oneline | wc -l",
+  "365",
+  "$ git log --merges --oneline | tail -1",
+  "Merge pull request #98",
+  "> compiling 365 commits into something readable...",
+  "> this took a month and a half. reading it takes six minutes.",
+  "> press any key, or just wait."
+];
+const bootEl = document.getElementById('boot-lines');
+let bi = 0;
+function typeBoot(){
+  if(bi >= BOOT_LINES.length){
+    document.getElementById('skip').classList.add('show');
+    setTimeout(enterApp, 900);
+    return;
+  }
+  const div = document.createElement('div');
+  div.className='ln';
+  div.textContent = BOOT_LINES[bi];
+  bootEl.appendChild(div);
+  requestAnimationFrame(()=>div.classList.add('show'));
+  bi++;
+  setTimeout(typeBoot, bi<=2?450:650);
+}
+function enterApp(){
+  document.getElementById('boot').style.display='none';
+  document.getElementById('app').classList.add('show');
+  renderChapter(0);
+}
+document.getElementById('skip').addEventListener('click', enterApp);
+typeBoot();
+</script>
+</body>
+</html>
