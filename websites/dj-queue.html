@@ -140,7 +140,8 @@
   .bar-fill{height:100%;}
   .bar-fill.up{background:var(--stamp-green);}
   .bar-fill.down{background:var(--stamp-red);}
-  .manual-actions{display:flex;gap:6px;}
+  .manual-actions{display:none;gap:6px;}
+  body.is-host .manual-actions{display:flex;}
 
   form.poster{display:flex;flex-direction:column;gap:10px;}
   .row2{display:flex;gap:8px;}
@@ -287,6 +288,7 @@ const API = 'https://json.extendsclass.com/bin';
 const API_KEY = '4332b69b-7561-11f1-b6b0-0242ac110005';
 let roomUrl = null;
 let votedMap = {};
+let isHost = false;
 let settings = { upThreshold: 5, downThreshold: 5 };
 
 function defaultState(){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5 }, version: 0 }; }
@@ -373,13 +375,11 @@ function renderChart(candidates) {
         <div class="bar-row"><span class="bar-label">DOWN</span><div class="bar-track"><div class="bar-fill down" style="width:${downPct}%"></div></div></div>
       </div>
       <div class="manual-actions">
-        <button class="ticket-action" data-queue="${c.id}">SEND UP</button>
         <button class="ticket-action" data-reject="${c.id}">RIP DOWN</button>
       </div>
     </div>`;
   }).join('');
   el.querySelectorAll('[data-vote]').forEach(btn => btn.onclick = () => { const [id, dir] = btn.getAttribute('data-vote').split(':'); castVote(id, dir); });
-  el.querySelectorAll('[data-queue]').forEach(btn => btn.onclick = () => sendToQueue(btn.getAttribute('data-queue')));
   el.querySelectorAll('[data-reject]').forEach(btn => btn.onclick = () => rejectCandidate(btn.getAttribute('data-reject')));
 }
 
@@ -424,19 +424,8 @@ async function castVote(id, dir) {
   loadAll();
 }
 
-async function sendToQueue(id) {
-  try {
-    await withState(state => {
-      const idx = state.candidates.findIndex(c => c.id === id);
-      if (idx === -1) return;
-      const [track] = state.candidates.splice(idx, 1);
-      state.queue.push({ id: track.id, title: track.title, artist: track.artist });
-    });
-  } catch (e) {}
-  loadAll();
-}
-
 async function rejectCandidate(id) {
+  if (!isHost) return;
   try {
     await withState(state => {
       state.candidates = state.candidates.filter(c => c.id !== id);
@@ -487,12 +476,14 @@ document.getElementById('leaveBtn').addEventListener('click', () => {
   if (!confirm('Leave this wall?')) return;
   localStorage.removeItem('wallRoomId');
   localStorage.removeItem('wallVotedMap');
+  localStorage.removeItem('wallIsHost');
   location.reload();
 });
 
-document.getElementById('gearBtn').addEventListener('click', () => document.getElementById('settingsOverlay').classList.add('open'));
+document.getElementById('gearBtn').addEventListener('click', () => { if (isHost) document.getElementById('settingsOverlay').classList.add('open'); });
 document.getElementById('settingsCancel').addEventListener('click', () => document.getElementById('settingsOverlay').classList.remove('open'));
 document.getElementById('settingsSave').addEventListener('click', async () => {
+  if (!isHost) return;
   const up = parseInt(document.getElementById('upThreshInput').value, 10) || 5;
   const down = parseInt(document.getElementById('downThreshInput').value, 10) || 5;
   try {
@@ -529,13 +520,18 @@ function renderShareQR(id) {
   }
 }
 
-function enterRoom(id) {
+// host is whoever created the wall — tracked client-side only (no auth
+// backend here), so it's a UI convenience, not a real permission boundary.
+function enterRoom(id, opts = {}) {
   roomUrl = API + '/' + id;
   localStorage.setItem('wallRoomId', id);
+  isHost = 'host' in opts ? opts.host : localStorage.getItem('wallIsHost') === '1';
+  localStorage.setItem('wallIsHost', isHost ? '1' : '0');
+  document.body.classList.toggle('is-host', isHost);
   document.getElementById('roomCodeDisplay').textContent = id;
   document.getElementById('splashScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
-  document.getElementById('gearBtn').style.display = 'block';
+  document.getElementById('gearBtn').style.display = isHost ? 'block' : 'none';
   renderShareQR(id);
   const saved = localStorage.getItem('wallVotedMap');
   votedMap = saved ? JSON.parse(saved) : {};
@@ -556,7 +552,7 @@ document.getElementById('createRoomBtn').addEventListener('click', async () => {
     const data = await res.json();
     if (!data || !data.id) throw new Error('unexpected response from server');
     errEl.textContent = '';
-    enterRoom(data.id);
+    enterRoom(data.id, { host: true });
   } catch (e) {
     errEl.textContent = 'Could not create a room — ' + (e.message || 'unknown error') + '. Screenshot this and send it over.';
   }
@@ -576,7 +572,7 @@ document.getElementById('joinRoomBtn').addEventListener('click', async () => {
     const res = await fetch(noCacheUrl(API + '/' + id), { cache: 'no-store' });
     if (!res.ok) throw new Error('server said: ' + res.status + ' ' + res.statusText);
     errEl.textContent = '';
-    enterRoom(id);
+    enterRoom(id, { host: false });
   } catch (e) {
     errEl.textContent = 'Room not found — ' + (e.message || 'check the code') + '.';
   }
@@ -602,10 +598,12 @@ async function boot() {
   const urlRoom = new URLSearchParams(location.search).get('room');
   if (urlRoom) {
     history.replaceState(null, '', location.pathname);
+    // Don't demote the host if they reopen their own share link/QR on the same device.
+    const alreadyHost = localStorage.getItem('wallRoomId') === urlRoom && localStorage.getItem('wallIsHost') === '1';
     try {
       const res = await fetch(noCacheUrl(API + '/' + urlRoom), { cache: 'no-store' });
       if (!res.ok) throw new Error();
-      enterRoom(urlRoom);
+      enterRoom(urlRoom, { host: alreadyHost });
     } catch (e) {
       document.getElementById('splashErr').textContent = 'That wall link isn\'t working anymore — start a new one or enter a code.';
     }
