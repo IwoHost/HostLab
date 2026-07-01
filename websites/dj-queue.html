@@ -44,70 +44,78 @@
       repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 1px, transparent 1px 3px);
   }
 
-  /* ---- theme: pink (cute) ---- */
+  /* ---- theme: pink (cute) — bubblegum + mint + sunshine, not a purple retread ---- */
   html[data-theme="pink"]{
-    --wall:#3A1F2E; --wall-dark:#2B1522;
-    --paper:#FFEAF3; --ink:#5B1F42; --muted-ink:#A6688F;
-    --stamp-red:#FF5FA0; --stamp-green:#B770E8; --tape:#FFC9E3;
-    --line:rgba(91,31,66,.16);
+    --wall:#C23B8E; --wall-dark:#8F2569;
+    --paper:#FFF6FB; --ink:#7A1655; --muted-ink:#C0629E;
+    --stamp-red:#FF3D81; --stamp-green:#00C2A8; --tape:#FFE066;
+    --line:rgba(122,22,85,.16);
     --font-head:'Baloo 2',cursive; --font-hand:'Baloo 2',cursive;
     --font-label:'Baloo 2',cursive; --font-body:'Quicksand',sans-serif;
-    --poster-clip:none; --poster-radius:26px;
-    --card-shadow:0 14px 30px rgba(91,20,60,.35);
-    --btn-radius:20px; --stampbtn-radius:50%;
-    --rivet-bg:radial-gradient(circle at 35% 30%, #ffb6d9, #b770e8 70%);
+    --poster-clip:none; --poster-radius:30px;
+    --card-shadow:0 16px 32px rgba(122,22,85,.4);
+    --btn-radius:24px; --stampbtn-radius:50%;
+    --rivet-bg:radial-gradient(circle at 35% 30%, #ffe066, #ff3d81 70%);
+    --tilt-l:-3.2deg; --tilt-r:2.6deg; --tilt-s:-1.8deg; --tilt-note:2.4deg; --tilt-card:1.6deg;
     --body-bg-image:
-      radial-gradient(circle at 15% 20%, rgba(255,95,160,.20) 0, transparent 40%),
-      radial-gradient(circle at 85% 15%, rgba(183,112,232,.18) 0, transparent 45%),
-      radial-gradient(circle at 50% 90%, rgba(255,201,227,.14) 0, transparent 45%);
+      radial-gradient(circle at 15% 18%, rgba(255,61,129,.30) 0, transparent 42%),
+      radial-gradient(circle at 85% 20%, rgba(0,194,168,.22) 0, transparent 45%),
+      radial-gradient(circle at 50% 92%, rgba(255,224,102,.20) 0, transparent 45%);
   }
+  .deco-sticker{display:none;position:absolute;font-size:22px;pointer-events:none;z-index:3;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3));}
+  html[data-theme="pink"] .deco-sticker{display:block;}
+  .deco-sticker.s1{top:-16px;left:-12px;transform:rotate(-20deg);font-size:26px;}
+  .deco-sticker.s2{bottom:-14px;right:8px;transform:rotate(16deg);}
+  .deco-sticker.s3{top:44%;right:-16px;transform:rotate(10deg);font-size:19px;}
+  .deco-sticker.s4{top:-14px;right:26%;transform:rotate(-8deg);font-size:18px;}
 
-  /* ---- theme: party ---- */
+  /* ---- theme: party — electric violet + acid lime + hot orange, on near-black ---- */
   html[data-theme="party"]{
-    --wall:#0D0D1A; --wall-dark:#07070F;
-    --paper:#1C1630; --ink:#F5E9FF; --muted-ink:#B7A6D9;
-    --stamp-red:#FF2E63; --stamp-green:#00E0C6; --tape:#FFD400;
-    --line:rgba(255,255,255,.14);
+    --wall:#120019; --wall-dark:#08000C;
+    --paper:#1F0A33; --ink:#F4E8FF; --muted-ink:#B79FE0;
+    --stamp-red:#FF5E1A; --stamp-green:#C6FF3C; --tape:#7C3AED;
+    --line:rgba(244,232,255,.16);
     --font-head:'Anton',sans-serif; --font-hand:'Baloo 2',cursive;
     --font-label:'Archivo Black',sans-serif; --font-body:'Roboto Condensed',sans-serif;
     --poster-clip:none; --poster-radius:6px;
-    --card-shadow:0 0 0 2px var(--tape), 0 12px 34px rgba(0,0,0,.6), 0 0 30px rgba(255,46,99,.22);
+    --card-shadow:0 0 0 2px var(--tape), 0 12px 34px rgba(0,0,0,.7), 0 0 30px rgba(124,58,237,.35);
     --btn-radius:4px; --stampbtn-radius:50%;
-    --rivet-bg:radial-gradient(circle at 35% 30%, #ffe066, #ff2e63 70%);
-    --qr-bg:#FFFFFF; --qr-fg:#15102A;
+    --rivet-bg:radial-gradient(circle at 35% 30%, #c6ff3c, #7c3aed 70%);
+    --qr-bg:#FFFFFF; --qr-fg:#15062A;
+    --tilt-l:-2.4deg; --tilt-r:3.2deg; --tilt-s:-2.8deg; --tilt-note:-2.2deg; --tilt-card:2deg;
     --body-bg-image:
-      radial-gradient(circle at 12% 20%, rgba(255,46,99,.22) 0, transparent 40%),
-      radial-gradient(circle at 88% 20%, rgba(0,224,198,.18) 0, transparent 40%),
-      radial-gradient(circle at 50% 90%, rgba(255,212,0,.14) 0, transparent 45%);
+      radial-gradient(circle at 12% 20%, rgba(124,58,237,.32) 0, transparent 40%),
+      radial-gradient(circle at 88% 20%, rgba(198,255,60,.16) 0, transparent 40%),
+      radial-gradient(circle at 50% 90%, rgba(255,94,26,.20) 0, transparent 45%);
   }
   html[data-theme="party"] .poster{ animation:partyGlow 2.6s ease-in-out infinite; }
   @keyframes partyGlow{
-    0%,100%{ box-shadow:0 0 0 2px var(--tape), 0 12px 34px rgba(0,0,0,.6), 0 0 30px rgba(255,46,99,.22); }
-    50%{ box-shadow:0 0 0 2px var(--stamp-green), 0 12px 34px rgba(0,0,0,.6), 0 0 46px rgba(0,224,198,.32); }
+    0%,100%{ box-shadow:0 0 0 2px var(--tape), 0 12px 34px rgba(0,0,0,.7), 0 0 30px rgba(124,58,237,.35); }
+    50%{ box-shadow:0 0 0 2px var(--stamp-green), 0 12px 34px rgba(0,0,0,.7), 0 0 46px rgba(198,255,60,.4); }
   }
 
-  /* ---- theme: simple ---- */
+  /* ---- theme: simple — true grayscale, hairline borders, zero rounding ---- */
   html[data-theme="simple"]{
-    --wall:#F4F4F5; --wall-dark:#E4E4E7;
-    --paper:#FFFFFF; --ink:#18181B; --muted-ink:#71717A;
-    --stamp-red:#EF4444; --stamp-green:#16A34A; --tape:#E4E4E7;
-    --line:rgba(0,0,0,.08);
+    --wall:#FAFAFA; --wall-dark:#E5E5E5;
+    --paper:#FFFFFF; --ink:#0A0A0A; --muted-ink:#8A8A8A;
+    --stamp-red:#DC2626; --stamp-green:#2563EB; --tape:#E5E5E5;
+    --line:rgba(0,0,0,.1);
     --font-head:system-ui,-apple-system,sans-serif; --font-hand:system-ui,-apple-system,sans-serif;
     --font-label:system-ui,-apple-system,sans-serif; --font-body:system-ui,-apple-system,sans-serif;
-    --poster-clip:none; --poster-radius:14px;
-    --card-shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
-    --btn-radius:8px; --stampbtn-radius:50%;
+    --poster-clip:none; --poster-radius:0px;
+    --card-shadow:0 0 0 1px rgba(0,0,0,.12);
+    --btn-radius:0px; --stampbtn-radius:0px;
     --rivet-bg:var(--ink);
     --deco:none; --deco-stamp:none;
     --tilt-l:0deg; --tilt-r:0deg; --tilt-s:0deg; --tilt-note:0deg; --tilt-card:0deg;
     --body-bg-image:none;
   }
 
-  /* ---- theme: apple (simple + rounded) ---- */
+  /* ---- theme: apple — glass + the indigo/pink-red marketing duotone ---- */
   html[data-theme="apple"]{
-    --wall:#EEF1F6; --wall-dark:#E7EBF2;
-    --paper:rgba(255,255,255,.72); --ink:#1D1D1F; --muted-ink:#86868B;
-    --stamp-red:#FF3B30; --stamp-green:#0071E3; --tape:#0071E3;
+    --wall:#F2F2F7; --wall-dark:#E5E5EA;
+    --paper:rgba(255,255,255,.68); --ink:#1D1D1F; --muted-ink:#8E8E93;
+    --stamp-red:#FF375F; --stamp-green:#5E5CE6; --tape:#5E5CE6;
     --line:rgba(0,0,0,.08);
     --font-head:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;
     --font-hand:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;
@@ -117,13 +125,13 @@
     --card-shadow:0 8px 40px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.5);
     --card-blur:blur(20px) saturate(180%); --card-border:1px solid rgba(255,255,255,.6);
     --btn-radius:980px; --stampbtn-radius:50%;
-    --rivet-bg:linear-gradient(135deg,#0071e3,#34c759);
+    --rivet-bg:linear-gradient(135deg,#FF375F,#5E5CE6);
     --deco:none; --deco-stamp:none;
     --tilt-l:0deg; --tilt-r:0deg; --tilt-s:0deg; --tilt-note:0deg; --tilt-card:0deg;
     --body-bg-image:
-      radial-gradient(circle at 18% 12%, rgba(0,113,227,.14) 0, transparent 45%),
-      radial-gradient(circle at 85% 28%, rgba(52,199,89,.10) 0, transparent 45%),
-      radial-gradient(circle at 50% 92%, rgba(191,90,242,.08) 0, transparent 45%);
+      radial-gradient(circle at 18% 12%, rgba(94,92,230,.16) 0, transparent 45%),
+      radial-gradient(circle at 85% 28%, rgba(255,55,95,.12) 0, transparent 45%),
+      radial-gradient(circle at 50% 92%, rgba(94,92,230,.08) 0, transparent 45%);
   }
 
   /* animated theme switch — same view-transition ripple as dot420.html, with a fade fallback */
@@ -295,14 +303,17 @@
   .btn-cancel{background:transparent;color:var(--ink);border:2px solid var(--ink);border-radius:var(--btn-radius);flex:1;font-family:var(--font-label);padding:10px;cursor:pointer;font-size:12px;}
   .btn-save{background:var(--ink);color:var(--paper);border-radius:var(--btn-radius);flex:1;font-family:var(--font-label);padding:10px;border:none;cursor:pointer;font-size:12px;}
 
-  .theme-picker{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:16px 0 4px;}
+  .theme-picker{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:20px 0 4px;}
   .theme-swatch{
-    width:44px;height:44px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;
-    padding:0;background:var(--sw-bg);box-shadow:inset 0 0 0 2px rgba(0,0,0,.25);transition:.15s;
+    width:48px;height:48px;border:2.5px solid rgba(0,0,0,.2);cursor:pointer;
+    padding:0;background:var(--sw-bg);box-shadow:inset 0 0 0 2px rgba(255,255,255,.35),0 4px 8px rgba(0,0,0,.4);
+    border-radius:var(--sw-radius); transform:rotate(var(--sw-rot));
+    transition:transform .18s, box-shadow .18s;
+    font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;
   }
-  .theme-swatch:hover{transform:translateY(-2px);}
-  .theme-swatch.on{border-color:var(--ink);box-shadow:0 0 0 3px var(--tape),inset 0 0 0 2px rgba(0,0,0,.25);}
-  .theme-picker-label{font-size:11px;color:var(--muted-ink);text-align:center;margin-top:6px;font-family:var(--font-label);letter-spacing:.06em;text-transform:uppercase;}
+  .theme-swatch:hover{transform:rotate(0deg) translateY(-3px) scale(1.08);}
+  .theme-swatch.on{border-color:#fff;box-shadow:0 0 0 3px var(--ink),inset 0 0 0 2px rgba(255,255,255,.5);transform:rotate(0deg) scale(1.14);}
+  .theme-picker-label{font-size:11px;color:var(--muted-ink);text-align:center;margin-top:8px;font-family:var(--font-label);letter-spacing:.06em;text-transform:uppercase;}
 
   .splash{max-width:400px;margin:60px auto;padding:0 16px;}
   .splash .poster{text-align:center;}
@@ -323,6 +334,10 @@
   <div class="poster rot-l">
     <div class="tape-corner tc-tl"></div>
     <div class="tape-corner tc-tr"></div>
+    <span class="deco-sticker s1">💖</span>
+    <span class="deco-sticker s2">✨</span>
+    <span class="deco-sticker s3">⭐</span>
+    <span class="deco-sticker s4">🌸</span>
     <p class="eyebrow">The Birthday Wall</p>
     <h1>THE WALL</h1>
     <p class="sub">drop a track. vote it up or riot it down.</p>
@@ -346,6 +361,9 @@
     <div class="tape-corner tc-tl"></div>
     <div class="tape-corner tc-tr"></div>
     <div class="stamp"><span>18+</span><span>ONLY</span></div>
+    <span class="deco-sticker s1">💖</span>
+    <span class="deco-sticker s2">✨</span>
+    <span class="deco-sticker s3">🌸</span>
     <p class="eyebrow">The Birthday Wall</p>
     <h1>THE WALL</h1>
     <p class="sub">drop a track. vote it up or riot it down.</p>
@@ -425,12 +443,15 @@ let selectedTheme = 'original';
 
 function defaultState(theme){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5 }, theme: theme || 'original', version: 0 }; }
 
+// Each swatch's shape/tilt mirrors its theme's actual corner style and
+// personality, so the picker itself reads as five distinct things, not
+// five identically-shaped circles in different colors.
 const THEMES = [
-  { id: 'original', label: 'Original', swatch: 'linear-gradient(135deg,#EFE6D0,#B23A2E)' },
-  { id: 'pink', label: 'Cute', swatch: 'linear-gradient(135deg,#FFEAF3,#FF5FA0)' },
-  { id: 'party', label: 'Party', swatch: 'linear-gradient(135deg,#1C1630,#FF2E63)' },
-  { id: 'simple', label: 'Simple', swatch: 'linear-gradient(135deg,#FFFFFF,#71717A)' },
-  { id: 'apple', label: 'Apple', swatch: 'linear-gradient(135deg,#EEF1F6,#0071E3)' },
+  { id: 'original', label: 'Original', icon: '📻', swatch: 'linear-gradient(135deg,#EFE6D0 0%,#EFE6D0 40%,#B23A2E 75%,#3C7A4B 100%)', radius: '10%', rot: '-7deg' },
+  { id: 'pink', label: 'Cute', icon: '💖', swatch: 'linear-gradient(135deg,#FFF6FB 0%,#FF3D81 55%,#00C2A8 100%)', radius: '50%', rot: '6deg' },
+  { id: 'party', label: 'Party', icon: '🎉', swatch: 'linear-gradient(135deg,#7C3AED 0%,#1F0A33 55%,#C6FF3C 100%)', radius: '2px', rot: '-5deg' },
+  { id: 'simple', label: 'Simple', icon: '', swatch: 'linear-gradient(135deg,#FFFFFF 0%,#FFFFFF 50%,#0A0A0A 100%)', radius: '0px', rot: '0deg' },
+  { id: 'apple', label: 'Apple', icon: '🍎', swatch: 'linear-gradient(135deg,#F2F2F7 0%,#5E5CE6 55%,#FF375F 100%)', radius: '30%', rot: '4deg' },
 ];
 
 function currentTheme() { return document.documentElement.getAttribute('data-theme') || 'original'; }
@@ -445,7 +466,7 @@ function renderThemePicker(containerId, onPick) {
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = THEMES.map(t =>
-    `<button type="button" class="theme-swatch" data-theme-id="${t.id}" title="${t.label}" aria-label="${t.label}" style="--sw-bg:${t.swatch}"></button>`
+    `<button type="button" class="theme-swatch" data-theme-id="${t.id}" title="${t.label}" aria-label="${t.label}" style="--sw-bg:${t.swatch};--sw-radius:${t.radius};--sw-rot:${t.rot}">${t.icon}</button>`
   ).join('');
   el.querySelectorAll('.theme-swatch').forEach(btn => btn.addEventListener('click', () => onPick(btn.getAttribute('data-theme-id'), btn)));
   syncThemePickers(currentTheme());
