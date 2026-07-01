@@ -592,7 +592,7 @@ function renderQueue(queue) {
   el.innerHTML = queue.map(t => `
     <div class="ticket">
       <div class="ticket-info"><div class="ticket-title">${escapeHtml(t.title)}</div><div class="ticket-artist">${escapeHtml(t.artist)}</div></div>
-      <button class="ticket-action" data-played="${t.id}">PLAYED</button>
+      <div class="manual-actions"><button class="ticket-action" data-played="${t.id}">PLAYED</button></div>
     </div>`).join('');
   el.querySelectorAll('[data-played]').forEach(btn => btn.onclick = () => markPlayed(btn.getAttribute('data-played')));
 }
@@ -719,6 +719,7 @@ async function rejectCandidate(id) {
 }
 
 async function markPlayed(id) {
+  if (!isHost) return;
   try {
     await withState(state => {
       state.queue = state.queue.filter(t => t.id !== id);
