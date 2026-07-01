@@ -62,12 +62,15 @@
       radial-gradient(circle at 85% 20%, rgba(0,194,168,.22) 0, transparent 45%),
       radial-gradient(circle at 50% 92%, rgba(255,224,102,.20) 0, transparent 45%);
   }
-  .deco-sticker{display:none;position:absolute;font-size:22px;pointer-events:none;z-index:3;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3));}
+  /* Solid geometric pictographs, not emoji — same "no emoji" rule as the
+     theme-picker glyphs, just filled-in and colorful since these are meant
+     to read as fun stuck-on stickers rather than UI icons. */
+  .deco-sticker{display:none;position:absolute;width:24px;height:24px;pointer-events:none;z-index:3;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3));}
+  .deco-sticker svg{width:100%;height:100%;display:block;}
   html[data-theme="pink"] .deco-sticker{display:block;}
-  .deco-sticker.s1{top:-16px;left:-12px;transform:rotate(-20deg);font-size:26px;}
-  .deco-sticker.s2{bottom:-14px;right:8px;transform:rotate(16deg);}
-  .deco-sticker.s3{top:44%;right:-16px;transform:rotate(10deg);font-size:19px;}
-  .deco-sticker.s4{top:-14px;right:26%;transform:rotate(-8deg);font-size:18px;}
+  .deco-sticker.s1{top:-14px;left:-12px;width:28px;height:28px;transform:rotate(-20deg);color:var(--stamp-red);}
+  .deco-sticker.s2{bottom:-12px;right:8px;transform:rotate(16deg);color:var(--stamp-green);}
+  .deco-sticker.s3{top:42%;right:-16px;width:20px;height:20px;transform:rotate(10deg);color:var(--tape);}
 
   /* ---- theme: party — electric violet + acid lime + hot orange, on near-black ---- */
   html[data-theme="party"]{
@@ -303,16 +306,22 @@
   .btn-cancel{background:transparent;color:var(--ink);border:2px solid var(--ink);border-radius:var(--btn-radius);flex:1;font-family:var(--font-label);padding:10px;cursor:pointer;font-size:12px;}
   .btn-save{background:var(--ink);color:var(--paper);border-radius:var(--btn-radius);flex:1;font-family:var(--font-label);padding:10px;border:none;cursor:pointer;font-size:12px;}
 
-  .theme-picker{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:20px 0 4px;}
+  .theme-picker{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin:20px 0 4px;}
   .theme-swatch{
     width:48px;height:48px;border:2.5px solid rgba(0,0,0,.2);cursor:pointer;
     padding:0;background:var(--sw-bg);box-shadow:inset 0 0 0 2px rgba(255,255,255,.35),0 4px 8px rgba(0,0,0,.4);
     border-radius:var(--sw-radius); transform:rotate(var(--sw-rot));
     transition:transform .18s, box-shadow .18s;
-    font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    position:relative; z-index:1;
   }
-  .theme-swatch:hover{transform:rotate(0deg) translateY(-3px) scale(1.08);}
-  .theme-swatch.on{border-color:#fff;box-shadow:0 0 0 3px var(--ink),inset 0 0 0 2px rgba(255,255,255,.5);transform:rotate(0deg) scale(1.14);}
+  .theme-swatch svg{width:19px;height:19px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7));}
+  /* Scaling up on hover/select doesn't reflow siblings (transform is paint-only),
+     so without a z-index bump the enlarged swatch can visually overlap a
+     neighbor while clicks still land on that neighbor's un-scaled hit box —
+     the "renders in one place, button is really somewhere else" bug. */
+  .theme-swatch:hover{transform:rotate(0deg) translateY(-3px) scale(1.08);z-index:2;}
+  .theme-swatch.on{border-color:#fff;box-shadow:0 0 0 3px var(--ink),inset 0 0 0 2px rgba(255,255,255,.5);transform:rotate(0deg) scale(1.14);z-index:2;}
   .theme-picker-label{font-size:11px;color:var(--muted-ink);text-align:center;margin-top:8px;font-family:var(--font-label);letter-spacing:.06em;text-transform:uppercase;}
 
   .splash{max-width:400px;margin:60px auto;padding:0 16px;}
@@ -334,10 +343,9 @@
   <div class="poster rot-l">
     <div class="tape-corner tc-tl"></div>
     <div class="tape-corner tc-tr"></div>
-    <span class="deco-sticker s1">💖</span>
-    <span class="deco-sticker s2">✨</span>
-    <span class="deco-sticker s3">⭐</span>
-    <span class="deco-sticker s4">🌸</span>
+    <span class="deco-sticker s1"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21s-7.5-4.6-10-9.2C.7 8.6 2 5 5.6 4.2 8 3.6 10 4.8 12 7c2-2.2 4-3.4 6.4-2.8C21.9 5 23.3 8.6 22 11.8 19.5 16.4 12 21 12 21Z"/></svg></span>
+    <span class="deco-sticker s2"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2c.6 3.7 2.3 7 6 8-3.7 1-5.4 4.3-6 8-.6-3.7-2.3-7-6-8 3.7-1 5.4-4.3 6-8Z"/></svg></span>
+    <span class="deco-sticker s3"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5l2.9 6 6.6.7-5 4.5 1.4 6.5L12 16.9 6.1 20.2l1.4-6.5-5-4.5 6.6-.7Z"/></svg></span>
     <p class="eyebrow">The Birthday Wall</p>
     <h1>THE WALL</h1>
     <p class="sub">drop a track. vote it up or riot it down.</p>
@@ -361,9 +369,9 @@
     <div class="tape-corner tc-tl"></div>
     <div class="tape-corner tc-tr"></div>
     <div class="stamp"><span>18+</span><span>ONLY</span></div>
-    <span class="deco-sticker s1">💖</span>
-    <span class="deco-sticker s2">✨</span>
-    <span class="deco-sticker s3">🌸</span>
+    <span class="deco-sticker s1"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21s-7.5-4.6-10-9.2C.7 8.6 2 5 5.6 4.2 8 3.6 10 4.8 12 7c2-2.2 4-3.4 6.4-2.8C21.9 5 23.3 8.6 22 11.8 19.5 16.4 12 21 12 21Z"/></svg></span>
+    <span class="deco-sticker s2"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2c.6 3.7 2.3 7 6 8-3.7 1-5.4 4.3-6 8-.6-3.7-2.3-7-6-8 3.7-1 5.4-4.3 6-8Z"/></svg></span>
+    <span class="deco-sticker s3"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5l2.9 6 6.6.7-5 4.5 1.4 6.5L12 16.9 6.1 20.2l1.4-6.5-5-4.5 6.6-.7Z"/></svg></span>
     <p class="eyebrow">The Birthday Wall</p>
     <h1>THE WALL</h1>
     <p class="sub">drop a track. vote it up or riot it down.</p>
@@ -446,12 +454,17 @@ function defaultState(theme){ return { candidates: [], queue: [], settings: { up
 // Each swatch's shape/tilt mirrors its theme's actual corner style and
 // personality, so the picker itself reads as five distinct things, not
 // five identically-shaped circles in different colors.
+// Plain line-art pictographs (no emoji — those render inconsistently and
+// carry their own baked-in color). Each one echoes its theme's actual
+// corner shape, so the glyph and the card style tell the same story.
+const svgIcon = inner => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+
 const THEMES = [
-  { id: 'original', label: 'Original', icon: '📻', swatch: 'linear-gradient(135deg,#EFE6D0 0%,#EFE6D0 40%,#B23A2E 75%,#3C7A4B 100%)', radius: '10%', rot: '-7deg' },
-  { id: 'pink', label: 'Cute', icon: '💖', swatch: 'linear-gradient(135deg,#FFF6FB 0%,#FF3D81 55%,#00C2A8 100%)', radius: '50%', rot: '6deg' },
-  { id: 'party', label: 'Party', icon: '🎉', swatch: 'linear-gradient(135deg,#7C3AED 0%,#1F0A33 55%,#C6FF3C 100%)', radius: '2px', rot: '-5deg' },
-  { id: 'simple', label: 'Simple', icon: '', swatch: 'linear-gradient(135deg,#FFFFFF 0%,#FFFFFF 50%,#0A0A0A 100%)', radius: '0px', rot: '0deg' },
-  { id: 'apple', label: 'Apple', icon: '🍎', swatch: 'linear-gradient(135deg,#F2F2F7 0%,#5E5CE6 55%,#FF375F 100%)', radius: '30%', rot: '4deg' },
+  { id: 'original', label: 'Original', icon: svgIcon('<path d="M3 12 12 3h7a2 2 0 0 1 2 2v7l-9 9a2 2 0 0 1-2.8 0l-6.2-6.2a2 2 0 0 1 0-2.8Z"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor" stroke="none"/>'), swatch: 'linear-gradient(135deg,#EFE6D0 0%,#EFE6D0 40%,#B23A2E 75%,#3C7A4B 100%)', radius: '10%', rot: '-7deg' },
+  { id: 'pink', label: 'Cute', icon: svgIcon('<path d="M12 21s-7.5-4.6-10-9.2C.7 8.6 2 5 5.6 4.2 8 3.6 10 4.8 12 7c2-2.2 4-3.4 6.4-2.8C21.9 5 23.3 8.6 22 11.8 19.5 16.4 12 21 12 21Z"/>'), swatch: 'linear-gradient(135deg,#FFF6FB 0%,#FF3D81 55%,#00C2A8 100%)', radius: '50%', rot: '6deg' },
+  { id: 'party', label: 'Party', icon: svgIcon('<path d="M12 2v6M12 16v6M2 12h6M16 12h6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M19.1 4.9l-4.2 4.2M9.1 14.9l-4.2 4.2"/>'), swatch: 'linear-gradient(135deg,#7C3AED 0%,#1F0A33 55%,#C6FF3C 100%)', radius: '2px', rot: '-5deg' },
+  { id: 'simple', label: 'Simple', icon: svgIcon('<rect x="6" y="6" width="12" height="12"/>'), swatch: 'linear-gradient(135deg,#FFFFFF 0%,#FFFFFF 50%,#0A0A0A 100%)', radius: '0px', rot: '0deg' },
+  { id: 'apple', label: 'Apple', icon: svgIcon('<rect x="4" y="4" width="16" height="16" rx="6"/>'), swatch: 'linear-gradient(135deg,#F2F2F7 0%,#5E5CE6 55%,#FF375F 100%)', radius: '30%', rot: '4deg' },
 ];
 
 function currentTheme() { return document.documentElement.getAttribute('data-theme') || 'original'; }
