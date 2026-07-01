@@ -291,8 +291,13 @@ let settings = { upThreshold: 5, downThreshold: 5 };
 
 function defaultState(){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5 }, version: 0 }; }
 
+// Bust browser/carrier caches on every read — a plain GET here was getting
+// served stale by intermediary caches, which is why a submit or vote from
+// one phone could take a while (or a full refresh) to show up on another.
+function noCacheUrl(url) { return url + (url.includes('?') ? '&' : '?') + '_=' + Date.now(); }
+
 async function fetchState() {
-  const res = await fetch(roomUrl, { headers: { 'Accept': 'application/json' } });
+  const res = await fetch(noCacheUrl(roomUrl), { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
   if (!res.ok) throw new Error('room not found');
   return await res.json();
 }
@@ -393,15 +398,21 @@ async function loadAll() {
 }
 
 async function castVote(id, dir) {
-  if (votedMap[id]) return;
-  votedMap[id] = dir;
+  // Clicking your own stamp again undoes it; clicking the other one flips it —
+  // same toggle-your-vote behavior as Reddit, instead of a one-shot vote.
+  const prev = votedMap[id] || null;
+  const next = prev === dir ? null : dir;
+  if (next) votedMap[id] = next; else delete votedMap[id];
   localStorage.setItem('wallVotedMap', JSON.stringify(votedMap));
   try {
     await withState(state => {
       const idx = state.candidates.findIndex(c => c.id === id);
       if (idx === -1) return;
-      state.candidates[idx][dir] += 1;
       const c = state.candidates[idx];
+      if (prev === 'up') c.up = Math.max(0, c.up - 1);
+      if (prev === 'down') c.down = Math.max(0, c.down - 1);
+      if (next === 'up') c.up += 1;
+      if (next === 'down') c.down += 1;
       if (c.up >= state.settings.upThreshold) {
         state.candidates.splice(idx, 1);
         state.queue.push({ id: c.id, title: c.title, artist: c.artist });
@@ -529,7 +540,7 @@ function enterRoom(id) {
   const saved = localStorage.getItem('wallVotedMap');
   votedMap = saved ? JSON.parse(saved) : {};
   loadAll();
-  setInterval(loadAll, 3000);
+  setInterval(loadAll, 2000);
 }
 
 document.getElementById('createRoomBtn').addEventListener('click', async () => {
@@ -562,7 +573,7 @@ document.getElementById('joinRoomBtn').addEventListener('click', async () => {
   if (!id) { errEl.textContent = 'Enter a room code.'; return; }
   errEl.textContent = 'joining…';
   try {
-    const res = await fetch(API + '/' + id);
+    const res = await fetch(noCacheUrl(API + '/' + id), { cache: 'no-store' });
     if (!res.ok) throw new Error('server said: ' + res.status + ' ' + res.statusText);
     errEl.textContent = '';
     enterRoom(id);
@@ -592,7 +603,7 @@ async function boot() {
   if (urlRoom) {
     history.replaceState(null, '', location.pathname);
     try {
-      const res = await fetch(API + '/' + urlRoom);
+      const res = await fetch(noCacheUrl(API + '/' + urlRoom), { cache: 'no-store' });
       if (!res.ok) throw new Error();
       enterRoom(urlRoom);
     } catch (e) {
