@@ -439,6 +439,7 @@
     </div>
     <div class="field"><label>Upvotes to auto-queue</label><input type="number" id="upThreshInput" min="1" max="50"></div>
     <div class="field"><label>Downvotes to auto-remove</label><input type="number" id="downThreshInput" min="1" max="50"></div>
+    <div class="field"><label>Seconds between submissions</label><input type="number" id="cooldownInput" min="0" max="300"></div>
     <div class="settings-actions">
       <button class="btn-cancel" id="settingsCancel">Cancel</button>
       <button class="btn-save" id="settingsSave">Save</button>
@@ -452,10 +453,10 @@ const API_KEY = '4332b69b-7561-11f1-b6b0-0242ac110005';
 let roomUrl = null;
 let votedMap = {};
 let isHost = false;
-let settings = { upThreshold: 5, downThreshold: 5 };
+let settings = { upThreshold: 5, downThreshold: 5, submitCooldown: 15 };
 let selectedTheme = 'original';
 
-function defaultState(theme){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5 }, theme: theme || 'original', version: 0 }; }
+function defaultState(theme){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5, submitCooldown: 15 }, theme: theme || 'original', version: 0 }; }
 
 // Each swatch's shape/tilt mirrors its theme's actual corner style and
 // personality, so the picker itself reads as five distinct things, not
@@ -613,6 +614,34 @@ function renderChart(candidates) {
   el.querySelectorAll('[data-reject]').forEach(btn => btn.onclick = () => rejectCandidate(btn.getAttribute('data-reject')));
 }
 
+// Simple per-device submission cooldown so one person can't spam the wall
+// with new tracks — the limit itself is host-configurable (0 = off).
+function cooldownKey(roomId) { return 'wallLastSubmit_' + roomId; }
+
+function remainingCooldown() {
+  const roomId = localStorage.getItem('wallRoomId');
+  const limitMs = (settings.submitCooldown || 0) * 1000;
+  if (!roomId || limitMs <= 0) return 0;
+  const last = parseInt(localStorage.getItem(cooldownKey(roomId)) || '0', 10);
+  const remain = limitMs - (Date.now() - last);
+  return remain > 0 ? Math.ceil(remain / 1000) : 0;
+}
+
+let cooldownTimer = null;
+function updateSubmitCooldownUI() {
+  const btn = document.getElementById('submitBtn');
+  const remain = remainingCooldown();
+  if (remain > 0) {
+    btn.disabled = true;
+    btn.textContent = 'WAIT ' + remain + 's';
+    if (!cooldownTimer) cooldownTimer = setInterval(updateSubmitCooldownUI, 1000);
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'STICK IT UP';
+    if (cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
+  }
+}
+
 async function loadAll() {
   try {
     const state = await fetchState();
@@ -626,11 +655,13 @@ async function loadAll() {
       settings = state.settings || settings;
       document.getElementById('upThreshInput').value = settings.upThreshold;
       document.getElementById('downThreshInput').value = settings.downThreshold;
+      document.getElementById('cooldownInput').value = settings.submitCooldown ?? 15;
       const roomTheme = state.theme || 'original';
       if (roomTheme !== currentTheme()) { selectedTheme = roomTheme; applyTheme(roomTheme); }
     }
     renderChart(state.candidates || []);
     renderQueue(state.queue || []);
+    updateSubmitCooldownUI();
     document.getElementById('statusMsg').textContent = 'synced ' + new Date().toLocaleTimeString();
   } catch (e) {
     document.getElementById('statusMsg').textContent = 'offline (' + (e.message || 'error') + ') — retrying…';
@@ -687,17 +718,20 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const titleInput = document.getElementById('titleInput');
   const artistInput = document.getElementById('artistInput');
-  const btn = document.getElementById('submitBtn');
   const title = titleInput.value.trim();
   const artist = artistInput.value.trim();
   if (!title || !artist) return;
-  btn.disabled = true;
+  if (remainingCooldown() > 0) { updateSubmitCooldownUI(); return; }
+  document.getElementById('submitBtn').disabled = true;
   try {
     await withState(state => {
       state.candidates.push({ id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title, artist, up: 0, down: 0 });
     });
+    const roomId = localStorage.getItem('wallRoomId');
+    if (roomId) localStorage.setItem(cooldownKey(roomId), String(Date.now()));
   } catch (e) {}
-  titleInput.value = ''; artistInput.value = ''; btn.disabled = false;
+  titleInput.value = ''; artistInput.value = '';
+  updateSubmitCooldownUI();
   loadAll();
 });
 
@@ -734,9 +768,10 @@ document.getElementById('settingsSave').addEventListener('click', async () => {
   if (!isHost) return;
   const up = parseInt(document.getElementById('upThreshInput').value, 10) || 5;
   const down = parseInt(document.getElementById('downThreshInput').value, 10) || 5;
+  const cooldown = Math.max(0, parseInt(document.getElementById('cooldownInput').value, 10) || 0);
   try {
     await withState(state => {
-      state.settings = { upThreshold: up, downThreshold: down };
+      state.settings = { upThreshold: up, downThreshold: down, submitCooldown: cooldown };
       state.theme = selectedTheme;
     });
   } catch (e) {}
