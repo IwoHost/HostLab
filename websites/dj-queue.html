@@ -389,6 +389,7 @@
     <p class="eyebrow">The Birthday Wall</p>
     <h1>THE WALL</h1>
     <p class="sub">drop a track. vote it up or riot it down.</p>
+    <div class="row2"><input id="roomNameInput" placeholder="Name your wall — e.g. Kuba's Grill Party" maxlength="40"></div>
     <div class="theme-picker" id="themePicker"></div>
     <p class="theme-picker-label">pick a look for your wall</p>
     <button class="big-btn" id="createRoomBtn">START A NEW WALL</button>
@@ -413,7 +414,7 @@
     <span class="deco-sticker s2"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2c.6 3.7 2.3 7 6 8-3.7 1-5.4 4.3-6 8-.6-3.7-2.3-7-6-8 3.7-1 5.4-4.3 6-8Z"/></svg></span>
     <span class="deco-sticker s3"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5l2.9 6 6.6.7-5 4.5 1.4 6.5L12 16.9 6.1 20.2l1.4-6.5-5-4.5 6.6-.7Z"/></svg></span>
     <p class="eyebrow">The Birthday Wall</p>
-    <h1>THE WALL</h1>
+    <h1 id="wallTitle">THE WALL</h1>
     <p class="sub">drop a track. vote it up or riot it down.</p>
   </header>
 
@@ -428,7 +429,10 @@
       <canvas id="qrCanvas" class="qr-canvas"></canvas>
       <div class="share-info">
         <p class="share-hint">Point a camera here — no app, no typing, straight into the wall.</p>
-        <button class="ticket-action" id="copyLinkBtn">COPY JOIN LINK</button>
+        <div class="row2">
+          <button class="ticket-action" id="copyLinkBtn">COPY JOIN LINK</button>
+          <button class="ticket-action" id="downloadQrBtn">DOWNLOAD TO PRINT</button>
+        </div>
       </div>
     </div>
   </section>
@@ -490,8 +494,9 @@ let queueVotedMap = {};
 let isHost = false;
 let settings = { upThreshold: 5, downThreshold: 5, submitCooldown: 15 };
 let selectedTheme = 'original';
+let roomName = '';
 
-function defaultState(theme){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5, submitCooldown: 15 }, theme: theme || 'original', version: 0 }; }
+function defaultState(theme, name){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5, submitCooldown: 15 }, theme: theme || 'original', roomName: name || '', version: 0 }; }
 
 // Each swatch's shape/tilt mirrors its theme's actual corner style and
 // personality, so the picker itself reads as five distinct things, not
@@ -678,6 +683,8 @@ async function loadAll() {
       document.getElementById('cooldownInput').value = settings.submitCooldown ?? 15;
       const roomTheme = state.theme || 'original';
       if (roomTheme !== currentTheme()) { selectedTheme = roomTheme; applyTheme(roomTheme); }
+      roomName = state.roomName || '';
+      document.getElementById('wallTitle').textContent = roomName || 'THE WALL';
     }
     renderChart(state.candidates || []);
     renderQueue(state.queue || []);
@@ -849,6 +856,79 @@ function renderShareQR(id) {
   }
 }
 
+function fitFontSize(ctx, text, maxWidth, family, startSize, minSize) {
+  let size = startSize;
+  while (size > minSize) {
+    ctx.font = size + 'px ' + family;
+    if (ctx.measureText(text).width <= maxWidth) break;
+    size -= 2;
+  }
+  return size;
+}
+
+// A printable invite card: the QR bitmap is copied over pixel-for-pixel from
+// the on-page canvas (never regenerated), everything around it — colors,
+// fonts, room name — is drawn fresh from whatever theme is currently active.
+function downloadPrintable() {
+  const roomId = localStorage.getItem('wallRoomId');
+  const qrSrc = document.getElementById('qrCanvas');
+  if (!roomId || !qrSrc.width) return;
+
+  const cs = getComputedStyle(document.documentElement);
+  const paper = cs.getPropertyValue('--paper').trim() || '#EFE6D0';
+  const ink = cs.getPropertyValue('--ink').trim() || '#221D16';
+  const muted = cs.getPropertyValue('--muted-ink').trim() || '#7A705E';
+  const tape = cs.getPropertyValue('--tape').trim() || '#E8C34A';
+  const fontHead = cs.getPropertyValue('--font-head').trim() || 'sans-serif';
+  const fontBody = cs.getPropertyValue('--font-body').trim() || 'sans-serif';
+  const fontLabel = cs.getPropertyValue('--font-label').trim() || 'sans-serif';
+
+  const W = 1000, H = 1400;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = paper;
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = tape;
+  ctx.fillRect(0, 0, W, 26);
+  ctx.fillRect(0, H - 26, W, 26);
+
+  ctx.textAlign = 'center';
+  const title = roomName || 'THE WALL';
+  const titleSize = fitFontSize(ctx, title, W - 140, fontHead, 72, 32);
+  ctx.font = titleSize + 'px ' + fontHead;
+  ctx.fillStyle = ink;
+  ctx.fillText(title, W / 2, 170);
+
+  ctx.font = '30px ' + fontBody;
+  ctx.fillStyle = muted;
+  ctx.fillText('scan to drop a track & vote on the wall', W / 2, 226);
+
+  const qrSize = 640;
+  const qrX = (W - qrSize) / 2, qrY = 300;
+  ctx.drawImage(qrSrc, qrX, qrY, qrSize, qrSize);
+
+  ctx.font = '38px ' + fontLabel;
+  ctx.fillStyle = ink;
+  ctx.fillText('ROOM CODE: ' + roomId, W / 2, qrY + qrSize + 80);
+
+  ctx.font = '22px ' + fontBody;
+  ctx.fillStyle = muted;
+  ctx.fillText(buildJoinUrl(roomId), W / 2, qrY + qrSize + 122);
+
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const slug = (roomName || 'the-wall').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'the-wall';
+    a.download = slug + '-invite.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }, 'image/png');
+}
+
 // host is whoever created the wall — tracked client-side only (no auth
 // backend here), so it's a UI convenience, not a real permission boundary.
 function enterRoom(id, opts = {}) {
@@ -872,12 +952,13 @@ function enterRoom(id, opts = {}) {
 
 document.getElementById('createRoomBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('splashErr');
+  const name = document.getElementById('roomNameInput').value.trim();
   errEl.textContent = 'creating room…';
   try {
     const res = await fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Api-key': API_KEY },
-      body: JSON.stringify(defaultState(selectedTheme))
+      body: JSON.stringify(defaultState(selectedTheme, name))
     });
     if (!res.ok) throw new Error('server said: ' + res.status + ' ' + res.statusText);
     const data = await res.json();
@@ -922,6 +1003,8 @@ document.getElementById('copyLinkBtn').addEventListener('click', () => {
   btn.textContent = 'COPIED!';
   setTimeout(() => { btn.textContent = original; }, 1400);
 });
+
+document.getElementById('downloadQrBtn').addEventListener('click', downloadPrintable);
 
 // Scanning a shared QR/link lands here as ?room=<id> — join it straight away.
 // Fall back to a saved room only when there's no link to honor.
