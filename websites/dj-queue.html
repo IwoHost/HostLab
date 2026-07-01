@@ -314,7 +314,13 @@
     transition:transform .18s, box-shadow .18s;
     color:#fff; display:flex; align-items:center; justify-content:center;
     position:relative; z-index:1;
+    -webkit-tap-highlight-color:transparent; outline:none;
   }
+  /* The browser's own tap/focus ring is a fixed blue that never matched any
+     theme, and it can look orphaned once a theme switch reflows the picker
+     underneath it. Swap it for our own ink-colored ring that repaints with
+     whichever theme is currently active. */
+  .theme-swatch:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
   .theme-swatch svg{width:19px;height:19px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7));}
   /* Scaling up on hover/select doesn't reflow siblings (transform is paint-only),
      so without a z-index bump the enlarged swatch can visually overlap a
@@ -481,14 +487,18 @@ function renderThemePicker(containerId, onPick) {
   el.innerHTML = THEMES.map(t =>
     `<button type="button" class="theme-swatch" data-theme-id="${t.id}" title="${t.label}" aria-label="${t.label}" style="--sw-bg:${t.swatch};--sw-radius:${t.radius};--sw-rot:${t.rot}">${t.icon}</button>`
   ).join('');
-  el.querySelectorAll('.theme-swatch').forEach(btn => btn.addEventListener('click', () => onPick(btn.getAttribute('data-theme-id'), btn)));
+  // Pass the click event through, not the button — a button's own
+  // bounding box can already be mid hover/scale transform at click time,
+  // which threw off where the ripple's "explosion" actually started from.
+  // The pointer position itself is exact regardless of any transform.
+  el.querySelectorAll('.theme-swatch').forEach(btn => btn.addEventListener('click', (e) => onPick(btn.getAttribute('data-theme-id'), e)));
   syncThemePickers(currentTheme());
 }
 
 // Same animated theme switch as dot420.html: a circular view-transition
-// ripple expanding from the swatch you clicked, with a plain fade fallback
+// ripple expanding from the point you clicked, with a plain fade fallback
 // for browsers without the View Transitions API (or reduced-motion).
-function applyTheme(theme, originEl) {
+function applyTheme(theme, evt) {
   const root = document.documentElement;
   const doApply = () => {
     if (theme === 'original') root.removeAttribute('data-theme');
@@ -503,18 +513,15 @@ function applyTheme(theme, originEl) {
     return;
   }
   let cx = innerWidth / 2, cy = innerHeight / 2;
-  if (originEl) {
-    const r = originEl.getBoundingClientRect();
-    cx = r.left + r.width / 2; cy = r.top + r.height / 2;
-  }
+  if (evt && typeof evt.clientX === 'number') { cx = evt.clientX; cy = evt.clientY; }
   const maxR = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy));
   root.style.setProperty('--ripple-from', `circle(0px at ${cx}px ${cy}px)`);
   root.style.setProperty('--ripple-to', `circle(${Math.ceil(maxR)}px at ${cx}px ${cy}px)`);
   document.startViewTransition(doApply);
 }
 
-renderThemePicker('themePicker', (id, btn) => { selectedTheme = id; applyTheme(id, btn); });
-renderThemePicker('themePickerHost', (id, btn) => { selectedTheme = id; applyTheme(id, btn); });
+renderThemePicker('themePicker', (id, evt) => { selectedTheme = id; applyTheme(id, evt); });
+renderThemePicker('themePickerHost', (id, evt) => { selectedTheme = id; applyTheme(id, evt); });
 
 // Bust browser/carrier caches on every read — a plain GET here was getting
 // served stale by intermediary caches, which is why a submit or vote from
@@ -609,11 +616,19 @@ function renderChart(candidates) {
 async function loadAll() {
   try {
     const state = await fetchState();
-    settings = state.settings || settings;
-    document.getElementById('upThreshInput').value = settings.upThreshold;
-    document.getElementById('downThreshInput').value = settings.downThreshold;
-    const roomTheme = state.theme || 'original';
-    if (roomTheme !== currentTheme()) { selectedTheme = roomTheme; applyTheme(roomTheme); }
+    // The background poll never stopped while the host had the settings
+    // panel open, so every 2s it silently overwrote the threshold inputs
+    // and reverted the live theme preview back to whatever's still saved
+    // on the server — wiping out an in-progress edit before Save was even
+    // clicked. Skip syncing those two things while the panel is open.
+    const editingSettings = document.getElementById('settingsOverlay').classList.contains('open');
+    if (!editingSettings) {
+      settings = state.settings || settings;
+      document.getElementById('upThreshInput').value = settings.upThreshold;
+      document.getElementById('downThreshInput').value = settings.downThreshold;
+      const roomTheme = state.theme || 'original';
+      if (roomTheme !== currentTheme()) { selectedTheme = roomTheme; applyTheme(roomTheme); }
+    }
     renderChart(state.candidates || []);
     renderQueue(state.queue || []);
     document.getElementById('statusMsg').textContent = 'synced ' + new Date().toLocaleTimeString();
