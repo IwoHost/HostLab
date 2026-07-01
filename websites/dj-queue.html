@@ -34,7 +34,7 @@
     --stampbtn-radius:47% 53% 45% 55%/55% 45% 55% 45%;
     --rivet-bg:radial-gradient(circle at 35% 30%, #6b665c, #2a2620 70%);
     --qr-bg:var(--paper); --qr-fg:var(--ink);
-    --deco:block; --deco-stamp:flex;
+    --deco:block; --deco-stamp:flex; --blobs:none;
     --tilt-l:-1.6deg; --tilt-r:1.3deg; --tilt-s:-0.6deg; --tilt-note:1.2deg; --tilt-card:-1deg;
     --body-bg-image:
       radial-gradient(circle at 10% 15%, rgba(178,58,46,.10) 0, transparent 35%),
@@ -129,12 +129,9 @@
     --card-blur:blur(20px) saturate(180%); --card-border:1px solid rgba(255,255,255,.6);
     --btn-radius:980px; --stampbtn-radius:50%;
     --rivet-bg:linear-gradient(135deg,#FF375F,#5E5CE6);
-    --deco:none; --deco-stamp:none;
+    --deco:none; --deco-stamp:none; --blobs:block;
     --tilt-l:0deg; --tilt-r:0deg; --tilt-s:0deg; --tilt-note:0deg; --tilt-card:0deg;
-    --body-bg-image:
-      radial-gradient(circle at 18% 12%, rgba(94,92,230,.16) 0, transparent 45%),
-      radial-gradient(circle at 85% 28%, rgba(255,55,95,.12) 0, transparent 45%),
-      radial-gradient(circle at 50% 92%, rgba(94,92,230,.08) 0, transparent 45%);
+    --body-bg-image:none;
   }
 
   /* animated theme switch — same view-transition ripple as dot420.html, with a fade fallback */
@@ -144,6 +141,15 @@
   html.theme-transitioning *,html.theme-transitioning *::before,html.theme-transitioning *::after{
     transition:background .4s ease,background-color .4s ease,border-color .4s ease,color .4s ease,box-shadow .4s ease,border-radius .4s ease!important;
   }
+
+  /* same drifting-blob background as dot420.html's #bg, on for Apple only */
+  #bg-blobs{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;display:var(--blobs);}
+  .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.75;animation:blobDrift 28s ease-in-out infinite alternate;}
+  .blob.b1{width:55vw;height:55vw;left:-10vw;top:-10vh;background:radial-gradient(circle,rgba(94,92,230,.35),transparent 70%);}
+  .blob.b2{width:48vw;height:48vw;right:-8vw;top:4vh;background:radial-gradient(circle,rgba(255,55,95,.28),transparent 70%);animation-duration:34s;}
+  .blob.b3{width:50vw;height:50vw;left:22vw;top:36vh;background:radial-gradient(circle,rgba(94,92,230,.22),transparent 70%);animation-duration:24s;}
+  .blob.b4{width:42vw;height:42vw;left:32vw;bottom:-12vh;background:radial-gradient(circle,rgba(255,55,95,.2),transparent 70%);animation-duration:30s;}
+  @keyframes blobDrift{ from{transform:translate(0,0) scale(1)} to{transform:translate(6vw,5vh) scale(1.18)} }
 
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -330,7 +336,7 @@
   .theme-swatch.on{border-color:#fff;box-shadow:0 0 0 3px var(--ink),inset 0 0 0 2px rgba(255,255,255,.5);transform:rotate(0deg) scale(1.14);z-index:2;}
   .theme-picker-label{font-size:11px;color:var(--muted-ink);text-align:center;margin-top:8px;font-family:var(--font-label);letter-spacing:.06em;text-transform:uppercase;}
 
-  .splash{max-width:400px;margin:60px auto;padding:0 16px;}
+  .splash{max-width:400px;margin:60px auto;padding:0 16px;position:relative;z-index:1;}
   .splash .poster{text-align:center;}
   .big-btn{
     display:block;width:100%;font-family:var(--font-label);font-size:14px;
@@ -342,6 +348,12 @@
 </style>
 </head>
 <body>
+<div id="bg-blobs">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="blob b4"></div>
+</div>
 <div class="tape-strip"></div>
 <button class="rivet" id="gearBtn" title="wall rules" style="display:none;">⚙</button>
 
