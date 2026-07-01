@@ -616,11 +616,19 @@ function renderChart(candidates) {
 async function loadAll() {
   try {
     const state = await fetchState();
-    settings = state.settings || settings;
-    document.getElementById('upThreshInput').value = settings.upThreshold;
-    document.getElementById('downThreshInput').value = settings.downThreshold;
-    const roomTheme = state.theme || 'original';
-    if (roomTheme !== currentTheme()) { selectedTheme = roomTheme; applyTheme(roomTheme); }
+    // The background poll never stopped while the host had the settings
+    // panel open, so every 2s it silently overwrote the threshold inputs
+    // and reverted the live theme preview back to whatever's still saved
+    // on the server — wiping out an in-progress edit before Save was even
+    // clicked. Skip syncing those two things while the panel is open.
+    const editingSettings = document.getElementById('settingsOverlay').classList.contains('open');
+    if (!editingSettings) {
+      settings = state.settings || settings;
+      document.getElementById('upThreshInput').value = settings.upThreshold;
+      document.getElementById('downThreshInput').value = settings.downThreshold;
+      const roomTheme = state.theme || 'original';
+      if (roomTheme !== currentTheme()) { selectedTheme = roomTheme; applyTheme(roomTheme); }
+    }
     renderChart(state.candidates || []);
     renderQueue(state.queue || []);
     document.getElementById('statusMsg').textContent = 'synced ' + new Date().toLocaleTimeString();
