@@ -538,7 +538,7 @@
     <div class="tape-corner tc-tc"></div>
     <p class="eyebrow">The Song Wall</p>
     <h1>THE END</h1>
-    <p class="sub">The host packed up — this wall's closed.</p>
+    <p class="sub" id="endedMessage">The host packed up — this wall's closed.</p>
     <button class="big-btn" id="endedLeaveBtn">START YOUR OWN WALL</button>
   </div>
 </div>
@@ -600,7 +600,7 @@ let selectedTheme = 'original';
 let roomName = '';
 let selectedTrack = null;
 
-function defaultState(theme, name){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5, submitCooldown: 15 }, theme: theme || 'original', roomName: name || '', version: 0 }; }
+function defaultState(theme, name){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5, submitCooldown: 15 }, theme: theme || 'original', roomName: name || '', version: 0, createdAt: Date.now() }; }
 
 // Each swatch's shape/tilt mirrors its theme's actual corner style and
 // personality, so the picker itself reads as five distinct things, not
@@ -668,6 +668,7 @@ function noCacheUrl(url) { return url + (url.includes('?') ? '&' : '?') + '_=' +
 
 async function fetchState() {
   const res = await fetch(noCacheUrl(roomUrl), { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+  if (res.status === 404) { const err = new Error('room not found'); err.notFound = true; throw err; }
   if (!res.ok) throw new Error('room not found');
   return await res.json();
 }
@@ -680,6 +681,17 @@ async function saveState(state) {
   if (!res.ok) throw new Error('save failed');
 }
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Best-effort — if the backend doesn't actually support deleting a bin (or
+// the request fails), callers fall back to just flagging the room ended.
+async function deleteRoom(id) {
+  try {
+    const res = await fetch(API + '/' + id, { method: 'DELETE' });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
 
 // The JSON bin backing this room is a single blob with no server-side locking:
 // a plain fetch-mutate-PUT cycle silently loses one side's change whenever two
@@ -885,13 +897,29 @@ function updateSubmitCooldownUI() {
   }
 }
 
+const ROOM_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+function showEndedScreen(message) {
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('gearBtn').style.display = 'none';
+  document.getElementById('endedMessage').textContent = message;
+  document.getElementById('endedScreen').style.display = 'block';
+}
+
 async function loadAll() {
   try {
     const state = await fetchState();
+    // Rooms created before this check existed have no createdAt at all —
+    // treat those as already expired too, so old leftover rooms get swept
+    // up the next time anyone (host or guest) happens to open them.
+    const roomAge = state.createdAt ? Date.now() - state.createdAt : Infinity;
+    if (roomAge > ROOM_TTL_MS) {
+      deleteRoom(localStorage.getItem('wallRoomId'));
+      showEndedScreen("This wall's a week old — it closed automatically.");
+      return;
+    }
     if (state.ended) {
-      document.getElementById('mainApp').style.display = 'none';
-      document.getElementById('gearBtn').style.display = 'none';
-      document.getElementById('endedScreen').style.display = 'block';
+      showEndedScreen("The host packed up — this wall's closed.");
       return;
     }
     // The background poll never stopped while the host had the settings
@@ -919,6 +947,7 @@ async function loadAll() {
     syncSpotifyPlaylist();
     document.getElementById('statusMsg').textContent = 'synced ' + new Date().toLocaleTimeString();
   } catch (e) {
+    if (e.notFound) { showEndedScreen("The host packed up — this wall's closed."); return; }
     document.getElementById('statusMsg').textContent = 'offline (' + (e.message || 'error') + ') — retrying…';
   }
 }
@@ -1305,7 +1334,11 @@ document.getElementById('leaveBtn').addEventListener('click', async () => {
   const msg = isHost ? 'End this wall for everyone?' : 'Leave this wall?';
   if (!confirm(msg)) return;
   if (isHost) {
-    try { await withState(state => { state.ended = true; }); } catch (e) {}
+    const roomId = localStorage.getItem('wallRoomId');
+    const deleted = roomId ? await deleteRoom(roomId) : false;
+    // If the backend didn't actually delete it for some reason, at least
+    // flag it ended so guests still get kicked to the "closed" screen.
+    if (!deleted) { try { await withState(state => { state.ended = true; }); } catch (e) {} }
   }
   localStorage.removeItem('wallRoomId');
   localStorage.removeItem('wallVotedMap');
