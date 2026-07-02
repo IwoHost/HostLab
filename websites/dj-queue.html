@@ -1876,33 +1876,6 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// Each theme's own swatch icon, redrawn as a soft watermark so the card
-// visibly matches whichever look the host picked — a "Cute" wall's invite
-// doesn't look like a "Dark" wall's invite anymore.
-function drawThemeIcon(ctx, themeId, cx, cy, size, color) {
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.scale(size / 24, size / 24);
-  ctx.translate(-12, -12);
-  ctx.strokeStyle = color; ctx.fillStyle = color;
-  ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  if (themeId === 'pink') {
-    ctx.stroke(new Path2D('M12 21s-7.5-4.6-10-9.2C.7 8.6 2 5 5.6 4.2 8 3.6 10 4.8 12 7c2-2.2 4-3.4 6.4-2.8C21.9 5 23.3 8.6 22 11.8 19.5 16.4 12 21 12 21Z'));
-  } else if (themeId === 'party') {
-    ctx.stroke(new Path2D('M12 2v6M12 16v6M2 12h6M16 12h6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M19.1 4.9l-4.2 4.2M9.1 14.9l-4.2 4.2'));
-  } else if (themeId === 'simple') {
-    ctx.strokeRect(6, 6, 12, 12);
-  } else if (themeId === 'dark') {
-    ctx.fill(new Path2D('M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z'));
-  } else if (themeId === 'apple') {
-    roundRectPath(ctx, 4, 4, 16, 16, 6); ctx.stroke();
-  } else {
-    ctx.stroke(new Path2D('M3 12 12 3h7a2 2 0 0 1 2 2v7l-9 9a2 2 0 0 1-2.8 0l-6.2-6.2a2 2 0 0 1 0-2.8Z'));
-    ctx.beginPath(); ctx.arc(15.5, 8.5, 1.1, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.restore();
-}
-
 const INVITE_TAGLINES = [
   'scan to drop a track & vote on the wall',
   'no bad DJs allowed — you\'re the DJ now',
@@ -1920,6 +1893,7 @@ function downloadPrintable() {
   if (!roomId || !qrSrc.width) return;
 
   const cs = getComputedStyle(document.documentElement);
+  const wall = cs.getPropertyValue('--wall').trim() || '#242220';
   const paper = cs.getPropertyValue('--paper').trim() || '#EFE6D0';
   const ink = cs.getPropertyValue('--ink').trim() || '#221D16';
   const muted = cs.getPropertyValue('--muted-ink').trim() || '#7A705E';
@@ -1934,60 +1908,61 @@ function downloadPrintable() {
   // decorating a "clean" theme against its own style.
   const showDeco = cs.getPropertyValue('--deco').trim() !== 'none';
   const showStamp = showDeco && cs.getPropertyValue('--deco-stamp').trim() !== 'none';
+  // The card's own shape follows whatever that theme actually looks like
+  // on-page, instead of one "torn tape" look forced onto every theme —
+  // Original is the only one with a real torn-paper clip-path; everyone
+  // else is a plain rounded (or square) card, just at a bigger radius to
+  // read clearly at print size.
+  const hasTornEdge = (cs.getPropertyValue('--poster-clip').trim() || 'none') !== 'none';
+  const cardRadius = Math.min((parseFloat(cs.getPropertyValue('--poster-radius')) || 0) * 2.4, 70);
 
   const W = 1000, H = 1400;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = paper;
+  ctx.fillStyle = wall;
   ctx.fillRect(0, 0, W, H);
 
-  if (showDeco) {
-    // Torn-paper top and bottom instead of flat bars — one continuous path
-    // per bar: straight across the outer edge, then a zigzag back along the
-    // inner edge so the tape looks ripped rather than cleanly cut.
-    ctx.fillStyle = tape;
+  const margin = 40;
+  const cardX = margin, cardY = margin, cardW = W - margin * 2, cardH = H - margin * 2;
+  ctx.save();
+  if (hasTornEdge) {
+    // Straight top/sides, one ripped edge along the bottom — same shape
+    // the on-page poster cards actually use, just inset on the wall color
+    // instead of bleeding to the paper's edge.
+    const tornY = cardY + cardH - 26;
     ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(W, 0);
-    ctx.lineTo(W, 40);
-    zigzagEdge(ctx, W, 40, W, 22, 14, true, -1);
+    ctx.moveTo(cardX, cardY);
+    ctx.lineTo(cardX + cardW, cardY);
+    ctx.lineTo(cardX + cardW, tornY);
+    zigzagEdge(ctx, cardX + cardW, tornY, cardW, 20, 15, true, -1);
     ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(0, H);
-    ctx.lineTo(W, H);
-    ctx.lineTo(W, H - 40);
-    zigzagEdge(ctx, W, H - 40, W, 22, 14, false, -1);
-    ctx.closePath();
-    ctx.fill();
-
-    // A big soft watermark of the theme's own icon, low opacity so it reads
-    // as texture behind the title rather than competing with it.
-    ctx.save();
-    ctx.globalAlpha = 0.08;
-    drawThemeIcon(ctx, selectedTheme, W / 2, 130, 340, ink);
-    ctx.restore();
+  } else {
+    roundRectPath(ctx, cardX, cardY, cardW, cardH, cardRadius);
   }
+  ctx.clip();
+  ctx.fillStyle = paper;
+  ctx.fillRect(cardX, cardY, cardW, cardH);
+  ctx.restore();
 
   ctx.textAlign = 'center';
   const title = roomName || 'THE WALL';
-  const titleSize = fitFontSize(ctx, title, W - 140, fontHead, 72, 32);
+  const titleSize = fitFontSize(ctx, title, cardW - 100, fontHead, 68, 32);
   ctx.font = titleSize + 'px ' + fontHead;
   ctx.fillStyle = ink;
-  ctx.fillText(title, W / 2, 190);
+  ctx.fillText(title, W / 2, cardY + 110);
 
   // Capped narrower than the title so a long tagline can't run into the
   // stamp badge sitting up near the QR code's top-right corner.
   const tagline = INVITE_TAGLINES[Math.floor(Math.random() * INVITE_TAGLINES.length)];
-  const taglineSize = fitFontSize(ctx, tagline, 420, fontHand, 28, 16, 'italic');
+  const taglineSize = fitFontSize(ctx, tagline, 400, fontHand, 26, 16, 'italic');
   ctx.font = 'italic ' + taglineSize + 'px ' + fontHand;
   ctx.fillStyle = muted;
-  ctx.fillText(tagline, W / 2, 240);
+  ctx.fillText(tagline, W / 2, cardY + 158);
 
-  const qrSize = 600;
-  const qrX = (W - qrSize) / 2, qrY = 300;
+  const qrSize = 560;
+  const qrX = (W - qrSize) / 2, qrY = cardY + 210;
 
   // The QR "photo" gets its own drop shadow and a couple of tape corners,
   // like it's taped to the card rather than just printed flat on it.
@@ -2008,39 +1983,39 @@ function downloadPrintable() {
       ctx.fillRect(-w / 2, -h / 2, w, h);
       ctx.restore();
     }
-    tapePiece(qrX + 40, qrY, 130, 46, -0.55);
-    tapePiece(qrX + qrSize - 40, qrY, 130, 46, 0.55);
+    tapePiece(qrX + 36, qrY, 120, 42, -0.55);
+    tapePiece(qrX + qrSize - 36, qrY, 120, 42, 0.55);
   }
 
   if (showStamp) {
     // A rubber-stamp badge, same look as the header's LIVE PARTY stamp.
     ctx.save();
-    ctx.translate(qrX + qrSize - 20, qrY - 20);
+    ctx.translate(qrX + qrSize - 18, qrY - 18);
     ctx.rotate(-0.2);
     ctx.beginPath();
-    ctx.arc(0, 0, 70, 0, Math.PI * 2);
+    ctx.arc(0, 0, 64, 0, Math.PI * 2);
     ctx.lineWidth = 5;
     ctx.strokeStyle = stampRed;
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(0, 0, 60, 0, Math.PI * 2);
+    ctx.arc(0, 0, 55, 0, Math.PI * 2);
     ctx.stroke();
     ctx.fillStyle = stampRed;
-    ctx.font = '700 20px ' + fontLabel;
+    ctx.font = '700 18px ' + fontLabel;
     ctx.textAlign = 'center';
     ctx.fillText('SCAN', 0, -4);
-    ctx.fillText('ME', 0, 20);
+    ctx.fillText('ME', 0, 18);
     ctx.restore();
   }
 
   ctx.textAlign = 'center';
-  ctx.font = '38px ' + fontLabel;
+  ctx.font = '36px ' + fontLabel;
   ctx.fillStyle = ink;
-  ctx.fillText('ROOM CODE: ' + roomId, W / 2, qrY + qrSize + 80);
+  ctx.fillText('ROOM CODE: ' + roomId, W / 2, qrY + qrSize + 74);
 
-  ctx.font = '22px ' + fontBody;
+  ctx.font = '21px ' + fontBody;
   ctx.fillStyle = muted;
-  ctx.fillText(buildJoinUrl(roomId), W / 2, qrY + qrSize + 122);
+  ctx.fillText(buildJoinUrl(roomId), W / 2, qrY + qrSize + 114);
 
   canvas.toBlob(blob => {
     const a = document.createElement('a');
