@@ -399,7 +399,7 @@
     background:var(--wall-dark);color:var(--stamp-green);padding:12px;border-radius:6px;
     max-height:220px;overflow-y:auto;margin:0 0 14px;
   }
-  .btn-save.dev-danger{background:var(--stamp-red);}
+  .btn-save.dev-danger, .ticket-action.dev-danger{background:var(--stamp-red);color:#fff;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:11px;color:var(--muted-ink);margin-bottom:4px;font-family:var(--font-label);text-transform:uppercase;}
   .field input{width:100%;border:2px solid var(--ink);}
@@ -594,11 +594,30 @@
     <pre class="dev-diagnostics" id="devDiagnostics"></pre>
     <div class="settings-actions">
       <button class="btn-cancel" id="devResyncBtn">FORCE RESYNC</button>
-      <button class="btn-cancel" id="devWipeLocalBtn">WIPE MY STORAGE</button>
+      <button class="btn-cancel" id="devUnbanBtn" style="display:none;">UNBAN ALL</button>
     </div>
     <div class="settings-actions">
+      <button class="btn-cancel" id="devWipeLocalBtn">WIPE MY STORAGE</button>
       <button class="btn-save dev-danger" id="devDeleteRoomBtn">DELETE THIS ROOM</button>
-      <button class="btn-cancel" id="devCloseBtn">CLOSE</button>
+    </div>
+    <div class="settings-actions">
+      <button class="btn-cancel" id="devCloseBtn" style="flex:none;width:100%;">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="takeoverOverlay">
+  <div class="card">
+    <h2 class="dev-title">TAKE OVER?</h2>
+    <p class="hint">Only do this if the real host is gone and can't get back in. Enter the recovery password to become host.</p>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="takeoverPasswordInput" autocomplete="off">
+    </div>
+    <p class="hint" id="takeoverError" style="color:var(--stamp-red);display:none;">Wrong password.</p>
+    <div class="settings-actions">
+      <button class="btn-cancel" id="takeoverCancelBtn">Cancel</button>
+      <button class="btn-save dev-danger" id="takeoverSubmitBtn">BECOME HOST</button>
     </div>
   </div>
 </div>
@@ -751,6 +770,15 @@ async function withState(mutator, maxAttempts = 5) {
 
 function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
+// An anonymous per-browser id (not tied to any real identity) so the host
+// can block a specific device from adding more songs after a bad submission
+// — there's no login here, so this is the closest thing to "who added this."
+function getDeviceId() {
+  let id = localStorage.getItem('wallDeviceId');
+  if (!id) { id = 'dev_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('wallDeviceId', id); }
+  return id;
+}
+
 // Album art doubles as a link to the actual track on Spotify when a search
 // result was picked for it — the closest thing to "playback" without a
 // real Spotify login/SDK integration.
@@ -838,9 +866,13 @@ function renderQueue(queue, state) {
     <div class="ticket ${realId && t.spotifyId === realId ? 'playing' : ''}">
       ${trackArtHtml(t)}
       <div class="ticket-info"><div class="ticket-title">${realId && t.spotifyId === realId ? '<span class="live-dot">▶</span>' : ''}${escapeHtml(t.title)}</div><div class="ticket-artist">${escapeHtml(t.artist)}</div></div>
-      <div class="manual-actions"><button class="ticket-action" data-played="${t.id}">PLAYED</button></div>
+      <div class="manual-actions">
+        <button class="ticket-action" data-played="${t.id}">PLAYED</button>
+        ${t.submitterId ? `<button class="ticket-action dev-danger" data-ban-queue="${t.id}">BAN</button>` : ''}
+      </div>
     </div>`).join('');
   el.querySelectorAll('[data-played]').forEach(btn => btn.onclick = () => markPlayed(btn.getAttribute('data-played')));
+  el.querySelectorAll('[data-ban-queue]').forEach(btn => btn.onclick = () => banSubmitter(btn.getAttribute('data-ban-queue'), 'queue'));
 }
 
 let lastChartIds = null;
@@ -891,11 +923,13 @@ function renderChart(candidates) {
       </div>
       <div class="manual-actions">
         <button class="ticket-action" data-reject="${c.id}">RIP DOWN</button>
+        ${c.submitterId ? `<button class="ticket-action dev-danger" data-ban-wall="${c.id}">BAN</button>` : ''}
       </div>
     </div>`;
   }).join('');
   el.querySelectorAll('[data-vote]').forEach(btn => btn.onclick = () => { const [id, dir] = btn.getAttribute('data-vote').split(':'); castVote(id, dir); });
   el.querySelectorAll('[data-reject]').forEach(btn => btn.onclick = () => rejectCandidate(btn.getAttribute('data-reject')));
+  el.querySelectorAll('[data-ban-wall]').forEach(btn => btn.onclick = () => banSubmitter(btn.getAttribute('data-ban-wall'), 'wall'));
 }
 
 // Simple per-device submission cooldown so one person can't spam the wall
@@ -1001,7 +1035,7 @@ async function castVote(id, dir) {
       if (next === 'down') c.down += 1;
       if (c.up >= state.settings.upThreshold) {
         state.candidates.splice(idx, 1);
-        state.queue.push({ id: c.id, title: c.title, artist: c.artist, image: c.image, spotifyUrl: c.spotifyUrl, spotifyId: c.spotifyId, addedAt: Date.now() });
+        state.queue.push({ id: c.id, title: c.title, artist: c.artist, image: c.image, spotifyUrl: c.spotifyUrl, spotifyId: c.spotifyId, submitterId: c.submitterId, addedAt: Date.now() });
       } else if (c.down >= state.settings.downThreshold) {
         state.candidates.splice(idx, 1);
       }
@@ -1025,6 +1059,28 @@ async function markPlayed(id) {
   try {
     await withState(state => {
       state.queue = state.queue.filter(t => t.id !== id);
+    });
+  } catch (e) {}
+  loadAll();
+}
+
+// Blocks whoever added a given track from adding more — there's no login
+// here, so this only works against the anonymous device id the submitter's
+// own browser tagged the track with (older tracks predate that and can't
+// be traced back to anyone). Also removes the offending track itself.
+async function banSubmitter(id, source) {
+  if (!isHost) return;
+  if (!confirm('Block whoever added this from adding more songs to this wall, and remove it?')) return;
+  try {
+    await withState(state => {
+      const list = source === 'queue' ? state.queue : state.candidates;
+      const track = list.find(t => t.id === id);
+      if (track && track.submitterId) {
+        state.bannedIds = state.bannedIds || [];
+        if (!state.bannedIds.includes(track.submitterId)) state.bannedIds.push(track.submitterId);
+      }
+      if (source === 'queue') state.queue = state.queue.filter(t => t.id !== id);
+      else state.candidates = state.candidates.filter(c => c.id !== id);
     });
   } catch (e) {}
   loadAll();
@@ -1328,6 +1384,14 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
     return;
   }
   if (remainingCooldown() > 0) { updateSubmitCooldownUI(); return; }
+  try {
+    const freshState = await fetchState();
+    if ((freshState.bannedIds || []).includes(getDeviceId())) {
+      pickHint.textContent = "You've been blocked from adding songs to this wall.";
+      pickHint.style.color = 'var(--stamp-red)';
+      return;
+    }
+  } catch (e) {}
   document.getElementById('submitBtn').disabled = true;
   const track = selectedTrack;
   try {
@@ -1336,6 +1400,7 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
         id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
         title: track.title, artist: track.artist, up: 0, down: 0,
         image: track.image, spotifyUrl: track.url, spotifyId: track.id,
+        submitterId: getDeviceId(),
       });
     });
     const roomId = localStorage.getItem('wallRoomId');
@@ -1442,35 +1507,56 @@ function renderDevDiagnostics() {
     'spotify needs rescope: ' + needsSpotifyRescope,
     'now playing (real): ' + (s.nowPlayingTitle || '(none — guessing from queue order)'),
     'spotify playlist: ' + (s.spotifyPlaylistUrl || '(not synced yet)'),
+    'banned devices: ' + ((s.bannedIds || []).length),
   ];
   document.getElementById('devDiagnostics').textContent = lines.join('\n');
+  document.getElementById('devUnbanBtn').style.display = (s.bannedIds || []).length ? 'block' : 'none';
 }
 
+// Host-only, full stop — a guest doing this gesture sees nothing happen.
+// Still just a client-side flag like every other host check in this app,
+// not real access control, but enough to keep it out of guests' way.
 function openDevMode() {
+  if (!isHost) return;
   document.getElementById('devJoke').textContent = DEV_JOKES[Math.floor(Math.random() * DEV_JOKES.length)];
   renderDevDiagnostics();
   document.getElementById('devOverlay').classList.add('open');
 }
 
-const SECRET_SEQUENCE = ['up', 'up', 'down', 'down', 'left', 'right', 'left', 'right'];
-let secretBuffer = [];
-let secretLastInputAt = 0;
-function feedSecretGesture(direction) {
+// Recovery path if the real host's device dies or they can't get back into
+// the party — a DIFFERENT gesture from the dev menu (so it's not just "the
+// same trick again"), which then requires a password before anything
+// happens. This is a static site with public source, so the password is a
+// deterrent, not real security — anyone reading the JS can find it. Change
+// TAKEOVER_PASSWORD below to whatever you'd rather use.
+const TAKEOVER_PASSWORD = 'encore2026';
+function openTakeoverPrompt() {
+  document.getElementById('takeoverPasswordInput').value = '';
+  document.getElementById('takeoverError').style.display = 'none';
+  document.getElementById('takeoverOverlay').classList.add('open');
+}
+
+const DEV_SEQUENCE = ['up', 'up', 'down', 'down', 'left', 'right', 'left', 'right'];
+const TAKEOVER_SEQUENCE = ['down', 'down', 'up', 'up', 'right', 'left', 'right', 'left'];
+let devBuffer = [];
+let takeoverBuffer = [];
+let gestureLastInputAt = 0;
+function feedGesture(direction) {
   const now = Date.now();
-  if (now - secretLastInputAt > 4000) secretBuffer = [];
-  secretLastInputAt = now;
-  secretBuffer.push(direction);
-  if (secretBuffer.length > SECRET_SEQUENCE.length) secretBuffer.shift();
-  if (secretBuffer.join(',') === SECRET_SEQUENCE.join(',')) {
-    secretBuffer = [];
-    openDevMode();
-  }
+  if (now - gestureLastInputAt > 4000) { devBuffer = []; takeoverBuffer = []; }
+  gestureLastInputAt = now;
+  devBuffer.push(direction);
+  if (devBuffer.length > DEV_SEQUENCE.length) devBuffer.shift();
+  takeoverBuffer.push(direction);
+  if (takeoverBuffer.length > TAKEOVER_SEQUENCE.length) takeoverBuffer.shift();
+  if (devBuffer.join(',') === DEV_SEQUENCE.join(',')) { devBuffer = []; openDevMode(); }
+  if (takeoverBuffer.join(',') === TAKEOVER_SEQUENCE.join(',')) { takeoverBuffer = []; openTakeoverPrompt(); }
 }
 
 const SECRET_ARROW_KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
 document.addEventListener('keydown', (e) => {
   const dir = SECRET_ARROW_KEYS[e.key];
-  if (dir) feedSecretGesture(dir);
+  if (dir) feedGesture(dir);
 });
 
 let secretTouchStart = null;
@@ -1484,10 +1570,15 @@ document.addEventListener('touchend', (e) => {
   const t = e.changedTouches[0];
   const dx = t.clientX - start.x, dy = t.clientY - start.y;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < 40) return; // too small to count as a swipe
-  feedSecretGesture(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+  feedGesture(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
 }, { passive: true });
 
 document.getElementById('devResyncBtn').addEventListener('click', () => loadAll());
+document.getElementById('devUnbanBtn').addEventListener('click', async () => {
+  if (!confirm('Unban everyone currently blocked from adding songs to this wall?')) return;
+  try { await withState(state => { state.bannedIds = []; }); } catch (e) {}
+  loadAll();
+});
 document.getElementById('devWipeLocalBtn').addEventListener('click', () => {
   if (!confirm("Wipe ALL of this device's local storage (room, votes, Spotify login) and reload?")) return;
   localStorage.clear();
@@ -1503,6 +1594,21 @@ document.getElementById('devDeleteRoomBtn').addEventListener('click', async () =
 });
 document.getElementById('devCloseBtn').addEventListener('click', () => {
   document.getElementById('devOverlay').classList.remove('open');
+});
+
+document.getElementById('takeoverCancelBtn').addEventListener('click', () => {
+  document.getElementById('takeoverOverlay').classList.remove('open');
+});
+document.getElementById('takeoverSubmitBtn').addEventListener('click', () => {
+  const entered = document.getElementById('takeoverPasswordInput').value;
+  if (entered !== TAKEOVER_PASSWORD) {
+    document.getElementById('takeoverError').style.display = 'block';
+    return;
+  }
+  isHost = true;
+  updateHostUI();
+  document.getElementById('takeoverOverlay').classList.remove('open');
+  loadAll();
 });
 
 function extractIdFromUrl(url) { return url.trim().split('/').filter(Boolean).pop(); }
@@ -1606,20 +1712,24 @@ function downloadPrintable() {
   }, 'image/png');
 }
 
+function updateHostUI() {
+  localStorage.setItem('wallIsHost', isHost ? '1' : '0');
+  document.body.classList.toggle('is-host', isHost);
+  document.getElementById('gearBtn').style.display = isHost ? 'block' : 'none';
+  document.getElementById('resetBtn').style.display = isHost ? 'inline' : 'none';
+  document.querySelector('.footer-row .dot-sep').style.display = isHost ? 'inline' : 'none';
+}
+
 // host is whoever created the wall — tracked client-side only (no auth
 // backend here), so it's a UI convenience, not a real permission boundary.
 function enterRoom(id, opts = {}) {
   roomUrl = API + '/' + id;
   localStorage.setItem('wallRoomId', id);
   isHost = 'host' in opts ? opts.host : localStorage.getItem('wallIsHost') === '1';
-  localStorage.setItem('wallIsHost', isHost ? '1' : '0');
-  document.body.classList.toggle('is-host', isHost);
+  updateHostUI();
   document.getElementById('roomCodeDisplay').textContent = id;
   document.getElementById('splashScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
-  document.getElementById('gearBtn').style.display = isHost ? 'block' : 'none';
-  document.getElementById('resetBtn').style.display = isHost ? 'inline' : 'none';
-  document.querySelector('.footer-row .dot-sep').style.display = isHost ? 'inline' : 'none';
   renderShareQR(id);
   const saved = localStorage.getItem('wallVotedMap');
   votedMap = saved ? JSON.parse(saved) : {};
