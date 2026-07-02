@@ -182,6 +182,16 @@
   }
   @media (prefers-reduced-motion: reduce){ *{transition:none !important;animation:none !important;} }
 
+  /* Switching themes pops a circular reveal out from wherever you clicked
+     the swatch, via the View Transitions API — progressive enhancement,
+     browsers without it just apply the new theme instantly. */
+  ::view-transition-old(root){ animation:none; }
+  ::view-transition-new(root){
+    animation:theme-reveal .6s ease-out forwards;
+    clip-path:circle(0% at var(--vt-x,50%) var(--vt-y,50%));
+  }
+  @keyframes theme-reveal{ to{ clip-path:circle(150% at var(--vt-x,50%) var(--vt-y,50%)); } }
+
   .tape-strip{
     display:var(--deco);
     height:24px;
@@ -623,8 +633,21 @@ function renderThemePicker(containerId, onPick) {
   el.innerHTML = THEMES.map(t =>
     `<button type="button" class="theme-swatch" data-theme-id="${t.id}" title="${t.label}" aria-label="${t.label}" style="--sw-bg:${t.swatch};--sw-radius:${t.radius};--sw-rot:${t.rot}">${t.icon}</button>`
   ).join('');
-  el.querySelectorAll('.theme-swatch').forEach(btn => btn.addEventListener('click', () => onPick(btn.getAttribute('data-theme-id'))));
+  el.querySelectorAll('.theme-swatch').forEach(btn => btn.addEventListener('click', (evt) => onPick(btn.getAttribute('data-theme-id'), evt)));
   syncThemePickers(currentTheme());
+}
+
+// Picking a theme pops a circle out from the swatch you clicked instead of
+// just snapping — falls back to an instant swap on browsers without the
+// View Transitions API, or when the user asked for reduced motion.
+function applyThemeFromClick(id, evt) {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!document.startViewTransition || reduceMotion) { selectedTheme = id; applyTheme(id); return; }
+  const x = evt ? evt.clientX : window.innerWidth / 2;
+  const y = evt ? evt.clientY : window.innerHeight / 2;
+  document.documentElement.style.setProperty('--vt-x', x + 'px');
+  document.documentElement.style.setProperty('--vt-y', y + 'px');
+  document.startViewTransition(() => { selectedTheme = id; applyTheme(id); });
 }
 
 function applyTheme(theme) {
@@ -635,8 +658,8 @@ function applyTheme(theme) {
   if (roomUrl) { const id = localStorage.getItem('wallRoomId'); if (id) renderShareQR(id); }
 }
 
-renderThemePicker('themePicker', id => { selectedTheme = id; applyTheme(id); });
-renderThemePicker('themePickerHost', id => { selectedTheme = id; applyTheme(id); });
+renderThemePicker('themePicker', applyThemeFromClick);
+renderThemePicker('themePickerHost', applyThemeFromClick);
 
 // Bust browser/carrier caches on every read — a plain GET here was getting
 // served stale by intermediary caches, which is why a submit or vote from
