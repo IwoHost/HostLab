@@ -623,8 +623,12 @@
 </div>
 
 <script>
-const API = 'https://json.extendsclass.com/bin';
-const API_KEY = '4332b69b-7561-11f1-b6b0-0242ac110005';
+// Own Cloudflare Worker + Durable Object (see workers/dj-wall-backend/) —
+// replaced the free json.extendsclass.com JSON-storage service, which caps
+// out at 10,000 total requests and a party polling every 2s per device
+// burns through that in well under an hour. Set this to your deployed
+// worker's URL, ending in /room.
+const API = 'https://hostlab-dj-wall.iwohost.workers.dev/room';
 // Set this to your deployed Spotify-search Cloudflare Worker URL (see
 // workers/spotify-search/) to turn on real song search-as-you-type.
 // Left blank, the title field just stays free-text — nothing breaks.
@@ -647,8 +651,6 @@ let settings = { upThreshold: 5, downThreshold: 5, submitCooldown: 15 };
 let selectedTheme = 'original';
 let roomName = '';
 let selectedTrack = null;
-
-function defaultState(theme, name){ return { candidates: [], queue: [], settings: { upThreshold: 5, downThreshold: 5, submitCooldown: 15 }, theme: theme || 'original', roomName: name || '', version: 0, createdAt: Date.now() }; }
 
 // Each swatch's shape/tilt mirrors its theme's actual corner style and
 // personality, so the picker itself reads as five distinct things, not
@@ -726,11 +728,12 @@ async function saveState(state) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(state)
   });
+  if (res.status === 409) { const err = new Error('version conflict'); err.conflict = true; throw err; }
   if (!res.ok) throw new Error('save failed');
 }
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// Best-effort — if the backend doesn't actually support deleting a bin (or
+// Best-effort — if the backend doesn't actually support deleting a room (or
 // the request fails), callers fall back to just flagging the room ended.
 async function deleteRoom(id) {
   try {
@@ -741,13 +744,16 @@ async function deleteRoom(id) {
   }
 }
 
-// The JSON bin backing this room is a single blob with no server-side locking:
-// a plain fetch-mutate-PUT cycle silently loses one side's change whenever two
-// people act at the same time. withState guards that by re-fetching right
-// before writing and comparing a version counter — if someone else wrote in
-// between, it discards the attempt and retries against the fresh state instead
-// of overwriting it.
-async function withState(mutator, maxAttempts = 5) {
+// One Durable Object per room processes requests to itself one at a time, so
+// it can atomically reject a write that isn't exactly the next version —
+// unlike the old dumb-blob backend, there's no gap between checking the
+// version and saving where two people voting at once could race each other.
+// withState just needs to retry against fresh state when that happens.
+// Durable Object writes resolve in single-digit milliseconds, so a lost
+// race just needs another quick attempt rather than a long backoff — a
+// generous attempt budget costs little and comfortably rides out a real
+// crowd all voting on the same track at once.
+async function withState(mutator, maxAttempts = 30) {
   let state = await fetchState();
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (typeof state.version !== 'number') state.version = 0;
@@ -756,14 +762,14 @@ async function withState(mutator, maxAttempts = 5) {
     const result = mutator(working);
     working.version = baseVersion + 1;
 
-    const latest = await fetchState();
-    if ((typeof latest.version === 'number' ? latest.version : 0) !== baseVersion) {
-      state = latest;
-      await delay(120 + Math.random() * 300);
-      continue;
+    try {
+      await saveState(working);
+      return result;
+    } catch (e) {
+      if (!e.conflict) throw e;
+      await delay(20 + Math.random() * 80);
+      state = await fetchState();
     }
-    await saveState(working);
-    return result;
   }
   throw new Error('busy, try again');
 }
@@ -1009,7 +1015,7 @@ async function loadAll() {
     renderChart(state.candidates || []);
     renderQueue(state.queue || [], state);
     updateSubmitCooldownUI();
-    syncSpotifyPlaylist();
+    syncSpotifyPlaylist(state);
     document.getElementById('statusMsg').textContent = 'synced ' + new Date().toLocaleTimeString();
   } catch (e) {
     if (e.notFound) { showEndedScreen("The host packed up — this wall's closed."); return; }
@@ -1271,12 +1277,15 @@ function reportSpotifyError(msg) {
   if (status) { status.textContent = 'Sync error: ' + msg; status.style.color = 'var(--stamp-red)'; }
 }
 
-async function syncSpotifyPlaylist() {
+async function syncSpotifyPlaylist(initialState) {
   if (!isHost || !hasSpotifyLogin()) return;
   const token = await getSpotifyAccessToken();
   if (!token) { reportSpotifyError('could not get an access token — try reconnecting.'); return; }
   try {
-    let state = await fetchState();
+    // Reuses the state loadAll() just fetched instead of hitting the storage
+    // API again every 2s — that redundant fetch was quietly doubling every
+    // host device's request volume against a metered free-tier quota.
+    let state = initialState;
     let playlistId = state.spotifyPlaylistId;
     if (!playlistId) {
       // Spotify's Feb 2026 Web API migration removed /v1/users/{id}/playlists
@@ -1746,10 +1755,13 @@ document.getElementById('createRoomBtn').addEventListener('click', async () => {
   const name = document.getElementById('roomNameInput').value.trim();
   errEl.textContent = 'creating room…';
   try {
+    // Only the bits the splash screen actually lets you pick get sent —
+    // the worker sets everything else (version, createdAt off its own
+    // clock) when it creates the room.
     const res = await fetch(API, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Api-key': API_KEY },
-      body: JSON.stringify(defaultState(selectedTheme, name))
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme: selectedTheme, roomName: name })
     });
     if (!res.ok) throw new Error('server said: ' + res.status + ' ' + res.statusText);
     const data = await res.json();
