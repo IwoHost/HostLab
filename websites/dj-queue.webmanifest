@@ -8,6 +8,6 @@
   "background_color": "#242220",
   "theme_color": "#242220",
   "icons": [
-    { "src": "../other/logo/dj-queue-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "../other/logo/HLab_Logo.png", "sizes": "64x64", "type": "image/png", "purpose": "any" }
   ]
 }
