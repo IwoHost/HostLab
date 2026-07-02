@@ -262,8 +262,10 @@
 
   .ticket{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:2px dashed var(--line);}
   .ticket:last-child{border-bottom:none;}
+  .ticket.playing{background:color-mix(in srgb, var(--stamp-green) 10%, transparent);margin:0 -8px;padding:12px 8px;border-radius:4px;}
   .ticket-info{flex:1;min-width:0;}
   .ticket-title{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ticket-title .live-dot{color:var(--stamp-green);margin-right:4px;}
   .ticket-artist{font-size:12px;color:var(--muted-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   /* Buttons pull fill/border/blur from variables so a theme (Apple) can
      turn them into real frosted glass — translucent + backdrop-blurred so
@@ -544,7 +546,7 @@ if (SPOTIFY_SEARCH_API) {
 // auto-sync a real Spotify playlist. Client IDs aren't secret; this is the
 // normal way public/SPA clients ship Spotify login.
 const SPOTIFY_CLIENT_ID = '8e2b97cc0aaa47fba6789aecc58dc745';
-const SPOTIFY_SCOPES = 'playlist-modify-public playlist-modify-private';
+const SPOTIFY_SCOPES = 'playlist-modify-public playlist-modify-private user-read-currently-playing';
 let roomUrl = null;
 let votedMap = {};
 let queueVotedMap = {};
@@ -660,10 +662,12 @@ function trackArtHtml(item) {
   return item.spotifyUrl ? `<a href="${escapeHtml(item.spotifyUrl)}" target="_blank" rel="noopener" title="Open in Spotify">${img}</a>` : img;
 }
 
-function renderQueue(queue) {
+function renderQueue(queue, state) {
   const el = document.getElementById('queueList');
   const nowPlaying = document.getElementById('nowPlaying');
-  if (!queue.length) {
+  const realTitle = state && state.nowPlayingTitle;
+  const realId = state && state.nowPlayingId;
+  if (!queue.length && !realTitle) {
     el.innerHTML = '<p class="empty">Nothing queued yet.</p>';
     nowPlaying.style.display = 'none';
     return;
@@ -671,14 +675,22 @@ function renderQueue(queue) {
   // Queued tracks can be upvoted too — more votes moves a track up. Ties go
   // to whichever's been waiting longest (earliest addedAt), not alphabetical.
   const sorted = [...queue].sort((a, b) => (b.up || 0) - (a.up || 0) || (a.addedAt || 0) - (b.addedAt || 0));
-  // Just a label — the top of the vote-sorted queue is whatever the host
-  // should be playing next/now, not a real playback state we control.
-  nowPlaying.textContent = '▶ NOW PLAYING: ' + sorted[0].title + ' — ' + sorted[0].artist;
-  nowPlaying.style.display = 'block';
+  if (realTitle) {
+    // Pulled straight from the host's actual Spotify playback — the real
+    // source of truth once they're connected, not a guess from vote order.
+    nowPlaying.textContent = '▶ NOW PLAYING: ' + realTitle + ' — ' + (state.nowPlayingArtist || '');
+    nowPlaying.style.display = 'block';
+  } else if (sorted.length) {
+    nowPlaying.textContent = '⏳ NEXT UP: ' + sorted[0].title + ' — ' + sorted[0].artist;
+    nowPlaying.style.display = 'block';
+  } else {
+    nowPlaying.style.display = 'none';
+  }
+  if (!sorted.length) { el.innerHTML = '<p class="empty">Nothing queued yet.</p>'; return; }
   el.innerHTML = sorted.map(t => `
-    <div class="ticket">
+    <div class="ticket ${realId && t.spotifyId === realId ? 'playing' : ''}">
       ${trackArtHtml(t)}
-      <div class="ticket-info"><div class="ticket-title">${escapeHtml(t.title)}</div><div class="ticket-artist">${escapeHtml(t.artist)}</div></div>
+      <div class="ticket-info"><div class="ticket-title">${realId && t.spotifyId === realId ? '<span class="live-dot">▶</span>' : ''}${escapeHtml(t.title)}</div><div class="ticket-artist">${escapeHtml(t.artist)}</div></div>
       <button class="stamp-btn up ${queueVotedMap[t.id] === 'up' ? 'voted' : ''}" data-qvote="${t.id}"></button>
       <span class="stamp-count">${t.up || 0}</span>
       <div class="manual-actions"><button class="ticket-action" data-played="${t.id}">PLAYED</button></div>
@@ -793,8 +805,9 @@ async function loadAll() {
     if (state.spotifyPlaylistUrl) { playlistLink.href = state.spotifyPlaylistUrl; playlistLink.style.display = 'inline-block'; }
     else { playlistLink.style.display = 'none'; }
     renderChart(state.candidates || []);
-    renderQueue(state.queue || []);
+    renderQueue(state.queue || [], state);
     updateSubmitCooldownUI();
+    checkNowPlayingFromSpotify();
     syncSpotifyPlaylist();
     document.getElementById('statusMsg').textContent = 'synced ' + new Date().toLocaleTimeString();
   } catch (e) {
@@ -1085,6 +1098,41 @@ async function syncSpotifyPlaylist() {
   } catch (e) {
     reportSpotifyError(e.message || String(e));
   }
+}
+
+// ---- Real "now playing" (host-only, needs user-read-currently-playing) ---
+// Polls the host's actual Spotify playback so guests see the real track
+// instead of a vote-order guess, and auto-removes a queued track once
+// Spotify actually moves on from it (i.e. it finished/was skipped).
+let lastKnownPlayingId = null;
+async function checkNowPlayingFromSpotify() {
+  if (!isHost || !hasSpotifyLogin()) return;
+  const token = await getSpotifyAccessToken();
+  if (!token) return;
+  try {
+    const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    if (res.status === 204) return; // nothing playing right now — don't treat a pause as "track finished"
+    if (!res.ok) return; // most likely the host hasn't reconnected since this scope was added — fail quietly
+    const data = await res.json();
+    const item = data.item;
+    if (!item) return;
+    const playingId = item.id;
+    if (playingId === lastKnownPlayingId) return; // unchanged since the last poll
+    const prevId = lastKnownPlayingId;
+    lastKnownPlayingId = playingId;
+    await withState(s => {
+      s.nowPlayingId = playingId;
+      s.nowPlayingTitle = item.name;
+      s.nowPlayingArtist = (item.artists || []).map(a => a.name).join(', ');
+      if (prevId) {
+        const idx = (s.queue || []).findIndex(t => t.spotifyId === prevId);
+        if (idx !== -1) s.queue.splice(idx, 1);
+      }
+    });
+    loadAll();
+  } catch (e) { /* transient network hiccup — the next poll will retry */ }
 }
 
 document.getElementById('spotifyConnectBtn').addEventListener('click', () => {
