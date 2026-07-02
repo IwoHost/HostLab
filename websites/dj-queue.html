@@ -1413,7 +1413,9 @@ document.getElementById('settingsSave').addEventListener('click', async () => {
 // ---- Secret dev menu ------------------------------------------------------
 // Not real security (this is a static site, anyone can read the source) —
 // just tucked behind a Konami-code-style gesture so it's not in anyone's
-// way. Arrow keys on a keyboard, a 3-finger swipe on touch.
+// way. Arrow keys on a keyboard, a 2-finger swipe on touch (3 fingers
+// collides with OS-level gestures on a lot of phones before it ever
+// reaches the page).
 const DEV_JOKES = [
   "you found the forbidden switchboard.",
   "shhh. nobody else can see this.",
@@ -1473,7 +1475,7 @@ document.addEventListener('keydown', (e) => {
 
 let secretTouchStart = null;
 document.addEventListener('touchstart', (e) => {
-  secretTouchStart = e.touches.length === 3 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+  secretTouchStart = e.touches.length === 2 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
 }, { passive: true });
 document.addEventListener('touchend', (e) => {
   if (!secretTouchStart) return;
