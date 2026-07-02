@@ -847,7 +847,6 @@ async function loadAll() {
     renderChart(state.candidates || []);
     renderQueue(state.queue || [], state);
     updateSubmitCooldownUI();
-    checkNowPlayingFromSpotify();
     syncSpotifyPlaylist();
     document.getElementById('statusMsg').textContent = 'synced ' + new Date().toLocaleTimeString();
   } catch (e) {
@@ -1393,6 +1392,10 @@ function enterRoom(id, opts = {}) {
   queueVotedMap = savedQ ? JSON.parse(savedQ) : {};
   loadAll();
   setInterval(loadAll, 2000);
+  // Polls Spotify itself (not our own backend) on a tighter cadence than the
+  // full room sync above, so a manual skip/next in the Spotify app shows up
+  // here quickly instead of waiting for the next 2s room-state tick.
+  setInterval(checkNowPlayingFromSpotify, 1000);
 }
 
 document.getElementById('createRoomBtn').addEventListener('click', async () => {
