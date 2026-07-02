@@ -388,6 +388,18 @@
   }
   .card h2{font-family:var(--font-head);color:var(--stamp-red);margin:0 0 6px;font-size:30px;}
   .card p.hint{font-size:12px;color:var(--muted-ink);margin:0 0 16px;line-height:1.5;}
+
+  /* Secret dev menu — a Konami-style gesture away, purely for messing
+     around and checking on a wall from the inside. Not real security,
+     just tucked away from anyone who isn't looking for it. */
+  .dev-title{animation:devWiggle 1.8s ease-in-out infinite;display:inline-block;}
+  @keyframes devWiggle{ 0%,100%{ transform:rotate(-2deg); } 50%{ transform:rotate(2deg); } }
+  .dev-diagnostics{
+    font-family:var(--font-label);font-size:11px;line-height:1.7;white-space:pre-wrap;word-break:break-all;
+    background:var(--wall-dark);color:var(--stamp-green);padding:12px;border-radius:6px;
+    max-height:220px;overflow-y:auto;margin:0 0 14px;
+  }
+  .btn-save.dev-danger{background:var(--stamp-red);}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:11px;color:var(--muted-ink);margin-bottom:4px;font-family:var(--font-label);text-transform:uppercase;}
   .field input{width:100%;border:2px solid var(--ink);}
@@ -575,6 +587,22 @@
   </div>
 </div>
 
+<div class="overlay" id="devOverlay">
+  <div class="card">
+    <h2 class="dev-title">DEV MODE</h2>
+    <p class="hint" id="devJoke"></p>
+    <pre class="dev-diagnostics" id="devDiagnostics"></pre>
+    <div class="settings-actions">
+      <button class="btn-cancel" id="devResyncBtn">FORCE RESYNC</button>
+      <button class="btn-cancel" id="devWipeLocalBtn">WIPE MY STORAGE</button>
+    </div>
+    <div class="settings-actions">
+      <button class="btn-save dev-danger" id="devDeleteRoomBtn">DELETE THIS ROOM</button>
+      <button class="btn-cancel" id="devCloseBtn">CLOSE</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = 'https://json.extendsclass.com/bin';
 const API_KEY = '4332b69b-7561-11f1-b6b0-0242ac110005';
@@ -595,6 +623,7 @@ const SPOTIFY_SCOPES = 'playlist-modify-public playlist-modify-private user-read
 let roomUrl = null;
 let votedMap = {};
 let isHost = false;
+let lastKnownState = null;
 let settings = { upThreshold: 5, downThreshold: 5, submitCooldown: 15 };
 let selectedTheme = 'original';
 let roomName = '';
@@ -909,6 +938,8 @@ function showEndedScreen(message) {
 async function loadAll() {
   try {
     const state = await fetchState();
+    lastKnownState = state;
+    if (document.getElementById('devOverlay').classList.contains('open')) renderDevDiagnostics();
     // Rooms created before this check existed have no createdAt at all —
     // treat those as already expired too, so old leftover rooms get swept
     // up the next time anyone (host or guest) happens to open them.
@@ -1377,6 +1408,99 @@ document.getElementById('settingsSave').addEventListener('click', async () => {
   } catch (e) {}
   document.getElementById('settingsOverlay').classList.remove('open');
   loadAll();
+});
+
+// ---- Secret dev menu ------------------------------------------------------
+// Not real security (this is a static site, anyone can read the source) —
+// just tucked behind a Konami-code-style gesture so it's not in anyone's
+// way. Arrow keys on a keyboard, a 3-finger swipe on touch.
+const DEV_JOKES = [
+  "you found the forbidden switchboard.",
+  "shhh. nobody else can see this.",
+  "held together by duct tape and a JSON blob.",
+  "if something breaks in here, that's on you.",
+  "no cookies were harmed making this page.",
+  "this message will self-destruct. (it will not.)",
+];
+
+function renderDevDiagnostics() {
+  const s = lastKnownState || {};
+  const roomId = localStorage.getItem('wallRoomId') || '(none)';
+  const ageDays = s.createdAt ? ((Date.now() - s.createdAt) / 86400000).toFixed(2) : '?';
+  const lines = [
+    'room: ' + roomId,
+    'host: ' + isHost,
+    'theme: ' + (s.theme || '?'),
+    'version: ' + (s.version ?? '?'),
+    'age: ' + ageDays + ' / 7 days',
+    'ended flag: ' + !!s.ended,
+    'candidates: ' + ((s.candidates || []).length),
+    'queue: ' + ((s.queue || []).length),
+    'spotify connected: ' + hasSpotifyLogin(),
+    'spotify needs rescope: ' + needsSpotifyRescope,
+    'now playing (real): ' + (s.nowPlayingTitle || '(none — guessing from queue order)'),
+    'spotify playlist: ' + (s.spotifyPlaylistUrl || '(not synced yet)'),
+  ];
+  document.getElementById('devDiagnostics').textContent = lines.join('\n');
+}
+
+function openDevMode() {
+  document.getElementById('devJoke').textContent = DEV_JOKES[Math.floor(Math.random() * DEV_JOKES.length)];
+  renderDevDiagnostics();
+  document.getElementById('devOverlay').classList.add('open');
+}
+
+const SECRET_SEQUENCE = ['up', 'up', 'down', 'down', 'left', 'right', 'left', 'right'];
+let secretBuffer = [];
+let secretLastInputAt = 0;
+function feedSecretGesture(direction) {
+  const now = Date.now();
+  if (now - secretLastInputAt > 4000) secretBuffer = [];
+  secretLastInputAt = now;
+  secretBuffer.push(direction);
+  if (secretBuffer.length > SECRET_SEQUENCE.length) secretBuffer.shift();
+  if (secretBuffer.join(',') === SECRET_SEQUENCE.join(',')) {
+    secretBuffer = [];
+    openDevMode();
+  }
+}
+
+const SECRET_ARROW_KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+document.addEventListener('keydown', (e) => {
+  const dir = SECRET_ARROW_KEYS[e.key];
+  if (dir) feedSecretGesture(dir);
+});
+
+let secretTouchStart = null;
+document.addEventListener('touchstart', (e) => {
+  secretTouchStart = e.touches.length === 3 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+}, { passive: true });
+document.addEventListener('touchend', (e) => {
+  if (!secretTouchStart) return;
+  const start = secretTouchStart;
+  secretTouchStart = null;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - start.x, dy = t.clientY - start.y;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 40) return; // too small to count as a swipe
+  feedSecretGesture(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+}, { passive: true });
+
+document.getElementById('devResyncBtn').addEventListener('click', () => loadAll());
+document.getElementById('devWipeLocalBtn').addEventListener('click', () => {
+  if (!confirm("Wipe ALL of this device's local storage (room, votes, Spotify login) and reload?")) return;
+  localStorage.clear();
+  location.reload();
+});
+document.getElementById('devDeleteRoomBtn').addEventListener('click', async () => {
+  const roomId = localStorage.getItem('wallRoomId');
+  if (!roomId) return;
+  if (!confirm('Force-delete room "' + roomId + '" right now? This cannot be undone.')) return;
+  await deleteRoom(roomId);
+  localStorage.removeItem('wallRoomId');
+  location.reload();
+});
+document.getElementById('devCloseBtn').addEventListener('click', () => {
+  document.getElementById('devOverlay').classList.remove('open');
 });
 
 function extractIdFromUrl(url) { return url.trim().split('/').filter(Boolean).pop(); }
