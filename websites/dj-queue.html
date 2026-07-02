@@ -590,31 +590,34 @@
 <div class="overlay" id="devOverlay">
   <div class="card">
     <h2 class="dev-title">DEV MODE</h2>
-
-    <div id="devClaimSection" style="display:none;">
-      <p class="hint">If the host is gone and can't get back in, you can take over so the wall keeps running.</p>
-      <div class="settings-actions">
-        <button class="btn-save dev-danger" id="devClaimHostBtn" style="flex:none;width:100%;">BECOME HOST</button>
-      </div>
-      <div class="settings-actions">
-        <button class="btn-cancel" id="devClaimCloseBtn" style="flex:none;width:100%;">CLOSE</button>
-      </div>
+    <p class="hint" id="devJoke"></p>
+    <pre class="dev-diagnostics" id="devDiagnostics"></pre>
+    <div class="settings-actions">
+      <button class="btn-cancel" id="devResyncBtn">FORCE RESYNC</button>
+      <button class="btn-cancel" id="devUnbanBtn" style="display:none;">UNBAN ALL</button>
     </div>
+    <div class="settings-actions">
+      <button class="btn-cancel" id="devWipeLocalBtn">WIPE MY STORAGE</button>
+      <button class="btn-save dev-danger" id="devDeleteRoomBtn">DELETE THIS ROOM</button>
+    </div>
+    <div class="settings-actions">
+      <button class="btn-cancel" id="devCloseBtn" style="flex:none;width:100%;">CLOSE</button>
+    </div>
+  </div>
+</div>
 
-    <div id="devHostSections">
-      <p class="hint" id="devJoke"></p>
-      <pre class="dev-diagnostics" id="devDiagnostics"></pre>
-      <div class="settings-actions">
-        <button class="btn-cancel" id="devResyncBtn">FORCE RESYNC</button>
-        <button class="btn-cancel" id="devUnbanBtn" style="display:none;">UNBAN ALL</button>
-      </div>
-      <div class="settings-actions">
-        <button class="btn-cancel" id="devWipeLocalBtn">WIPE MY STORAGE</button>
-        <button class="btn-save dev-danger" id="devDeleteRoomBtn">DELETE THIS ROOM</button>
-      </div>
-      <div class="settings-actions">
-        <button class="btn-cancel" id="devCloseBtn" style="flex:none;width:100%;">CLOSE</button>
-      </div>
+<div class="overlay" id="takeoverOverlay">
+  <div class="card">
+    <h2 class="dev-title">TAKE OVER?</h2>
+    <p class="hint">Only do this if the real host is gone and can't get back in. Enter the recovery password to become host.</p>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="takeoverPasswordInput" autocomplete="off">
+    </div>
+    <p class="hint" id="takeoverError" style="color:var(--stamp-red);display:none;">Wrong password.</p>
+    <div class="settings-actions">
+      <button class="btn-cancel" id="takeoverCancelBtn">Cancel</button>
+      <button class="btn-save dev-danger" id="takeoverSubmitBtn">BECOME HOST</button>
     </div>
   </div>
 </div>
@@ -1510,41 +1513,50 @@ function renderDevDiagnostics() {
   document.getElementById('devUnbanBtn').style.display = (s.bannedIds || []).length ? 'block' : 'none';
 }
 
-// Host-only — a guest doing the gesture just sees nothing happen. Still
-// just a client-side flag like every other host check in this app, not
-// real access control, but enough to keep it out of guests' way.
+// Host-only, full stop — a guest doing this gesture sees nothing happen.
+// Still just a client-side flag like every other host check in this app,
+// not real access control, but enough to keep it out of guests' way.
 function openDevMode() {
-  // Non-hosts get a stripped-down view with just one option — taking over
-  // the wall — instead of the full diagnostics/moderation panel, so this
-  // still works as a recovery path if the actual host is gone for good.
-  document.getElementById('devClaimSection').style.display = isHost ? 'none' : 'block';
-  document.getElementById('devHostSections').style.display = isHost ? 'block' : 'none';
-  if (isHost) {
-    document.getElementById('devJoke').textContent = DEV_JOKES[Math.floor(Math.random() * DEV_JOKES.length)];
-    renderDevDiagnostics();
-  }
+  if (!isHost) return;
+  document.getElementById('devJoke').textContent = DEV_JOKES[Math.floor(Math.random() * DEV_JOKES.length)];
+  renderDevDiagnostics();
   document.getElementById('devOverlay').classList.add('open');
 }
 
-const SECRET_SEQUENCE = ['up', 'up', 'down', 'down', 'left', 'right', 'left', 'right'];
-let secretBuffer = [];
-let secretLastInputAt = 0;
-function feedSecretGesture(direction) {
+// Recovery path if the real host's device dies or they can't get back into
+// the party — a DIFFERENT gesture from the dev menu (so it's not just "the
+// same trick again"), which then requires a password before anything
+// happens. This is a static site with public source, so the password is a
+// deterrent, not real security — anyone reading the JS can find it. Change
+// TAKEOVER_PASSWORD below to whatever you'd rather use.
+const TAKEOVER_PASSWORD = 'encore2026';
+function openTakeoverPrompt() {
+  document.getElementById('takeoverPasswordInput').value = '';
+  document.getElementById('takeoverError').style.display = 'none';
+  document.getElementById('takeoverOverlay').classList.add('open');
+}
+
+const DEV_SEQUENCE = ['up', 'up', 'down', 'down', 'left', 'right', 'left', 'right'];
+const TAKEOVER_SEQUENCE = ['down', 'down', 'up', 'up', 'right', 'left', 'right', 'left'];
+let devBuffer = [];
+let takeoverBuffer = [];
+let gestureLastInputAt = 0;
+function feedGesture(direction) {
   const now = Date.now();
-  if (now - secretLastInputAt > 4000) secretBuffer = [];
-  secretLastInputAt = now;
-  secretBuffer.push(direction);
-  if (secretBuffer.length > SECRET_SEQUENCE.length) secretBuffer.shift();
-  if (secretBuffer.join(',') === SECRET_SEQUENCE.join(',')) {
-    secretBuffer = [];
-    openDevMode();
-  }
+  if (now - gestureLastInputAt > 4000) { devBuffer = []; takeoverBuffer = []; }
+  gestureLastInputAt = now;
+  devBuffer.push(direction);
+  if (devBuffer.length > DEV_SEQUENCE.length) devBuffer.shift();
+  takeoverBuffer.push(direction);
+  if (takeoverBuffer.length > TAKEOVER_SEQUENCE.length) takeoverBuffer.shift();
+  if (devBuffer.join(',') === DEV_SEQUENCE.join(',')) { devBuffer = []; openDevMode(); }
+  if (takeoverBuffer.join(',') === TAKEOVER_SEQUENCE.join(',')) { takeoverBuffer = []; openTakeoverPrompt(); }
 }
 
 const SECRET_ARROW_KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
 document.addEventListener('keydown', (e) => {
   const dir = SECRET_ARROW_KEYS[e.key];
-  if (dir) feedSecretGesture(dir);
+  if (dir) feedGesture(dir);
 });
 
 let secretTouchStart = null;
@@ -1558,7 +1570,7 @@ document.addEventListener('touchend', (e) => {
   const t = e.changedTouches[0];
   const dx = t.clientX - start.x, dy = t.clientY - start.y;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < 40) return; // too small to count as a swipe
-  feedSecretGesture(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+  feedGesture(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
 }, { passive: true });
 
 document.getElementById('devResyncBtn').addEventListener('click', () => loadAll());
@@ -1583,14 +1595,19 @@ document.getElementById('devDeleteRoomBtn').addEventListener('click', async () =
 document.getElementById('devCloseBtn').addEventListener('click', () => {
   document.getElementById('devOverlay').classList.remove('open');
 });
-document.getElementById('devClaimCloseBtn').addEventListener('click', () => {
-  document.getElementById('devOverlay').classList.remove('open');
+
+document.getElementById('takeoverCancelBtn').addEventListener('click', () => {
+  document.getElementById('takeoverOverlay').classList.remove('open');
 });
-document.getElementById('devClaimHostBtn').addEventListener('click', () => {
-  if (!confirm("Become the host of this wall? Only do this if the real host is gone and can't get back in.")) return;
+document.getElementById('takeoverSubmitBtn').addEventListener('click', () => {
+  const entered = document.getElementById('takeoverPasswordInput').value;
+  if (entered !== TAKEOVER_PASSWORD) {
+    document.getElementById('takeoverError').style.display = 'block';
+    return;
+  }
   isHost = true;
   updateHostUI();
-  document.getElementById('devOverlay').classList.remove('open');
+  document.getElementById('takeoverOverlay').classList.remove('open');
   loadAll();
 });
 
