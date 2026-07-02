@@ -526,7 +526,7 @@ const API_KEY = '4332b69b-7561-11f1-b6b0-0242ac110005';
 // Set this to your deployed Spotify-search Cloudflare Worker URL (see
 // workers/spotify-search/) to turn on real song search-as-you-type.
 // Left blank, the title field just stays free-text — nothing breaks.
-const SPOTIFY_SEARCH_API = '';
+const SPOTIFY_SEARCH_API = 'https://hostlab-spotify-search.iwohost.workers.dev';
 if (SPOTIFY_SEARCH_API) {
   document.getElementById('spotifyModeLabel').textContent = 'Spotify search:';
   document.getElementById('spotifyModeText').textContent = 'start typing a title to search real tracks.';
