@@ -18,7 +18,8 @@ A personal collection of browser-based tools and experiments at `iwohost.github.
 | `pages/` | Category pages (games, study, archives) |
 | `other/logo/` | Per-project PNG icons |
 | `other/backbutton.css` | Shared circular back-button |
-| `workers/` | Cloudflare Workers (wrangler) |
+| `workers/spotify-search/` | Cloudflare Worker — proxies Spotify search (wrangler) |
+| `workers/dj-wall-backend/` | Cloudflare Worker + Durable Object — DJ queue room storage (wrangler) |
 | `terminal/` | Terminal implementation |
 
 ## Adding a new tool
