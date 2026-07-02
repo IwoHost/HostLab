@@ -569,7 +569,6 @@ const SPOTIFY_CLIENT_ID = '8e2b97cc0aaa47fba6789aecc58dc745';
 const SPOTIFY_SCOPES = 'playlist-modify-public playlist-modify-private user-read-currently-playing';
 let roomUrl = null;
 let votedMap = {};
-let queueVotedMap = {};
 let isHost = false;
 let settings = { upThreshold: 5, downThreshold: 5, submitCooldown: 15 };
 let selectedTheme = 'original';
@@ -708,9 +707,10 @@ function renderQueue(queue, state) {
     updateMiniPlayer(null);
     return;
   }
-  // Queued tracks can be upvoted too — more votes moves a track up. Ties go
-  // to whichever's been waiting longest (earliest addedAt), not alphabetical.
-  const sorted = [...queue].sort((a, b) => (b.up || 0) - (a.up || 0) || (a.addedAt || 0) - (b.addedAt || 0));
+  // Play order once a track hits the queue is just FIFO — re-voting on
+  // already-queued tracks used to reshuffle the live Spotify playlist out
+  // from under whatever was currently playing, so voting stops at the wall.
+  const sorted = [...queue].sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
   if (realTitle) {
     // Pulled straight from the host's actual Spotify playback — the real
     // source of truth once they're connected, not a guess from vote order.
@@ -731,11 +731,8 @@ function renderQueue(queue, state) {
     <div class="ticket ${realId && t.spotifyId === realId ? 'playing' : ''}">
       ${trackArtHtml(t)}
       <div class="ticket-info"><div class="ticket-title">${realId && t.spotifyId === realId ? '<span class="live-dot">▶</span>' : ''}${escapeHtml(t.title)}</div><div class="ticket-artist">${escapeHtml(t.artist)}</div></div>
-      <button class="stamp-btn up ${queueVotedMap[t.id] === 'up' ? 'voted' : ''}" data-qvote="${t.id}"></button>
-      <span class="stamp-count">${t.up || 0}</span>
       <div class="manual-actions"><button class="ticket-action" data-played="${t.id}">PLAYED</button></div>
     </div>`).join('');
-  el.querySelectorAll('[data-qvote]').forEach(btn => btn.onclick = () => castQueueUpvote(btn.getAttribute('data-qvote')));
   el.querySelectorAll('[data-played]').forEach(btn => btn.onclick = () => markPlayed(btn.getAttribute('data-played')));
 }
 
@@ -872,29 +869,10 @@ async function castVote(id, dir) {
       if (next === 'down') c.down += 1;
       if (c.up >= state.settings.upThreshold) {
         state.candidates.splice(idx, 1);
-        state.queue.push({ id: c.id, title: c.title, artist: c.artist, image: c.image, spotifyUrl: c.spotifyUrl, spotifyId: c.spotifyId, up: 0, addedAt: Date.now() });
+        state.queue.push({ id: c.id, title: c.title, artist: c.artist, image: c.image, spotifyUrl: c.spotifyUrl, spotifyId: c.spotifyId, addedAt: Date.now() });
       } else if (c.down >= state.settings.downThreshold) {
         state.candidates.splice(idx, 1);
       }
-    });
-  } catch (e) {}
-  loadAll();
-}
-
-// Queued tracks get their own upvote, separate from the wall vote that got
-// them there — toggle-only (no down), since this is just "play this sooner".
-async function castQueueUpvote(id) {
-  const prev = queueVotedMap[id] || null;
-  const next = prev === 'up' ? null : 'up';
-  if (next) queueVotedMap[id] = next; else delete queueVotedMap[id];
-  localStorage.setItem('wallQueueVotedMap', JSON.stringify(queueVotedMap));
-  try {
-    await withState(state => {
-      const track = state.queue.find(t => t.id === id);
-      if (!track) return;
-      if (typeof track.up !== 'number') track.up = 0;
-      if (prev === 'up') track.up = Math.max(0, track.up - 1);
-      if (next === 'up') track.up += 1;
     });
   } catch (e) {}
   loadAll();
@@ -1129,7 +1107,7 @@ async function syncSpotifyPlaylist() {
     }
     const uris = (state.queue || [])
       .filter(t => t.spotifyId)
-      .sort((a, b) => (b.up || 0) - (a.up || 0) || (a.addedAt || 0) - (b.addedAt || 0))
+      .sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0))
       .map(t => 'spotify:track:' + t.spotifyId);
     const key = uris.join(',');
     if (key === lastSyncedUris) return; // nothing actually changed since the last sync
@@ -1233,7 +1211,6 @@ document.getElementById('resetBtn').addEventListener('click', async () => {
     });
   } catch (e) {}
   votedMap = {}; localStorage.removeItem('wallVotedMap');
-  queueVotedMap = {}; localStorage.removeItem('wallQueueVotedMap');
   loadAll();
 });
 
@@ -1241,7 +1218,6 @@ document.getElementById('leaveBtn').addEventListener('click', () => {
   if (!confirm('Leave this wall?')) return;
   localStorage.removeItem('wallRoomId');
   localStorage.removeItem('wallVotedMap');
-  localStorage.removeItem('wallQueueVotedMap');
   localStorage.removeItem('wallIsHost');
   location.reload();
 });
@@ -1388,8 +1364,6 @@ function enterRoom(id, opts = {}) {
   renderShareQR(id);
   const saved = localStorage.getItem('wallVotedMap');
   votedMap = saved ? JSON.parse(saved) : {};
-  const savedQ = localStorage.getItem('wallQueueVotedMap');
-  queueVotedMap = savedQ ? JSON.parse(savedQ) : {};
   loadAll();
   setInterval(loadAll, 2000);
   // Polls Spotify itself (not our own backend) on a tighter cadence than the
