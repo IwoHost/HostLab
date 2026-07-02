@@ -436,7 +436,7 @@
   <div class="blob b4"></div>
 </div>
 <div class="tape-strip"></div>
-<button class="rivet" id="gearBtn" title="wall rules" style="display:none;">⚙</button>
+<button class="rivet" id="gearBtn" title="wall rules" style="display:none;">⋮</button>
 
 <div class="splash" id="splashScreen">
   <div class="poster rot-l">
@@ -483,7 +483,7 @@
 
   <section class="poster rot-l">
     <div class="tape-corner tc-tl"></div>
-    <p class="board-title">🎫 Scan To Join</p>
+    <p class="board-title">Scan To Join</p>
     <div class="share-row">
       <canvas id="qrCanvas" class="qr-canvas"></canvas>
       <div class="share-info">
@@ -498,9 +498,9 @@
 
   <section class="poster rot-r">
     <div class="tape-corner tc-tc"></div>
-    <p class="board-title">📻 What's Spinning</p>
+    <p class="board-title">What's Spinning</p>
     <p class="now-playing" id="nowPlaying" style="display:none;"></p>
-    <a href="#" target="_blank" rel="noopener" class="share-hint" id="spotifyPlaylistLink" style="display:none;color:var(--stamp-green);">🎵 Open the live Spotify playlist</a>
+    <a href="#" target="_blank" rel="noopener" class="share-hint" id="spotifyPlaylistLink" style="display:none;color:var(--stamp-green);">Open the live Spotify playlist</a>
     <div id="queueList"><p class="empty">Nothing queued yet.</p></div>
   </section>
 
@@ -513,20 +513,20 @@
     </div>
     <p class="share-hint" id="pickHint" style="margin:2px 0 0;">Pick a song from the list to add it.</p>
     <button type="submit" class="btn-submit" id="submitBtn">STICK IT UP</button>
-    <div class="perforation"><span>TEAR ALONG LINE</span><span>✂</span></div>
+    <div class="perforation"><span>TEAR ALONG LINE</span><span>- - -</span></div>
   </form>
 
   <section class="poster rot-l">
     <div class="tape-corner tc-tr"></div>
-    <p class="board-title">🖤 The Wall</p>
+    <p class="board-title">The Wall</p>
     <div id="chartList"><p class="empty">No tags on the wall yet — start it off.</p></div>
   </section>
 
   <div class="footer-row">
     <span id="statusMsg">synced</span>
     <span>
-      <button class="reset-link" id="resetBtn">wipe the wall</button>
-      &nbsp;·&nbsp;
+      <button class="reset-link" id="resetBtn" style="display:none;">wipe the wall</button>
+      <span class="dot-sep" style="display:none;">&nbsp;·&nbsp;</span>
       <button class="reset-link" id="leaveBtn">leave wall</button>
     </span>
   </div>
@@ -785,7 +785,7 @@ function renderQueue(queue, state) {
       updatedAt: state.nowPlayingUpdatedAt || Date.now(),
     });
   } else if (sorted.length) {
-    nowPlaying.textContent = '⏳ NEXT UP: ' + sorted[0].title + ' — ' + sorted[0].artist;
+    nowPlaying.textContent = '→ NEXT UP: ' + sorted[0].title + ' — ' + sorted[0].artist;
     nowPlaying.style.display = 'block';
     updateMiniPlayer(sorted[0].title, sorted[0].artist, sorted[0].image, false);
   } else {
@@ -1290,6 +1290,7 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
 });
 
 document.getElementById('resetBtn').addEventListener('click', async () => {
+  if (!isHost) return;
   if (!confirm('Wipe all submissions and the queue?')) return;
   try {
     await withState(state => {
@@ -1458,6 +1459,8 @@ function enterRoom(id, opts = {}) {
   document.getElementById('splashScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
   document.getElementById('gearBtn').style.display = isHost ? 'block' : 'none';
+  document.getElementById('resetBtn').style.display = isHost ? 'inline' : 'none';
+  document.querySelector('.footer-row .dot-sep').style.display = isHost ? 'inline' : 'none';
   renderShareQR(id);
   const saved = localStorage.getItem('wallVotedMap');
   votedMap = saved ? JSON.parse(saved) : {};
