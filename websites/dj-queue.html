@@ -1841,19 +1841,79 @@ function renderShareQR(id) {
   }
 }
 
-function fitFontSize(ctx, text, maxWidth, family, startSize, minSize) {
+function fitFontSize(ctx, text, maxWidth, family, startSize, minSize, style) {
   let size = startSize;
   while (size > minSize) {
-    ctx.font = size + 'px ' + family;
+    ctx.font = (style ? style + ' ' : '') + size + 'px ' + family;
     if (ctx.measureText(text).width <= maxWidth) break;
     size -= 2;
   }
   return size;
 }
 
+// A jagged torn-paper edge, same idea as the original theme's --poster-clip
+// zigzag — drawn as an actual path this time since a canvas has no clip-path.
+// Continues the current path with a zigzag line, starting at (x,y) and
+// travelling `width` px along the x axis (direction via the sign of `dir`)
+// — call this mid-path (after a moveTo/lineTo has already reached x,y) so
+// it becomes one edge of a larger shape, not a standalone line.
+function zigzagEdge(ctx, x, y, width, teeth, depth, pointingDown, dir) {
+  const step = (width / teeth) * dir;
+  const dy = pointingDown ? depth : -depth;
+  for (let i = 0; i < teeth; i++) {
+    ctx.lineTo(x + step * (i + 0.5), y + dy);
+    ctx.lineTo(x + step * (i + 1), y);
+  }
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Each theme's own swatch icon, redrawn as a soft watermark so the card
+// visibly matches whichever look the host picked — a "Cute" wall's invite
+// doesn't look like a "Dark" wall's invite anymore.
+function drawThemeIcon(ctx, themeId, cx, cy, size, color) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(size / 24, size / 24);
+  ctx.translate(-12, -12);
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (themeId === 'pink') {
+    ctx.stroke(new Path2D('M12 21s-7.5-4.6-10-9.2C.7 8.6 2 5 5.6 4.2 8 3.6 10 4.8 12 7c2-2.2 4-3.4 6.4-2.8C21.9 5 23.3 8.6 22 11.8 19.5 16.4 12 21 12 21Z'));
+  } else if (themeId === 'party') {
+    ctx.stroke(new Path2D('M12 2v6M12 16v6M2 12h6M16 12h6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M19.1 4.9l-4.2 4.2M9.1 14.9l-4.2 4.2'));
+  } else if (themeId === 'simple') {
+    ctx.strokeRect(6, 6, 12, 12);
+  } else if (themeId === 'dark') {
+    ctx.fill(new Path2D('M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z'));
+  } else if (themeId === 'apple') {
+    roundRectPath(ctx, 4, 4, 16, 16, 6); ctx.stroke();
+  } else {
+    ctx.stroke(new Path2D('M3 12 12 3h7a2 2 0 0 1 2 2v7l-9 9a2 2 0 0 1-2.8 0l-6.2-6.2a2 2 0 0 1 0-2.8Z'));
+    ctx.beginPath(); ctx.arc(15.5, 8.5, 1.1, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+const INVITE_TAGLINES = [
+  'scan to drop a track & vote on the wall',
+  'no bad DJs allowed — you\'re the DJ now',
+  'your phone, your playlist, your rules',
+  'point a camera here. change the vibe.',
+];
+
 // A printable invite card: the QR bitmap is copied over pixel-for-pixel from
 // the on-page canvas (never regenerated), everything around it — colors,
-// fonts, room name — is drawn fresh from whatever theme is currently active.
+// fonts, room name, torn edges, tape, the theme's own icon — is drawn fresh
+// from whatever theme is currently active, so every look gets its own card.
 function downloadPrintable() {
   const roomId = localStorage.getItem('wallRoomId');
   const qrSrc = document.getElementById('qrCanvas');
@@ -1864,9 +1924,16 @@ function downloadPrintable() {
   const ink = cs.getPropertyValue('--ink').trim() || '#221D16';
   const muted = cs.getPropertyValue('--muted-ink').trim() || '#7A705E';
   const tape = cs.getPropertyValue('--tape').trim() || '#E8C34A';
+  const stampRed = cs.getPropertyValue('--stamp-red').trim() || '#B23A2E';
   const fontHead = cs.getPropertyValue('--font-head').trim() || 'sans-serif';
   const fontBody = cs.getPropertyValue('--font-body').trim() || 'sans-serif';
   const fontLabel = cs.getPropertyValue('--font-label').trim() || 'sans-serif';
+  const fontHand = cs.getPropertyValue('--font-hand').trim() || fontBody;
+  // Minimal themes (Simple/Dark/Apple) deliberately turn off tape/stamps
+  // on-page — the printable card follows the same call instead of
+  // decorating a "clean" theme against its own style.
+  const showDeco = cs.getPropertyValue('--deco').trim() !== 'none';
+  const showStamp = showDeco && cs.getPropertyValue('--deco-stamp').trim() !== 'none';
 
   const W = 1000, H = 1400;
   const canvas = document.createElement('canvas');
@@ -1875,25 +1942,98 @@ function downloadPrintable() {
 
   ctx.fillStyle = paper;
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = tape;
-  ctx.fillRect(0, 0, W, 26);
-  ctx.fillRect(0, H - 26, W, 26);
+
+  if (showDeco) {
+    // Torn-paper top and bottom instead of flat bars — one continuous path
+    // per bar: straight across the outer edge, then a zigzag back along the
+    // inner edge so the tape looks ripped rather than cleanly cut.
+    ctx.fillStyle = tape;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(W, 0);
+    ctx.lineTo(W, 40);
+    zigzagEdge(ctx, W, 40, W, 22, 14, true, -1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    ctx.lineTo(W, H);
+    ctx.lineTo(W, H - 40);
+    zigzagEdge(ctx, W, H - 40, W, 22, 14, false, -1);
+    ctx.closePath();
+    ctx.fill();
+
+    // A big soft watermark of the theme's own icon, low opacity so it reads
+    // as texture behind the title rather than competing with it.
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    drawThemeIcon(ctx, selectedTheme, W / 2, 130, 340, ink);
+    ctx.restore();
+  }
 
   ctx.textAlign = 'center';
   const title = roomName || 'THE WALL';
   const titleSize = fitFontSize(ctx, title, W - 140, fontHead, 72, 32);
   ctx.font = titleSize + 'px ' + fontHead;
   ctx.fillStyle = ink;
-  ctx.fillText(title, W / 2, 170);
+  ctx.fillText(title, W / 2, 190);
 
-  ctx.font = '30px ' + fontBody;
+  // Capped narrower than the title so a long tagline can't run into the
+  // stamp badge sitting up near the QR code's top-right corner.
+  const tagline = INVITE_TAGLINES[Math.floor(Math.random() * INVITE_TAGLINES.length)];
+  const taglineSize = fitFontSize(ctx, tagline, 420, fontHand, 28, 16, 'italic');
+  ctx.font = 'italic ' + taglineSize + 'px ' + fontHand;
   ctx.fillStyle = muted;
-  ctx.fillText('scan to drop a track & vote on the wall', W / 2, 226);
+  ctx.fillText(tagline, W / 2, 240);
 
-  const qrSize = 640;
+  const qrSize = 600;
   const qrX = (W - qrSize) / 2, qrY = 300;
-  ctx.drawImage(qrSrc, qrX, qrY, qrSize, qrSize);
 
+  // The QR "photo" gets its own drop shadow and a couple of tape corners,
+  // like it's taped to the card rather than just printed flat on it.
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.35)';
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 10;
+  ctx.drawImage(qrSrc, qrX, qrY, qrSize, qrSize);
+  ctx.restore();
+
+  if (showDeco) {
+    function tapePiece(cx, cy, w, h, angle) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+      ctx.globalAlpha = 0.88;
+      ctx.fillStyle = tape;
+      ctx.fillRect(-w / 2, -h / 2, w, h);
+      ctx.restore();
+    }
+    tapePiece(qrX + 40, qrY, 130, 46, -0.55);
+    tapePiece(qrX + qrSize - 40, qrY, 130, 46, 0.55);
+  }
+
+  if (showStamp) {
+    // A rubber-stamp badge, same look as the header's LIVE PARTY stamp.
+    ctx.save();
+    ctx.translate(qrX + qrSize - 20, qrY - 20);
+    ctx.rotate(-0.2);
+    ctx.beginPath();
+    ctx.arc(0, 0, 70, 0, Math.PI * 2);
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = stampRed;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 60, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = stampRed;
+    ctx.font = '700 20px ' + fontLabel;
+    ctx.textAlign = 'center';
+    ctx.fillText('SCAN', 0, -4);
+    ctx.fillText('ME', 0, 20);
+    ctx.restore();
+  }
+
+  ctx.textAlign = 'center';
   ctx.font = '38px ' + fontLabel;
   ctx.fillStyle = ink;
   ctx.fillText('ROOM CODE: ' + roomId, W / 2, qrY + qrSize + 80);
