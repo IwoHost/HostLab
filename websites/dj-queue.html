@@ -520,6 +520,17 @@
   </div>
 </div>
 
+<div class="splash" id="endedScreen" style="display:none;">
+  <div class="poster rot-l">
+    <div class="tape-corner tc-tl"></div>
+    <div class="tape-corner tc-tc"></div>
+    <p class="eyebrow">The Song Wall</p>
+    <h1>THE END</h1>
+    <p class="sub">The host packed up — this wall's closed.</p>
+    <button class="big-btn" id="endedLeaveBtn">START YOUR OWN WALL</button>
+  </div>
+</div>
+
 <div class="mini-player" id="miniPlayer" style="display:none;">
   <img id="miniPlayerArt" alt="">
   <div class="mini-player-info">
@@ -823,6 +834,12 @@ function updateSubmitCooldownUI() {
 async function loadAll() {
   try {
     const state = await fetchState();
+    if (state.ended) {
+      document.getElementById('mainApp').style.display = 'none';
+      document.getElementById('gearBtn').style.display = 'none';
+      document.getElementById('endedScreen').style.display = 'block';
+      return;
+    }
     // The background poll never stopped while the host had the settings
     // panel open, so every 2s it silently overwrote the threshold inputs
     // and reverted the live theme preview back to whatever's still saved
@@ -1215,8 +1232,19 @@ document.getElementById('resetBtn').addEventListener('click', async () => {
   loadAll();
 });
 
-document.getElementById('leaveBtn').addEventListener('click', () => {
-  if (!confirm('Leave this wall?')) return;
+document.getElementById('leaveBtn').addEventListener('click', async () => {
+  const msg = isHost ? 'End this wall for everyone?' : 'Leave this wall?';
+  if (!confirm(msg)) return;
+  if (isHost) {
+    try { await withState(state => { state.ended = true; }); } catch (e) {}
+  }
+  localStorage.removeItem('wallRoomId');
+  localStorage.removeItem('wallVotedMap');
+  localStorage.removeItem('wallIsHost');
+  location.reload();
+});
+
+document.getElementById('endedLeaveBtn').addEventListener('click', () => {
   localStorage.removeItem('wallRoomId');
   localStorage.removeItem('wallVotedMap');
   localStorage.removeItem('wallIsHost');
