@@ -8,6 +8,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>THE WALL — DJ Queue</title>
+<link rel="manifest" href="dj-queue.webmanifest">
+<meta name="theme-color" content="#242220">
+<link rel="icon" href="../other/logo/dj-queue-icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../other/logo/dj-queue-icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Archivo+Black&family=Roboto+Condensed:wght@400;600;700&family=Baloo+2:wght@500;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
@@ -414,6 +418,11 @@
   .footer-row{display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:11px;color:var(--muted-ink);}
   .reset-link{background:none;border:none;color:var(--stamp-red);font-size:11px;text-decoration:underline;cursor:pointer;padding:0;font-family:var(--font-label);}
 
+  .conn-banner{position:fixed;top:0;left:0;right:0;z-index:26;background:var(--stamp-red);color:#fff;text-align:center;font-family:var(--font-label);font-size:12px;letter-spacing:.03em;padding:9px 12px;transform:translateY(-100%);transition:transform .25s ease;}
+  .conn-banner.show{transform:translateY(0);}
+  .toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,16px);z-index:27;background:var(--ink);color:var(--paper);font-family:var(--font-label);font-size:12px;padding:11px 18px;border-radius:8px;opacity:0;max-width:82vw;text-align:center;line-height:1.4;pointer-events:none;transition:opacity .2s ease, transform .2s ease;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:30;display:none;align-items:center;justify-content:center;padding:20px;}
   .overlay.open{display:flex;}
   .card{
@@ -590,6 +599,9 @@
   </div>
 </div>
 
+<div class="conn-banner" id="connBanner">Connection lost — reconnecting…</div>
+<div class="toast" id="toast"></div>
+
 <div class="mini-player" id="miniPlayer" style="display:none;">
   <div class="mini-player-progress" id="miniPlayerProgress" style="display:none;"><div class="mini-player-progress-fill" id="miniPlayerProgressFill"></div></div>
   <div class="mini-player-hint" id="miniPlayerHint" style="display:none;">^ lyrics</div>
@@ -758,14 +770,31 @@ renderThemePicker('themePickerHost', applyThemeFromClick);
 // one phone could take a while (or a full refresh) to show up on another.
 function noCacheUrl(url) { return url + (url.includes('?') ? '&' : '?') + '_=' + Date.now(); }
 
+// Flaky party wifi can go from "slow" to "hung" with no error at all — a
+// plain fetch() with no timeout would sit there forever, stalling that spot
+// in the 2s poll loop instead of failing fast so the next attempt can try.
+const FETCH_TIMEOUT_MS = 8000;
+async function fetchWithTimeout(url, opts = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...opts, signal: controller.signal });
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('timed out');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchState() {
-  const res = await fetch(noCacheUrl(roomUrl), { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+  const res = await fetchWithTimeout(noCacheUrl(roomUrl), { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
   if (res.status === 404) { const err = new Error('room not found'); err.notFound = true; throw err; }
   if (!res.ok) throw new Error('room not found');
   return await res.json();
 }
 async function saveState(state) {
-  const res = await fetch(roomUrl, {
+  const res = await fetchWithTimeout(roomUrl, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(state)
@@ -775,11 +804,27 @@ async function saveState(state) {
 }
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// Shared feedback for actions that fail silently otherwise — a vote, ban, or
+// submit that doesn't reach the server should say so instead of just quietly
+// reverting on the next poll with no explanation.
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+function setConnectionBanner(show) {
+  const el = document.getElementById('connBanner');
+  if (el) el.classList.toggle('show', show);
+}
+
 // Best-effort — if the backend doesn't actually support deleting a room (or
 // the request fails), callers fall back to just flagging the room ended.
 async function deleteRoom(id) {
   try {
-    const res = await fetch(API + '/' + id, { method: 'DELETE' });
+    const res = await fetchWithTimeout(API + '/' + id, { method: 'DELETE' });
     return res.ok;
   } catch (e) {
     return false;
@@ -1206,9 +1251,12 @@ function showEndedScreen(message) {
   document.getElementById('endedScreen').style.display = 'block';
 }
 
+let consecutiveLoadFailures = 0;
 async function loadAll() {
   try {
     const state = await fetchState();
+    consecutiveLoadFailures = 0;
+    setConnectionBanner(false);
     lastKnownState = state;
     if (document.getElementById('devOverlay').classList.contains('open')) renderDevDiagnostics();
     // Rooms created before this check existed have no createdAt at all —
@@ -1247,12 +1295,26 @@ async function loadAll() {
     renderQueue(state.queue || [], state);
     updateSubmitCooldownUI();
     syncSpotifyPlaylist(state);
-    document.getElementById('statusMsg').textContent = 'synced ' + new Date().toLocaleTimeString();
+    const statusEl = document.getElementById('statusMsg');
+    statusEl.textContent = 'synced ' + new Date().toLocaleTimeString();
+    statusEl.style.color = '';
   } catch (e) {
     if (e.notFound) { showEndedScreen("The host packed up — this wall's closed."); return; }
-    document.getElementById('statusMsg').textContent = 'offline (' + (e.message || 'error') + ') — retrying…';
+    consecutiveLoadFailures++;
+    const statusEl = document.getElementById('statusMsg');
+    statusEl.textContent = 'offline (' + (e.message || 'error') + ') — retrying…';
+    statusEl.style.color = 'var(--stamp-red)';
+    // One missed poll can just be a blip — only raise the big banner once
+    // it's happened twice in a row (~4s down), so it doesn't flash on/off
+    // constantly on a merely spotty connection.
+    if (consecutiveLoadFailures >= 2) setConnectionBanner(true);
   }
 }
+
+// Most phones fire these reliably even when a fetch would just hang —
+// react immediately instead of waiting for the next 2s poll to notice.
+window.addEventListener('offline', () => setConnectionBanner(true));
+window.addEventListener('online', () => loadAll());
 
 async function castVote(id, dir) {
   // Clicking your own stamp again undoes it; clicking the other one flips it —
@@ -1277,7 +1339,13 @@ async function castVote(id, dir) {
         state.candidates.splice(idx, 1);
       }
     });
-  } catch (e) {}
+  } catch (e) {
+    // Didn't reach the server — undo the optimistic local flip so the vote
+    // buttons don't keep showing "you voted" for something that never saved.
+    if (prev) votedMap[id] = prev; else delete votedMap[id];
+    localStorage.setItem('wallVotedMap', JSON.stringify(votedMap));
+    showToast("Vote didn't go through — check your connection.");
+  }
   loadAll();
 }
 
@@ -1287,7 +1355,7 @@ async function rejectCandidate(id) {
     await withState(state => {
       state.candidates = state.candidates.filter(c => c.id !== id);
     });
-  } catch (e) {}
+  } catch (e) { showToast("Didn't go through — check your connection and try again."); }
   loadAll();
 }
 
@@ -1297,7 +1365,7 @@ async function markPlayed(id) {
     await withState(state => {
       state.queue = state.queue.filter(t => t.id !== id);
     });
-  } catch (e) {}
+  } catch (e) { showToast("Didn't go through — check your connection and try again."); }
   loadAll();
 }
 
@@ -1319,7 +1387,7 @@ async function banSubmitter(id, source) {
       if (source === 'queue') state.queue = state.queue.filter(t => t.id !== id);
       else state.candidates = state.candidates.filter(c => c.id !== id);
     });
-  } catch (e) {}
+  } catch (e) { showToast("Didn't go through — check your connection and try again."); }
   loadAll();
 }
 
@@ -1646,11 +1714,17 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
     });
     const roomId = localStorage.getItem('wallRoomId');
     if (roomId) localStorage.setItem(cooldownKey(roomId), String(Date.now()));
-  } catch (e) {}
-  titleInput.value = ''; selectedTrack = null;
-  pickHint.textContent = 'Pick a song from the list to add it.';
-  pickHint.style.color = '';
-  renderSearchResults([]);
+    titleInput.value = ''; selectedTrack = null;
+    pickHint.textContent = 'Pick a song from the list to add it.';
+    pickHint.style.color = '';
+    renderSearchResults([]);
+  } catch (e) {
+    // Previously this cleared the form and showed the normal "pick a song"
+    // hint even when the save failed — on a flaky connection that reads as
+    // "it worked" when the song never actually made it onto the wall.
+    pickHint.textContent = "Didn't stick — check your connection and hit STICK IT UP again.";
+    pickHint.style.color = 'var(--stamp-red)';
+  }
   updateSubmitCooldownUI();
   loadAll();
 });

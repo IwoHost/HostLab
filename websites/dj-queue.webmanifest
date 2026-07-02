@@ -1,0 +1,13 @@
+{
+  "name": "THE WALL — DJ Queue",
+  "short_name": "The Wall",
+  "description": "Party song-request wall — vote tracks up, the DJ plays the winners.",
+  "start_url": "./dj-queue.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#242220",
+  "theme_color": "#242220",
+  "icons": [
+    { "src": "../other/logo/dj-queue-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
