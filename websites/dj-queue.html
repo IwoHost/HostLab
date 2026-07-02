@@ -399,7 +399,7 @@
     background:var(--wall-dark);color:var(--stamp-green);padding:12px;border-radius:6px;
     max-height:220px;overflow-y:auto;margin:0 0 14px;
   }
-  .btn-save.dev-danger{background:var(--stamp-red);}
+  .btn-save.dev-danger, .ticket-action.dev-danger{background:var(--stamp-red);color:#fff;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:11px;color:var(--muted-ink);margin-bottom:4px;font-family:var(--font-label);text-transform:uppercase;}
   .field input{width:100%;border:2px solid var(--ink);}
@@ -594,11 +594,14 @@
     <pre class="dev-diagnostics" id="devDiagnostics"></pre>
     <div class="settings-actions">
       <button class="btn-cancel" id="devResyncBtn">FORCE RESYNC</button>
-      <button class="btn-cancel" id="devWipeLocalBtn">WIPE MY STORAGE</button>
+      <button class="btn-cancel" id="devUnbanBtn" style="display:none;">UNBAN ALL</button>
     </div>
     <div class="settings-actions">
+      <button class="btn-cancel" id="devWipeLocalBtn">WIPE MY STORAGE</button>
       <button class="btn-save dev-danger" id="devDeleteRoomBtn">DELETE THIS ROOM</button>
-      <button class="btn-cancel" id="devCloseBtn">CLOSE</button>
+    </div>
+    <div class="settings-actions">
+      <button class="btn-cancel" id="devCloseBtn" style="flex:none;width:100%;">CLOSE</button>
     </div>
   </div>
 </div>
@@ -751,6 +754,15 @@ async function withState(mutator, maxAttempts = 5) {
 
 function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
+// An anonymous per-browser id (not tied to any real identity) so the host
+// can block a specific device from adding more songs after a bad submission
+// — there's no login here, so this is the closest thing to "who added this."
+function getDeviceId() {
+  let id = localStorage.getItem('wallDeviceId');
+  if (!id) { id = 'dev_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('wallDeviceId', id); }
+  return id;
+}
+
 // Album art doubles as a link to the actual track on Spotify when a search
 // result was picked for it — the closest thing to "playback" without a
 // real Spotify login/SDK integration.
@@ -838,9 +850,13 @@ function renderQueue(queue, state) {
     <div class="ticket ${realId && t.spotifyId === realId ? 'playing' : ''}">
       ${trackArtHtml(t)}
       <div class="ticket-info"><div class="ticket-title">${realId && t.spotifyId === realId ? '<span class="live-dot">▶</span>' : ''}${escapeHtml(t.title)}</div><div class="ticket-artist">${escapeHtml(t.artist)}</div></div>
-      <div class="manual-actions"><button class="ticket-action" data-played="${t.id}">PLAYED</button></div>
+      <div class="manual-actions">
+        <button class="ticket-action" data-played="${t.id}">PLAYED</button>
+        ${t.submitterId ? `<button class="ticket-action dev-danger" data-ban-queue="${t.id}">BAN</button>` : ''}
+      </div>
     </div>`).join('');
   el.querySelectorAll('[data-played]').forEach(btn => btn.onclick = () => markPlayed(btn.getAttribute('data-played')));
+  el.querySelectorAll('[data-ban-queue]').forEach(btn => btn.onclick = () => banSubmitter(btn.getAttribute('data-ban-queue'), 'queue'));
 }
 
 let lastChartIds = null;
@@ -891,11 +907,13 @@ function renderChart(candidates) {
       </div>
       <div class="manual-actions">
         <button class="ticket-action" data-reject="${c.id}">RIP DOWN</button>
+        ${c.submitterId ? `<button class="ticket-action dev-danger" data-ban-wall="${c.id}">BAN</button>` : ''}
       </div>
     </div>`;
   }).join('');
   el.querySelectorAll('[data-vote]').forEach(btn => btn.onclick = () => { const [id, dir] = btn.getAttribute('data-vote').split(':'); castVote(id, dir); });
   el.querySelectorAll('[data-reject]').forEach(btn => btn.onclick = () => rejectCandidate(btn.getAttribute('data-reject')));
+  el.querySelectorAll('[data-ban-wall]').forEach(btn => btn.onclick = () => banSubmitter(btn.getAttribute('data-ban-wall'), 'wall'));
 }
 
 // Simple per-device submission cooldown so one person can't spam the wall
@@ -1001,7 +1019,7 @@ async function castVote(id, dir) {
       if (next === 'down') c.down += 1;
       if (c.up >= state.settings.upThreshold) {
         state.candidates.splice(idx, 1);
-        state.queue.push({ id: c.id, title: c.title, artist: c.artist, image: c.image, spotifyUrl: c.spotifyUrl, spotifyId: c.spotifyId, addedAt: Date.now() });
+        state.queue.push({ id: c.id, title: c.title, artist: c.artist, image: c.image, spotifyUrl: c.spotifyUrl, spotifyId: c.spotifyId, submitterId: c.submitterId, addedAt: Date.now() });
       } else if (c.down >= state.settings.downThreshold) {
         state.candidates.splice(idx, 1);
       }
@@ -1025,6 +1043,28 @@ async function markPlayed(id) {
   try {
     await withState(state => {
       state.queue = state.queue.filter(t => t.id !== id);
+    });
+  } catch (e) {}
+  loadAll();
+}
+
+// Blocks whoever added a given track from adding more — there's no login
+// here, so this only works against the anonymous device id the submitter's
+// own browser tagged the track with (older tracks predate that and can't
+// be traced back to anyone). Also removes the offending track itself.
+async function banSubmitter(id, source) {
+  if (!isHost) return;
+  if (!confirm('Block whoever added this from adding more songs to this wall, and remove it?')) return;
+  try {
+    await withState(state => {
+      const list = source === 'queue' ? state.queue : state.candidates;
+      const track = list.find(t => t.id === id);
+      if (track && track.submitterId) {
+        state.bannedIds = state.bannedIds || [];
+        if (!state.bannedIds.includes(track.submitterId)) state.bannedIds.push(track.submitterId);
+      }
+      if (source === 'queue') state.queue = state.queue.filter(t => t.id !== id);
+      else state.candidates = state.candidates.filter(c => c.id !== id);
     });
   } catch (e) {}
   loadAll();
@@ -1328,6 +1368,14 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
     return;
   }
   if (remainingCooldown() > 0) { updateSubmitCooldownUI(); return; }
+  try {
+    const freshState = await fetchState();
+    if ((freshState.bannedIds || []).includes(getDeviceId())) {
+      pickHint.textContent = "You've been blocked from adding songs to this wall.";
+      pickHint.style.color = 'var(--stamp-red)';
+      return;
+    }
+  } catch (e) {}
   document.getElementById('submitBtn').disabled = true;
   const track = selectedTrack;
   try {
@@ -1336,6 +1384,7 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
         id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
         title: track.title, artist: track.artist, up: 0, down: 0,
         image: track.image, spotifyUrl: track.url, spotifyId: track.id,
+        submitterId: getDeviceId(),
       });
     });
     const roomId = localStorage.getItem('wallRoomId');
@@ -1442,11 +1491,17 @@ function renderDevDiagnostics() {
     'spotify needs rescope: ' + needsSpotifyRescope,
     'now playing (real): ' + (s.nowPlayingTitle || '(none — guessing from queue order)'),
     'spotify playlist: ' + (s.spotifyPlaylistUrl || '(not synced yet)'),
+    'banned devices: ' + ((s.bannedIds || []).length),
   ];
   document.getElementById('devDiagnostics').textContent = lines.join('\n');
+  document.getElementById('devUnbanBtn').style.display = (s.bannedIds || []).length ? 'block' : 'none';
 }
 
+// Host-only — a guest doing the gesture just sees nothing happen. Still
+// just a client-side flag like every other host check in this app, not
+// real access control, but enough to keep it out of guests' way.
 function openDevMode() {
+  if (!isHost) return;
   document.getElementById('devJoke').textContent = DEV_JOKES[Math.floor(Math.random() * DEV_JOKES.length)];
   renderDevDiagnostics();
   document.getElementById('devOverlay').classList.add('open');
@@ -1488,6 +1543,11 @@ document.addEventListener('touchend', (e) => {
 }, { passive: true });
 
 document.getElementById('devResyncBtn').addEventListener('click', () => loadAll());
+document.getElementById('devUnbanBtn').addEventListener('click', async () => {
+  if (!confirm('Unban everyone currently blocked from adding songs to this wall?')) return;
+  try { await withState(state => { state.bannedIds = []; }); } catch (e) {}
+  loadAll();
+});
 document.getElementById('devWipeLocalBtn').addEventListener('click', () => {
   if (!confirm("Wipe ALL of this device's local storage (room, votes, Spotify login) and reload?")) return;
   localStorage.clear();
