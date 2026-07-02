@@ -348,6 +348,7 @@
   .perforation span{font-size:9px;color:var(--muted-ink);font-family:var(--font-label);letter-spacing:.1em;}
 
   .empty{color:var(--muted-ink);font-size:13px;padding:4px 0;}
+  .now-playing{font-family:var(--font-label);font-size:11px;letter-spacing:.04em;color:var(--stamp-green);margin:-6px 0 12px;}
 
   .footer-row{display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:11px;color:var(--muted-ink);}
   .reset-link{background:none;border:none;color:var(--stamp-red);font-size:11px;text-decoration:underline;cursor:pointer;padding:0;font-family:var(--font-label);}
@@ -472,6 +473,8 @@
   <section class="poster rot-r">
     <div class="tape-corner tc-tc"></div>
     <p class="board-title">📻 What's Spinning</p>
+    <p class="now-playing" id="nowPlaying" style="display:none;"></p>
+    <a href="#" target="_blank" rel="noopener" class="share-hint" id="spotifyPlaylistLink" style="display:none;color:var(--stamp-green);">🎵 Open the live Spotify playlist</a>
     <div id="queueList"><p class="empty">Nothing queued yet.</p></div>
   </section>
 
@@ -479,10 +482,10 @@
     <div class="tape-corner tc-tl"></div>
     <p class="board-title">Write on the wall</p>
     <div class="row2" style="position:relative;">
-      <input id="titleInput" placeholder="Song title" required maxlength="80" autocomplete="off">
+      <input id="titleInput" placeholder="Song title or artist" required maxlength="80" autocomplete="off">
       <div class="search-dropdown" id="searchDropdown"></div>
     </div>
-    <div class="row2"><input id="artistInput" placeholder="Artist" required maxlength="60"></div>
+    <p class="share-hint" id="pickHint" style="margin:2px 0 0;">Pick a song from the list to add it.</p>
     <button type="submit" class="btn-submit" id="submitBtn">STICK IT UP</button>
     <div class="perforation"><span>TEAR ALONG LINE</span><span>✂</span></div>
   </form>
@@ -513,6 +516,11 @@
     <div class="field"><label>Upvotes to auto-queue</label><input type="number" id="upThreshInput" min="1" max="50"></div>
     <div class="field"><label>Downvotes to auto-remove</label><input type="number" id="downThreshInput" min="1" max="50"></div>
     <div class="field"><label>Seconds between submissions</label><input type="number" id="cooldownInput" min="0" max="300"></div>
+    <div class="field">
+      <label>Spotify Playlist</label>
+      <button type="button" class="ticket-action" id="spotifyConnectBtn" style="width:100%;">CONNECT SPOTIFY</button>
+      <p class="hint" id="spotifyConnectStatus">Log in once to auto-sync the queue into a real Spotify playlist.</p>
+    </div>
     <div class="settings-actions">
       <button class="btn-cancel" id="settingsCancel">Cancel</button>
       <button class="btn-save" id="settingsSave">Save</button>
@@ -531,6 +539,12 @@ if (SPOTIFY_SEARCH_API) {
   document.getElementById('spotifyModeLabel').textContent = 'Spotify search:';
   document.getElementById('spotifyModeText').textContent = 'start typing a title to search real tracks.';
 }
+// Same Spotify app as the search worker, used here for a client-side OAuth
+// login (PKCE — no client secret needed) so the host can let the wall
+// auto-sync a real Spotify playlist. Client IDs aren't secret; this is the
+// normal way public/SPA clients ship Spotify login.
+const SPOTIFY_CLIENT_ID = '8e2b97cc0aaa47fba6789aecc58dc745';
+const SPOTIFY_SCOPES = 'playlist-modify-public playlist-modify-private';
 let roomUrl = null;
 let votedMap = {};
 let queueVotedMap = {};
@@ -648,10 +662,19 @@ function trackArtHtml(item) {
 
 function renderQueue(queue) {
   const el = document.getElementById('queueList');
-  if (!queue.length) { el.innerHTML = '<p class="empty">Nothing queued yet.</p>'; return; }
+  const nowPlaying = document.getElementById('nowPlaying');
+  if (!queue.length) {
+    el.innerHTML = '<p class="empty">Nothing queued yet.</p>';
+    nowPlaying.style.display = 'none';
+    return;
+  }
   // Queued tracks can be upvoted too — more votes moves a track up. Ties go
   // to whichever's been waiting longest (earliest addedAt), not alphabetical.
   const sorted = [...queue].sort((a, b) => (b.up || 0) - (a.up || 0) || (a.addedAt || 0) - (b.addedAt || 0));
+  // Just a label — the top of the vote-sorted queue is whatever the host
+  // should be playing next/now, not a real playback state we control.
+  nowPlaying.textContent = '▶ NOW PLAYING: ' + sorted[0].title + ' — ' + sorted[0].artist;
+  nowPlaying.style.display = 'block';
   el.innerHTML = sorted.map(t => `
     <div class="ticket">
       ${trackArtHtml(t)}
@@ -766,9 +789,13 @@ async function loadAll() {
       roomName = state.roomName || '';
       document.getElementById('wallTitle').textContent = roomName || 'THE WALL';
     }
+    const playlistLink = document.getElementById('spotifyPlaylistLink');
+    if (state.spotifyPlaylistUrl) { playlistLink.href = state.spotifyPlaylistUrl; playlistLink.style.display = 'inline-block'; }
+    else { playlistLink.style.display = 'none'; }
     renderChart(state.candidates || []);
     renderQueue(state.queue || []);
     updateSubmitCooldownUI();
+    syncSpotifyPlaylist();
     document.getElementById('statusMsg').textContent = 'synced ' + new Date().toLocaleTimeString();
   } catch (e) {
     document.getElementById('statusMsg').textContent = 'offline (' + (e.message || 'error') + ') — retrying…';
@@ -793,7 +820,7 @@ async function castVote(id, dir) {
       if (next === 'down') c.down += 1;
       if (c.up >= state.settings.upThreshold) {
         state.candidates.splice(idx, 1);
-        state.queue.push({ id: c.id, title: c.title, artist: c.artist, image: c.image, spotifyUrl: c.spotifyUrl, up: 0, addedAt: Date.now() });
+        state.queue.push({ id: c.id, title: c.title, artist: c.artist, image: c.image, spotifyUrl: c.spotifyUrl, spotifyId: c.spotifyId, up: 0, addedAt: Date.now() });
       } else if (c.down >= state.settings.downThreshold) {
         state.candidates.splice(idx, 1);
       }
@@ -865,8 +892,10 @@ function renderSearchResults(tracks) {
       e.preventDefault();
       const t = tracks[+row.getAttribute('data-idx')];
       selectedTrack = t;
-      document.getElementById('titleInput').value = t.title;
-      document.getElementById('artistInput').value = t.artist;
+      document.getElementById('titleInput').value = t.title + ' — ' + t.artist;
+      const pickHint = document.getElementById('pickHint');
+      pickHint.textContent = 'Ready to stick up: ' + t.title + ' — ' + t.artist;
+      pickHint.style.color = 'var(--stamp-green)';
       renderSearchResults([]);
     });
   });
@@ -884,36 +913,197 @@ const runSpotifySearch = debounce(async (q) => {
 
 document.getElementById('titleInput').addEventListener('input', (e) => {
   selectedTrack = null;
+  const pickHint = document.getElementById('pickHint');
+  pickHint.textContent = 'Pick a song from the list to add it.';
+  pickHint.style.color = '';
   runSpotifySearch(e.target.value.trim());
 });
 document.getElementById('titleInput').addEventListener('blur', () => {
   setTimeout(() => renderSearchResults([]), 100);
 });
 
+// ---- Spotify playlist auto-sync (host-only) ----------------------------
+// A one-time OAuth login (Authorization Code + PKCE — no client secret
+// needed for this flow, unlike the search worker) lets the host's device
+// keep a real Spotify playlist in sync with the voted queue. This never
+// plays audio itself; the host still hits play in Spotify.
+
+function b64url(bytes) {
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function randomVerifier() {
+  const bytes = crypto.getRandomValues(new Uint8Array(64));
+  return b64url(bytes).slice(0, 128);
+}
+async function codeChallengeFor(verifier) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return b64url(new Uint8Array(digest));
+}
+
+function spotifyRedirectUri() { return location.origin + location.pathname; }
+
+async function startSpotifyLogin() {
+  const roomId = localStorage.getItem('wallRoomId');
+  if (!roomId) return;
+  const verifier = randomVerifier();
+  localStorage.setItem('spotifyCodeVerifier', verifier);
+  const challenge = await codeChallengeFor(verifier);
+  const params = new URLSearchParams({
+    client_id: SPOTIFY_CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: spotifyRedirectUri(),
+    code_challenge_method: 'S256',
+    code_challenge: challenge,
+    scope: SPOTIFY_SCOPES,
+    state: roomId,
+  });
+  location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
+}
+
+function saveSpotifyTokens(data) {
+  localStorage.setItem('spotifyAccessToken', data.access_token);
+  if (data.refresh_token) localStorage.setItem('spotifyRefreshToken', data.refresh_token);
+  localStorage.setItem('spotifyExpiresAt', String(Date.now() + (data.expires_in - 60) * 1000));
+}
+function hasSpotifyLogin() { return !!localStorage.getItem('spotifyRefreshToken'); }
+function disconnectSpotify() {
+  ['spotifyAccessToken', 'spotifyRefreshToken', 'spotifyExpiresAt', 'spotifyCodeVerifier'].forEach(k => localStorage.removeItem(k));
+  lastSyncedUris = null;
+  updateSpotifyConnectUI();
+}
+
+async function getSpotifyAccessToken() {
+  const expiresAt = parseInt(localStorage.getItem('spotifyExpiresAt') || '0', 10);
+  if (Date.now() < expiresAt) return localStorage.getItem('spotifyAccessToken');
+  const refreshToken = localStorage.getItem('spotifyRefreshToken');
+  if (!refreshToken) return null;
+  try {
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken, client_id: SPOTIFY_CLIENT_ID }),
+    });
+    if (!res.ok) throw new Error('refresh failed');
+    const data = await res.json();
+    saveSpotifyTokens(data);
+    return data.access_token;
+  } catch (e) {
+    disconnectSpotify();
+    return null;
+  }
+}
+
+// Handles landing back here after the Spotify login redirect. Returns the
+// room id (from state) to rejoin as host if this was a login callback.
+async function handleSpotifyCallback() {
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  const roomId = params.get('state');
+  if (!code) return null;
+  history.replaceState(null, '', location.pathname);
+  const verifier = localStorage.getItem('spotifyCodeVerifier');
+  try {
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: spotifyRedirectUri(),
+        client_id: SPOTIFY_CLIENT_ID,
+        code_verifier: verifier,
+      }),
+    });
+    if (!res.ok) throw new Error('token exchange failed');
+    saveSpotifyTokens(await res.json());
+  } catch (e) {}
+  return roomId;
+}
+
+function updateSpotifyConnectUI() {
+  const btn = document.getElementById('spotifyConnectBtn');
+  const status = document.getElementById('spotifyConnectStatus');
+  if (!btn) return;
+  if (hasSpotifyLogin()) {
+    btn.textContent = 'DISCONNECT SPOTIFY';
+    status.textContent = 'Connected — the queue syncs into a real playlist as people vote.';
+  } else {
+    btn.textContent = 'CONNECT SPOTIFY';
+    status.textContent = 'Log in once to auto-sync the queue into a real Spotify playlist.';
+  }
+}
+
+let lastSyncedUris = null;
+async function syncSpotifyPlaylist() {
+  if (!isHost || !hasSpotifyLogin()) return;
+  const token = await getSpotifyAccessToken();
+  if (!token) return;
+  try {
+    let state = await fetchState();
+    let playlistId = state.spotifyPlaylistId;
+    if (!playlistId) {
+      const meRes = await fetch('https://api.spotify.com/v1/me', { headers: { Authorization: 'Bearer ' + token } });
+      if (!meRes.ok) throw new Error('me failed');
+      const me = await meRes.json();
+      const plRes = await fetch('https://api.spotify.com/v1/users/' + me.id + '/playlists', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: roomName || 'The Wall', description: 'Synced live from a HostLab song-request wall', public: false }),
+      });
+      if (!plRes.ok) throw new Error('create playlist failed');
+      const pl = await plRes.json();
+      await withState(s => { s.spotifyPlaylistId = pl.id; s.spotifyPlaylistUrl = (pl.external_urls || {}).spotify || ''; });
+      state = await fetchState();
+      playlistId = pl.id;
+    }
+    const uris = (state.queue || [])
+      .filter(t => t.spotifyId)
+      .sort((a, b) => (b.up || 0) - (a.up || 0) || (a.addedAt || 0) - (b.addedAt || 0))
+      .map(t => 'spotify:track:' + t.spotifyId);
+    const key = uris.join(',');
+    if (key === lastSyncedUris) return; // nothing actually changed since the last sync
+    await fetch('https://api.spotify.com/v1/playlists/' + playlistId + '/tracks', {
+      method: 'PUT',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uris }),
+    });
+    lastSyncedUris = key;
+  } catch (e) {}
+}
+
+document.getElementById('spotifyConnectBtn').addEventListener('click', () => {
+  if (hasSpotifyLogin()) { disconnectSpotify(); return; }
+  startSpotifyLogin();
+});
+
 document.getElementById('submitForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const titleInput = document.getElementById('titleInput');
-  const artistInput = document.getElementById('artistInput');
-  const title = titleInput.value.trim();
-  const artist = artistInput.value.trim();
-  if (!title || !artist) return;
+  const pickHint = document.getElementById('pickHint');
+  // Songs can only be added by picking a real Spotify search result now —
+  // no more free-typed title/artist.
+  if (!selectedTrack) {
+    pickHint.textContent = 'Pick a song from the search results first.';
+    pickHint.style.color = 'var(--stamp-red)';
+    return;
+  }
   if (remainingCooldown() > 0) { updateSubmitCooldownUI(); return; }
   document.getElementById('submitBtn').disabled = true;
-  // Only carry over the picked track's art/link if the fields still match what
-  // was picked — if someone edited after picking, treat it as free-text again.
-  const track = (selectedTrack && selectedTrack.title === title && selectedTrack.artist === artist) ? selectedTrack : null;
+  const track = selectedTrack;
   try {
     await withState(state => {
       state.candidates.push({
         id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-        title, artist, up: 0, down: 0,
-        ...(track ? { image: track.image, spotifyUrl: track.url } : {}),
+        title: track.title, artist: track.artist, up: 0, down: 0,
+        image: track.image, spotifyUrl: track.url, spotifyId: track.id,
       });
     });
     const roomId = localStorage.getItem('wallRoomId');
     if (roomId) localStorage.setItem(cooldownKey(roomId), String(Date.now()));
   } catch (e) {}
-  titleInput.value = ''; artistInput.value = ''; selectedTrack = null;
+  titleInput.value = ''; selectedTrack = null;
+  pickHint.textContent = 'Pick a song from the list to add it.';
+  pickHint.style.color = '';
   renderSearchResults([]);
   updateSubmitCooldownUI();
   loadAll();
@@ -944,6 +1134,7 @@ let themeBeforeEdit = 'original';
 document.getElementById('gearBtn').addEventListener('click', () => {
   if (!isHost) return;
   themeBeforeEdit = currentTheme();
+  updateSpotifyConnectUI();
   document.getElementById('settingsOverlay').classList.add('open');
 });
 document.getElementById('settingsCancel').addEventListener('click', () => {
@@ -1146,6 +1337,10 @@ document.getElementById('downloadQrBtn').addEventListener('click', downloadPrint
 // Scanning a shared QR/link lands here as ?room=<id> — join it straight away.
 // Fall back to a saved room only when there's no link to honor.
 async function boot() {
+  // Landing back here after the Spotify OAuth redirect (?code=&state=<roomId>)
+  const callbackRoomId = await handleSpotifyCallback();
+  if (callbackRoomId) { enterRoom(callbackRoomId, { host: true }); return; }
+
   const urlRoom = new URLSearchParams(location.search).get('room');
   if (urlRoom) {
     history.replaceState(null, '', location.pathname);
