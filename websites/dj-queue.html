@@ -1034,23 +1034,35 @@ function updateSpotifyConnectUI() {
 }
 
 let lastSyncedUris = null;
+async function spotifyApiError(res, label) {
+  let detail = '';
+  try { detail = (await res.json()).error?.message || ''; } catch (e) {}
+  return label + ' failed: ' + res.status + (detail ? ' — ' + detail : '');
+}
+
+function reportSpotifyError(msg) {
+  console.error('[spotify sync]', msg);
+  const status = document.getElementById('spotifyConnectStatus');
+  if (status) { status.textContent = 'Sync error: ' + msg; status.style.color = 'var(--stamp-red)'; }
+}
+
 async function syncSpotifyPlaylist() {
   if (!isHost || !hasSpotifyLogin()) return;
   const token = await getSpotifyAccessToken();
-  if (!token) return;
+  if (!token) { reportSpotifyError('could not get an access token — try reconnecting.'); return; }
   try {
     let state = await fetchState();
     let playlistId = state.spotifyPlaylistId;
     if (!playlistId) {
       const meRes = await fetch('https://api.spotify.com/v1/me', { headers: { Authorization: 'Bearer ' + token } });
-      if (!meRes.ok) throw new Error('me failed');
+      if (!meRes.ok) throw new Error(await spotifyApiError(meRes, 'fetching your profile'));
       const me = await meRes.json();
       const plRes = await fetch('https://api.spotify.com/v1/users/' + me.id + '/playlists', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: roomName || 'The Wall', description: 'Synced live from a HostLab song-request wall', public: false }),
       });
-      if (!plRes.ok) throw new Error('create playlist failed');
+      if (!plRes.ok) throw new Error(await spotifyApiError(plRes, 'creating the playlist'));
       const pl = await plRes.json();
       await withState(s => { s.spotifyPlaylistId = pl.id; s.spotifyPlaylistUrl = (pl.external_urls || {}).spotify || ''; });
       state = await fetchState();
@@ -1062,13 +1074,16 @@ async function syncSpotifyPlaylist() {
       .map(t => 'spotify:track:' + t.spotifyId);
     const key = uris.join(',');
     if (key === lastSyncedUris) return; // nothing actually changed since the last sync
-    await fetch('https://api.spotify.com/v1/playlists/' + playlistId + '/tracks', {
+    const putRes = await fetch('https://api.spotify.com/v1/playlists/' + playlistId + '/tracks', {
       method: 'PUT',
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ uris }),
     });
+    if (!putRes.ok) throw new Error(await spotifyApiError(putRes, 'updating the playlist'));
     lastSyncedUris = key;
-  } catch (e) {}
+  } catch (e) {
+    reportSpotifyError(e.message || String(e));
+  }
 }
 
 document.getElementById('spotifyConnectBtn').addEventListener('click', () => {
