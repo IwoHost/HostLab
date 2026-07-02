@@ -1054,10 +1054,10 @@ async function syncSpotifyPlaylist() {
     let state = await fetchState();
     let playlistId = state.spotifyPlaylistId;
     if (!playlistId) {
-      const meRes = await fetch('https://api.spotify.com/v1/me', { headers: { Authorization: 'Bearer ' + token } });
-      if (!meRes.ok) throw new Error(await spotifyApiError(meRes, 'fetching your profile'));
-      const me = await meRes.json();
-      const plRes = await fetch('https://api.spotify.com/v1/users/' + me.id + '/playlists', {
+      // Spotify's Feb 2026 Web API migration removed /v1/users/{id}/playlists
+      // for Development Mode apps (permanent 403) in favor of /v1/me/playlists,
+      // which conveniently means we don't need a separate /v1/me lookup either.
+      const plRes = await fetch('https://api.spotify.com/v1/me/playlists', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: roomName || 'The Wall', description: 'Synced live from a HostLab song-request wall', public: false }),
@@ -1074,7 +1074,8 @@ async function syncSpotifyPlaylist() {
       .map(t => 'spotify:track:' + t.spotifyId);
     const key = uris.join(',');
     if (key === lastSyncedUris) return; // nothing actually changed since the last sync
-    const putRes = await fetch('https://api.spotify.com/v1/playlists/' + playlistId + '/tracks', {
+    // Same Feb 2026 migration renamed the /tracks sub-resource to /items.
+    const putRes = await fetch('https://api.spotify.com/v1/playlists/' + playlistId + '/items', {
       method: 'PUT',
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ uris }),
