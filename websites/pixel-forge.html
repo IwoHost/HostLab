@@ -11,300 +11,320 @@
     gtag('js', new Date());
     gtag('config', 'G-R7MJHBKJVY');
 </script>
-<meta name="description" content="Pixel Forge — a tiny pixel-art editor for making logos and favicons. Pencil, bucket fill and gradient tools, layers, transparent background, PNG export.">
+<meta name="description" content="Pixel Forge — a pixel-art editor for making logos and favicons, with a live true-size preview so you can see exactly what you're building. Pencil, fill, gradient and line tools, layers, transparent PNG export.">
 <meta property="og:title" content="Pixel Forge — HostLab">
-<meta property="og:description" content="Make favicons and logos pixel by pixel. Pencil, fill, gradient, layers, transparent PNG export.">
+<meta property="og:description" content="Make favicons and logos pixel by pixel, with a live true-size preview. Pencil, fill, gradient, layers, transparent PNG export.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://iwohost.github.io/HostLab/websites/pixel-forge.html">
 <meta property="og:image" content="https://iwohost.github.io/HostLab/other/p_pixel-forge.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PIXEL · FORGE</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="../other/logo/PixelForge.png">
 <link rel="canonical" href="https://iwohost.github.io/HostLab/websites/pixel-forge.html">
 <link rel="stylesheet" href="../other/backbutton.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  /* THEME: Classic Paint — light, beveled, Windows-95-inspired */
-  --desk:#3a6ea5;--face:#c0c0c0;--face-dark:#a8a8a8;
-  --hi:#ffffff;--sh:#5a5a5a;--outer:#000000;
-  --canvas-bg:#ffffff;
-  --title1:#000a78;--title2:#1084d0;--title-text:#ffffff;
-  --text:#000000;--text2:#333333;--text3:#6b6b6b;
-  --accent:#000080;--accent2:#1084d0;
-  --danger:#a00000;
-  --mono:'DM Mono',monospace;
+  /* THEME: Ice Station — cold, precise, instrument-panel */
+  --bg:#01080f;--panel:#050f18;--panel2:#081521;--border:#0d2233;--border2:#1b3a52;
+  --text:#d8ecfb;--text2:#7fa8c2;--text3:#3f5f74;
+  --accent:#a8d8ff;--accent2:#5fb4ff;--accent3:#e4f4ff;
+  --danger:#ff6b6b;--good:#6bffb0;
+  --mono:Share Tech Mono,monospace;
+}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;overflow:hidden;}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(0,0,0,.08) 3px,rgba(0,0,0,.08) 4px);
+  mix-blend-mode:overlay;
 }
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.85}94%{opacity:1}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(168,216,255,.5)}50%{box-shadow:0 0 0 4px rgba(168,216,255,0)}}
 
-html,body{height:100%;}
-body{background:var(--desk);color:var(--text);font-family:var(--mono);font-size:12px;overflow:hidden;}
+#app{display:grid;grid-template-rows:44px 1fr 26px;grid-template-columns:210px 1fr 230px;height:100vh;animation:fadeUp .35s ease;}
 
-.bevel-out{border:1px solid var(--outer);box-shadow:inset 1px 1px 0 var(--hi),inset -1px -1px 0 var(--sh);background:var(--face);}
-.bevel-in{border:1px solid var(--outer);box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--sh);background:var(--face);}
+/* HEADER */
+#header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);padding:0 16px;background:var(--panel);}
+#logo{font-family:VT323,monospace;font-size:24px;letter-spacing:5px;color:var(--accent3);text-shadow:0 0 16px rgba(168,216,255,.45);animation:flicker 6s infinite;}
+#logo span{color:var(--text3);}
+.cursor-blk{display:inline-block;width:6px;height:12px;background:var(--accent2);vertical-align:middle;animation:blink 1s step-end infinite;margin-left:4px;}
+#hactions{display:flex;gap:8px;}
+.hbtn{background:var(--panel2);border:1px solid var(--border2);color:var(--text2);padding:6px 12px;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;transition:all .15s;display:flex;align-items:center;gap:6px;}
+.hbtn:hover{border-color:var(--accent);color:var(--accent2);transform:translateY(-1px);}
+.hbtn.danger:hover{border-color:var(--danger);color:var(--danger);}
+.hbtn.primary{background:var(--accent);color:#001220;border-color:var(--accent2);font-weight:bold;}
+.hbtn.primary:hover{background:var(--accent2);color:#001220;}
 
-#app{display:grid;
-  grid-template-rows:30px 22px 22px 1fr 46px 22px;
-  grid-template-columns:64px 1fr 176px;
-  height:100vh;gap:3px;padding:3px;background:var(--desk);
-  animation:fadeUp .3s ease;
-}
+/* SIDEBAR shared */
+.side{overflow-y:auto;background:var(--panel);padding:12px;}
+#left{border-right:1px solid var(--border2);}
+#right{border-left:1px solid var(--border2);display:flex;flex-direction:column;gap:0;}
+.section{border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px;}
+.section:last-child{border-bottom:none;margin-bottom:0;}
+.label{font-size:9px;letter-spacing:3px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+.label .hint{color:var(--text3);font-size:9px;letter-spacing:1px;text-transform:none;}
 
-/* TITLE BAR */
-#titlebar{grid-row:1;grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
-  background:linear-gradient(90deg,var(--title1),var(--title2));color:var(--title-text);
-  padding:0 6px;border:1px solid #000;}
-#titlebar .tleft{display:flex;align-items:center;gap:6px;}
-#titlebar .ticon{width:14px;height:14px;background:var(--face);border:1px solid #000;display:inline-block;}
-#titlebar .ttitle{font-size:12px;letter-spacing:.5px;font-weight:500;}
-.cursor-blk{display:inline-block;width:5px;height:11px;background:#fff;vertical-align:middle;animation:blink 1s step-end infinite;margin-left:3px;}
-#titlebar .tbtns{display:flex;gap:3px;}
-#titlebar .tbtn{width:16px;height:14px;font-size:9px;line-height:14px;text-align:center;color:#000;cursor:default;}
+/* TOOLS — labeled rows, not tiny icons */
+.tool-list{display:flex;flex-direction:column;gap:4px;}
+.tool-btn{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--border2);color:var(--text2);padding:8px 10px;cursor:pointer;font-size:11px;letter-spacing:.5px;transition:all .15s;user-select:none;}
+.tool-btn:hover{border-color:var(--accent);color:var(--accent2);transform:translateX(2px);}
+.tool-btn.active{background:var(--accent);color:#001220;border-color:var(--accent2);font-weight:bold;}
+.tool-btn .ic{font-size:15px;width:18px;text-align:center;}
+.tool-btn .key{margin-left:auto;color:var(--text3);font-size:9px;}
+.tool-btn.active .key{color:#001220;opacity:.6;}
 
-/* MENU BAR */
-#menubar{grid-row:2;grid-column:1/-1;display:flex;align-items:stretch;background:var(--face);border:1px solid var(--sh);font-size:11px;}
-.menu{position:relative;}
-.menu > summary{list-style:none;padding:3px 10px;cursor:pointer;color:var(--text);user-select:none;}
-.menu > summary::-webkit-details-marker{display:none;}
-.menu[open] > summary,.menu > summary:hover{background:var(--accent);color:#fff;}
-.menu-drop{position:absolute;top:100%;left:0;min-width:150px;z-index:50;padding:2px;}
-.menu-drop button{display:block;width:100%;text-align:left;background:none;border:none;padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--text);cursor:pointer;}
-.menu-drop button:hover{background:var(--accent);color:#fff;}
+.size-row{display:flex;gap:8px;align-items:center;}
+.size-row input[type=range]{flex:1;accent-color:var(--accent);height:2px;}
+.size-row .val{width:28px;text-align:right;color:var(--accent2);font-size:10px;}
 
-/* TOOLBOX (left) */
-#toolbox{grid-row:3/5;grid-column:1;background:var(--face);border:1px solid var(--sh);padding:4px;overflow-y:auto;}
-.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:8px;}
-.tool-btn{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;user-select:none;}
-.tool-btn.active{box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--sh);}
-.tb-label{font-size:8px;letter-spacing:1px;color:var(--text3);text-align:center;margin-bottom:3px;text-transform:uppercase;}
-.size-row{display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:4px 2px;}
-.size-row input[type=range]{width:100%;accent-color:var(--accent);}
-.size-row .val{text-align:center;color:var(--text2);font-size:10px;}
-
-/* SUB TOOLBAR (icon strip under menu, spans canvas+layers cols) */
-#subtoolbar{grid-row:3;grid-column:2/4;background:var(--face);border:1px solid var(--sh);display:flex;align-items:center;gap:4px;padding:0 4px;}
-.tbar-btn{width:22px;height:18px;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;}
-.tbar-sep{width:1px;align-self:stretch;margin:3px 2px;box-shadow:inset 1px 0 0 var(--sh),inset -1px 0 0 var(--hi);}
-#subtoolbar .scale-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;margin-left:auto;}
-#subtoolbar input[type=range]{width:70px;accent-color:var(--accent);}
-#subtoolbar .val{font-size:10px;color:var(--text2);width:22px;}
-
-/* CENTER canvas */
-#center{grid-row:4;grid-column:2;position:relative;display:flex;align-items:center;justify-content:center;
-  background:var(--face-dark);overflow:auto;padding:16px;}
-#canvasWrap{position:relative;box-shadow:0 0 0 1px #000,inset 0 0 0 1px var(--hi);
-  background:
-  linear-gradient(45deg,#ddd 25%,transparent 25%) 0 0/16px 16px,
-  linear-gradient(-45deg,#ddd 25%,transparent 25%) 0 0/16px 16px,
-  linear-gradient(45deg,transparent 75%,#ddd 75%) 0 0/16px 16px,
-  linear-gradient(-45deg,transparent 75%,#ddd 75%) 0 0/16px 16px,
-  var(--canvas-bg);
-}
-#gridCanvas,#drawCanvas{position:absolute;top:0;left:0;image-rendering:pixelated;}
-#drawCanvas{cursor:crosshair;}
-
-/* RIGHT dock: gradient + layers as mini sub-windows */
-#right{grid-row:4;grid-column:3;display:flex;flex-direction:column;gap:3px;overflow-y:auto;}
-.dock{background:var(--face);border:1px solid var(--sh);display:flex;flex-direction:column;}
-.dock-title{background:linear-gradient(90deg,var(--title1),var(--title2));color:#fff;font-size:10px;letter-spacing:1px;padding:3px 6px;text-transform:uppercase;}
-.dock-body{padding:6px;}
+/* COLOR */
+.color-main{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+#colorPick{width:44px;height:36px;border:1px solid var(--border2);background:#000;cursor:pointer;padding:0;}
+#colorHex{flex:1;background:#000;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 8px;}
+#swatches{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.swatch{aspect-ratio:1;border:1px solid var(--border2);cursor:pointer;position:relative;}
+.swatch.active{outline:2px solid var(--accent2);outline-offset:1px;}
+.swatch.add-swatch{display:flex;align-items:center;justify-content:center;color:var(--text3);background:#000;font-size:13px;}
 
 .grad-row{display:flex;gap:6px;align-items:center;}
-#gradStart,#gradEnd{width:26px;height:22px;border:1px solid var(--sh);padding:0;cursor:pointer;}
-.grad-preview{flex:1;height:22px;border:1px solid var(--sh);}
+#gradStart,#gradEnd{width:30px;height:26px;border:1px solid var(--border2);background:#000;padding:0;cursor:pointer;}
+.grad-preview{flex:1;height:26px;border:1px solid var(--border2);}
+#gradientSection.dim{opacity:.4;}
 
-#layerList{display:flex;flex-direction:column-reverse;gap:2px;margin-bottom:6px;max-height:180px;overflow-y:auto;}
-.layer{background:#fff;padding:3px 5px;display:flex;align-items:center;gap:5px;cursor:pointer;box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--sh);}
-.layer.active{background:#dce8fb;box-shadow:inset -1px -1px 0 var(--sh),inset 1px 1px 0 var(--hi);}
-.layer .vis{cursor:pointer;width:14px;text-align:center;color:var(--text2);font-size:11px;}
+button.wide{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text2);padding:8px;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:all .15s;margin-bottom:6px;}
+button.wide:hover{border-color:var(--accent);color:var(--accent2);transform:translateY(-1px);}
+button.wide.danger:hover{border-color:var(--danger);color:var(--danger);}
+button.wide.primary{background:var(--accent);color:#001220;border-color:var(--accent2);font-weight:bold;}
+button.wide.primary:hover{color:#001220;background:var(--accent2);}
+
+/* CENTER */
+#center{position:relative;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+#canvasToolbar{display:flex;align-items:center;gap:14px;padding:8px 16px;border-bottom:1px solid var(--border2);background:var(--panel);font-size:10px;color:var(--text3);letter-spacing:1px;}
+#canvasToolbar .grp{display:flex;align-items:center;gap:6px;}
+.zbtn{width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:var(--panel2);border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-size:13px;}
+.zbtn:hover{border-color:var(--accent);color:var(--accent2);}
+#zoomVal{color:var(--accent2);min-width:32px;text-align:center;}
+#canvasToolbar label{display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text3);}
+#canvasToolbar input[type=checkbox]{accent-color:var(--accent);}
+#fitBtn{background:var(--panel2);border:1px solid var(--border2);color:var(--text2);padding:4px 10px;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:1px;}
+#fitBtn:hover{border-color:var(--accent);color:var(--accent2);}
+
+#canvasStage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:auto;background:
+  linear-gradient(45deg,#0a1620 25%,transparent 25%) 0 0/16px 16px,
+  linear-gradient(-45deg,#0a1620 25%,transparent 25%) 0 0/16px 16px,
+  linear-gradient(45deg,transparent 75%,#0a1620 75%) 0 0/16px 16px,
+  linear-gradient(-45deg,transparent 75%,#0a1620 75%) 0 0/16px 16px,
+  var(--bg);
+}
+#canvasWrap{position:relative;box-shadow:0 0 0 1px var(--border2),0 0 60px rgba(95,180,255,.12);flex:0 0 auto;}
+#gridCanvas,#drawCanvas{position:absolute;top:0;left:0;image-rendering:pixelated;}
+#drawCanvas{cursor:crosshair;}
+.corner{position:absolute;width:16px;height:16px;border-color:var(--border2);opacity:.6;pointer-events:none;}
+.corner.tl{top:8px;left:8px;border-top:1px solid;border-left:1px solid;}
+.corner.tr{top:8px;right:8px;border-top:1px solid;border-right:1px solid;}
+.corner.bl{bottom:8px;left:8px;border-bottom:1px solid;border-left:1px solid;}
+.corner.br{bottom:8px;right:8px;border-bottom:1px solid;border-right:1px solid;}
+
+/* PREVIEW DOCK */
+#previewDock{border-bottom:1px solid var(--border2);padding:12px;}
+#previewRow{display:flex;gap:10px;justify-content:space-between;margin-bottom:12px;}
+.preview-box{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.preview-frame{background:
+  linear-gradient(45deg,#0a1620 25%,transparent 25%) 0 0/8px 8px,
+  linear-gradient(-45deg,#0a1620 25%,transparent 25%) 0 0/8px 8px,
+  linear-gradient(45deg,transparent 75%,#0a1620 75%) 0 0/8px 8px,
+  linear-gradient(-45deg,transparent 75%,#0a1620 75%) 0 0/8px 8px,
+  var(--bg);
+  border:1px solid var(--border2);
+}
+.preview-frame canvas{display:block;image-rendering:pixelated;}
+.preview-box .plabel{font-size:8px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;}
+
+#tabMock{background:#1c1f24;border:1px solid var(--border2);border-radius:6px 6px 0 0;padding:6px 10px;display:flex;align-items:center;gap:6px;}
+#tabMock canvas{image-rendering:pixelated;flex:0 0 auto;}
+#tabMock .ttext{color:#c8ccd0;font-size:10px;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#tabMock .tclose{margin-left:auto;color:#666;font-size:10px;}
+#taskbarMock{background:#0c0c0e;border:1px solid var(--border2);border-top:none;padding:5px 8px;display:flex;align-items:center;gap:6px;border-radius:0 0 6px 6px;}
+#taskbarMock canvas{image-rendering:pixelated;}
+#taskbarMock .ttext{color:#9098a0;font-size:9px;}
+
+/* LAYERS */
+#layersDock{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px;overflow-y:auto;}
+#layerList{display:flex;flex-direction:column-reverse;gap:4px;margin-bottom:8px;}
+.layer{border:1px solid var(--border2);background:var(--panel2);padding:6px 8px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:border-color .15s;}
+.layer:hover{border-color:var(--text2);}
+.layer.active{border-color:var(--accent);background:rgba(168,216,255,.08);}
+.layer .vis{cursor:pointer;width:16px;text-align:center;color:var(--text2);}
 .layer .vis.off{opacity:.3;}
 .layer .lname{flex:1;font-size:10px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.layer .thumb{width:18px;height:18px;border:1px solid var(--sh);image-rendering:pixelated;background:
-  linear-gradient(45deg,#bbb 25%,transparent 25%) 0 0/6px 6px,
-  linear-gradient(-45deg,#bbb 25%,transparent 25%) 0 0/6px 6px,#eee;
+.layer.active .lname{color:var(--accent2);}
+.layer .thumb{width:22px;height:22px;border:1px solid var(--border2);image-rendering:pixelated;background:
+  linear-gradient(45deg,#0a1620 25%,transparent 25%) 0 0/6px 6px,
+  linear-gradient(-45deg,#0a1620 25%,transparent 25%) 0 0/6px 6px,var(--bg);
 }
 .layer .del{cursor:pointer;color:var(--text3);font-size:11px;}
 .layer .del:hover{color:var(--danger);}
-.opacity-row{display:flex;align-items:center;gap:6px;margin-top:4px;}
-.opacity-row input{flex:1;accent-color:var(--accent);}
-.layer-actions{display:flex;gap:4px;margin-bottom:8px;}
+.opacity-row{display:flex;align-items:center;gap:6px;margin-top:6px;}
+.opacity-row input{flex:1;accent-color:var(--accent);height:2px;}
+.layer-actions{display:flex;gap:6px;margin-bottom:4px;}
 .layer-actions button{flex:1;}
 
-button.btn{background:var(--face);color:var(--text);padding:4px 6px;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:.5px;
-  box-shadow:inset 1px 1px 0 var(--hi),inset -1px -1px 0 var(--sh);border:1px solid var(--outer);}
-button.btn:active{box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--sh);}
+/* FOOTER */
+#footer{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border2);padding:0 16px;background:var(--panel);color:var(--text3);font-size:10px;letter-spacing:1px;}
+#footer b{color:var(--accent2);}
+#footer .flags{display:flex;gap:16px;}
 
-/* BOTTOM: palette strip */
-#palette{grid-row:5;grid-column:1/-1;background:var(--face);border:1px solid var(--sh);display:flex;align-items:center;gap:8px;padding:4px 8px;}
-#curColor{position:relative;width:34px;height:30px;flex:0 0 auto;margin-right:2px;}
-#curColor .back{position:absolute;width:20px;height:20px;bottom:0;right:0;box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--sh);background:#000;}
-#curColor .front{position:absolute;width:20px;height:20px;top:0;left:0;box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--sh);cursor:pointer;
-  border:none;padding:0;background:none;-webkit-appearance:none;appearance:none;}
-#curColor .front::-webkit-color-swatch-wrapper{padding:0;}
-#curColor .front::-webkit-color-swatch{border:none;}
-#fixedPalette{display:grid;grid-template-columns:repeat(14,16px);grid-template-rows:repeat(2,15px);gap:1px;}
-#fixedPalette .fp{width:16px;height:15px;cursor:pointer;box-shadow:inset -1px -1px 0 var(--sh),inset 1px 1px 0 var(--hi);}
-#swatches{display:grid;grid-template-columns:repeat(auto-fill,16px);grid-template-rows:repeat(2,15px);gap:1px;margin-left:6px;grid-auto-flow:column;max-width:150px;overflow-x:auto;}
-.swatch{width:16px;height:15px;box-shadow:inset -1px -1px 0 var(--sh),inset 1px 1px 0 var(--hi);cursor:pointer;}
-.swatch.active{outline:2px solid var(--accent);outline-offset:-1px;}
-.swatch.add-swatch{display:flex;align-items:center;justify-content:center;color:var(--text2);background:#fff;font-size:11px;}
-#colorHex{width:70px;background:#fff;box-shadow:inset 1px 1px 0 var(--sh),inset -1px -1px 0 var(--hi);border:none;color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 5px;margin-left:auto;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-thumb{background:var(--border2);}
 
-/* STATUS BAR */
-#footer{grid-row:6;grid-column:1/-1;display:flex;align-items:center;gap:3px;background:var(--face);border:1px solid var(--sh);padding:2px 4px;font-size:10px;color:var(--text2);}
-#footer > span{flex:1;box-shadow:inset 1px 1px 0 var(--sh),inset -1px -1px 0 var(--hi);padding:2px 6px;}
-#footer .fixed{flex:0 0 auto;}
-#footer b{color:var(--text);}
-
-::-webkit-scrollbar{width:14px;height:14px;}
-::-webkit-scrollbar-track{background:var(--face);}
-::-webkit-scrollbar-thumb{background:var(--face);box-shadow:inset 1px 1px 0 var(--hi),inset -1px -1px 0 var(--sh);}
-
-@media (max-width:768px){
-  #app{grid-template-columns:1fr;grid-template-rows:30px 22px 22px auto 50vh auto 46px 22px;height:auto;min-height:100vh;}
-  #titlebar{grid-row:1;}
-  #menubar{grid-row:2;}
-  #subtoolbar{grid-row:3;grid-column:1/-1;flex-wrap:wrap;height:auto;padding:3px 4px;}
-  #toolbox{grid-row:4;grid-column:1/-1;}
-  .tool-grid{grid-template-columns:repeat(6,1fr);}
-  #center{grid-row:5;grid-column:1/-1;min-height:44vh;}
-  #right{grid-row:6;grid-column:1/-1;flex-direction:row;flex-wrap:wrap;}
-  #palette{grid-row:7;grid-column:1/-1;flex-wrap:wrap;height:auto;}
-  #footer{grid-row:8;grid-column:1/-1;flex-wrap:wrap;height:auto;}
+@media (max-width:900px){
+  #app{grid-template-columns:1fr;grid-template-rows:44px auto 1fr auto 26px;height:auto;min-height:100vh;overflow:visible;}
+  body{overflow:auto;}
+  #left{order:2;border-right:none;border-bottom:1px solid var(--border2);}
+  #center{order:3;min-height:60vh;}
+  #right{order:4;border-left:none;border-top:1px solid var(--border2);flex-direction:row;flex-wrap:wrap;}
+  #previewDock,#layersDock{flex:1 1 260px;}
+  #footer{order:5;flex-wrap:wrap;height:auto;padding:6px 16px;gap:4px;}
 }
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="titlebar">
-    <div class="tleft">
-      <span class="ticon"></span>
-      <span class="ttitle">Pixel Forge — untitled.png<span class="cursor-blk"></span></span>
-    </div>
-    <div class="tbtns">
-      <span class="tbtn bevel-out">_</span>
-      <span class="tbtn bevel-out">□</span>
-      <span class="tbtn bevel-out">✕</span>
+  <div id="header">
+    <span id="logo">PIXEL<span>·</span>FORGE<span class="cursor-blk"></span></span>
+    <div id="hactions">
+      <button class="hbtn" id="btnUndo" title="Undo (Ctrl+Z)">↺ Undo</button>
+      <button class="hbtn danger" id="btnClear">Clear Layer</button>
+      <button class="hbtn danger" id="btnNew">New</button>
+      <button class="hbtn primary" id="btnExport">⬇ Export PNG</button>
     </div>
   </div>
 
-  <div id="menubar">
-    <details class="menu">
-      <summary>File</summary>
-      <div class="menu-drop bevel-out">
-        <button id="mNew">New</button>
-        <button id="mExport">Save as PNG…</button>
+  <div id="left" class="side">
+    <div class="section">
+      <div class="label">Tools</div>
+      <div class="tool-list">
+        <div class="tool-btn active" data-tool="pencil"><span class="ic">✎</span>Pencil<span class="key">B</span></div>
+        <div class="tool-btn" data-tool="eraser"><span class="ic">▧</span>Eraser<span class="key">E</span></div>
+        <div class="tool-btn" data-tool="line"><span class="ic">╱</span>Line<span class="key">L</span></div>
+        <div class="tool-btn" data-tool="fill"><span class="ic">🪣</span>Fill<span class="key">F</span></div>
+        <div class="tool-btn" data-tool="gradient"><span class="ic">▨</span>Gradient<span class="key">G</span></div>
+        <div class="tool-btn" data-tool="picker"><span class="ic">✛</span>Picker<span class="key">I</span></div>
       </div>
-    </details>
-    <details class="menu">
-      <summary>Edit</summary>
-      <div class="menu-drop bevel-out">
-        <button id="mUndo">Undo</button>
-        <button id="mClear">Clear Layer</button>
-      </div>
-    </details>
-    <details class="menu">
-      <summary>View</summary>
-      <div class="menu-drop bevel-out">
-        <button id="mZoomIn">Zoom In</button>
-        <button id="mZoomOut">Zoom Out</button>
-      </div>
-    </details>
-    <details class="menu">
-      <summary>Help</summary>
-      <div class="menu-drop bevel-out">
-        <button id="mAbout">About Pixel Forge</button>
-      </div>
-    </details>
-  </div>
-
-  <div id="subtoolbar" class="bevel-out">
-    <button class="tbar-btn btn" id="btnNew" title="New canvas">🗋</button>
-    <button class="tbar-btn btn" id="btnUndo" title="Undo (Ctrl+Z)">↺</button>
-    <button class="tbar-btn btn" id="btnClear" title="Clear active layer">▢</button>
-    <span class="tbar-sep"></span>
-    <button class="tbar-btn btn" id="btnExport" title="Export PNG">⬇</button>
-    <span class="scale-lbl">SCALE</span>
-    <input type="range" id="exportScale" min="1" max="16" value="8">
-    <span class="val" id="exportScaleVal">8×</span>
-    <span class="tbar-sep"></span>
-    <span class="scale-lbl">ZOOM</span>
-    <button class="tbar-btn btn" id="btnZoomOut" title="Zoom out">−</button>
-    <span class="val" id="zoomVal">8×</span>
-    <button class="tbar-btn btn" id="btnZoomIn" title="Zoom in">+</button>
-  </div>
-
-  <div id="toolbox" class="bevel-out">
-    <div class="tb-label">Tools</div>
-    <div class="tool-grid">
-      <div class="tool-btn bevel-out active" data-tool="pencil" title="Pencil">✎</div>
-      <div class="tool-btn bevel-out" data-tool="eraser" title="Eraser">▢</div>
-      <div class="tool-btn bevel-out" data-tool="fill" title="Fill bucket">🪣</div>
-      <div class="tool-btn bevel-out" data-tool="gradient" title="Gradient fill">▨</div>
-      <div class="tool-btn bevel-out" data-tool="picker" title="Color picker">✛</div>
-      <div class="tool-btn bevel-out" data-tool="line" title="Line">╱</div>
     </div>
-    <div class="tb-label">Size</div>
-    <div class="size-row">
-      <input type="range" id="brushSize" min="1" max="6" value="1">
-      <span class="val" id="brushVal">1px</span>
+
+    <div class="section">
+      <div class="label">Brush Size</div>
+      <div class="size-row">
+        <input type="range" id="brushSize" min="1" max="6" value="1">
+        <span class="val" id="brushVal">1px</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Color</div>
+      <div class="color-main">
+        <input type="color" id="colorPick" value="#a8d8ff">
+        <input type="text" id="colorHex" value="#a8d8ff" maxlength="7">
+      </div>
+      <div id="swatches"></div>
+    </div>
+
+    <div class="section" id="gradientSection">
+      <div class="label">Gradient <span class="hint">for Gradient tool</span></div>
+      <div class="grad-row">
+        <input type="color" id="gradStart" value="#a8d8ff">
+        <div class="grad-preview" id="gradPreview"></div>
+        <input type="color" id="gradEnd" value="#0d3a5c">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Export Scale</div>
+      <div class="size-row">
+        <input type="range" id="exportScale" min="1" max="16" value="8">
+        <span class="val" id="exportScaleVal">8×</span>
+      </div>
     </div>
   </div>
 
   <div id="center">
-    <div id="canvasWrap">
-      <canvas id="gridCanvas"></canvas>
-      <canvas id="drawCanvas"></canvas>
+    <div id="canvasToolbar">
+      <div class="grp">
+        <button class="zbtn" id="btnZoomOut" title="Zoom out">−</button>
+        <span id="zoomVal">8×</span>
+        <button class="zbtn" id="btnZoomIn" title="Zoom in">+</button>
+      </div>
+      <button id="fitBtn">Fit to screen</button>
+      <label><input type="checkbox" id="gridToggle" checked>Grid</label>
+      <span style="margin-left:auto;color:var(--text3);">SCROLL = ZOOM · DRAG = DRAW</span>
+    </div>
+    <div id="canvasStage">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div id="canvasWrap">
+        <canvas id="gridCanvas"></canvas>
+        <canvas id="drawCanvas"></canvas>
+      </div>
     </div>
   </div>
 
   <div id="right">
-    <div class="dock">
-      <div class="dock-title">Gradient</div>
-      <div class="dock-body">
-        <div class="grad-row">
-          <input type="color" id="gradStart" value="#000080">
-          <div class="grad-preview" id="gradPreview"></div>
-          <input type="color" id="gradEnd" value="#1084d0">
+    <div id="previewDock">
+      <div class="label">Live Preview <span class="hint">true size</span></div>
+      <div id="previewRow">
+        <div class="preview-box">
+          <div class="preview-frame"><canvas id="pv64" width="64" height="64" style="width:64px;height:64px;"></canvas></div>
+          <span class="plabel">64×64</span>
+        </div>
+        <div class="preview-box">
+          <div class="preview-frame"><canvas id="pv32" width="32" height="32" style="width:32px;height:32px;"></canvas></div>
+          <span class="plabel">32×32</span>
+        </div>
+        <div class="preview-box">
+          <div class="preview-frame"><canvas id="pv16" width="16" height="16" style="width:16px;height:16px;"></canvas></div>
+          <span class="plabel">16×16</span>
         </div>
       </div>
-    </div>
-    <div class="dock" style="flex:1;min-height:0;">
-      <div class="dock-title">Layers</div>
-      <div class="dock-body" style="display:flex;flex-direction:column;overflow-y:auto;">
-        <div id="layerList"></div>
-        <div class="layer-actions">
-          <button class="btn" id="btnAddLayer">+ Layer</button>
-          <button class="btn" id="btnDupLayer">⧉ Dup</button>
-        </div>
-        <div class="tb-label" style="margin-top:2px;">Opacity</div>
-        <div class="opacity-row">
-          <input type="range" id="layerOpacity" min="0" max="100" value="100">
-          <span class="val" id="layerOpacityVal">100%</span>
-        </div>
+      <div id="tabMock">
+        <canvas id="pvTab" width="16" height="16" style="width:14px;height:14px;"></canvas>
+        <span class="ttext">Your Site — HostLab</span>
+        <span class="tclose">✕</span>
+      </div>
+      <div id="taskbarMock">
+        <canvas id="pvTaskbar" width="32" height="32" style="width:18px;height:18px;"></canvas>
+        <span class="ttext">pinned · taskbar preview</span>
       </div>
     </div>
-  </div>
 
-  <div id="palette">
-    <div id="curColor">
-      <div class="back"></div>
-      <input type="color" id="colorPick" class="front" value="#000080">
+    <div id="layersDock">
+      <div class="label">Layers</div>
+      <div id="layerList"></div>
+      <div class="layer-actions">
+        <button class="wide" id="btnAddLayer" style="margin-bottom:0;">+ Layer</button>
+        <button class="wide" id="btnDupLayer" style="margin-bottom:0;">⧉ Dup</button>
+      </div>
+      <div class="label" style="margin-top:8px;">Opacity</div>
+      <div class="opacity-row">
+        <input type="range" id="layerOpacity" min="0" max="100" value="100">
+        <span class="val" id="layerOpacityVal">100%</span>
+      </div>
     </div>
-    <div id="fixedPalette"></div>
-    <div id="swatches"></div>
-    <input type="text" id="colorHex" value="#000080" maxlength="7">
   </div>
 
   <div id="footer">
-    <span class="fixed" id="fl">HOSTLAB / PIXEL-FORGE</span>
-    <span class="fixed">TOOL <b id="toolLabel">PENCIL</b></span>
-    <span class="fixed">CANVAS <b id="canvasSizeLabel">64×64</b></span>
-    <span id="fc">CURSOR <b><span id="pixelCoord">—,—</span></b></span>
-    <span class="fixed" id="fr">© 2026</span>
+    <div class="flags">
+      <span>HOSTLAB / PIXEL-FORGE</span>
+      <span>TOOL <b id="toolLabel">PENCIL</b></span>
+      <span>CANVAS <b>64×64</b></span>
+    </div>
+    <span>CURSOR <b><span id="pixelCoord">—,—</span></b></span>
+    <span>© 2026</span>
   </div>
 </div>
 
@@ -312,20 +332,28 @@ button.btn:active{box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--s
 (function(){
   const N = 64; // grid size
   let zoom = 8;
-  const MIN_ZOOM=2, MAX_ZOOM=24;
+  const MIN_ZOOM=2, MAX_ZOOM=32;
 
   const gridCanvas = document.getElementById('gridCanvas');
   const drawCanvas = document.getElementById('drawCanvas');
   const gctx = gridCanvas.getContext('2d');
   const dctx = drawCanvas.getContext('2d', {willReadFrequently:true});
   const wrap = document.getElementById('canvasWrap');
+  const stage = document.getElementById('canvasStage');
+
+  const pv64 = document.getElementById('pv64').getContext('2d');
+  const pv32 = document.getElementById('pv32').getContext('2d');
+  const pv16 = document.getElementById('pv16').getContext('2d');
+  const pvTab = document.getElementById('pvTab').getContext('2d');
+  const pvTaskbar = document.getElementById('pvTaskbar').getContext('2d');
 
   let layers = [];
   let activeLayer = 0;
   let tool = 'pencil';
   let brushSize = 1;
-  let color = '#000080';
+  let color = '#a8d8ff';
   let history = [];
+  let showGrid = true;
 
   function blankLayer(name){
     const c = document.createElement('canvas');
@@ -352,16 +380,15 @@ button.btn:active{box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--s
 
   function drawGrid(){
     gctx.clearRect(0,0,gridCanvas.width,gridCanvas.height);
-    if(zoom < 4) return;
-    gctx.strokeStyle = 'rgba(212,130,74,0.10)';
+    if(!showGrid || zoom < 4) return;
+    gctx.strokeStyle = 'rgba(168,216,255,0.10)';
     gctx.lineWidth = 1;
     for(let i=0;i<=N;i++){
       const p = i*zoom + .5;
       gctx.beginPath(); gctx.moveTo(p,0); gctx.lineTo(p,N*zoom); gctx.stroke();
       gctx.beginPath(); gctx.moveTo(0,p); gctx.lineTo(N*zoom,p); gctx.stroke();
     }
-    // 8px major lines
-    gctx.strokeStyle = 'rgba(212,130,74,0.22)';
+    gctx.strokeStyle = 'rgba(168,216,255,0.22)';
     for(let i=0;i<=N;i+=8){
       const p = i*zoom + .5;
       gctx.beginPath(); gctx.moveTo(p,0); gctx.lineTo(p,N*zoom); gctx.stroke();
@@ -379,6 +406,34 @@ button.btn:active{box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--s
     });
     dctx.globalAlpha = 1;
     renderLayerThumbs();
+    updatePreviews();
+  }
+
+  // build one merged NxN canvas of all visible layers (source of truth for previews/export)
+  function mergedCanvas(){
+    const m = document.createElement('canvas');
+    m.width = N; m.height = N;
+    const mctx = m.getContext('2d');
+    layers.forEach(l=>{
+      if(!l.visible) return;
+      mctx.globalAlpha = l.opacity;
+      mctx.drawImage(l.canvas,0,0);
+    });
+    mctx.globalAlpha = 1;
+    return m;
+  }
+
+  function updatePreviews(){
+    const merged = mergedCanvas();
+    pv64.imageSmoothingEnabled = false;
+    pv64.clearRect(0,0,64,64);
+    pv64.drawImage(merged,0,0,N,N,0,0,64,64);
+
+    [ [pv32,32], [pv16,16], [pvTab,16], [pvTaskbar,32] ].forEach(([ctx,size])=>{
+      ctx.imageSmoothingEnabled = true;
+      ctx.clearRect(0,0,size,size);
+      ctx.drawImage(merged,0,0,N,N,0,0,size,size);
+    });
   }
 
   function pushHistory(){
@@ -577,7 +632,7 @@ button.btn:active{box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--s
   drawCanvas.addEventListener('touchmove', pointerMove, {passive:false});
   window.addEventListener('touchend', pointerUp);
 
-  drawCanvas.parentElement.parentElement.addEventListener('wheel', (e)=>{
+  stage.addEventListener('wheel', (e)=>{
     e.preventDefault();
     zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + (e.deltaY<0?1:-1)));
     resizeCanvases();
@@ -590,32 +645,41 @@ button.btn:active{box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--s
   document.getElementById('btnZoomIn').addEventListener('click', ()=>zoomBy(1));
   document.getElementById('btnZoomOut').addEventListener('click', ()=>zoomBy(-1));
 
-  // ---- menu bar (delegates to the real toolbar buttons/actions) ----
-  function closeMenus(){ document.querySelectorAll('.menu[open]').forEach(m=>m.removeAttribute('open')); }
-  document.getElementById('mNew').addEventListener('click', ()=>{ closeMenus(); document.getElementById('btnNew').click(); });
-  document.getElementById('mExport').addEventListener('click', ()=>{ closeMenus(); document.getElementById('btnExport').click(); });
-  document.getElementById('mUndo').addEventListener('click', ()=>{ closeMenus(); document.getElementById('btnUndo').click(); });
-  document.getElementById('mClear').addEventListener('click', ()=>{ closeMenus(); document.getElementById('btnClear').click(); });
-  document.getElementById('mZoomIn').addEventListener('click', ()=>{ closeMenus(); zoomBy(1); });
-  document.getElementById('mZoomOut').addEventListener('click', ()=>{ closeMenus(); zoomBy(-1); });
-  document.getElementById('mAbout').addEventListener('click', ()=>{
-    closeMenus();
-    alert('Pixel Forge\n\nA tiny pixel-art editor for logos and favicons.\n64×64 transparent canvas · layers · gradients · PNG export.');
-  });
-  document.addEventListener('click', (e)=>{
-    if(!e.target.closest('.menu')) closeMenus();
+  function fitToScreen(){
+    const w = stage.clientWidth - 40, h = stage.clientHeight - 40;
+    zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.floor(Math.min(w,h)/N)));
+    resizeCanvases();
+  }
+  document.getElementById('fitBtn').addEventListener('click', fitToScreen);
+
+  document.getElementById('gridToggle').addEventListener('change', (e)=>{
+    showGrid = e.target.checked;
+    drawGrid();
   });
 
   // ---- tools UI ----
+  const TOOL_KEYS = {b:'pencil', e:'eraser', l:'line', f:'fill', g:'gradient', i:'picker'};
+  function selectTool(name){
+    const btn = document.querySelector(`.tool-btn[data-tool="${name}"]`);
+    if(!btn) return;
+    document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    tool = name;
+    document.getElementById('toolLabel').textContent = tool.toUpperCase();
+    drawCanvas.style.cursor = tool==='picker' ? 'copy' : 'crosshair';
+    document.getElementById('gradientSection').classList.toggle('dim', tool!=='gradient');
+  }
   document.querySelectorAll('.tool-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      tool = btn.dataset.tool;
-      document.getElementById('toolLabel').textContent = tool.toUpperCase();
-      drawCanvas.style.cursor = tool==='picker' ? 'copy' : 'crosshair';
-    });
+    btn.addEventListener('click', ()=>selectTool(btn.dataset.tool));
   });
+  window.addEventListener('keydown', (e)=>{
+    if(e.ctrlKey||e.metaKey||e.altKey) return;
+    const tag = document.activeElement.tagName;
+    if(tag==='INPUT' || tag==='TEXTAREA') return;
+    const t = TOOL_KEYS[e.key.toLowerCase()];
+    if(t) selectTool(t);
+  });
+  selectTool('pencil');
 
   const brushSizeEl = document.getElementById('brushSize');
   brushSizeEl.addEventListener('input', ()=>{
@@ -627,21 +691,7 @@ button.btn:active{box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--s
   const colorPick = document.getElementById('colorPick');
   const colorHex = document.getElementById('colorHex');
   const SWATCH_KEY = 'pixelforge_swatches';
-  let swatches = JSON.parse(localStorage.getItem(SWATCH_KEY) || '["#d4824a","#ffb066","#7ec87e","#e8d4b8"]');
-
-  const FIXED_PALETTE = [
-    '#000000','#808080','#800000','#808000','#008000','#008080','#000080','#800080','#808040','#004040','#0080ff','#004080','#4000ff','#8000ff',
-    '#ffffff','#c0c0c0','#ff0000','#ffff00','#00ff00','#00ffff','#0000ff','#ff00ff','#ffff80','#00ff80','#80ffff','#8080ff','#ff0080','#ff8040'
-  ];
-  (function renderFixedPalette(){
-    const box = document.getElementById('fixedPalette');
-    FIXED_PALETTE.forEach(hex=>{
-      const s = document.createElement('div');
-      s.className = 'fp'; s.style.background = hex; s.title = hex;
-      s.addEventListener('click', ()=>setColor(hex));
-      box.appendChild(s);
-    });
-  })();
+  let swatches = JSON.parse(localStorage.getItem(SWATCH_KEY) || '["#a8d8ff","#5fb4ff","#e4f4ff","#0d3a5c","#ff6b6b","#6bffb0"]');
 
   function setColor(hex){
     color = hex;
@@ -697,6 +747,7 @@ button.btn:active{box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--s
   document.getElementById('gradStart').addEventListener('input', updateGradPreview);
   document.getElementById('gradEnd').addEventListener('input', updateGradPreview);
   updateGradPreview();
+  document.getElementById('gradientSection').classList.add('dim');
 
   // ---- layers UI ----
   function renderLayerList(){
@@ -794,12 +845,7 @@ button.btn:active{box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--s
     out.width = N*scale; out.height = N*scale;
     const octx = out.getContext('2d');
     octx.imageSmoothingEnabled = false;
-    layers.forEach(l=>{
-      if(!l.visible) return;
-      octx.globalAlpha = l.opacity;
-      octx.drawImage(l.canvas, 0,0,N,N, 0,0, out.width, out.height);
-    });
-    octx.globalAlpha = 1;
+    octx.drawImage(mergedCanvas(), 0,0,N,N, 0,0, out.width, out.height);
     const a = document.createElement('a');
     a.download = 'pixel-forge-logo.png';
     a.href = out.toDataURL('image/png');
@@ -807,8 +853,9 @@ button.btn:active{box-shadow:inset -1px -1px 0 var(--hi),inset 1px 1px 0 var(--s
   });
 
   // init
-  resizeCanvases();
+  window.addEventListener('resize', ()=>{ /* keep current zoom on resize; user can hit Fit */ });
   newDoc();
+  fitToScreen();
 })();
 </script>
 </body>
