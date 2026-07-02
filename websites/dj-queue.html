@@ -352,6 +352,21 @@
   .empty{color:var(--muted-ink);font-size:13px;padding:4px 0;}
   .now-playing{font-family:var(--font-label);font-size:11px;letter-spacing:.04em;color:var(--stamp-green);margin:-6px 0 12px;}
 
+  /* Docked bottom bar, same idea as Spotify's mini-player — shows the live
+     now-playing track to everyone in the room, host and guests alike. */
+  body.has-mini-player{padding-bottom:64px;}
+  .mini-player{
+    position:fixed; left:0; right:0; bottom:0; z-index:25;
+    display:flex; align-items:center; gap:10px; padding:8px 14px;
+    background:var(--paper); color:var(--ink); border-top:2px solid var(--ink);
+    max-width:640px; margin:0 auto; box-shadow:0 -4px 14px rgba(0,0,0,.25);
+  }
+  .mini-player img{width:38px;height:38px;object-fit:cover;border:1px solid var(--ink);flex-shrink:0;}
+  .mini-player-info{flex:1;min-width:0;}
+  .mini-player-title{font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mini-player-artist{font-size:11px;color:var(--muted-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mini-player-badge{font-family:var(--font-label);font-size:9px;letter-spacing:.08em;color:var(--stamp-green);border:1px solid var(--stamp-green);border-radius:20px;padding:3px 7px;flex-shrink:0;}
+
   .footer-row{display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:11px;color:var(--muted-ink);}
   .reset-link{background:none;border:none;color:var(--stamp-red);font-size:11px;text-decoration:underline;cursor:pointer;padding:0;font-family:var(--font-label);}
 
@@ -508,6 +523,15 @@
   </div>
 </div>
 
+<div class="mini-player" id="miniPlayer" style="display:none;">
+  <img id="miniPlayerArt" alt="">
+  <div class="mini-player-info">
+    <div class="mini-player-title" id="miniPlayerTitle"></div>
+    <div class="mini-player-artist" id="miniPlayerArtist"></div>
+  </div>
+  <span class="mini-player-badge" id="miniPlayerBadge">LIVE</span>
+</div>
+
 <div class="overlay" id="settingsOverlay">
   <div class="card">
     <h2>WALL RULES</h2>
@@ -662,6 +686,21 @@ function trackArtHtml(item) {
   return item.spotifyUrl ? `<a href="${escapeHtml(item.spotifyUrl)}" target="_blank" rel="noopener" title="Open in Spotify">${img}</a>` : img;
 }
 
+// Mirrors the now-playing banner into a docked bottom bar, Spotify-app style,
+// visible to everyone in the room (not just the host who's actually connected).
+function updateMiniPlayer(title, artist, image, isReal) {
+  const bar = document.getElementById('miniPlayer');
+  if (!title) { bar.style.display = 'none'; document.body.classList.remove('has-mini-player'); return; }
+  document.getElementById('miniPlayerTitle').textContent = title;
+  document.getElementById('miniPlayerArtist').textContent = artist || '';
+  const art = document.getElementById('miniPlayerArt');
+  art.src = image || '';
+  art.style.visibility = image ? 'visible' : 'hidden';
+  document.getElementById('miniPlayerBadge').textContent = isReal ? 'LIVE' : 'NEXT UP';
+  bar.style.display = 'flex';
+  document.body.classList.add('has-mini-player');
+}
+
 function renderQueue(queue, state) {
   const el = document.getElementById('queueList');
   const nowPlaying = document.getElementById('nowPlaying');
@@ -670,6 +709,7 @@ function renderQueue(queue, state) {
   if (!queue.length && !realTitle) {
     el.innerHTML = '<p class="empty">Nothing queued yet.</p>';
     nowPlaying.style.display = 'none';
+    updateMiniPlayer(null);
     return;
   }
   // Queued tracks can be upvoted too — more votes moves a track up. Ties go
@@ -680,11 +720,15 @@ function renderQueue(queue, state) {
     // source of truth once they're connected, not a guess from vote order.
     nowPlaying.textContent = '▶ NOW PLAYING: ' + realTitle + ' — ' + (state.nowPlayingArtist || '');
     nowPlaying.style.display = 'block';
+    const playingTrack = sorted.find(t => t.spotifyId === realId);
+    updateMiniPlayer(realTitle, state.nowPlayingArtist, state.nowPlayingImage || (playingTrack && playingTrack.image), true);
   } else if (sorted.length) {
     nowPlaying.textContent = '⏳ NEXT UP: ' + sorted[0].title + ' — ' + sorted[0].artist;
     nowPlaying.style.display = 'block';
+    updateMiniPlayer(sorted[0].title, sorted[0].artist, sorted[0].image, false);
   } else {
     nowPlaying.style.display = 'none';
+    updateMiniPlayer(null);
   }
   if (!sorted.length) { el.innerHTML = '<p class="empty">Nothing queued yet.</p>'; return; }
   el.innerHTML = sorted.map(t => `
@@ -1039,10 +1083,17 @@ function updateSpotifyConnectUI() {
   if (!btn) return;
   if (hasSpotifyLogin()) {
     btn.textContent = 'DISCONNECT SPOTIFY';
-    status.textContent = 'Connected — the queue syncs into a real playlist as people vote.';
+    if (needsSpotifyRescope) {
+      status.textContent = 'Connected, but Now Playing needs a permission your last login didn\'t grant — disconnect and reconnect to fix it.';
+      status.style.color = 'var(--stamp-red)';
+    } else {
+      status.textContent = 'Connected — the queue syncs into a real playlist as people vote.';
+      status.style.color = '';
+    }
   } else {
     btn.textContent = 'CONNECT SPOTIFY';
     status.textContent = 'Log in once to auto-sync the queue into a real Spotify playlist.';
+    status.style.color = '';
   }
 }
 
@@ -1105,6 +1156,7 @@ async function syncSpotifyPlaylist() {
 // instead of a vote-order guess, and auto-removes a queued track once
 // Spotify actually moves on from it (i.e. it finished/was skipped).
 let lastKnownPlayingId = null;
+let needsSpotifyRescope = false;
 async function checkNowPlayingFromSpotify() {
   if (!isHost || !hasSpotifyLogin()) return;
   const token = await getSpotifyAccessToken();
@@ -1113,8 +1165,10 @@ async function checkNowPlayingFromSpotify() {
     const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
       headers: { Authorization: 'Bearer ' + token },
     });
-    if (res.status === 204) return; // nothing playing right now — don't treat a pause as "track finished"
-    if (!res.ok) return; // most likely the host hasn't reconnected since this scope was added — fail quietly
+    if (res.status === 204) { needsSpotifyRescope = false; return; } // nothing playing — don't treat a pause as "finished"
+    if (res.status === 403) { needsSpotifyRescope = true; return; } // old login predates this scope — needs a reconnect
+    if (!res.ok) return;
+    needsSpotifyRescope = false;
     const data = await res.json();
     const item = data.item;
     if (!item) return;
@@ -1122,10 +1176,13 @@ async function checkNowPlayingFromSpotify() {
     if (playingId === lastKnownPlayingId) return; // unchanged since the last poll
     const prevId = lastKnownPlayingId;
     lastKnownPlayingId = playingId;
+    const images = (item.album && item.album.images) || [];
+    const image = (images[1] || images[0] || {}).url || '';
     await withState(s => {
       s.nowPlayingId = playingId;
       s.nowPlayingTitle = item.name;
       s.nowPlayingArtist = (item.artists || []).map(a => a.name).join(', ');
+      s.nowPlayingImage = image;
       if (prevId) {
         const idx = (s.queue || []).findIndex(t => t.spotifyId === prevId);
         if (idx !== -1) s.queue.splice(idx, 1);
