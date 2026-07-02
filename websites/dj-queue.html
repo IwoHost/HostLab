@@ -590,18 +590,31 @@
 <div class="overlay" id="devOverlay">
   <div class="card">
     <h2 class="dev-title">DEV MODE</h2>
-    <p class="hint" id="devJoke"></p>
-    <pre class="dev-diagnostics" id="devDiagnostics"></pre>
-    <div class="settings-actions">
-      <button class="btn-cancel" id="devResyncBtn">FORCE RESYNC</button>
-      <button class="btn-cancel" id="devUnbanBtn" style="display:none;">UNBAN ALL</button>
+
+    <div id="devClaimSection" style="display:none;">
+      <p class="hint">If the host is gone and can't get back in, you can take over so the wall keeps running.</p>
+      <div class="settings-actions">
+        <button class="btn-save dev-danger" id="devClaimHostBtn" style="flex:none;width:100%;">BECOME HOST</button>
+      </div>
+      <div class="settings-actions">
+        <button class="btn-cancel" id="devClaimCloseBtn" style="flex:none;width:100%;">CLOSE</button>
+      </div>
     </div>
-    <div class="settings-actions">
-      <button class="btn-cancel" id="devWipeLocalBtn">WIPE MY STORAGE</button>
-      <button class="btn-save dev-danger" id="devDeleteRoomBtn">DELETE THIS ROOM</button>
-    </div>
-    <div class="settings-actions">
-      <button class="btn-cancel" id="devCloseBtn" style="flex:none;width:100%;">CLOSE</button>
+
+    <div id="devHostSections">
+      <p class="hint" id="devJoke"></p>
+      <pre class="dev-diagnostics" id="devDiagnostics"></pre>
+      <div class="settings-actions">
+        <button class="btn-cancel" id="devResyncBtn">FORCE RESYNC</button>
+        <button class="btn-cancel" id="devUnbanBtn" style="display:none;">UNBAN ALL</button>
+      </div>
+      <div class="settings-actions">
+        <button class="btn-cancel" id="devWipeLocalBtn">WIPE MY STORAGE</button>
+        <button class="btn-save dev-danger" id="devDeleteRoomBtn">DELETE THIS ROOM</button>
+      </div>
+      <div class="settings-actions">
+        <button class="btn-cancel" id="devCloseBtn" style="flex:none;width:100%;">CLOSE</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1501,9 +1514,15 @@ function renderDevDiagnostics() {
 // just a client-side flag like every other host check in this app, not
 // real access control, but enough to keep it out of guests' way.
 function openDevMode() {
-  if (!isHost) return;
-  document.getElementById('devJoke').textContent = DEV_JOKES[Math.floor(Math.random() * DEV_JOKES.length)];
-  renderDevDiagnostics();
+  // Non-hosts get a stripped-down view with just one option — taking over
+  // the wall — instead of the full diagnostics/moderation panel, so this
+  // still works as a recovery path if the actual host is gone for good.
+  document.getElementById('devClaimSection').style.display = isHost ? 'none' : 'block';
+  document.getElementById('devHostSections').style.display = isHost ? 'block' : 'none';
+  if (isHost) {
+    document.getElementById('devJoke').textContent = DEV_JOKES[Math.floor(Math.random() * DEV_JOKES.length)];
+    renderDevDiagnostics();
+  }
   document.getElementById('devOverlay').classList.add('open');
 }
 
@@ -1563,6 +1582,16 @@ document.getElementById('devDeleteRoomBtn').addEventListener('click', async () =
 });
 document.getElementById('devCloseBtn').addEventListener('click', () => {
   document.getElementById('devOverlay').classList.remove('open');
+});
+document.getElementById('devClaimCloseBtn').addEventListener('click', () => {
+  document.getElementById('devOverlay').classList.remove('open');
+});
+document.getElementById('devClaimHostBtn').addEventListener('click', () => {
+  if (!confirm("Become the host of this wall? Only do this if the real host is gone and can't get back in.")) return;
+  isHost = true;
+  updateHostUI();
+  document.getElementById('devOverlay').classList.remove('open');
+  loadAll();
 });
 
 function extractIdFromUrl(url) { return url.trim().split('/').filter(Boolean).pop(); }
@@ -1666,20 +1695,24 @@ function downloadPrintable() {
   }, 'image/png');
 }
 
+function updateHostUI() {
+  localStorage.setItem('wallIsHost', isHost ? '1' : '0');
+  document.body.classList.toggle('is-host', isHost);
+  document.getElementById('gearBtn').style.display = isHost ? 'block' : 'none';
+  document.getElementById('resetBtn').style.display = isHost ? 'inline' : 'none';
+  document.querySelector('.footer-row .dot-sep').style.display = isHost ? 'inline' : 'none';
+}
+
 // host is whoever created the wall — tracked client-side only (no auth
 // backend here), so it's a UI convenience, not a real permission boundary.
 function enterRoom(id, opts = {}) {
   roomUrl = API + '/' + id;
   localStorage.setItem('wallRoomId', id);
   isHost = 'host' in opts ? opts.host : localStorage.getItem('wallIsHost') === '1';
-  localStorage.setItem('wallIsHost', isHost ? '1' : '0');
-  document.body.classList.toggle('is-host', isHost);
+  updateHostUI();
   document.getElementById('roomCodeDisplay').textContent = id;
   document.getElementById('splashScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
-  document.getElementById('gearBtn').style.display = isHost ? 'block' : 'none';
-  document.getElementById('resetBtn').style.display = isHost ? 'inline' : 'none';
-  document.querySelector('.footer-row .dot-sep').style.display = isHost ? 'inline' : 'none';
   renderShareQR(id);
   const saved = localStorage.getItem('wallVotedMap');
   votedMap = saved ? JSON.parse(saved) : {};
