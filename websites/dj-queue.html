@@ -525,8 +525,8 @@
   <div class="footer-row">
     <span id="statusMsg">synced</span>
     <span>
-      <button class="reset-link" id="resetBtn">wipe the wall</button>
-      &nbsp;·&nbsp;
+      <button class="reset-link" id="resetBtn" style="display:none;">wipe the wall</button>
+      <span class="dot-sep" style="display:none;">&nbsp;·&nbsp;</span>
       <button class="reset-link" id="leaveBtn">leave wall</button>
     </span>
   </div>
@@ -1290,6 +1290,7 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
 });
 
 document.getElementById('resetBtn').addEventListener('click', async () => {
+  if (!isHost) return;
   if (!confirm('Wipe all submissions and the queue?')) return;
   try {
     await withState(state => {
@@ -1458,6 +1459,8 @@ function enterRoom(id, opts = {}) {
   document.getElementById('splashScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
   document.getElementById('gearBtn').style.display = isHost ? 'block' : 'none';
+  document.getElementById('resetBtn').style.display = isHost ? 'inline' : 'none';
+  document.querySelector('.footer-row .dot-sep').style.display = isHost ? 'inline' : 'none';
   renderShareQR(id);
   const saved = localStorage.getItem('wallVotedMap');
   votedMap = saved ? JSON.parse(saved) : {};
