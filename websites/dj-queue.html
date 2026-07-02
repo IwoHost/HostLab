@@ -363,6 +363,8 @@
   .mini-player-title{font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .mini-player-artist{font-size:11px;color:var(--muted-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .mini-player-badge{font-family:var(--font-label);font-size:9px;letter-spacing:.08em;color:var(--stamp-green);border:1px solid var(--stamp-green);border-radius:20px;padding:3px 7px;flex-shrink:0;}
+  .mini-player-progress{position:absolute;top:0;left:0;right:0;height:3px;background:rgba(127,127,127,.3);}
+  .mini-player-progress-fill{height:100%;width:0%;background:var(--stamp-green);transition:width .5s linear;}
 
   .footer-row{display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:11px;color:var(--muted-ink);}
   .reset-link{background:none;border:none;color:var(--stamp-red);font-size:11px;text-decoration:underline;cursor:pointer;padding:0;font-family:var(--font-label);}
@@ -532,6 +534,7 @@
 </div>
 
 <div class="mini-player" id="miniPlayer" style="display:none;">
+  <div class="mini-player-progress" id="miniPlayerProgress" style="display:none;"><div class="mini-player-progress-fill" id="miniPlayerProgressFill"></div></div>
   <img id="miniPlayerArt" alt="">
   <div class="mini-player-info">
     <div class="mini-player-title" id="miniPlayerTitle"></div>
@@ -695,9 +698,17 @@ function trackArtHtml(item) {
 
 // Mirrors the now-playing banner into a docked bottom bar, Spotify-app style,
 // visible to everyone in the room (not just the host who's actually connected).
-function updateMiniPlayer(title, artist, image, isReal) {
+// `progress`, when present, drives a seek bar that ticks locally between
+// polls instead of only jumping every 2s — see tickMiniPlayerProgress().
+let miniPlayerProgress = null;
+function updateMiniPlayer(title, artist, image, isReal, progress) {
   const bar = document.getElementById('miniPlayer');
-  if (!title) { bar.style.display = 'none'; document.body.classList.remove('has-mini-player'); return; }
+  if (!title) {
+    bar.style.display = 'none';
+    document.body.classList.remove('has-mini-player');
+    miniPlayerProgress = null;
+    return;
+  }
   document.getElementById('miniPlayerTitle').textContent = title;
   document.getElementById('miniPlayerArtist').textContent = artist || '';
   const art = document.getElementById('miniPlayerArt');
@@ -706,7 +717,22 @@ function updateMiniPlayer(title, artist, image, isReal) {
   document.getElementById('miniPlayerBadge').textContent = isReal ? 'LIVE' : 'NEXT UP';
   bar.style.display = 'flex';
   document.body.classList.add('has-mini-player');
+  miniPlayerProgress = (progress && progress.durationMs) ? progress : null;
+  document.getElementById('miniPlayerProgress').style.display = miniPlayerProgress ? 'block' : 'none';
+  tickMiniPlayerProgress();
 }
+
+// Spotify only tells us where playback was AT the moment we last asked —
+// this fills in the seconds between polls by counting forward locally
+// instead of leaving the bar frozen until the next sync.
+function tickMiniPlayerProgress() {
+  const fill = document.getElementById('miniPlayerProgressFill');
+  if (!miniPlayerProgress) return;
+  const { progressMs, durationMs, isPlaying, updatedAt } = miniPlayerProgress;
+  const elapsed = progressMs + (isPlaying ? Math.max(0, Date.now() - updatedAt) : 0);
+  fill.style.width = Math.min(100, (elapsed / durationMs) * 100) + '%';
+}
+setInterval(tickMiniPlayerProgress, 500);
 
 function renderQueue(queue, state) {
   const el = document.getElementById('queueList');
@@ -729,7 +755,12 @@ function renderQueue(queue, state) {
     nowPlaying.textContent = '▶ NOW PLAYING: ' + realTitle + ' — ' + (state.nowPlayingArtist || '');
     nowPlaying.style.display = 'block';
     const playingTrack = sorted.find(t => t.spotifyId === realId);
-    updateMiniPlayer(realTitle, state.nowPlayingArtist, state.nowPlayingImage || (playingTrack && playingTrack.image), true);
+    updateMiniPlayer(realTitle, state.nowPlayingArtist, state.nowPlayingImage || (playingTrack && playingTrack.image), true, {
+      progressMs: state.nowPlayingProgressMs || 0,
+      durationMs: state.nowPlayingDurationMs || 0,
+      isPlaying: state.nowPlayingIsPlaying !== false,
+      updatedAt: state.nowPlayingUpdatedAt || Date.now(),
+    });
   } else if (sorted.length) {
     nowPlaying.textContent = '⏳ NEXT UP: ' + sorted[0].title + ' — ' + sorted[0].artist;
     nowPlaying.style.display = 'block';
@@ -1147,6 +1178,8 @@ async function syncSpotifyPlaylist() {
 // instead of a vote-order guess, and auto-removes a queued track once
 // Spotify actually moves on from it (i.e. it finished/was skipped).
 let lastKnownPlayingId = null;
+let lastKnownIsPlaying = null;
+let lastProgressSyncAt = 0;
 let needsSpotifyRescope = false;
 async function checkNowPlayingFromSpotify() {
   if (!isHost || !hasSpotifyLogin()) return;
@@ -1164,9 +1197,17 @@ async function checkNowPlayingFromSpotify() {
     const item = data.item;
     if (!item) return;
     const playingId = item.id;
-    if (playingId === lastKnownPlayingId) return; // unchanged since the last poll
+    const isPlaying = !!data.is_playing;
+    const trackChanged = playingId !== lastKnownPlayingId;
+    const playStateChanged = isPlaying !== lastKnownIsPlaying;
+    // Besides real changes, resync every few seconds anyway so the shared
+    // progress bar doesn't drift out of step with actual playback (a manual
+    // seek in Spotify wouldn't otherwise be noticed until the next change).
+    if (!trackChanged && !playStateChanged && Date.now() - lastProgressSyncAt < 5000) return;
     const prevId = lastKnownPlayingId;
     lastKnownPlayingId = playingId;
+    lastKnownIsPlaying = isPlaying;
+    lastProgressSyncAt = Date.now();
     const images = (item.album && item.album.images) || [];
     const image = (images[1] || images[0] || {}).url || '';
     await withState(s => {
@@ -1174,12 +1215,16 @@ async function checkNowPlayingFromSpotify() {
       s.nowPlayingTitle = item.name;
       s.nowPlayingArtist = (item.artists || []).map(a => a.name).join(', ');
       s.nowPlayingImage = image;
-      if (prevId) {
+      s.nowPlayingProgressMs = data.progress_ms || 0;
+      s.nowPlayingDurationMs = item.duration_ms || 0;
+      s.nowPlayingIsPlaying = isPlaying;
+      s.nowPlayingUpdatedAt = Date.now();
+      if (trackChanged && prevId) {
         const idx = (s.queue || []).findIndex(t => t.spotifyId === prevId);
         if (idx !== -1) s.queue.splice(idx, 1);
       }
     });
-    loadAll();
+    if (trackChanged) loadAll();
   } catch (e) { /* transient network hiccup — the next poll will retry */ }
 }
 
