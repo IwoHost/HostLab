@@ -11,9 +11,9 @@
     gtag('js', new Date());
     gtag('config', 'G-R7MJHBKJVY');
 </script>
-<meta name="description" content="Poster Press — a Photoshop-style poster design tool. Import a photo, apply a threshold/grayscale treatment, and drop in bold display typography.">
+<meta name="description" content="Poster Press — a Photoshop-style poster design tool. Import multiple photos onto a shared canvas, select/move/scale/rotate each one, apply a threshold treatment, and drop in bold display typography.">
 <meta property="og:title" content="Poster Press — HostLab">
-<meta property="og:description" content="Threshold a photo and lay bold typography over it — a lightweight poster design tool.">
+<meta property="og:description" content="A multi-layer poster canvas — import photos, select and transform them, threshold each independently, and add typography.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://iwohost.github.io/HostLab/websites/poster-press.html">
 <meta property="og:image" content="https://iwohost.github.io/HostLab/other/p_poster-press.png">
@@ -33,7 +33,7 @@
   --mono:Share Tech Mono,monospace;--display:Bebas Neue,sans-serif;
 }
 body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;min-height:100vh;overflow-x:hidden;}
-#app{display:grid;grid-template-rows:36px 1fr 40px;grid-template-columns:220px 1fr 230px;height:100vh;border:1px solid var(--border2);animation:fadeUp .4s ease;}
+#app{display:grid;grid-template-rows:36px 1fr 40px;grid-template-columns:220px 1fr 240px;height:100vh;border:1px solid var(--border2);animation:fadeUp .4s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* HEADER */
@@ -47,17 +47,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12
 #left,#right{overflow-y:auto;overflow-x:hidden;background:var(--panel);}
 #left{border-right:1px solid var(--border2);}
 #right{border-left:1px solid var(--border2);}
-.section{border-bottom:1px solid var(--border);padding:10px;}
+.section{border-bottom:1px solid var(--border);padding:10px;transition:opacity .15s;}
+.section.disabled{opacity:.38;pointer-events:none;}
 .label{font-size:9px;letter-spacing:3px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;}
 .label .val{color:var(--accent2);float:right;font-size:10px;letter-spacing:0;}
 .subhead{font-size:10px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin:2px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-
-#preview-box{width:100%;aspect-ratio:4/5;background:#000;border:1px solid var(--border2);position:relative;overflow:hidden;cursor:pointer;transition:border-color .2s;}
-#preview-box:hover{border-color:var(--accent);}
-#preview-box canvas{width:100%;height:100%;}
-#preview-label{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:var(--text3);padding:2px;background:rgba(0,0,0,.75);letter-spacing:2px;}
-#upload-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text3);font-size:9px;letter-spacing:1px;pointer-events:none;line-height:1.6;}
-#file-input{display:none;}
+.hint{font-size:9px;color:var(--text3);letter-spacing:1px;padding:4px 0 8px;}
 
 .slider-row{margin-bottom:8px;}
 .slider-row input[type=range]{width:100%;accent-color:var(--accent);height:2px;cursor:pointer;}
@@ -65,12 +60,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:10px;letter-spacing:1px;color:var(--text2);text-transform:uppercase;}
 .toggle-row input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;}
 
-select,input[type=text],input[type=color]{background:#000;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;width:100%;}
-select:focus,input[type=text]:focus{outline:none;border-color:var(--accent);}
+select,input[type=text],input[type=color],input[type=number]{background:#000;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;width:100%;}
+select:focus,input[type=text]:focus,input[type=number]:focus{outline:none;border-color:var(--accent);}
 input[type=color]{padding:2px;height:26px;cursor:pointer;}
+.dim-row{display:flex;gap:6px;margin-bottom:8px;}
 
 .btn{font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:6px 10px;border:1px solid var(--border2);color:var(--text2);background:none;cursor:pointer;text-transform:uppercase;transition:transform .15s,border-color .15s,color .15s;width:100%;}
 .btn:hover{border-color:var(--accent);color:var(--accent2);transform:translateY(-1px);}
+.btn.primary{border-color:var(--accent);color:var(--accent2);margin-bottom:6px;}
 
 /* CENTER */
 #center{position:relative;overflow:hidden;background:#050505;display:flex;align-items:center;justify-content:center;}
@@ -82,6 +79,19 @@ input[type=color]{padding:2px;height:26px;cursor:pointer;}
 #center-drop{position:absolute;inset:0;cursor:pointer;z-index:5;}
 #center-drop.hidden{display:none;}
 
+/* LAYERS LIST */
+#layers-list{display:flex;flex-direction:column;gap:2px;margin-bottom:8px;}
+.layer-row{display:flex;align-items:center;gap:6px;padding:5px 6px;border:1px solid transparent;cursor:pointer;font-size:10px;letter-spacing:1px;color:var(--text2);}
+.layer-row:hover{border-color:var(--border2);}
+.layer-row.active{border-color:var(--accent);color:var(--accent3);background:rgba(212,52,44,.1);}
+.layer-row .licon{width:12px;text-align:center;color:var(--text3);flex-shrink:0;}
+.layer-row .lname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.layer-row input[type=checkbox]{accent-color:var(--accent);width:12px;height:12px;cursor:pointer;flex-shrink:0;}
+.layer-btns{display:flex;gap:2px;flex-shrink:0;}
+.lbtn{width:16px;height:16px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-size:8px;line-height:1;}
+.lbtn:hover{border-color:var(--accent);color:var(--accent2);}
+#layers-empty{font-size:9px;color:var(--text3);letter-spacing:1px;padding:6px 0;}
+
 /* STATS */
 .stat-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:10px;}
 .stat-row .sk{color:var(--text3);}
@@ -90,6 +100,7 @@ input[type=color]{padding:2px;height:26px;cursor:pointer;}
 /* BOTTOM BAR */
 #bottom{grid-column:1/-1;border-top:1px solid var(--border2);display:flex;align-items:center;gap:12px;padding:0 12px;background:var(--panel);font-size:10px;letter-spacing:1px;color:var(--text3);}
 #status-mode{color:var(--accent2);}
+#status-sel{color:var(--accent2);}
 #export-btn{font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:5px 14px;border:1px solid var(--accent);color:var(--accent2);background:none;cursor:pointer;text-transform:uppercase;margin-left:auto;transition:background .15s;}
 #export-btn:hover{background:rgba(212,52,44,.18);}
 #reset-btn{font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:5px 14px;border:1px solid var(--border2);color:var(--text3);background:none;cursor:pointer;text-transform:uppercase;}
@@ -118,26 +129,45 @@ input[type=color]{padding:2px;height:26px;cursor:pointer;}
   <div id="header">
     <div id="logo">POSTER<span> · </span>PRESS</div>
     <div id="hinfo">
-      <span><b>1</b> TEXT LAYER</span>
-      <span>THRESHOLD <b id="h-thresh">OFF</b></span>
+      <span><b id="h-layers">0</b> LAYERS</span>
+      <span>SELECTED <b id="h-sel">NONE</b></span>
       <span><b>LIVE</b> RENDER</span>
     </div>
   </div>
 
-  <!-- LEFT: IMPORT + ADJUSTMENTS -->
+  <!-- LEFT: CANVAS + ADD LAYER + ADJUSTMENTS -->
   <div id="left">
     <div class="section">
-      <div class="label">Import Photo</div>
-      <div id="preview-box" onclick="document.getElementById('file-input').click()">
-        <canvas id="preview-canvas"></canvas>
-        <div id="upload-hint">CLICK OR DROP<br>IMAGE ON CANVAS</div>
-        <div id="preview-label">SOURCE</div>
+      <div class="subhead">Canvas</div>
+      <div class="label">Size</div>
+      <div class="slider-row">
+        <select id="sel-canvas-size">
+          <option value="1080x1350" selected>Portrait 4:5</option>
+          <option value="1080x1080">Square 1:1</option>
+          <option value="1080x1920">Story 9:16</option>
+          <option value="1350x1080">Landscape 5:4</option>
+          <option value="custom">Custom…</option>
+        </select>
       </div>
-      <input type="file" id="file-input" accept="image/*">
+      <div class="dim-row" id="custom-dims" style="display:none">
+        <input type="number" id="cw-input" min="100" max="4000" value="1080">
+        <input type="number" id="ch-input" min="100" max="4000" value="1350">
+        <button class="btn" id="apply-dims-btn" style="width:auto;padding:4px 8px">GO</button>
+      </div>
+      <div class="label">Background</div>
+      <div class="slider-row"><input type="color" id="col-bg" value="#0b0a09"></div>
     </div>
 
     <div class="section">
+      <div class="subhead">Add Layer</div>
+      <button class="btn primary" id="add-photo-btn">+ ADD PHOTO(S)</button>
+      <button class="btn" id="add-text-btn">+ ADD TEXT</button>
+      <input type="file" id="file-input" accept="image/*" multiple style="display:none">
+    </div>
+
+    <div class="section" id="adj-section">
       <div class="subhead">Adjustments</div>
+      <div class="hint" id="adj-hint">SELECT A PHOTO LAYER TO EDIT</div>
       <div class="label">Brightness <span class="val" id="bri-val">0</span></div>
       <div class="slider-row"><input type="range" id="sl-brightness" min="-100" max="100" value="0"></div>
       <div class="label">Contrast <span class="val" id="con-val">0</span></div>
@@ -148,7 +178,7 @@ input[type=color]{padding:2px;height:26px;cursor:pointer;}
       <div class="toggle-row"><span>Dithered Edge</span><input type="checkbox" id="ck-dither"></div>
       <div class="toggle-row"><span>Invert</span><input type="checkbox" id="ck-invert"></div>
 
-      <button class="btn" id="reset-adj-btn" style="margin-top:8px">Reset Adjustments</button>
+      <button class="btn" id="reset-adj-btn" style="margin-top:8px">Reset Layer Adjustments</button>
     </div>
   </div>
 
@@ -159,18 +189,26 @@ input[type=color]{padding:2px;height:26px;cursor:pointer;}
     </div>
     <div id="drop-overlay">
       <div class="big">[ + ]</div>
-      <div class="small">DROP A PHOTO OR CLICK TO IMPORT</div>
+      <div class="small">DROP PHOTOS HERE OR CLICK + ADD PHOTO</div>
     </div>
-    <div id="center-drop" onclick="document.getElementById('file-input').click()"></div>
+    <div id="center-drop"></div>
   </div>
 
-  <!-- RIGHT: TYPOGRAPHY + STATS -->
+  <!-- RIGHT: LAYERS + TYPOGRAPHY + STATS -->
   <div id="right">
     <div class="section">
+      <div class="subhead">Layers</div>
+      <div id="layers-list"></div>
+      <div id="layers-empty">NO LAYERS YET</div>
+      <button class="btn" id="reset-transform-btn">Reset Selected Transform</button>
+      <button class="btn" id="delete-layer-btn" style="margin-top:6px">Delete Selected</button>
+    </div>
+
+    <div class="section" id="typo-section">
       <div class="subhead">Typography</div>
-      <div class="toggle-row" style="margin-bottom:8px"><span>Show Text</span><input type="checkbox" id="ck-showtext" checked></div>
+      <div class="hint" id="typo-hint">SELECT A TEXT LAYER TO EDIT</div>
       <div class="label">Content</div>
-      <div class="slider-row"><input type="text" id="txt-content" value="POSTER" maxlength="60"></div>
+      <div class="slider-row"><input type="text" id="txt-content" maxlength="60"></div>
       <div class="label">Font</div>
       <div class="slider-row">
         <select id="sel-font">
@@ -182,7 +220,7 @@ input[type=color]{padding:2px;height:26px;cursor:pointer;}
         </select>
       </div>
       <div class="label">Size <span class="val" id="size-val">140</span></div>
-      <div class="slider-row"><input type="range" id="sl-size" min="16" max="500" value="140"></div>
+      <div class="slider-row"><input type="range" id="sl-size" min="8" max="800" value="140"></div>
       <div class="label">Letter Spacing <span class="val" id="spacing-val">6</span></div>
       <div class="slider-row"><input type="range" id="sl-spacing" min="-10" max="80" value="6"></div>
       <div class="label">Align</div>
@@ -206,15 +244,13 @@ input[type=color]{padding:2px;height:26px;cursor:pointer;}
       <div class="label">Color</div>
       <div class="slider-row"><input type="color" id="col-text" value="#ece5d8"></div>
       <div class="toggle-row"><span>Uppercase</span><input type="checkbox" id="ck-upper" checked></div>
-      <button class="btn" id="reset-text-btn" style="margin-top:6px">Reset Position</button>
     </div>
 
     <div class="section">
       <div class="subhead">Stats</div>
-      <div class="stat-row"><span class="sk">SRC W</span><span class="sv" id="st-sw">—</span></div>
-      <div class="stat-row"><span class="sk">SRC H</span><span class="sv" id="st-sh">—</span></div>
       <div class="stat-row"><span class="sk">CANVAS W</span><span class="sv" id="st-cw">—</span></div>
       <div class="stat-row"><span class="sk">CANVAS H</span><span class="sv" id="st-ch">—</span></div>
+      <div class="stat-row"><span class="sk">LAYERS</span><span class="sv" id="st-layers">—</span></div>
       <div class="stat-row"><span class="sk">RENDER MS</span><span class="sv" id="st-ms">—</span></div>
     </div>
   </div>
@@ -223,13 +259,14 @@ input[type=color]{padding:2px;height:26px;cursor:pointer;}
   <div id="bottom">
     <span>HOSTLAB / POSTER-PRESS</span>
     <span>MODE <b id="status-mode">IDLE</b></span>
-    <button id="reset-btn" onclick="resetAll()">RESET ALL</button>
+    <span>SEL <b id="status-sel">—</b></span>
+    <button id="reset-btn" onclick="clearAll()">CLEAR ALL</button>
     <button id="export-btn" onclick="exportPNG()">EXPORT PNG</button>
   </div>
 </div>
 
 <script>
-const DEFAULT_W = 1080, DEFAULT_H = 1350, MAX_DIM = 2400;
+const MAX_LAYER_DIM = 1400;
 
 const FONT_META = {
   'Bebas Neue':        {weight:400, family:"'Bebas Neue',sans-serif"},
@@ -241,103 +278,113 @@ const FONT_META = {
 
 const BAYER4 = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
 
-let state = {
-  img: null, natW: 0, natH: 0,
-  brightness: 0, contrast: 0,
-  thresholdEnabled: false, threshold: 128, dither: false, invert: false,
-  text: {
-    content: 'POSTER', font: 'Bebas Neue', size: 140, spacing: 6,
-    color: '#ece5d8', align: 'center', blend: 'normal', uppercase: true,
-    show: true, x: 0.5, y: 0.5
-  }
-};
+let canvasW = 1080, canvasH = 1350;
+let bgColor = '#0b0a09';
+let layers = [];
+let selectedId = null;
+let nextLayerId = 1;
 let drag = null;
-let lastBBox = null;
+let selHandles = null;
 
 const mainCanvas = document.getElementById('main-canvas');
 const mctx = mainCanvas.getContext('2d');
 
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+function getLayer(id){ return layers.find(l => l.id === id); }
 
-// ---- FILE LOADING ----
-function loadFile(file){
-  if(!file || !file.type.startsWith('image/')) return;
-  const url = URL.createObjectURL(file);
-  const img = new Image();
-  img.onload = () => {
-    state.img = img; state.natW = img.width; state.natH = img.height;
-    document.getElementById('drop-overlay').style.display = 'none';
-    document.getElementById('center-drop').classList.add('hidden');
-    drawPreview();
-    render();
+// ---- LAYER FACTORIES ----
+function makeImageLayer(img){
+  const cap = Math.min(1, MAX_LAYER_DIM/Math.max(img.width, img.height));
+  const nw = Math.round(img.width*cap), nh = Math.round(img.height*cap);
+  const fit = Math.min(canvasW*0.7/nw, canvasH*0.7/nh, 1);
+  const w = nw*fit, h = nh*fit;
+  const count = layers.filter(l => l.type === 'image').length;
+  const cascade = (count % 6) * 16;
+  const layer = {
+    id: nextLayerId++, type: 'image', name: 'Photo ' + (count+1),
+    img, w, h, rotation: 0, visible: true,
+    x: canvasW/2 + cascade, y: canvasH/2 + cascade,
+    adj: {brightness:0, contrast:0, thresholdEnabled:false, threshold:128, dither:false, invert:false},
+    processedCanvas: null
   };
-  img.src = url;
+  reprocessLayer(layer);
+  return layer;
 }
-document.getElementById('file-input').onchange = e => loadFile(e.target.files[0]);
-['dragover','drop'].forEach(ev => document.getElementById('center').addEventListener(ev, e => {
-  e.preventDefault();
-  if(ev === 'drop' && e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
-}));
-
-function drawPreview(){
-  const c = document.getElementById('preview-canvas');
-  const box = document.getElementById('preview-box');
-  c.width = box.clientWidth; c.height = box.clientHeight;
-  const ctx = c.getContext('2d');
-  const scale = Math.min(c.width/state.img.width, c.height/state.img.height);
-  const w = state.img.width*scale, h = state.img.height*scale;
-  ctx.fillStyle = '#000'; ctx.fillRect(0,0,c.width,c.height);
-  ctx.drawImage(state.img, (c.width-w)/2, (c.height-h)/2, w, h);
-  document.getElementById('upload-hint').style.display = 'none';
+function makeTextLayer(){
+  const count = layers.filter(l => l.type === 'text').length;
+  return {
+    id: nextLayerId++, type: 'text', name: 'Text ' + (count+1),
+    content: 'POSTER', font: 'Bebas Neue', fontSize: 140, spacing: 6,
+    color: '#ece5d8', align: 'center', blend: 'normal', uppercase: true,
+    x: canvasW/2, y: canvasH/2, rotation: 0, visible: true,
+    _localLeft:0, _localRight:0, _localTop:-70, _localBottom:70
+  };
 }
 
-// ---- IMAGE PROCESSING ----
-function processImage(){
-  let w, h;
-  if(state.img){
-    const scale = Math.min(1, MAX_DIM/Math.max(state.natW, state.natH));
-    w = Math.round(state.natW*scale); h = Math.round(state.natH*scale);
-  } else { w = DEFAULT_W; h = DEFAULT_H; }
-
-  mainCanvas.width = w; mainCanvas.height = h;
-
-  if(!state.img){
-    mctx.fillStyle = '#0f0d0c'; mctx.fillRect(0,0,w,h);
-    return {w,h};
-  }
-
-  mctx.drawImage(state.img, 0, 0, w, h);
-  const imgData = mctx.getImageData(0,0,w,h);
+// ---- PER-LAYER IMAGE PROCESSING ----
+function reprocessLayer(layer){
+  const cap = Math.min(1, MAX_LAYER_DIM/Math.max(layer.img.width, layer.img.height));
+  const w = Math.max(1, Math.round(layer.img.width*cap)), h = Math.max(1, Math.round(layer.img.height*cap));
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const octx = off.getContext('2d');
+  octx.drawImage(layer.img, 0, 0, w, h);
+  const imgData = octx.getImageData(0,0,w,h);
   const d = imgData.data;
-  const bri = state.brightness;
-  const conFactor = (100+state.contrast)/100;
+  const a = layer.adj;
+  const conFactor = (100+a.contrast)/100;
 
   for(let i=0;i<d.length;i+=4){
     let r = d[i], g = d[i+1], b = d[i+2];
-    r = clamp((r-128)*conFactor+128+bri, 0, 255);
-    g = clamp((g-128)*conFactor+128+bri, 0, 255);
-    b = clamp((b-128)*conFactor+128+bri, 0, 255);
+    r = clamp((r-128)*conFactor+128+a.brightness, 0, 255);
+    g = clamp((g-128)*conFactor+128+a.brightness, 0, 255);
+    b = clamp((b-128)*conFactor+128+a.brightness, 0, 255);
 
-    if(state.thresholdEnabled){
+    if(a.thresholdEnabled){
       let lum = 0.299*r + 0.587*g + 0.114*b;
-      if(state.dither){
+      if(a.dither){
         const px = (i/4) % w, py = Math.floor((i/4)/w);
-        const t = (BAYER4[py%4][px%4]/16 - 0.5) * 90;
-        lum += t;
+        lum += (BAYER4[py%4][px%4]/16 - 0.5) * 90;
       }
-      const v = lum >= state.threshold ? 255 : 0;
+      const v = lum >= a.threshold ? 255 : 0;
       r = g = b = v;
     }
-
-    if(state.invert){ r = 255-r; g = 255-g; b = 255-b; }
-
+    if(a.invert){ r = 255-r; g = 255-g; b = 255-b; }
     d[i]=r; d[i+1]=g; d[i+2]=b;
   }
-  mctx.putImageData(imgData, 0, 0);
-  return {w,h};
+  octx.putImageData(imgData, 0, 0);
+  layer.processedCanvas = off;
 }
 
-// ---- TEXT LAYER ----
+// ---- TRANSFORM MATH ----
+function localRect(l){
+  if(l.type === 'image') return { left:-l.w/2, top:-l.h/2, right:l.w/2, bottom:l.h/2 };
+  return { left:l._localLeft, top:l._localTop, right:l._localRight, bottom:l._localBottom };
+}
+function toCanvasPoint(l, lx, ly){
+  const cos = Math.cos(l.rotation), sin = Math.sin(l.rotation);
+  return { x: l.x + lx*cos - ly*sin, y: l.y + lx*sin + ly*cos };
+}
+function toLocalPoint(l, cx, cy){
+  const dx = cx-l.x, dy = cy-l.y;
+  const cos = Math.cos(-l.rotation), sin = Math.sin(-l.rotation);
+  return { x: dx*cos - dy*sin, y: dx*sin + dy*cos };
+}
+function hitTestLayer(l, pt){
+  const lp = toLocalPoint(l, pt.x, pt.y);
+  const r = localRect(l);
+  return lp.x >= r.left && lp.x <= r.right && lp.y >= r.top && lp.y <= r.bottom;
+}
+function topmostHit(pt){
+  for(let i=layers.length-1;i>=0;i--){
+    const l = layers[i];
+    if(l.visible && hitTestLayer(l, pt)) return l;
+  }
+  return null;
+}
+
+// ---- SPACED TEXT MEASURE/DRAW ----
 function measureSpacedWidth(ctx, text, spacing){
   let w = 0;
   for(let i=0;i<text.length;i++){
@@ -347,98 +394,209 @@ function measureSpacedWidth(ctx, text, spacing){
   return w;
 }
 
-function drawTextLayer(w, h){
-  const t = state.text;
-  if(!t.show || !t.content) { lastBBox = null; return; }
-  const meta = FONT_META[t.font] || FONT_META['Bebas Neue'];
-  const display = t.uppercase ? t.content.toUpperCase() : t.content;
-
+// ---- DRAWING ----
+function drawImageLayer(l){
   mctx.save();
-  mctx.font = `${meta.weight} ${t.size}px ${meta.family}`;
+  mctx.translate(l.x, l.y);
+  mctx.rotate(l.rotation);
+  mctx.drawImage(l.processedCanvas, -l.w/2, -l.h/2, l.w, l.h);
+  mctx.restore();
+}
+function drawTextLayer(l){
+  const meta = FONT_META[l.font] || FONT_META['Bebas Neue'];
+  const display = l.uppercase ? l.content.toUpperCase() : l.content;
+  mctx.save();
+  mctx.translate(l.x, l.y);
+  mctx.rotate(l.rotation);
+  mctx.font = `${meta.weight} ${l.fontSize}px ${meta.family}`;
   mctx.textBaseline = 'middle';
-  mctx.fillStyle = t.color;
-  mctx.globalCompositeOperation = t.blend;
+  mctx.fillStyle = l.color;
+  mctx.globalCompositeOperation = l.blend;
 
-  const cx = t.x * w, cy = t.y * h;
-  const totalW = measureSpacedWidth(mctx, display, t.spacing);
-  let startX;
-  if(t.align === 'center') startX = cx - totalW/2;
-  else if(t.align === 'right') startX = cx - totalW;
-  else startX = cx;
-
+  const totalW = measureSpacedWidth(mctx, display, l.spacing);
+  let startX = l.align === 'center' ? -totalW/2 : l.align === 'right' ? -totalW : 0;
   let x = startX;
   for(let i=0;i<display.length;i++){
-    mctx.fillText(display[i], x, cy);
-    x += mctx.measureText(display[i]).width + t.spacing;
+    mctx.fillText(display[i], x, 0);
+    x += mctx.measureText(display[i]).width + l.spacing;
   }
-
-  const m = mctx.measureText(display);
-  const ascent = m.actualBoundingBoxAscent || t.size*0.8;
-  const descent = m.actualBoundingBoxDescent || t.size*0.2;
-  lastBBox = { left: startX, right: startX+totalW, top: cy-ascent, bottom: cy+descent };
-
+  const m = mctx.measureText(display || ' ');
+  const ascent = m.actualBoundingBoxAscent || l.fontSize*0.8;
+  const descent = m.actualBoundingBoxDescent || l.fontSize*0.2;
+  l._localLeft = startX; l._localRight = startX+totalW;
+  l._localTop = -ascent; l._localBottom = descent;
   mctx.restore();
-
-  if(t.show){
-    mctx.save();
-    mctx.globalCompositeOperation = 'normal';
-    mctx.strokeStyle = 'rgba(212,52,44,0.9)';
-    mctx.lineWidth = Math.max(1, w*0.0015);
-    mctx.setLineDash([w*0.01, w*0.008]);
-    mctx.strokeRect(lastBBox.left, lastBBox.top, lastBBox.right-lastBBox.left, lastBBox.bottom-lastBBox.top);
-    const hs = w*0.018;
-    mctx.setLineDash([]);
-    mctx.fillStyle = 'rgba(212,52,44,0.9)';
-    mctx.fillRect(lastBBox.right-hs/2, lastBBox.bottom-hs/2, hs, hs);
-    mctx.restore();
-  }
 }
 
-// ---- RENDER ----
+function drawSelectionOverlay(){
+  selHandles = null;
+  if(selectedId == null) return;
+  const l = getLayer(selectedId);
+  if(!l || !l.visible) return;
+  const r = localRect(l);
+  const c0 = toCanvasPoint(l, r.left, r.top);
+  const c1 = toCanvasPoint(l, r.right, r.top);
+  const c2 = toCanvasPoint(l, r.right, r.bottom);
+  const c3 = toCanvasPoint(l, r.left, r.bottom);
+  const topCenter = toCanvasPoint(l, (r.left+r.right)/2, r.top);
+  const rotatePt = toCanvasPoint(l, (r.left+r.right)/2, r.top-40);
+  selHandles = { resize: c2, rotate: rotatePt };
+
+  mctx.save();
+  mctx.globalCompositeOperation = 'normal';
+  mctx.strokeStyle = 'rgba(212,52,44,0.95)';
+  mctx.lineWidth = Math.max(1.5, canvasW*0.0015);
+  mctx.setLineDash([canvasW*0.01, canvasW*0.007]);
+  mctx.beginPath();
+  mctx.moveTo(c0.x,c0.y); mctx.lineTo(c1.x,c1.y); mctx.lineTo(c2.x,c2.y); mctx.lineTo(c3.x,c3.y); mctx.closePath();
+  mctx.stroke();
+  mctx.setLineDash([]);
+  mctx.beginPath(); mctx.moveTo(topCenter.x,topCenter.y); mctx.lineTo(rotatePt.x,rotatePt.y); mctx.stroke();
+  const hs = canvasW*0.016;
+  mctx.fillStyle = 'rgba(212,52,44,0.95)';
+  mctx.fillRect(c2.x-hs/2, c2.y-hs/2, hs, hs);
+  mctx.beginPath(); mctx.arc(rotatePt.x, rotatePt.y, hs/2, 0, Math.PI*2); mctx.fill();
+  mctx.restore();
+}
+
 function render(){
   const t0 = performance.now();
-  const {w,h} = processImage();
-  drawTextLayer(w,h);
+  mainCanvas.width = canvasW; mainCanvas.height = canvasH;
+  mctx.fillStyle = bgColor; mctx.fillRect(0,0,canvasW,canvasH);
+  layers.forEach(l => {
+    if(!l.visible) return;
+    if(l.type === 'image') drawImageLayer(l);
+    else drawTextLayer(l);
+  });
+  drawSelectionOverlay();
   const ms = Math.round(performance.now()-t0);
 
-  document.getElementById('st-sw').textContent = state.img ? state.natW : '—';
-  document.getElementById('st-sh').textContent = state.img ? state.natH : '—';
-  document.getElementById('st-cw').textContent = w;
-  document.getElementById('st-ch').textContent = h;
+  document.getElementById('st-cw').textContent = canvasW;
+  document.getElementById('st-ch').textContent = canvasH;
+  document.getElementById('st-layers').textContent = layers.length;
   document.getElementById('st-ms').textContent = ms;
-  document.getElementById('h-thresh').textContent = state.thresholdEnabled ? 'ON' : 'OFF';
+  document.getElementById('h-layers').textContent = layers.length;
+  document.getElementById('h-sel').textContent = selectedId!=null ? (getLayer(selectedId)?.name||'—') : 'NONE';
+  document.getElementById('status-sel').textContent = selectedId!=null ? (getLayer(selectedId)?.name||'—') : '—';
+
+  refreshDropOverlay();
 }
 
-// ---- EXPORT (clean render without selection box) ----
-function exportPNG(){
-  processImage();
-  if(state.text.show) drawTextLayerClean();
-  const link = document.createElement('a');
-  link.download = 'poster-press-export.png';
-  link.href = mainCanvas.toDataURL('image/png');
-  link.click();
-  render();
+function refreshDropOverlay(){
+  const empty = layers.length === 0;
+  document.getElementById('drop-overlay').style.display = empty ? 'flex' : 'none';
+  document.getElementById('center-drop').classList.toggle('hidden', !empty);
 }
-function drawTextLayerClean(){
-  const t = state.text;
-  if(!t.content) return;
-  const meta = FONT_META[t.font] || FONT_META['Bebas Neue'];
-  const display = t.uppercase ? t.content.toUpperCase() : t.content;
-  const w = mainCanvas.width, h = mainCanvas.height;
-  mctx.save();
-  mctx.font = `${meta.weight} ${t.size}px ${meta.family}`;
-  mctx.textBaseline = 'middle';
-  mctx.fillStyle = t.color;
-  mctx.globalCompositeOperation = t.blend;
-  const cx = t.x*w, cy = t.y*h;
-  const totalW = measureSpacedWidth(mctx, display, t.spacing);
-  let startX = t.align==='center' ? cx-totalW/2 : t.align==='right' ? cx-totalW : cx;
-  let x = startX;
-  for(let i=0;i<display.length;i++){
-    mctx.fillText(display[i], x, cy);
-    x += mctx.measureText(display[i]).width + t.spacing;
+
+// ---- FILE LOADING ----
+function loadImageFiles(files){
+  Array.from(files).forEach(file => {
+    if(!file.type.startsWith('image/')) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const layer = makeImageLayer(img);
+      layers.push(layer);
+      selectLayer(layer.id);
+      render();
+      refreshLayersPanel();
+    };
+    img.src = url;
+  });
+}
+document.getElementById('file-input').addEventListener('change', e => loadImageFiles(e.target.files));
+document.getElementById('add-photo-btn').addEventListener('click', () => document.getElementById('file-input').click());
+document.getElementById('center-drop').addEventListener('click', () => document.getElementById('file-input').click());
+document.getElementById('add-text-btn').addEventListener('click', () => {
+  const layer = makeTextLayer();
+  layers.push(layer);
+  selectLayer(layer.id);
+  render();
+  refreshLayersPanel();
+});
+['dragover','drop'].forEach(ev => document.getElementById('center').addEventListener(ev, e => {
+  e.preventDefault();
+  if(ev === 'drop' && e.dataTransfer.files.length) loadImageFiles(e.dataTransfer.files);
+}));
+
+// ---- LAYERS PANEL ----
+function refreshLayersPanel(){
+  const list = document.getElementById('layers-list');
+  list.innerHTML = '';
+  document.getElementById('layers-empty').style.display = layers.length ? 'none' : 'block';
+  for(let i=layers.length-1;i>=0;i--){
+    const l = layers[i];
+    const row = document.createElement('div');
+    row.className = 'layer-row' + (l.id===selectedId ? ' active' : '');
+    row.innerHTML = `
+      <input type="checkbox" ${l.visible?'checked':''} title="Visible">
+      <span class="licon">${l.type==='text'?'T':'▨'}</span>
+      <span class="lname">${l.name}</span>
+      <div class="layer-btns">
+        <button class="lbtn" data-act="up" title="Bring forward">▲</button>
+        <button class="lbtn" data-act="down" title="Send backward">▼</button>
+      </div>
+    `;
+    row.querySelector('input[type=checkbox]').addEventListener('change', e => { l.visible = e.target.checked; render(); });
+    row.querySelector('[data-act=up]').addEventListener('click', e => { e.stopPropagation(); moveLayer(l.id, 1); });
+    row.querySelector('[data-act=down]').addEventListener('click', e => { e.stopPropagation(); moveLayer(l.id, -1); });
+    row.addEventListener('click', () => selectLayer(l.id));
+    list.appendChild(row);
   }
-  mctx.restore();
+}
+function moveLayer(id, dir){
+  const idx = layers.findIndex(l => l.id===id);
+  const swapIdx = idx+dir;
+  if(swapIdx<0 || swapIdx>=layers.length) return;
+  [layers[idx], layers[swapIdx]] = [layers[swapIdx], layers[idx]];
+  render(); refreshLayersPanel();
+}
+
+// ---- SELECTION ----
+function selectLayer(id){
+  selectedId = id;
+  updateSidePanelsForSelection();
+  render();
+  refreshLayersPanel();
+}
+function updateSidePanelsForSelection(){
+  const l = selectedId!=null ? getLayer(selectedId) : null;
+  const adjSection = document.getElementById('adj-section');
+  const typoSection = document.getElementById('typo-section');
+
+  if(l && l.type === 'image'){
+    adjSection.classList.remove('disabled');
+    document.getElementById('adj-hint').style.display = 'none';
+    document.getElementById('sl-brightness').value = l.adj.brightness;
+    document.getElementById('bri-val').textContent = l.adj.brightness;
+    document.getElementById('sl-contrast').value = l.adj.contrast;
+    document.getElementById('con-val').textContent = l.adj.contrast;
+    document.getElementById('sl-threshold').value = l.adj.threshold;
+    document.getElementById('ck-threshold').checked = l.adj.thresholdEnabled;
+    document.getElementById('ck-dither').checked = l.adj.dither;
+    document.getElementById('ck-invert').checked = l.adj.invert;
+  } else {
+    adjSection.classList.add('disabled');
+    document.getElementById('adj-hint').style.display = 'block';
+  }
+
+  if(l && l.type === 'text'){
+    typoSection.classList.remove('disabled');
+    document.getElementById('typo-hint').style.display = 'none';
+    document.getElementById('txt-content').value = l.content;
+    document.getElementById('sel-font').value = l.font;
+    document.getElementById('sl-size').value = l.fontSize;
+    document.getElementById('size-val').textContent = l.fontSize;
+    document.getElementById('sl-spacing').value = l.spacing;
+    document.getElementById('spacing-val').textContent = l.spacing;
+    document.getElementById('sel-align').value = l.align;
+    document.getElementById('sel-blend').value = l.blend;
+    document.getElementById('col-text').value = l.color;
+    document.getElementById('ck-upper').checked = l.uppercase;
+  } else {
+    typoSection.classList.add('disabled');
+    document.getElementById('typo-hint').style.display = 'block';
+  }
 }
 
 // ---- CANVAS POINTER INTERACTION ----
@@ -452,43 +610,61 @@ function getCanvasPos(e){
     scale: mainCanvas.width/rect.width
   };
 }
+function setMode(m){ document.getElementById('status-mode').textContent = m; }
 
 function pointerDown(e){
-  if(!state.text.show) return;
   const pos = getCanvasPos(e);
-  if(!lastBBox) return;
-  const handleR = 14 * pos.scale;
-  const nearHandle = Math.abs(pos.x-lastBBox.right) < handleR && Math.abs(pos.y-lastBBox.bottom) < handleR;
-  if(nearHandle){
-    drag = {mode:'resize', startX:pos.x, startY:pos.y, startSize:state.text.size};
-    setMode('RESIZING TEXT'); e.preventDefault(); return;
+  if(selectedId != null){
+    const l = getLayer(selectedId);
+    if(l && l.visible && selHandles){
+      const R = 14*pos.scale;
+      if(dist(pos, selHandles.resize) < R){
+        drag = { mode:'resize', layer:l, startDist: Math.max(1,dist(pos,{x:l.x,y:l.y})), startW:l.w, startH:l.h, startFont:l.fontSize };
+        setMode('RESIZING'); e.preventDefault(); return;
+      }
+      if(dist(pos, selHandles.rotate) < R){
+        drag = { mode:'rotate', layer:l, startAngle: Math.atan2(pos.x-l.x, -(pos.y-l.y)) - l.rotation };
+        setMode('ROTATING'); e.preventDefault(); return;
+      }
+      if(hitTestLayer(l, pos)){
+        drag = { mode:'move', layer:l, startX:pos.x, startY:pos.y, origX:l.x, origY:l.y };
+        setMode('MOVING'); e.preventDefault(); return;
+      }
+    }
   }
-  if(pos.x>=lastBBox.left && pos.x<=lastBBox.right && pos.y>=lastBBox.top && pos.y<=lastBBox.bottom){
-    drag = {mode:'move', startX:pos.x, startY:pos.y, origX:state.text.x, origY:state.text.y};
-    setMode('MOVING TEXT'); e.preventDefault();
+  const hit = topmostHit(pos);
+  if(hit){
+    selectLayer(hit.id);
+    drag = { mode:'move', layer:hit, startX:pos.x, startY:pos.y, origX:hit.x, origY:hit.y };
+    setMode('MOVING'); e.preventDefault();
+  } else if(selectedId != null){
+    selectLayer(null);
   }
 }
 function pointerMove(e){
+  const pos = getCanvasPos(e);
   if(!drag){
-    if(lastBBox && state.text.show){
-      const pos = getCanvasPos(e);
-      const handleR = 14*pos.scale;
-      const nearHandle = Math.abs(pos.x-lastBBox.right)<handleR && Math.abs(pos.y-lastBBox.bottom)<handleR;
-      const inside = pos.x>=lastBBox.left && pos.x<=lastBBox.right && pos.y>=lastBBox.top && pos.y<=lastBBox.bottom;
-      mainCanvas.style.cursor = nearHandle ? 'nwse-resize' : inside ? 'move' : 'default';
-    }
+    updateHoverCursor(pos);
     return;
   }
-  const pos = getCanvasPos(e);
-  if(drag.mode==='move'){
-    const dx = pos.x-drag.startX, dy = pos.y-drag.startY;
-    state.text.x = clamp(drag.origX + dx/mainCanvas.width, 0, 1);
-    state.text.y = clamp(drag.origY + dy/mainCanvas.height, 0, 1);
-  } else if(drag.mode==='resize'){
-    const dx = pos.x-drag.startX;
-    state.text.size = clamp(drag.startSize + dx, 16, 500);
-    document.getElementById('sl-size').value = Math.round(state.text.size);
-    document.getElementById('size-val').textContent = Math.round(state.text.size);
+  const l = drag.layer;
+  if(drag.mode === 'move'){
+    l.x = drag.origX + (pos.x-drag.startX);
+    l.y = drag.origY + (pos.y-drag.startY);
+  } else if(drag.mode === 'resize'){
+    const curDist = dist(pos, {x:l.x, y:l.y});
+    const scale = curDist/drag.startDist;
+    if(l.type === 'image'){
+      l.w = clamp(drag.startW*scale, 12, canvasW*4);
+      l.h = clamp(drag.startH*scale, 12, canvasH*4);
+    } else {
+      l.fontSize = clamp(drag.startFont*scale, 8, 900);
+      document.getElementById('sl-size').value = Math.round(l.fontSize);
+      document.getElementById('size-val').textContent = Math.round(l.fontSize);
+    }
+  } else if(drag.mode === 'rotate'){
+    const ang = Math.atan2(pos.x-l.x, -(pos.y-l.y));
+    l.rotation = ang - drag.startAngle;
   }
   render();
   e.preventDefault();
@@ -496,7 +672,18 @@ function pointerMove(e){
 function pointerUp(){
   if(drag){ drag = null; setMode('IDLE'); }
 }
-function setMode(m){ document.getElementById('status-mode').textContent = m; }
+function updateHoverCursor(pos){
+  if(selectedId != null){
+    const l = getLayer(selectedId);
+    if(l && l.visible && selHandles){
+      const R = 14*pos.scale;
+      if(dist(pos, selHandles.resize) < R){ mainCanvas.style.cursor = 'nwse-resize'; return; }
+      if(dist(pos, selHandles.rotate) < R){ mainCanvas.style.cursor = 'grab'; return; }
+      if(hitTestLayer(l, pos)){ mainCanvas.style.cursor = 'move'; return; }
+    }
+  }
+  mainCanvas.style.cursor = topmostHit(pos) ? 'pointer' : 'default';
+}
 
 mainCanvas.addEventListener('mousedown', pointerDown);
 window.addEventListener('mousemove', pointerMove);
@@ -505,62 +692,117 @@ mainCanvas.addEventListener('touchstart', pointerDown, {passive:false});
 window.addEventListener('touchmove', pointerMove, {passive:false});
 window.addEventListener('touchend', pointerUp);
 
-// ---- CONTROLS ----
-const bind = (id, fn) => document.getElementById(id).addEventListener('input', fn);
+function isTypingTarget(el){
+  return el && ['INPUT','TEXTAREA','SELECT'].includes(el.tagName);
+}
+window.addEventListener('keydown', e => {
+  if((e.key === 'Delete' || e.key === 'Backspace') && selectedId != null && !isTypingTarget(document.activeElement)){
+    e.preventDefault();
+    deleteSelected();
+  }
+});
 
-bind('sl-brightness', e => { state.brightness = +e.target.value; document.getElementById('bri-val').textContent = state.brightness; render(); });
-bind('sl-contrast',   e => { state.contrast = +e.target.value; document.getElementById('con-val').textContent = state.contrast; render(); });
-bind('sl-threshold',  e => { state.threshold = +e.target.value; render(); });
-document.getElementById('ck-threshold').addEventListener('change', e => { state.thresholdEnabled = e.target.checked; render(); });
-document.getElementById('ck-dither').addEventListener('change', e => { state.dither = e.target.checked; render(); });
-document.getElementById('ck-invert').addEventListener('change', e => { state.invert = e.target.checked; render(); });
+// ---- ADJUSTMENTS (bound to selected image layer) ----
+const bindAdj = (id, fn) => document.getElementById(id).addEventListener('input', fn);
+bindAdj('sl-brightness', e => { const l=getLayer(selectedId); if(!l||l.type!=='image') return; l.adj.brightness=+e.target.value; document.getElementById('bri-val').textContent=l.adj.brightness; reprocessLayer(l); render(); });
+bindAdj('sl-contrast',   e => { const l=getLayer(selectedId); if(!l||l.type!=='image') return; l.adj.contrast=+e.target.value; document.getElementById('con-val').textContent=l.adj.contrast; reprocessLayer(l); render(); });
+bindAdj('sl-threshold',  e => { const l=getLayer(selectedId); if(!l||l.type!=='image') return; l.adj.threshold=+e.target.value; reprocessLayer(l); render(); });
+document.getElementById('ck-threshold').addEventListener('change', e => { const l=getLayer(selectedId); if(!l||l.type!=='image') return; l.adj.thresholdEnabled=e.target.checked; reprocessLayer(l); render(); });
+document.getElementById('ck-dither').addEventListener('change', e => { const l=getLayer(selectedId); if(!l||l.type!=='image') return; l.adj.dither=e.target.checked; reprocessLayer(l); render(); });
+document.getElementById('ck-invert').addEventListener('change', e => { const l=getLayer(selectedId); if(!l||l.type!=='image') return; l.adj.invert=e.target.checked; reprocessLayer(l); render(); });
 document.getElementById('reset-adj-btn').addEventListener('click', () => {
-  state.brightness=0; state.contrast=0; state.thresholdEnabled=false; state.threshold=128; state.dither=false; state.invert=false;
-  document.getElementById('sl-brightness').value=0; document.getElementById('bri-val').textContent=0;
-  document.getElementById('sl-contrast').value=0; document.getElementById('con-val').textContent=0;
-  document.getElementById('sl-threshold').value=128;
-  document.getElementById('ck-threshold').checked=false;
-  document.getElementById('ck-dither').checked=false;
-  document.getElementById('ck-invert').checked=false;
+  const l = getLayer(selectedId); if(!l||l.type!=='image') return;
+  l.adj = {brightness:0, contrast:0, thresholdEnabled:false, threshold:128, dither:false, invert:false};
+  updateSidePanelsForSelection(); reprocessLayer(l); render();
+});
+
+// ---- TYPOGRAPHY (bound to selected text layer) ----
+document.getElementById('txt-content').addEventListener('input', e => { const l=getLayer(selectedId); if(!l||l.type!=='text') return; l.content=e.target.value; render(); });
+document.getElementById('sel-font').addEventListener('change', e => { const l=getLayer(selectedId); if(!l||l.type!=='text') return; l.font=e.target.value; render(); });
+bindAdj('sl-size', e => { const l=getLayer(selectedId); if(!l||l.type!=='text') return; l.fontSize=+e.target.value; document.getElementById('size-val').textContent=l.fontSize; render(); });
+bindAdj('sl-spacing', e => { const l=getLayer(selectedId); if(!l||l.type!=='text') return; l.spacing=+e.target.value; document.getElementById('spacing-val').textContent=l.spacing; render(); });
+document.getElementById('sel-align').addEventListener('change', e => { const l=getLayer(selectedId); if(!l||l.type!=='text') return; l.align=e.target.value; render(); });
+document.getElementById('sel-blend').addEventListener('change', e => { const l=getLayer(selectedId); if(!l||l.type!=='text') return; l.blend=e.target.value; render(); });
+document.getElementById('col-text').addEventListener('input', e => { const l=getLayer(selectedId); if(!l||l.type!=='text') return; l.color=e.target.value; render(); });
+document.getElementById('ck-upper').addEventListener('change', e => { const l=getLayer(selectedId); if(!l||l.type!=='text') return; l.uppercase=e.target.checked; render(); });
+
+// ---- LAYER ACTIONS ----
+function deleteSelected(){
+  if(selectedId == null) return;
+  layers = layers.filter(l => l.id !== selectedId);
+  selectedId = null;
+  updateSidePanelsForSelection();
+  render(); refreshLayersPanel();
+}
+document.getElementById('delete-layer-btn').addEventListener('click', deleteSelected);
+document.getElementById('reset-transform-btn').addEventListener('click', () => {
+  const l = getLayer(selectedId); if(!l) return;
+  l.x = canvasW/2; l.y = canvasH/2; l.rotation = 0;
+  if(l.type === 'image'){
+    const cap = Math.min(1, MAX_LAYER_DIM/Math.max(l.img.width, l.img.height));
+    const nw = Math.round(l.img.width*cap), nh = Math.round(l.img.height*cap);
+    const fit = Math.min(canvasW*0.7/nw, canvasH*0.7/nh, 1);
+    l.w = nw*fit; l.h = nh*fit;
+  }
   render();
 });
 
-document.getElementById('txt-content').addEventListener('input', e => { state.text.content = e.target.value; render(); });
-document.getElementById('sel-font').addEventListener('change', e => { state.text.font = e.target.value; render(); });
-bind('sl-size', e => { state.text.size = +e.target.value; document.getElementById('size-val').textContent = state.text.size; render(); });
-bind('sl-spacing', e => { state.text.spacing = +e.target.value; document.getElementById('spacing-val').textContent = state.text.spacing; render(); });
-document.getElementById('sel-align').addEventListener('change', e => { state.text.align = e.target.value; render(); });
-document.getElementById('sel-blend').addEventListener('change', e => { state.text.blend = e.target.value; render(); });
-document.getElementById('col-text').addEventListener('input', e => { state.text.color = e.target.value; render(); });
-document.getElementById('ck-upper').addEventListener('change', e => { state.text.uppercase = e.target.checked; render(); });
-document.getElementById('ck-showtext').addEventListener('change', e => { state.text.show = e.target.checked; render(); });
-document.getElementById('reset-text-btn').addEventListener('click', () => { state.text.x=0.5; state.text.y=0.5; render(); });
+// ---- CANVAS SIZE ----
+document.getElementById('sel-canvas-size').addEventListener('change', e => {
+  const v = e.target.value;
+  document.getElementById('custom-dims').style.display = v === 'custom' ? 'flex' : 'none';
+  if(v === 'custom') return;
+  const [w,h] = v.split('x').map(Number);
+  resizeCanvasDoc(w,h);
+});
+document.getElementById('apply-dims-btn').addEventListener('click', () => {
+  const w = clamp(+document.getElementById('cw-input').value||1080, 100, 4000);
+  const h = clamp(+document.getElementById('ch-input').value||1350, 100, 4000);
+  resizeCanvasDoc(w,h);
+});
+document.getElementById('col-bg').addEventListener('input', e => { bgColor = e.target.value; render(); });
 
-function resetAll(){
-  state.brightness=0; state.contrast=0; state.thresholdEnabled=false; state.threshold=128; state.dither=false; state.invert=false;
-  state.text = {content:'POSTER', font:'Bebas Neue', size:140, spacing:6, color:'#ece5d8', align:'center', blend:'normal', uppercase:true, show:true, x:0.5, y:0.5};
-  document.getElementById('sl-brightness').value=0; document.getElementById('bri-val').textContent=0;
-  document.getElementById('sl-contrast').value=0; document.getElementById('con-val').textContent=0;
-  document.getElementById('sl-threshold').value=128;
-  document.getElementById('ck-threshold').checked=false;
-  document.getElementById('ck-dither').checked=false;
-  document.getElementById('ck-invert').checked=false;
-  document.getElementById('txt-content').value='POSTER';
-  document.getElementById('sel-font').value='Bebas Neue';
-  document.getElementById('sl-size').value=140; document.getElementById('size-val').textContent=140;
-  document.getElementById('sl-spacing').value=6; document.getElementById('spacing-val').textContent=6;
-  document.getElementById('sel-align').value='center';
-  document.getElementById('sel-blend').value='normal';
-  document.getElementById('col-text').value='#ece5d8';
-  document.getElementById('ck-upper').checked=true;
-  document.getElementById('ck-showtext').checked=true;
+function resizeCanvasDoc(w, h){
+  const sx = w/canvasW, sy = h/canvasH;
+  layers.forEach(l => {
+    l.x *= sx; l.y *= sy;
+    if(l.type === 'image'){ l.w *= sx; l.h *= sy; }
+    else { l.fontSize *= Math.sqrt(sx*sy); }
+  });
+  canvasW = w; canvasH = h;
   render();
 }
 
-window.addEventListener('resize', () => { if(state.img) drawPreview(); render(); });
+// ---- EXPORT ----
+function exportPNG(){
+  const prevSel = selectedId;
+  selectedId = null;
+  render();
+  const link = document.createElement('a');
+  link.download = 'poster-press-export.png';
+  link.href = mainCanvas.toDataURL('image/png');
+  link.click();
+  selectedId = prevSel;
+  render();
+}
+
+// ---- CLEAR ALL ----
+function clearAll(){
+  if(layers.length && !window.confirm('Clear the entire canvas? This removes all layers.')) return;
+  layers = []; selectedId = null; canvasW = 1080; canvasH = 1350; bgColor = '#0b0a09';
+  document.getElementById('sel-canvas-size').value = '1080x1350';
+  document.getElementById('custom-dims').style.display = 'none';
+  document.getElementById('col-bg').value = '#0b0a09';
+  updateSidePanelsForSelection();
+  render(); refreshLayersPanel();
+}
+
+window.addEventListener('resize', render);
 
 // ---- INIT ----
+updateSidePanelsForSelection();
 render();
+refreshLayersPanel();
 </script>
 </body>
 </html>
