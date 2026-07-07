@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+
+<!-- Google tag (gtag.js) -->
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-R7MJHBKJVY');
+</script>
+<meta name="description" content="Poster Press — a Photoshop-style poster design tool. Import a photo, apply a threshold/grayscale treatment, and drop in bold display typography.">
+<meta property="og:title" content="Poster Press — HostLab">
+<meta property="og:description" content="Threshold a photo and lay bold typography over it — a lightweight poster design tool.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://iwohost.github.io/HostLab/websites/poster-press.html">
+<meta property="og:image" content="https://iwohost.github.io/HostLab/other/p_poster-press.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POSTER · PRESS</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@700;800&family=Fraunces:wght@600&family=Playfair+Display:wght@700&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
+<link rel="canonical" href="https://iwohost.github.io/HostLab/websites/poster-press.html">
+<link rel="stylesheet" href="../other/backbutton.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0b0a09;--panel:#141210;--border:#241f1a;--border2:#3a2f26;
+  --text:#ece5d8;--text2:#8a7d6c;--text3:#4a4038;
+  --accent:#d4342c;--accent2:#ff5a45;--accent3:#ffb3a8;
+  --mono:Share Tech Mono,monospace;--display:Bebas Neue,sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;min-height:100vh;overflow-x:hidden;}
+#app{display:grid;grid-template-rows:36px 1fr 40px;grid-template-columns:220px 1fr 230px;height:100vh;border:1px solid var(--border2);animation:fadeUp .4s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* HEADER */
+#header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);padding:0 16px;background:var(--panel);}
+#logo{font-family:var(--display);font-size:22px;letter-spacing:4px;color:var(--accent3);text-shadow:0 0 16px rgba(212,52,44,.5);}
+#logo span{color:var(--text3);}
+#hinfo{display:flex;gap:20px;color:var(--text3);font-size:10px;letter-spacing:2px;}
+#hinfo b{color:var(--text2);}
+
+/* PANELS */
+#left,#right{overflow-y:auto;overflow-x:hidden;background:var(--panel);}
+#left{border-right:1px solid var(--border2);}
+#right{border-left:1px solid var(--border2);}
+.section{border-bottom:1px solid var(--border);padding:10px;}
+.label{font-size:9px;letter-spacing:3px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;}
+.label .val{color:var(--accent2);float:right;font-size:10px;letter-spacing:0;}
+.subhead{font-size:10px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin:2px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+
+#preview-box{width:100%;aspect-ratio:4/5;background:#000;border:1px solid var(--border2);position:relative;overflow:hidden;cursor:pointer;transition:border-color .2s;}
+#preview-box:hover{border-color:var(--accent);}
+#preview-box canvas{width:100%;height:100%;}
+#preview-label{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:var(--text3);padding:2px;background:rgba(0,0,0,.75);letter-spacing:2px;}
+#upload-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text3);font-size:9px;letter-spacing:1px;pointer-events:none;line-height:1.6;}
+#file-input{display:none;}
+
+.slider-row{margin-bottom:8px;}
+.slider-row input[type=range]{width:100%;accent-color:var(--accent);height:2px;cursor:pointer;}
+
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:10px;letter-spacing:1px;color:var(--text2);text-transform:uppercase;}
+.toggle-row input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;}
+
+select,input[type=text],input[type=color]{background:#000;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;width:100%;}
+select:focus,input[type=text]:focus{outline:none;border-color:var(--accent);}
+input[type=color]{padding:2px;height:26px;cursor:pointer;}
+
+.btn{font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:6px 10px;border:1px solid var(--border2);color:var(--text2);background:none;cursor:pointer;text-transform:uppercase;transition:transform .15s,border-color .15s,color .15s;width:100%;}
+.btn:hover{border-color:var(--accent);color:var(--accent2);transform:translateY(-1px);}
+
+/* CENTER */
+#center{position:relative;overflow:hidden;background:#050505;display:flex;align-items:center;justify-content:center;}
+#canvas-wrap{position:relative;max-width:100%;max-height:100%;box-shadow:0 0 60px rgba(0,0,0,.6);}
+#main-canvas{display:block;max-width:100%;max-height:100%;width:auto;height:auto;background:#111;}
+#drop-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:8px;pointer-events:none;}
+#drop-overlay .big{font-family:var(--display);font-size:28px;letter-spacing:6px;color:var(--border2);}
+#drop-overlay .small{font-size:10px;letter-spacing:3px;}
+#center-drop{position:absolute;inset:0;cursor:pointer;z-index:5;}
+#center-drop.hidden{display:none;}
+
+/* STATS */
+.stat-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:10px;}
+.stat-row .sk{color:var(--text3);}
+.stat-row .sv{color:var(--accent2);}
+
+/* BOTTOM BAR */
+#bottom{grid-column:1/-1;border-top:1px solid var(--border2);display:flex;align-items:center;gap:12px;padding:0 12px;background:var(--panel);font-size:10px;letter-spacing:1px;color:var(--text3);}
+#status-mode{color:var(--accent2);}
+#export-btn{font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:5px 14px;border:1px solid var(--accent);color:var(--accent2);background:none;cursor:pointer;text-transform:uppercase;margin-left:auto;transition:background .15s;}
+#export-btn:hover{background:rgba(212,52,44,.18);}
+#reset-btn{font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:5px 14px;border:1px solid var(--border2);color:var(--text3);background:none;cursor:pointer;text-transform:uppercase;}
+#reset-btn:hover{border-color:var(--accent);color:var(--accent2);}
+
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);}
+
+@media (max-width: 768px) {
+  #app { grid-template-columns: 1fr; grid-template-rows: 36px auto 1fr auto 40px; height: auto; min-height: 100vh; }
+  #header { grid-column: 1; }
+  #left { border-right: none; border-bottom: 1px solid var(--border2); max-height: 280px; }
+  #center { min-height: 70vw; }
+  #right { border-left: none; border-top: 1px solid var(--border2); max-height: 320px; }
+  #bottom { grid-column: 1; flex-wrap:wrap; height:auto; padding:6px 12px; }
+}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-home" title="Back to HostLab">
+    <img src="../other/logo/HLab_Logo.png" alt="HostLab">
+</a>
+<div id="app">
+  <!-- HEADER -->
+  <div id="header">
+    <div id="logo">POSTER<span> · </span>PRESS</div>
+    <div id="hinfo">
+      <span><b>1</b> TEXT LAYER</span>
+      <span>THRESHOLD <b id="h-thresh">OFF</b></span>
+      <span><b>LIVE</b> RENDER</span>
+    </div>
+  </div>
+
+  <!-- LEFT: IMPORT + ADJUSTMENTS -->
+  <div id="left">
+    <div class="section">
+      <div class="label">Import Photo</div>
+      <div id="preview-box" onclick="document.getElementById('file-input').click()">
+        <canvas id="preview-canvas"></canvas>
+        <div id="upload-hint">CLICK OR DROP<br>IMAGE ON CANVAS</div>
+        <div id="preview-label">SOURCE</div>
+      </div>
+      <input type="file" id="file-input" accept="image/*">
+    </div>
+
+    <div class="section">
+      <div class="subhead">Adjustments</div>
+      <div class="label">Brightness <span class="val" id="bri-val">0</span></div>
+      <div class="slider-row"><input type="range" id="sl-brightness" min="-100" max="100" value="0"></div>
+      <div class="label">Contrast <span class="val" id="con-val">0</span></div>
+      <div class="slider-row"><input type="range" id="sl-contrast" min="-100" max="100" value="0"></div>
+
+      <div class="toggle-row"><span>Threshold</span><input type="checkbox" id="ck-threshold"></div>
+      <div class="slider-row"><input type="range" id="sl-threshold" min="0" max="255" value="128"></div>
+      <div class="toggle-row"><span>Dithered Edge</span><input type="checkbox" id="ck-dither"></div>
+      <div class="toggle-row"><span>Invert</span><input type="checkbox" id="ck-invert"></div>
+
+      <button class="btn" id="reset-adj-btn" style="margin-top:8px">Reset Adjustments</button>
+    </div>
+  </div>
+
+  <!-- CENTER: CANVAS -->
+  <div id="center">
+    <div id="canvas-wrap">
+      <canvas id="main-canvas"></canvas>
+    </div>
+    <div id="drop-overlay">
+      <div class="big">[ + ]</div>
+      <div class="small">DROP A PHOTO OR CLICK TO IMPORT</div>
+    </div>
+    <div id="center-drop" onclick="document.getElementById('file-input').click()"></div>
+  </div>
+
+  <!-- RIGHT: TYPOGRAPHY + STATS -->
+  <div id="right">
+    <div class="section">
+      <div class="subhead">Typography</div>
+      <div class="toggle-row" style="margin-bottom:8px"><span>Show Text</span><input type="checkbox" id="ck-showtext" checked></div>
+      <div class="label">Content</div>
+      <div class="slider-row"><input type="text" id="txt-content" value="POSTER" maxlength="60"></div>
+      <div class="label">Font</div>
+      <div class="slider-row">
+        <select id="sel-font">
+          <option value="Bebas Neue">Bebas Neue</option>
+          <option value="Syne">Syne</option>
+          <option value="Fraunces">Fraunces</option>
+          <option value="Playfair Display">Playfair Display</option>
+          <option value="Share Tech Mono">Share Tech Mono</option>
+        </select>
+      </div>
+      <div class="label">Size <span class="val" id="size-val">140</span></div>
+      <div class="slider-row"><input type="range" id="sl-size" min="16" max="500" value="140"></div>
+      <div class="label">Letter Spacing <span class="val" id="spacing-val">6</span></div>
+      <div class="slider-row"><input type="range" id="sl-spacing" min="-10" max="80" value="6"></div>
+      <div class="label">Align</div>
+      <div class="slider-row">
+        <select id="sel-align">
+          <option value="left">Left</option>
+          <option value="center" selected>Center</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+      <div class="label">Blend Mode</div>
+      <div class="slider-row">
+        <select id="sel-blend">
+          <option value="normal">Normal</option>
+          <option value="difference">Difference</option>
+          <option value="screen">Screen</option>
+          <option value="multiply">Multiply</option>
+          <option value="exclusion">Exclusion</option>
+        </select>
+      </div>
+      <div class="label">Color</div>
+      <div class="slider-row"><input type="color" id="col-text" value="#ece5d8"></div>
+      <div class="toggle-row"><span>Uppercase</span><input type="checkbox" id="ck-upper" checked></div>
+      <button class="btn" id="reset-text-btn" style="margin-top:6px">Reset Position</button>
+    </div>
+
+    <div class="section">
+      <div class="subhead">Stats</div>
+      <div class="stat-row"><span class="sk">SRC W</span><span class="sv" id="st-sw">—</span></div>
+      <div class="stat-row"><span class="sk">SRC H</span><span class="sv" id="st-sh">—</span></div>
+      <div class="stat-row"><span class="sk">CANVAS W</span><span class="sv" id="st-cw">—</span></div>
+      <div class="stat-row"><span class="sk">CANVAS H</span><span class="sv" id="st-ch">—</span></div>
+      <div class="stat-row"><span class="sk">RENDER MS</span><span class="sv" id="st-ms">—</span></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM -->
+  <div id="bottom">
+    <span>HOSTLAB / POSTER-PRESS</span>
+    <span>MODE <b id="status-mode">IDLE</b></span>
+    <button id="reset-btn" onclick="resetAll()">RESET ALL</button>
+    <button id="export-btn" onclick="exportPNG()">EXPORT PNG</button>
+  </div>
+</div>
+
+<script>
+const DEFAULT_W = 1080, DEFAULT_H = 1350, MAX_DIM = 2400;
+
+const FONT_META = {
+  'Bebas Neue':        {weight:400, family:"'Bebas Neue',sans-serif"},
+  'Syne':              {weight:800, family:"'Syne',sans-serif"},
+  'Fraunces':          {weight:600, family:"'Fraunces',serif"},
+  'Playfair Display':  {weight:700, family:"'Playfair Display',serif"},
+  'Share Tech Mono':   {weight:400, family:"'Share Tech Mono',monospace"},
+};
+
+const BAYER4 = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+
+let state = {
+  img: null, natW: 0, natH: 0,
+  brightness: 0, contrast: 0,
+  thresholdEnabled: false, threshold: 128, dither: false, invert: false,
+  text: {
+    content: 'POSTER', font: 'Bebas Neue', size: 140, spacing: 6,
+    color: '#ece5d8', align: 'center', blend: 'normal', uppercase: true,
+    show: true, x: 0.5, y: 0.5
+  }
+};
+let drag = null;
+let lastBBox = null;
+
+const mainCanvas = document.getElementById('main-canvas');
+const mctx = mainCanvas.getContext('2d');
+
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+// ---- FILE LOADING ----
+function loadFile(file){
+  if(!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    state.img = img; state.natW = img.width; state.natH = img.height;
+    document.getElementById('drop-overlay').style.display = 'none';
+    document.getElementById('center-drop').classList.add('hidden');
+    drawPreview();
+    render();
+  };
+  img.src = url;
+}
+document.getElementById('file-input').onchange = e => loadFile(e.target.files[0]);
+['dragover','drop'].forEach(ev => document.getElementById('center').addEventListener(ev, e => {
+  e.preventDefault();
+  if(ev === 'drop' && e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+}));
+
+function drawPreview(){
+  const c = document.getElementById('preview-canvas');
+  const box = document.getElementById('preview-box');
+  c.width = box.clientWidth; c.height = box.clientHeight;
+  const ctx = c.getContext('2d');
+  const scale = Math.min(c.width/state.img.width, c.height/state.img.height);
+  const w = state.img.width*scale, h = state.img.height*scale;
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.drawImage(state.img, (c.width-w)/2, (c.height-h)/2, w, h);
+  document.getElementById('upload-hint').style.display = 'none';
+}
+
+// ---- IMAGE PROCESSING ----
+function processImage(){
+  let w, h;
+  if(state.img){
+    const scale = Math.min(1, MAX_DIM/Math.max(state.natW, state.natH));
+    w = Math.round(state.natW*scale); h = Math.round(state.natH*scale);
+  } else { w = DEFAULT_W; h = DEFAULT_H; }
+
+  mainCanvas.width = w; mainCanvas.height = h;
+
+  if(!state.img){
+    mctx.fillStyle = '#0f0d0c'; mctx.fillRect(0,0,w,h);
+    return {w,h};
+  }
+
+  mctx.drawImage(state.img, 0, 0, w, h);
+  const imgData = mctx.getImageData(0,0,w,h);
+  const d = imgData.data;
+  const bri = state.brightness;
+  const conFactor = (100+state.contrast)/100;
+
+  for(let i=0;i<d.length;i+=4){
+    let r = d[i], g = d[i+1], b = d[i+2];
+    r = clamp((r-128)*conFactor+128+bri, 0, 255);
+    g = clamp((g-128)*conFactor+128+bri, 0, 255);
+    b = clamp((b-128)*conFactor+128+bri, 0, 255);
+
+    if(state.thresholdEnabled){
+      let lum = 0.299*r + 0.587*g + 0.114*b;
+      if(state.dither){
+        const px = (i/4) % w, py = Math.floor((i/4)/w);
+        const t = (BAYER4[py%4][px%4]/16 - 0.5) * 90;
+        lum += t;
+      }
+      const v = lum >= state.threshold ? 255 : 0;
+      r = g = b = v;
+    }
+
+    if(state.invert){ r = 255-r; g = 255-g; b = 255-b; }
+
+    d[i]=r; d[i+1]=g; d[i+2]=b;
+  }
+  mctx.putImageData(imgData, 0, 0);
+  return {w,h};
+}
+
+// ---- TEXT LAYER ----
+function measureSpacedWidth(ctx, text, spacing){
+  let w = 0;
+  for(let i=0;i<text.length;i++){
+    w += ctx.measureText(text[i]).width;
+    if(i < text.length-1) w += spacing;
+  }
+  return w;
+}
+
+function drawTextLayer(w, h){
+  const t = state.text;
+  if(!t.show || !t.content) { lastBBox = null; return; }
+  const meta = FONT_META[t.font] || FONT_META['Bebas Neue'];
+  const display = t.uppercase ? t.content.toUpperCase() : t.content;
+
+  mctx.save();
+  mctx.font = `${meta.weight} ${t.size}px ${meta.family}`;
+  mctx.textBaseline = 'middle';
+  mctx.fillStyle = t.color;
+  mctx.globalCompositeOperation = t.blend;
+
+  const cx = t.x * w, cy = t.y * h;
+  const totalW = measureSpacedWidth(mctx, display, t.spacing);
+  let startX;
+  if(t.align === 'center') startX = cx - totalW/2;
+  else if(t.align === 'right') startX = cx - totalW;
+  else startX = cx;
+
+  let x = startX;
+  for(let i=0;i<display.length;i++){
+    mctx.fillText(display[i], x, cy);
+    x += mctx.measureText(display[i]).width + t.spacing;
+  }
+
+  const m = mctx.measureText(display);
+  const ascent = m.actualBoundingBoxAscent || t.size*0.8;
+  const descent = m.actualBoundingBoxDescent || t.size*0.2;
+  lastBBox = { left: startX, right: startX+totalW, top: cy-ascent, bottom: cy+descent };
+
+  mctx.restore();
+
+  if(t.show){
+    mctx.save();
+    mctx.globalCompositeOperation = 'normal';
+    mctx.strokeStyle = 'rgba(212,52,44,0.9)';
+    mctx.lineWidth = Math.max(1, w*0.0015);
+    mctx.setLineDash([w*0.01, w*0.008]);
+    mctx.strokeRect(lastBBox.left, lastBBox.top, lastBBox.right-lastBBox.left, lastBBox.bottom-lastBBox.top);
+    const hs = w*0.018;
+    mctx.setLineDash([]);
+    mctx.fillStyle = 'rgba(212,52,44,0.9)';
+    mctx.fillRect(lastBBox.right-hs/2, lastBBox.bottom-hs/2, hs, hs);
+    mctx.restore();
+  }
+}
+
+// ---- RENDER ----
+function render(){
+  const t0 = performance.now();
+  const {w,h} = processImage();
+  drawTextLayer(w,h);
+  const ms = Math.round(performance.now()-t0);
+
+  document.getElementById('st-sw').textContent = state.img ? state.natW : '—';
+  document.getElementById('st-sh').textContent = state.img ? state.natH : '—';
+  document.getElementById('st-cw').textContent = w;
+  document.getElementById('st-ch').textContent = h;
+  document.getElementById('st-ms').textContent = ms;
+  document.getElementById('h-thresh').textContent = state.thresholdEnabled ? 'ON' : 'OFF';
+}
+
+// ---- EXPORT (clean render without selection box) ----
+function exportPNG(){
+  processImage();
+  if(state.text.show) drawTextLayerClean();
+  const link = document.createElement('a');
+  link.download = 'poster-press-export.png';
+  link.href = mainCanvas.toDataURL('image/png');
+  link.click();
+  render();
+}
+function drawTextLayerClean(){
+  const t = state.text;
+  if(!t.content) return;
+  const meta = FONT_META[t.font] || FONT_META['Bebas Neue'];
+  const display = t.uppercase ? t.content.toUpperCase() : t.content;
+  const w = mainCanvas.width, h = mainCanvas.height;
+  mctx.save();
+  mctx.font = `${meta.weight} ${t.size}px ${meta.family}`;
+  mctx.textBaseline = 'middle';
+  mctx.fillStyle = t.color;
+  mctx.globalCompositeOperation = t.blend;
+  const cx = t.x*w, cy = t.y*h;
+  const totalW = measureSpacedWidth(mctx, display, t.spacing);
+  let startX = t.align==='center' ? cx-totalW/2 : t.align==='right' ? cx-totalW : cx;
+  let x = startX;
+  for(let i=0;i<display.length;i++){
+    mctx.fillText(display[i], x, cy);
+    x += mctx.measureText(display[i]).width + t.spacing;
+  }
+  mctx.restore();
+}
+
+// ---- CANVAS POINTER INTERACTION ----
+function getCanvasPos(e){
+  const rect = mainCanvas.getBoundingClientRect();
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  return {
+    x: (cx-rect.left) * (mainCanvas.width/rect.width),
+    y: (cy-rect.top) * (mainCanvas.height/rect.height),
+    scale: mainCanvas.width/rect.width
+  };
+}
+
+function pointerDown(e){
+  if(!state.text.show) return;
+  const pos = getCanvasPos(e);
+  if(!lastBBox) return;
+  const handleR = 14 * pos.scale;
+  const nearHandle = Math.abs(pos.x-lastBBox.right) < handleR && Math.abs(pos.y-lastBBox.bottom) < handleR;
+  if(nearHandle){
+    drag = {mode:'resize', startX:pos.x, startY:pos.y, startSize:state.text.size};
+    setMode('RESIZING TEXT'); e.preventDefault(); return;
+  }
+  if(pos.x>=lastBBox.left && pos.x<=lastBBox.right && pos.y>=lastBBox.top && pos.y<=lastBBox.bottom){
+    drag = {mode:'move', startX:pos.x, startY:pos.y, origX:state.text.x, origY:state.text.y};
+    setMode('MOVING TEXT'); e.preventDefault();
+  }
+}
+function pointerMove(e){
+  if(!drag){
+    if(lastBBox && state.text.show){
+      const pos = getCanvasPos(e);
+      const handleR = 14*pos.scale;
+      const nearHandle = Math.abs(pos.x-lastBBox.right)<handleR && Math.abs(pos.y-lastBBox.bottom)<handleR;
+      const inside = pos.x>=lastBBox.left && pos.x<=lastBBox.right && pos.y>=lastBBox.top && pos.y<=lastBBox.bottom;
+      mainCanvas.style.cursor = nearHandle ? 'nwse-resize' : inside ? 'move' : 'default';
+    }
+    return;
+  }
+  const pos = getCanvasPos(e);
+  if(drag.mode==='move'){
+    const dx = pos.x-drag.startX, dy = pos.y-drag.startY;
+    state.text.x = clamp(drag.origX + dx/mainCanvas.width, 0, 1);
+    state.text.y = clamp(drag.origY + dy/mainCanvas.height, 0, 1);
+  } else if(drag.mode==='resize'){
+    const dx = pos.x-drag.startX;
+    state.text.size = clamp(drag.startSize + dx, 16, 500);
+    document.getElementById('sl-size').value = Math.round(state.text.size);
+    document.getElementById('size-val').textContent = Math.round(state.text.size);
+  }
+  render();
+  e.preventDefault();
+}
+function pointerUp(){
+  if(drag){ drag = null; setMode('IDLE'); }
+}
+function setMode(m){ document.getElementById('status-mode').textContent = m; }
+
+mainCanvas.addEventListener('mousedown', pointerDown);
+window.addEventListener('mousemove', pointerMove);
+window.addEventListener('mouseup', pointerUp);
+mainCanvas.addEventListener('touchstart', pointerDown, {passive:false});
+window.addEventListener('touchmove', pointerMove, {passive:false});
+window.addEventListener('touchend', pointerUp);
+
+// ---- CONTROLS ----
+const bind = (id, fn) => document.getElementById(id).addEventListener('input', fn);
+
+bind('sl-brightness', e => { state.brightness = +e.target.value; document.getElementById('bri-val').textContent = state.brightness; render(); });
+bind('sl-contrast',   e => { state.contrast = +e.target.value; document.getElementById('con-val').textContent = state.contrast; render(); });
+bind('sl-threshold',  e => { state.threshold = +e.target.value; render(); });
+document.getElementById('ck-threshold').addEventListener('change', e => { state.thresholdEnabled = e.target.checked; render(); });
+document.getElementById('ck-dither').addEventListener('change', e => { state.dither = e.target.checked; render(); });
+document.getElementById('ck-invert').addEventListener('change', e => { state.invert = e.target.checked; render(); });
+document.getElementById('reset-adj-btn').addEventListener('click', () => {
+  state.brightness=0; state.contrast=0; state.thresholdEnabled=false; state.threshold=128; state.dither=false; state.invert=false;
+  document.getElementById('sl-brightness').value=0; document.getElementById('bri-val').textContent=0;
+  document.getElementById('sl-contrast').value=0; document.getElementById('con-val').textContent=0;
+  document.getElementById('sl-threshold').value=128;
+  document.getElementById('ck-threshold').checked=false;
+  document.getElementById('ck-dither').checked=false;
+  document.getElementById('ck-invert').checked=false;
+  render();
+});
+
+document.getElementById('txt-content').addEventListener('input', e => { state.text.content = e.target.value; render(); });
+document.getElementById('sel-font').addEventListener('change', e => { state.text.font = e.target.value; render(); });
+bind('sl-size', e => { state.text.size = +e.target.value; document.getElementById('size-val').textContent = state.text.size; render(); });
+bind('sl-spacing', e => { state.text.spacing = +e.target.value; document.getElementById('spacing-val').textContent = state.text.spacing; render(); });
+document.getElementById('sel-align').addEventListener('change', e => { state.text.align = e.target.value; render(); });
+document.getElementById('sel-blend').addEventListener('change', e => { state.text.blend = e.target.value; render(); });
+document.getElementById('col-text').addEventListener('input', e => { state.text.color = e.target.value; render(); });
+document.getElementById('ck-upper').addEventListener('change', e => { state.text.uppercase = e.target.checked; render(); });
+document.getElementById('ck-showtext').addEventListener('change', e => { state.text.show = e.target.checked; render(); });
+document.getElementById('reset-text-btn').addEventListener('click', () => { state.text.x=0.5; state.text.y=0.5; render(); });
+
+function resetAll(){
+  state.brightness=0; state.contrast=0; state.thresholdEnabled=false; state.threshold=128; state.dither=false; state.invert=false;
+  state.text = {content:'POSTER', font:'Bebas Neue', size:140, spacing:6, color:'#ece5d8', align:'center', blend:'normal', uppercase:true, show:true, x:0.5, y:0.5};
+  document.getElementById('sl-brightness').value=0; document.getElementById('bri-val').textContent=0;
+  document.getElementById('sl-contrast').value=0; document.getElementById('con-val').textContent=0;
+  document.getElementById('sl-threshold').value=128;
+  document.getElementById('ck-threshold').checked=false;
+  document.getElementById('ck-dither').checked=false;
+  document.getElementById('ck-invert').checked=false;
+  document.getElementById('txt-content').value='POSTER';
+  document.getElementById('sel-font').value='Bebas Neue';
+  document.getElementById('sl-size').value=140; document.getElementById('size-val').textContent=140;
+  document.getElementById('sl-spacing').value=6; document.getElementById('spacing-val').textContent=6;
+  document.getElementById('sel-align').value='center';
+  document.getElementById('sel-blend').value='normal';
+  document.getElementById('col-text').value='#ece5d8';
+  document.getElementById('ck-upper').checked=true;
+  document.getElementById('ck-showtext').checked=true;
+  render();
+}
+
+window.addEventListener('resize', () => { if(state.img) drawPreview(); render(); });
+
+// ---- INIT ----
+render();
+</script>
+</body>
+</html>
