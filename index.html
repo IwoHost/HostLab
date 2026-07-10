@@ -418,6 +418,15 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 /* ── HEADER RIGHT ── */
 .header-right { display: flex; align-items: center; gap: 24px; }
 
+.secret-heart {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-decoration: none;
+  opacity: 0.55;
+  transition: color 0.3s ease, opacity 0.3s ease;
+}
+.secret-heart:hover { color: #d43a24; opacity: 1; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   header { padding: 20px 24px 16px; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -458,6 +467,7 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
     <a href="pages/study.html" class="nav-link">STUDY</a>
     <a href="pages/terminal.html" class="nav-link">TERMINAL</a>
     <div class="header-meta" id="site-count">— PROJECTS</div>
+    <a href="websites/living-log.html" class="secret-heart">&hearts;</a>
     <div class="theme-switch" id="theme-switch" title="Toggle light mode">
       <span class="switch-label" id="switch-label">LIGHT</span>
       <div class="switch-track"><div class="switch-thumb"></div></div>

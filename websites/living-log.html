@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Iwo & Lena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    :root{
+        --paper:#efe6d2;
+        --ink:#15130f;
+        --red:#d43a24;
+        --navy:#1d2b57;
+        --amber:#f2a03d;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body{height:100%;}
+    body{
+        background:#24211c;
+        font-family:'Archivo',sans-serif;
+        -webkit-font-smoothing:antialiased;
+        text-rendering:optimizeLegibility;
+        font-synthesis:none;
+        display:flex;align-items:center;justify-content:center;
+        min-height:100dvh;
+        padding:clamp(12px,3vw,40px);
+    }
+
+    /* the poster sheet — a real portrait print */
+    .sheet{
+        position:relative;
+        width:min(92vw, calc((100dvh - 40px) * 0.6667));
+        aspect-ratio:2/3;
+        background:var(--paper);
+        overflow:hidden;
+        box-shadow:0 30px 80px rgba(0,0,0,.55), 0 4px 14px rgba(0,0,0,.4);
+        isolation:isolate;
+    }
+
+    /* ---- centerpiece graphic: gradient heart ---- */
+    .orb{
+        position:absolute;z-index:1;
+        top:15%;left:50%;transform:translateX(-38%);
+        width:80%;aspect-ratio:1;
+        background:radial-gradient(circle at 38% 34%, #ffd07a 0%, var(--amber) 34%, var(--red) 74%, #a51f12 100%);
+        -webkit-clip-path:url(#heartclip);
+        clip-path:url(#heartclip);
+    }
+    /* halftone dots masked over the heart */
+    .halftone{
+        position:absolute;z-index:2;
+        top:15%;left:50%;transform:translateX(-38%);
+        width:80%;aspect-ratio:1;
+        background-image:radial-gradient(var(--ink) 30%, transparent 32%);
+        background-size:11px 11px;
+        -webkit-clip-path:url(#heartclip);
+        clip-path:url(#heartclip);
+        -webkit-mask-image:radial-gradient(circle at 66% 62%, black 0%, transparent 60%);
+        mask-image:radial-gradient(circle at 66% 62%, black 0%, transparent 60%);
+        opacity:.5;
+    }
+    /* ---- content padding frame ---- */
+    .pad{
+        position:absolute;inset:0;z-index:5;
+        padding:clamp(16px,3.4vw,34px);
+        display:flex;flex-direction:column;
+    }
+
+    /* top meta */
+    .top{
+        display:flex;justify-content:space-between;align-items:flex-start;
+        font-family:'Space Mono',monospace;
+        font-size:clamp(.5rem,1.5vw,.72rem);
+        text-transform:uppercase;letter-spacing:.18em;color:var(--ink);
+    }
+    .top .r{text-align:right;color:var(--red);}
+
+    /* giant stacked names */
+    .names{
+        margin-top:clamp(6px,1.6vw,14px);
+        font-family:'Anton',sans-serif;
+        text-transform:uppercase;
+        line-height:.8;letter-spacing:0;
+        color:var(--ink);
+        position:relative;z-index:6;
+    }
+    .names .l1{font-size:clamp(3.4rem,17vw,8rem);display:block;}
+    .names .l2{
+        font-size:clamp(3.4rem,17vw,8rem);display:block;
+        color:var(--red);
+        margin-left:.32em;
+    }
+    .names .amp{
+        font-family:'Archivo',sans-serif;font-weight:900;
+        font-size:clamp(1.1rem,5vw,2.4rem);
+        color:var(--navy);
+        display:inline-block;transform:translateY(-.35em);
+        margin-left:.06em;
+    }
+
+    /* vertical date on right edge */
+    .vdate{
+        position:absolute;z-index:6;
+        top:50%;transform:translateY(-50%);
+        right:clamp(16px,3.4vw,34px);
+        writing-mode:vertical-rl;text-orientation:mixed;
+        white-space:nowrap;
+        font-family:'Space Mono',monospace;font-weight:700;
+        font-size:clamp(.55rem,1.5vw,.82rem);
+        letter-spacing:.22em;color:var(--red);
+        max-height:64%;
+    }
+
+    /* spacer pushes counter block to bottom */
+    .spacer{flex:1 1 auto;}
+
+    /* the count block — bottom, sitting over the orb */
+    .count{position:relative;z-index:6;}
+    .count .big{
+        display:flex;align-items:flex-end;gap:clamp(8px,2vw,18px);
+    }
+    .count .days{
+        font-family:'Anton',sans-serif;
+        font-size:clamp(5rem,30vw,14rem);
+        line-height:.7;letter-spacing:-.01em;
+        color:var(--paper);
+        font-variant-numeric:tabular-nums;
+        text-shadow:
+            3px 3px 0 var(--ink),
+            -1px -1px 0 var(--ink),
+             1px -1px 0 var(--ink),
+            -1px  1px 0 var(--ink);
+    }
+    .count .dl{
+        font-family:'Anton',sans-serif;
+        font-size:clamp(1.4rem,6vw,3rem);
+        line-height:.82;text-transform:uppercase;
+        color:var(--ink);
+        padding-bottom:clamp(6px,1.4vw,16px);
+    }
+    .count .dl small{
+        display:block;font-family:'Space Mono',monospace;font-weight:400;
+        font-size:clamp(.5rem,1.4vw,.7rem);
+        letter-spacing:.14em;text-transform:uppercase;
+        color:var(--ink);opacity:.7;margin-top:.7em;
+    }
+
+    /* clock row */
+    .clock{
+        margin-top:clamp(10px,2vw,18px);
+        padding-top:clamp(8px,1.6vw,14px);
+        border-top:2px solid var(--ink);
+        display:flex;align-items:flex-end;gap:clamp(6px,1.6vw,14px);
+        font-variant-numeric:tabular-nums slashed-zero;
+        font-feature-settings:"tnum" 1,"zero" 1;
+    }
+    .seg{display:flex;flex-direction:column;}
+    .seg .t{
+        font-family:'Space Mono',monospace;font-weight:700;
+        font-size:clamp(1.5rem,7.5vw,3.2rem);line-height:.9;color:var(--navy);
+    }
+    .seg.a .t{color:var(--red);}
+    .seg .u{
+        font-family:'Archivo',sans-serif;font-weight:600;
+        font-size:clamp(.48rem,1.4vw,.66rem);
+        text-transform:uppercase;letter-spacing:.2em;
+        color:var(--ink);opacity:.6;margin-top:5px;
+    }
+    .colon{
+        font-family:'Space Mono',monospace;font-weight:700;
+        font-size:clamp(1.1rem,5vw,2.2rem);color:var(--red);
+        align-self:flex-start;
+        animation:blink 2s steps(1) infinite;
+    }
+    @keyframes blink{0%,50%{opacity:1}51%,100%{opacity:.2}}
+
+    /* bottom credit */
+    .credit{
+        margin-top:clamp(10px,2vw,16px);
+        display:flex;justify-content:space-between;align-items:center;gap:12px;
+        font-family:'Space Mono',monospace;
+        font-size:clamp(.48rem,1.4vw,.66rem);
+        text-transform:uppercase;letter-spacing:.16em;color:var(--ink);
+    }
+    .credit b{color:var(--red);}
+
+    @media (prefers-reduced-motion:reduce){.colon{animation:none;}}
+</style>
+</head>
+<body>
+    <div class="sheet">
+        <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+            <clipPath id="heartclip" clipPathUnits="objectBoundingBox">
+                <path d="M0.5,0.91 C0.2,0.65 0.04,0.48 0.04,0.29 C0.04,0.14 0.15,0.04 0.29,0.04 C0.39,0.04 0.47,0.1 0.5,0.19 C0.53,0.1 0.61,0.04 0.71,0.04 C0.85,0.04 0.96,0.14 0.96,0.29 C0.96,0.48 0.8,0.65 0.5,0.91 Z"/>
+            </clipPath>
+        </svg>
+        <div class="orb"></div>
+        <div class="halftone"></div>
+
+        <div class="pad">
+            <div class="top">
+                <div>Living Log<br>N&deg;001</div>
+                <div class="r">Oława · PL<br>MMXXVI</div>
+            </div>
+
+            <div class="names">
+                <span class="l1">Iwo</span>
+                <span class="l2">Lena<span class="amp">&amp;</span></span>
+            </div>
+
+            <div class="spacer"></div>
+
+            <div class="count">
+                <div class="big">
+                    <span class="days" id="days">0</span>
+                    <span class="dl">dni<small>razem</small></span>
+                </div>
+                <div class="clock">
+                    <div class="seg"><span class="t" data-h>00</span><span class="u">godz</span></div>
+                    <span class="colon">:</span>
+                    <div class="seg"><span class="t" data-m>00</span><span class="u">min</span></div>
+                    <span class="colon">:</span>
+                    <div class="seg a"><span class="t" data-s>00</span><span class="u">sek</span></div>
+                </div>
+                <div class="credit">
+                    <span>Od 06 · 07 · 2026 — 17:46</span>
+                    <span>Razem <b id="tot">0</b> h</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="vdate">06.07.2026 · 17:46 · na zawsze</div>
+    </div>
+
+<script>
+    const START=new Date('2026-07-06T17:46:00+02:00').getTime();
+    const pad2=new Intl.NumberFormat('en',{minimumIntegerDigits:2,useGrouping:false});
+    const d=document.getElementById('days'),
+          h=document.querySelector('[data-h]'),
+          m=document.querySelector('[data-m]'),
+          s=document.querySelector('[data-s]'),
+          tot=document.getElementById('tot');
+    function tick(){
+        const S=Math.floor(Math.max(0,Date.now()-START)/1000);
+        d.textContent=Math.floor(S/86400).toLocaleString('pl-PL');
+        h.textContent=pad2.format(Math.floor(S/3600)%24);
+        m.textContent=pad2.format(Math.floor(S/60)%60);
+        s.textContent=pad2.format(S%60);
+        tot.textContent=Math.floor(S/3600).toLocaleString('pl-PL');
+        setTimeout(tick,1000-(Date.now()%1000));
+    }
+    tick();
+</script>
+</body>
+</html>
