@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+
+<!-- Google tag (gtag.js) -->
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-R7MJHBKJVY');
+</script>
+<meta name="description" content="Glitch Reel — upload a video and stack real-time feedback-loop glitch, RGB shift, VHS, datamosh, duotone and grain effects, then export the result as a WebM.">
+<meta property="og:title" content="Glitch Reel — HostLab">
+<meta property="og:description" content="A real-time video glitch editor. Stack feedback-loop trails, RGB shift, VHS decay, datamosh and duotone, then export as WebM.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://iwohost.github.io/HostLab/websites/glitch-reel.html">
+<meta property="og:image" content="https://iwohost.github.io/HostLab/other/logo/HLab_Logo.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GLITCH · REEL</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
+<link rel="canonical" href="https://iwohost.github.io/HostLab/websites/glitch-reel.html">
+<link rel="stylesheet" href="../other/backbutton.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#07040a;--panel:#0d0812;--border:#1c1224;--border2:#3a1f4d;
+  --text:#e8d8f0;--text2:#9a7ab0;--text3:#4a3560;
+  --accent:#cc88ff;--accent2:#ff44cc;--accent3:#ffd6f5;
+  --ok:#44ffaa;--warn:#ff4466;
+  --mono:'Share Tech Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;min-height:100vh;overflow-x:hidden;}
+#app{display:grid;grid-template-rows:36px 1fr 44px;grid-template-columns:270px 1fr 170px;height:100vh;border:1px solid var(--border2);animation:fadeUp .4s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes flicker{0%,100%{opacity:1}45%{opacity:.85}50%{opacity:1}52%{opacity:.7}55%{opacity:1}}
+
+/* HEADER */
+#header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);padding:0 16px;background:var(--panel);}
+#logo{font-family:VT323,monospace;font-size:22px;letter-spacing:6px;color:var(--accent3);text-shadow:0 0 16px rgba(204,136,255,.5);animation:flicker 6s infinite;}
+#logo span{color:var(--text2);}
+#hinfo{display:flex;gap:18px;color:var(--text3);font-size:10px;letter-spacing:2px;}
+#hinfo b{color:var(--text2);}
+#rec-dot{display:none;color:var(--warn);}
+#rec-dot.show{display:inline;animation:blink 1s infinite;}
+
+/* LEFT PANEL */
+#left{border-right:1px solid var(--border2);overflow-y:auto;overflow-x:hidden;background:var(--panel);}
+.section{border-bottom:1px solid var(--border);padding:10px;}
+.label{font-size:9px;letter-spacing:3px;color:var(--text3);text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+.label .val{color:var(--accent2);font-size:10px;letter-spacing:0;}
+
+#upload-box{width:100%;aspect-ratio:16/10;background:#000;border:1px solid var(--border2);position:relative;overflow:hidden;cursor:pointer;}
+#upload-box video{width:100%;height:100%;object-fit:cover;opacity:.5;}
+#upload-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text3);font-size:9px;letter-spacing:2px;pointer-events:none;}
+#file-input{display:none;}
+
+.transport{display:flex;gap:6px;align-items:center;margin-top:8px;}
+.tbtn{font-family:var(--mono);font-size:11px;padding:4px 8px;border:1px solid var(--border2);color:var(--text2);background:none;cursor:pointer;}
+.tbtn:hover{border-color:var(--accent);color:var(--accent2);}
+#scrub{flex:1;accent-color:var(--accent);height:2px;cursor:pointer;}
+
+.fx-block{border-bottom:1px solid var(--border);}
+.fx-head{display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;user-select:none;}
+.fx-head:hover{background:rgba(204,136,255,.05);}
+.fx-head .name{font-size:10px;letter-spacing:2px;color:var(--text2);flex:1;text-transform:uppercase;}
+.fx-head.on .name{color:var(--accent3);}
+.fx-chk{width:9px;height:9px;border:1px solid var(--border2);flex-shrink:0;}
+.fx-head.on .fx-chk{background:var(--accent2);border-color:var(--accent2);box-shadow:0 0 6px var(--accent2);}
+.fx-body{padding:0 10px 10px 10px;display:none;}
+.fx-body.show{display:block;}
+.slider-row{margin-bottom:7px;}
+.slider-row .rlabel{font-size:9px;color:var(--text3);letter-spacing:1px;display:flex;justify-content:space-between;margin-bottom:2px;}
+.slider-row .rlabel b{color:var(--accent2);font-weight:normal;}
+.slider-row input[type=range]{width:100%;accent-color:var(--accent);height:2px;cursor:pointer;}
+.swatch-row{display:flex;gap:8px;align-items:center;margin-bottom:7px;}
+.swatch-row input[type=color]{width:28px;height:18px;border:1px solid var(--border2);background:none;cursor:pointer;padding:0;}
+.preset-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px;}
+.preset{width:20px;height:14px;border:1px solid var(--border2);cursor:pointer;display:flex;}
+.preset span{flex:1;}
+.preset:hover{border-color:var(--accent);}
+
+/* CENTER */
+#center{position:relative;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;}
+#output-canvas{max-width:100%;max-height:100%;display:block;}
+#drop-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:8px;pointer-events:none;}
+#drop-overlay .big{font-family:VT323,monospace;font-size:44px;color:var(--border2);letter-spacing:4px;}
+#drop-overlay .small{font-size:10px;letter-spacing:3px;}
+#center-drop{position:absolute;inset:0;cursor:pointer;}
+#center-scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,0,0,.12) 3px);opacity:.5;}
+
+/* RIGHT PANEL */
+#right{border-left:1px solid var(--border2);overflow-y:auto;background:var(--panel);}
+.stat-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:10px;}
+.stat-row .sk{color:var(--text3);}
+.stat-row .sv{color:var(--accent2);}
+
+/* FOOTER */
+#footer{grid-column:1/-1;border-top:1px solid var(--border2);display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--panel);font-size:10px;color:var(--text3);letter-spacing:1px;}
+#fl{white-space:nowrap;}
+#fc{flex:1;text-align:center;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#export-btn{font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:5px 14px;border:1px solid var(--accent);color:var(--accent2);background:none;cursor:pointer;text-transform:uppercase;transition:transform .2s;}
+#export-btn:hover{background:rgba(204,136,255,.15);transform:translateY(-1px);}
+#export-btn:disabled{opacity:.4;cursor:default;}
+
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);}
+
+@media (max-width: 768px) {
+  #app{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto auto;height:auto;min-height:100vh;}
+  #header{grid-column:1;flex-wrap:wrap;gap:4px;padding:8px 12px;height:auto;}
+  #logo{font-size:18px;letter-spacing:3px;}
+  #hinfo{gap:10px;font-size:9px;}
+  #left{border-right:none;border-bottom:1px solid var(--border2);max-height:340px;}
+  #center{min-height:56vw;}
+  #right{border-left:none;border-top:1px solid var(--border2);max-height:220px;}
+  #footer{grid-column:1;flex-wrap:wrap;height:auto;padding:8px 12px;gap:6px;}
+  #fc{flex:1 1 100%;order:3;text-align:left;}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-home" title="Back to HostLab">
+  <img src="../other/logo/HLab_Logo.png" alt="HostLab">
+</a>
+<div id="app">
+  <!-- HEADER -->
+  <div id="header">
+    <div id="logo">GLITCH<span> · </span>REEL</div>
+    <div id="hinfo">
+      <span id="rec-dot">● REC</span>
+      <span><b id="st-fxcount">0</b> EFFECTS ON</span>
+      <span><b id="st-fps">--</b> FPS</span>
+    </div>
+  </div>
+
+  <!-- LEFT -->
+  <div id="left">
+    <div class="section">
+      <div class="label" style="margin-bottom:6px;">Source</div>
+      <div id="upload-box" onclick="document.getElementById('file-input').click()">
+        <video id="thumb-video" muted playsinline></video>
+        <div id="upload-hint">CLICK OR DROP<br>VIDEO FILE</div>
+      </div>
+      <input type="file" id="file-input" accept="video/*">
+      <div class="transport">
+        <button class="tbtn" id="play-btn">▶</button>
+        <input type="range" id="scrub" min="0" max="1000" value="0" step="1">
+        <button class="tbtn" id="loop-btn" title="Loop">⟲</button>
+      </div>
+    </div>
+
+    <!-- FEEDBACK GLITCH -->
+    <div class="fx-block" data-fx="feedback">
+      <div class="fx-head"><div class="fx-chk"></div><div class="name">Feedback Glitch</div></div>
+      <div class="fx-body">
+        <div class="slider-row"><div class="rlabel"><span>Intensity</span><b class="v">70%</b></div><input type="range" data-p="intensity" min="0" max="100" value="70"></div>
+        <div class="slider-row"><div class="rlabel"><span>Decay (trail length)</span><b class="v">88%</b></div><input type="range" data-p="decay" min="40" max="99" value="88"></div>
+        <div class="slider-row"><div class="rlabel"><span>Drift (scale/rotate)</span><b class="v">30%</b></div><input type="range" data-p="drift" min="0" max="100" value="30"></div>
+      </div>
+    </div>
+
+    <!-- RGB SHIFT -->
+    <div class="fx-block" data-fx="rgb">
+      <div class="fx-head"><div class="fx-chk"></div><div class="name">RGB Shift</div></div>
+      <div class="fx-body">
+        <div class="slider-row"><div class="rlabel"><span>Offset</span><b class="v">8px</b></div><input type="range" data-p="offset" min="0" max="40" value="8"></div>
+        <div class="slider-row"><div class="rlabel"><span>Jitter (animated)</span><b class="v">0%</b></div><input type="range" data-p="jitter" min="0" max="100" value="0"></div>
+      </div>
+    </div>
+
+    <!-- VHS -->
+    <div class="fx-block" data-fx="vhs">
+      <div class="fx-head"><div class="fx-chk"></div><div class="name">VHS Decay</div></div>
+      <div class="fx-body">
+        <div class="slider-row"><div class="rlabel"><span>Scanlines</span><b class="v">40%</b></div><input type="range" data-p="scan" min="0" max="100" value="40"></div>
+        <div class="slider-row"><div class="rlabel"><span>Tracking Noise</span><b class="v">25%</b></div><input type="range" data-p="noise" min="0" max="100" value="25"></div>
+        <div class="slider-row"><div class="rlabel"><span>Wobble</span><b class="v">20%</b></div><input type="range" data-p="wobble" min="0" max="100" value="20"></div>
+      </div>
+    </div>
+
+    <!-- DATAMOSH -->
+    <div class="fx-block" data-fx="mosh">
+      <div class="fx-head"><div class="fx-chk"></div><div class="name">Datamosh Blocks</div></div>
+      <div class="fx-body">
+        <div class="slider-row"><div class="rlabel"><span>Intensity</span><b class="v">35%</b></div><input type="range" data-p="intensity" min="0" max="100" value="35"></div>
+        <div class="slider-row"><div class="rlabel"><span>Luma Threshold</span><b class="v">50%</b></div><input type="range" data-p="threshold" min="0" max="100" value="50"></div>
+      </div>
+    </div>
+
+    <!-- DUOTONE -->
+    <div class="fx-block" data-fx="duo">
+      <div class="fx-head"><div class="fx-chk"></div><div class="name">Duotone</div></div>
+      <div class="fx-body">
+        <div class="preset-row" id="duo-presets"></div>
+        <div class="swatch-row"><span style="font-size:9px;color:var(--text3);">SHADOW</span><input type="color" id="duo-a" value="#1a0033"></div>
+        <div class="swatch-row"><span style="font-size:9px;color:var(--text3);">HILITE</span><input type="color" id="duo-b" value="#ff44cc"></div>
+        <div class="slider-row"><div class="rlabel"><span>Mix</span><b class="v">100%</b></div><input type="range" data-p="mix" min="0" max="100" value="100"></div>
+      </div>
+    </div>
+
+    <!-- FINISH -->
+    <div class="fx-block" data-fx="finish">
+      <div class="fx-head"><div class="fx-chk"></div><div class="name">Finish (Grain/Vignette/Posterize)</div></div>
+      <div class="fx-body">
+        <div class="slider-row"><div class="rlabel"><span>Grain</span><b class="v">15%</b></div><input type="range" data-p="grain" min="0" max="100" value="15"></div>
+        <div class="slider-row"><div class="rlabel"><span>Vignette</span><b class="v">35%</b></div><input type="range" data-p="vignette" min="0" max="100" value="35"></div>
+        <div class="slider-row"><div class="rlabel"><span>Posterize Levels</span><b class="v">OFF</b></div><input type="range" data-p="posterize" min="0" max="16" value="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div id="center">
+    <canvas id="output-canvas"></canvas>
+    <div id="center-scan"></div>
+    <div id="drop-overlay">
+      <div class="big">[ ]</div>
+      <div class="small">DROP VIDEO OR CLICK BELOW</div>
+    </div>
+    <div id="center-drop" onclick="document.getElementById('file-input').click()"></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div id="right">
+    <div class="section">
+      <div class="label" style="margin-bottom:6px;">Stats</div>
+      <div class="stat-row"><span class="sk">SRC RES</span><span class="sv" id="st-res">—</span></div>
+      <div class="stat-row"><span class="sk">DURATION</span><span class="sv" id="st-dur">—</span></div>
+      <div class="stat-row"><span class="sk">POSITION</span><span class="sv" id="st-pos">—</span></div>
+      <div class="stat-row"><span class="sk">STATE</span><span class="sv" id="st-state">IDLE</span></div>
+      <div class="stat-row"><span class="sk">RENDER MS</span><span class="sv" id="st-ms">—</span></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div id="footer">
+    <span id="fl">HOSTLAB / GLITCH-REEL</span>
+    <span id="fc">Upload a video to begin</span>
+    <button id="export-btn" disabled>EXPORT WEBM</button>
+  </div>
+</div>
+
+<script>
+// ---- STATE ----
+const FX = {
+  feedback:{on:true,  intensity:70, decay:88, drift:30},
+  rgb:     {on:false, offset:8, jitter:0},
+  vhs:     {on:false, scan:40, noise:25, wobble:20},
+  mosh:    {on:false, intensity:35, threshold:50},
+  duo:     {on:false, a:'#1a0033', b:'#ff44cc', mix:100},
+  finish:  {on:false, grain:15, vignette:35, posterize:0},
+};
+
+const DUO_PRESETS = [
+  ['#1a0033','#ff44cc'],
+  ['#001a1a','#00ffcc'],
+  ['#1a0000','#ff8800'],
+  ['#000d1a','#66ccff'],
+  ['#0d1a00','#aaff33'],
+];
+
+let video = document.createElement('video');
+video.muted = false; video.loop = true; video.playsInline = true; video.crossOrigin = 'anonymous';
+const thumbVideo = document.getElementById('thumb-video');
+
+const outCanvas = document.getElementById('output-canvas');
+const outCtx = outCanvas.getContext('2d', {willReadFrequently:true});
+
+let curCanvas, curCtx, tmpCanvas, tmpCtx, resCanvas, resCtx, fbCanvas, fbCtx, scratchCanvas, scratchCtx;
+let W = 0, H = 0;
+let hasVideo = false;
+let rafId = null;
+let frameTimeAvg = 0;
+let lastFrameTs = 0;
+
+function makeBuffers(w, h){
+  W = w; H = h;
+  outCanvas.width = w; outCanvas.height = h;
+  [curCanvas, tmpCanvas, resCanvas, fbCanvas, scratchCanvas] = Array.from({length:5}, () => {
+    const c = document.createElement('canvas'); c.width = w; c.height = h; return c;
+  });
+  curCtx = curCanvas.getContext('2d', {willReadFrequently:true});
+  tmpCtx = tmpCanvas.getContext('2d');
+  resCtx = resCanvas.getContext('2d', {willReadFrequently:true});
+  fbCtx = fbCanvas.getContext('2d');
+  scratchCtx = scratchCanvas.getContext('2d');
+}
+
+// ---- FILE LOADING ----
+function loadFile(f){
+  if(!f || !f.type.startsWith('video/')) return;
+  const url = URL.createObjectURL(f);
+  video.src = url;
+  thumbVideo.src = url;
+  video.onloadedmetadata = () => {
+    const maxDim = 960;
+    let w = video.videoWidth, h = video.videoHeight;
+    const scale = Math.min(1, maxDim / Math.max(w,h));
+    w = Math.round(w*scale); h = Math.round(h*scale);
+    makeBuffers(w, h);
+    hasVideo = true;
+    document.getElementById('drop-overlay').style.display = 'none';
+    document.getElementById('upload-hint').style.display = 'none';
+    document.getElementById('export-btn').disabled = false;
+    document.getElementById('fc').textContent = f.name;
+    document.getElementById('st-res').textContent = video.videoWidth+'×'+video.videoHeight;
+    document.getElementById('st-dur').textContent = fmtTime(video.duration);
+    document.getElementById('st-state').textContent = 'READY';
+    video.play().catch(()=>{});
+    thumbVideo.play().catch(()=>{});
+    updatePlayBtn();
+    if(!rafId) tick();
+  };
+}
+document.getElementById('file-input').onchange = e => loadFile(e.target.files[0]);
+['dragover','drop'].forEach(ev => document.getElementById('center').addEventListener(ev, e => {
+  e.preventDefault();
+  if(ev==='drop') loadFile(e.dataTransfer.files[0]);
+}));
+document.getElementById('center').addEventListener('dragover', e=>e.preventDefault());
+
+// ---- TRANSPORT ----
+const playBtn = document.getElementById('play-btn');
+const scrub = document.getElementById('scrub');
+let scrubbing = false;
+playBtn.onclick = () => { if(!hasVideo) return; video.paused ? video.play() : video.pause(); thumbVideo.paused ? thumbVideo.play().catch(()=>{}) : thumbVideo.pause(); updatePlayBtn(); };
+function updatePlayBtn(){ playBtn.textContent = video.paused ? '▶' : '❚❚'; document.getElementById('st-state').textContent = video.paused ? 'PAUSED' : 'PLAYING'; }
+video.addEventListener('play', updatePlayBtn);
+video.addEventListener('pause', updatePlayBtn);
+document.getElementById('loop-btn').onclick = e => { video.loop = !video.loop; e.target.style.color = video.loop ? 'var(--accent2)' : ''; };
+scrub.oninput = () => { if(!hasVideo) return; scrubbing = true; video.currentTime = (scrub.value/1000) * video.duration; };
+scrub.onchange = () => { scrubbing = false; };
+video.addEventListener('timeupdate', () => {
+  if(!scrubbing && video.duration) scrub.value = Math.round((video.currentTime/video.duration)*1000);
+  document.getElementById('st-pos').textContent = fmtTime(video.currentTime)+' / '+fmtTime(video.duration||0);
+});
+function fmtTime(t){ if(!isFinite(t)) return '—'; const m=Math.floor(t/60), s=Math.floor(t%60); return m+':'+String(s).padStart(2,'0'); }
+
+// ---- FX UI ----
+document.querySelectorAll('.fx-block').forEach(block => {
+  const key = block.dataset.fx;
+  const head = block.querySelector('.fx-head');
+  const body = block.querySelector('.fx-body');
+  head.onclick = (e) => {
+    if(e.target.tagName === 'INPUT') return;
+    FX[key].on = !FX[key].on;
+    head.classList.toggle('on', FX[key].on);
+    body.classList.toggle('show', FX[key].on);
+    updateFxCount();
+  };
+  block.querySelectorAll('input[type=range]').forEach(inp => {
+    const p = inp.dataset.p;
+    inp.oninput = () => {
+      FX[key][p] = +inp.value;
+      const v = inp.nextElementSibling; // not used; label updated below
+      const lbl = inp.previousElementSibling.querySelector('b');
+      if(p === 'posterize') lbl.textContent = (+inp.value===0) ? 'OFF' : (18-inp.value);
+      else if(p === 'offset') lbl.textContent = inp.value+'px';
+      else lbl.textContent = inp.value+'%';
+    };
+  });
+});
+if(FX.feedback.on) document.querySelector('[data-fx="feedback"] .fx-head').classList.add('on');
+if(FX.feedback.on) document.querySelector('[data-fx="feedback"] .fx-body').classList.add('show');
+function updateFxCount(){
+  document.getElementById('st-fxcount').textContent = Object.values(FX).filter(f=>f.on).length;
+}
+updateFxCount();
+
+// duotone presets + pickers
+const duoPresetsEl = document.getElementById('duo-presets');
+DUO_PRESETS.forEach(([a,b]) => {
+  const el = document.createElement('div');
+  el.className = 'preset';
+  el.innerHTML = `<span style="background:${a}"></span><span style="background:${b}"></span>`;
+  el.onclick = () => { FX.duo.a=a; FX.duo.b=b; document.getElementById('duo-a').value=a; document.getElementById('duo-b').value=b; };
+  duoPresetsEl.appendChild(el);
+});
+document.getElementById('duo-a').oninput = e => FX.duo.a = e.target.value;
+document.getElementById('duo-b').oninput = e => FX.duo.b = e.target.value;
+
+// ---- COLOR HELPERS ----
+function hexToRgb(hex){ const v=parseInt(hex.slice(1),16); return [(v>>16)&255,(v>>8)&255,v&255]; }
+
+// ---- RENDER LOOP ----
+let driftAngle = 0;
+function tick(ts){
+  rafId = requestAnimationFrame(tick);
+  if(!hasVideo || video.readyState < 2) return;
+  const t0 = performance.now();
+
+  // 1. draw current video frame
+  curCtx.drawImage(video, 0, 0, W, H);
+
+  // 2. feedback glitch — transform+levels old buffer, difference-blend with current
+  let baseSource = curCanvas;
+  if(FX.feedback.on){
+    const decay = FX.feedback.decay/100;
+    const driftAmt = (FX.feedback.drift/100) * 0.02;
+    driftAngle += (FX.feedback.drift/100) * 0.003;
+
+    tmpCtx.clearRect(0,0,W,H);
+    tmpCtx.save();
+    tmpCtx.filter = `brightness(${decay}) contrast(1.05) saturate(1.15)`;
+    tmpCtx.translate(W/2,H/2);
+    tmpCtx.rotate(driftAngle);
+    tmpCtx.scale(1+driftAmt, 1+driftAmt);
+    tmpCtx.translate(-W/2,-H/2);
+    tmpCtx.drawImage(fbCanvas, 0, 0, W, H);
+    tmpCtx.restore();
+
+    resCtx.clearRect(0,0,W,H);
+    resCtx.drawImage(tmpCanvas, 0, 0);
+    resCtx.globalCompositeOperation = 'difference';
+    resCtx.drawImage(curCanvas, 0, 0);
+    resCtx.globalCompositeOperation = 'source-over';
+
+    fbCtx.clearRect(0,0,W,H);
+    fbCtx.drawImage(resCanvas, 0, 0);
+
+    outCtx.filter = 'none';
+    outCtx.globalAlpha = 1;
+    outCtx.drawImage(curCanvas, 0, 0);
+    outCtx.globalAlpha = FX.feedback.intensity/100;
+    outCtx.drawImage(resCanvas, 0, 0);
+    outCtx.globalAlpha = 1;
+    baseSource = outCanvas;
+  } else {
+    outCtx.drawImage(curCanvas, 0, 0);
+    baseSource = outCanvas;
+  }
+
+  // 3. datamosh block glitch (canvas-op based, cheap)
+  if(FX.mosh.on){
+    const inten = FX.mosh.intensity/100;
+    const thr = FX.mosh.threshold/100;
+    const bands = Math.round(inten * 10);
+    for(let i=0;i<bands;i++){
+      if(Math.random() > inten*0.9+0.1) continue;
+      const bandH = 2 + Math.floor(Math.random()*Math.max(2,H*0.10));
+      const y = Math.floor(Math.random()*Math.max(1,H-bandH));
+      const shift = Math.round((Math.random()-0.5) * W * (0.15+thr*0.35));
+      scratchCtx.clearRect(0,0,W,bandH);
+      scratchCtx.drawImage(outCanvas, 0, y, W, bandH, 0, 0, W, bandH);
+      outCtx.drawImage(scratchCanvas, 0, 0, W, bandH, shift, y, W, bandH);
+      if(shift > 0) outCtx.drawImage(scratchCanvas, 0, 0, W, bandH, shift-W, y, W, bandH);
+      else if(shift < 0) outCtx.drawImage(scratchCanvas, 0, 0, W, bandH, shift+W, y, W, bandH);
+    }
+  }
+
+  // 4. VHS overlay bits that are canvas-op based (scanlines, wobble via row copy, done pre pixel-pass)
+  if(FX.vhs.on && FX.vhs.wobble > 0){
+    const wob = FX.vhs.wobble/100;
+    const rows = 6;
+    const rowH = Math.ceil(H/rows);
+    scratchCtx.clearRect(0,0,W,H);
+    scratchCtx.drawImage(outCanvas,0,0);
+    for(let r=0;r<rows;r++){
+      const y = r*rowH;
+      const h = Math.min(rowH, H-y);
+      if(h<=0) continue;
+      const dx = Math.round(Math.sin(ts*0.002 + r*1.7)*wob*10);
+      outCtx.clearRect(0,y,W,h);
+      outCtx.drawImage(scratchCanvas, 0, y, W, h, dx, y, W, h);
+    }
+  }
+
+  // 5. combined pixel-level pass: RGB shift, VHS noise/chroma-bleed/scanlines, duotone, posterize, grain
+  const needsPixelPass = FX.rgb.on || (FX.vhs.on && (FX.vhs.noise>0 || FX.vhs.scan>0)) || FX.duo.on || (FX.finish.on && (FX.finish.grain>0 || FX.finish.posterize>0));
+  if(needsPixelPass){
+    const imgData = outCtx.getImageData(0,0,W,H);
+    const out = imgData.data;
+    const src = new Uint8ClampedArray(out);
+
+    const rgbOn = FX.rgb.on;
+    let offR = 0, offB = 0;
+    if(rgbOn){
+      const base = FX.rgb.offset;
+      const jit = FX.rgb.jitter>0 ? Math.sin(ts*0.006)*FX.rgb.jitter/100*base : 0;
+      offR = Math.round(base + jit); offB = Math.round(-base - jit);
+    }
+    const vhsOn = FX.vhs.on;
+    const noiseAmt = vhsOn ? FX.vhs.noise/100 : 0;
+    const scanAmt = vhsOn ? FX.vhs.scan/100 : 0;
+    const duoOn = FX.duo.on;
+    const [da_r,da_g,da_b] = duoOn ? hexToRgb(FX.duo.a) : [0,0,0];
+    const [db_r,db_g,db_b] = duoOn ? hexToRgb(FX.duo.b) : [0,0,0];
+    const duoMix = FX.duo.mix/100;
+    const grainAmt = FX.finish.on ? FX.finish.grain/100 : 0;
+    const posterLevels = FX.finish.on ? FX.finish.posterize : 0;
+    const posterStep = posterLevels>1 ? 255/(posterLevels-1) : 0;
+
+    for(let y=0; y<H; y++){
+      const rowNoise = noiseAmt>0 && Math.random() < noiseAmt*0.06;
+      const rowOffset = rowNoise ? Math.round((Math.random()-0.5)*W*0.15) : 0;
+      const scanDark = scanAmt>0 && (y%2===0) ? (1-scanAmt*0.5) : 1;
+      for(let x=0; x<W; x++){
+        const idx = (y*W+x)*4;
+        let sx = x + rowOffset;
+        if(sx<0) sx += W; if(sx>=W) sx -= W;
+        const baseIdx = (y*W+sx)*4;
+
+        let r, g, b;
+        if(rgbOn){
+          let xr = sx+offR; if(xr<0)xr+=W; if(xr>=W)xr-=W;
+          let xb = sx+offB; if(xb<0)xb+=W; if(xb>=W)xb-=W;
+          r = src[(y*W+xr)*4];
+          g = src[baseIdx+1];
+          b = src[(y*W+xb)*4+2];
+        } else {
+          r = src[baseIdx]; g = src[baseIdx+1]; b = src[baseIdx+2];
+        }
+
+        if(duoOn){
+          const lum = (r*0.299+g*0.587+b*0.114)/255;
+          const m = lum*duoMix + (1-duoMix)*0.5;
+          r = da_r + (db_r-da_r)*lum; g = da_g + (db_g-da_g)*lum; b = da_b + (db_b-da_b)*lum;
+          if(duoMix < 1){
+            r = src[baseIdx]*(1-duoMix) + r*duoMix;
+            g = src[baseIdx+1]*(1-duoMix) + g*duoMix;
+            b = src[baseIdx+2]*(1-duoMix) + b*duoMix;
+          }
+        }
+
+        if(scanDark !== 1){ r*=scanDark; g*=scanDark; b*=scanDark; }
+
+        if(posterStep>0){
+          r = Math.round(r/posterStep)*posterStep;
+          g = Math.round(g/posterStep)*posterStep;
+          b = Math.round(b/posterStep)*posterStep;
+        }
+
+        if(grainAmt>0){
+          const n = (Math.random()-0.5)*255*grainAmt*0.5;
+          r+=n; g+=n; b+=n;
+        }
+
+        out[idx] = r; out[idx+1] = g; out[idx+2] = b;
+      }
+    }
+    outCtx.putImageData(imgData, 0, 0);
+  }
+
+  // 6. vignette (canvas-op, cheap)
+  if(FX.finish.on && FX.finish.vignette > 0){
+    const grad = outCtx.createRadialGradient(W/2,H/2, H*0.25, W/2,H/2, H*0.75);
+    grad.addColorStop(0,'rgba(0,0,0,0)');
+    grad.addColorStop(1,`rgba(0,0,0,${FX.finish.vignette/100})`);
+    outCtx.fillStyle = grad;
+    outCtx.fillRect(0,0,W,H);
+  }
+
+  const dt = performance.now() - t0;
+  frameTimeAvg = frameTimeAvg*0.9 + dt*0.1;
+  if(lastFrameTs){
+    const fps = 1000/(ts-lastFrameTs);
+    document.getElementById('st-fps').textContent = Math.round(fps);
+  }
+  lastFrameTs = ts;
+  document.getElementById('st-ms').textContent = frameTimeAvg.toFixed(1);
+}
+
+// ---- EXPORT ----
+let recording = false;
+document.getElementById('export-btn').onclick = () => {
+  if(!hasVideo || recording) return;
+  startExport();
+};
+function startExport(){
+  recording = true;
+  document.getElementById('export-btn').disabled = true;
+  document.getElementById('rec-dot').classList.add('show');
+  document.getElementById('st-state').textContent = 'RECORDING';
+
+  const canvasStream = outCanvas.captureStream(30);
+  let audioTrack = null;
+  try {
+    const vs = video.captureStream ? video.captureStream() : null;
+    if(vs){ const at = vs.getAudioTracks(); if(at.length) audioTrack = at[0]; }
+  } catch(e){}
+  const tracks = [...canvasStream.getVideoTracks()];
+  if(audioTrack) tracks.push(audioTrack);
+  const combined = new MediaStream(tracks);
+
+  const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+  const rec = new MediaRecorder(combined, {mimeType: mime, videoBitsPerSecond: 8_000_000});
+  const chunks = [];
+  rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+  rec.onstop = () => {
+    const blob = new Blob(chunks, {type:'video/webm'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'glitch-reel-export.webm'; a.click();
+    URL.revokeObjectURL(url);
+    recording = false;
+    document.getElementById('export-btn').disabled = false;
+    document.getElementById('rec-dot').classList.remove('show');
+    document.getElementById('st-state').textContent = video.paused ? 'PAUSED' : 'PLAYING';
+  };
+
+  video.currentTime = 0;
+  video.loop = false;
+  const wasPaused = video.paused;
+  video.play().catch(()=>{});
+  rec.start();
+
+  const onEnded = () => {
+    rec.stop();
+    video.removeEventListener('ended', onEnded);
+    video.loop = document.getElementById('loop-btn').style.color === 'var(--accent2)';
+  };
+  video.addEventListener('ended', onEnded);
+}
+
+// ---- INIT ----
+document.getElementById('drop-overlay').style.display = 'flex';
+</script>
+</body>
+</html>
