@@ -419,6 +419,84 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 /* ── HEADER RIGHT ── */
 .header-right { display: flex; align-items: center; gap: 24px; }
 
+/* ── SEARCH ── */
+.search {
+  margin-left: auto;          /* pushed to the right of the tag chips */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: transparent;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.search:focus-within {
+  border-color: var(--text-muted);
+  background: var(--tag-bg);
+}
+.search > svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+.search:focus-within > svg { color: var(--text-secondary); }
+
+.search input {
+  width: 96px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  transition: width 0.28s cubic-bezier(.22,.61,.36,1);
+}
+.search input::placeholder { color: var(--text-muted); text-transform: uppercase; }
+/* type=search draws its own clear button in Chrome — we have our own */
+.search input::-webkit-search-cancel-button,
+.search input::-webkit-search-decoration {
+  -webkit-appearance: none;
+          appearance: none;
+  display: none;
+}
+.search:focus-within input, .search.has-text input { width: 150px; }
+
+/* clear button, only once something is typed */
+.search-clear {
+  display: none;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text-muted);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.search.has-text .search-clear { display: block; }
+.search-clear:hover { background: var(--text-secondary); }
+.search-clear:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+/* nothing matched */
+.no-match {
+  grid-column: 1 / -1;
+  padding: 48px 0 56px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+.no-match b { color: var(--text-secondary); font-weight: 400; }
+
 /* ── INTERACTION ─────────────────────────────────────────
    Nothing animates its way onto the page — it is just there.
    The motion lives in what you touch: cards lean toward the
@@ -605,6 +683,8 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
   .grid-header { padding: 26px 24px 12px; }
   .grid-header::after { left: 24px; right: 24px; }
   #tag-filters { padding: 16px 24px 18px !important; }
+  .search { margin-left: 0; width: 100%; }
+  .search input, .search:focus-within input, .search.has-text input { width: 100%; flex: 1; }
   .grid { padding: 0 24px 60px; grid-template-columns: 1fr; }
   .sections { padding: 16px 24px 34px; grid-template-columns: 1fr; }
   .section-card { min-height: 0; padding: 22px 20px 18px; }
@@ -663,7 +743,17 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
   <span class="count-badge" id="count-badge">0</span>
 </div>
 
-<div id="tag-filters" style="padding:20px 64px 24px;display:flex;gap:6px;flex-wrap:wrap;"></div>
+<div id="tag-filters" style="padding:20px 64px 24px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+  <div class="search">
+    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M10.6 10.6L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <input id="search-input" type="search" placeholder="search" aria-label="Search projects"
+           autocomplete="off" spellcheck="false">
+    <button class="search-clear" id="search-clear" type="button" aria-label="Clear search">&times;</button>
+  </div>
+</div>
 
 <main class="grid" id="grid"></main>
 
@@ -967,27 +1057,80 @@ function buildCard(project, index) {
 }
 
 let activeTag = 'all';
+let query = '';
+
+/* everything a project can be found by */
+const haystack = p =>
+  [p.title, p.desc, p.file, ...(p.tags || [])].join(' ').toLowerCase();
+
+function applyFilters() {
+  let list = activeTag === 'all' ? PROJECTS : PROJECTS.filter(p => p.tags && p.tags.includes(activeTag));
+  if (query) {
+    // every word has to appear somewhere, so "qr fun" narrows rather than widens
+    const words = query.split(/\s+/).filter(Boolean);
+    list = list.filter(p => { const h = haystack(p); return words.every(w => h.includes(w)); });
+  }
+
+  grid.innerHTML = '';
+  if (!list.length) {
+    const empty = document.createElement('div');
+    empty.className = 'no-match';
+    empty.innerHTML = query
+      ? `NOTHING MATCHES <b>${query.replace(/[<>&]/g, '')}</b>`
+      : 'NOTHING HERE YET';
+    grid.appendChild(empty);
+  } else {
+    list.forEach((p, i) => grid.appendChild(buildCard(p, i)));
+  }
+
+  measureCards();
+  countBadge.textContent = list.length;
+  document.querySelectorAll('.tag-chip').forEach(c => c.classList.toggle('active', c.dataset.tag === activeTag));
+}
 
 function filterProjects(tag) {
   activeTag = tag;
-  const filtered = tag === 'all' ? PROJECTS : PROJECTS.filter(p => p.tags && p.tags.includes(tag));
-  grid.innerHTML = '';
-  filtered.forEach((p, i) => grid.appendChild(buildCard(p, i)));
-  measureCards();
-  countBadge.textContent = filtered.length;
-  document.querySelectorAll('.tag-chip').forEach(c => c.classList.toggle('active', c.dataset.tag === tag));
+  applyFilters();
+}
+
+function initSearch() {
+  const box = document.querySelector('.search');
+  const input = document.getElementById('search-input');
+  const clear = document.getElementById('search-clear');
+
+  const sync = () => {
+    query = input.value.trim().toLowerCase();
+    box.classList.toggle('has-text', input.value !== '');
+    applyFilters();
+  };
+
+  input.addEventListener('input', sync);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { input.value = ''; sync(); input.blur(); }
+  });
+  clear.addEventListener('click', () => { input.value = ''; sync(); input.focus(); });
+
+  /* "/" jumps to the search box, the way it does most other places */
+  addEventListener('keydown', e => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') {
+      e.preventDefault();
+      input.focus();
+    }
+  });
 }
 
 function buildTagFilters() {
   const tags = ['all', ...new Set(PROJECTS.flatMap(p => p.tags || []))];
   const container = document.getElementById('tag-filters');
+  const search = container.querySelector('.search');   // chips go before it
   tags.forEach(tag => {
     const btn = document.createElement('button');
     btn.className = 'tag-chip' + (tag === 'all' ? ' active' : '');
     btn.dataset.tag = tag;
     btn.textContent = tag === 'all' ? 'All' : tag;
     btn.addEventListener('click', () => filterProjects(tag));
-    container.appendChild(btn);
+    container.insertBefore(btn, search);
   });
 }
 
@@ -1157,6 +1300,7 @@ function init() {
     grid.appendChild(card);
   });
   buildTagFilters();
+  initSearch();
   initTilt();
 }
 
