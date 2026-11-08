@@ -7,7 +7,7 @@ import (
 
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
-		fmt.Println("HEdit v0.2 — github.com/iwohost/hedit")
+		fmt.Println("HEdit v0.3 — github.com/iwohost/hedit")
 		return
 	}
 
