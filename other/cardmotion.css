@@ -1,0 +1,61 @@
+/* ── CARD MOTION ─────────────────────────────────────────
+   Shared by the hub and the section pages.
+
+   Nothing animates its way onto the page — it is just there.
+   The motion lives in what you touch: cards lean toward the
+   pointer, the row swells by how near each card is to it, and
+   a press gives way under you.
+
+   Hover effects sit behind (hover: hover) so a phone never gets
+   a stuck hover state; :active covers touch. The transform is
+   assembled from custom properties so the lean, the swell, the
+   lift and the press compose instead of overwriting each other.
+   The pointer handler writes --rx/--ry/--sc; CSS owns --ty and
+   --press. Pair with cardmotion.js.
+   ──────────────────────────────────────────────────────── */
+
+.card, .section-card {
+  position: relative;
+  transform:
+    perspective(760px)
+    rotateX(var(--rx, 0deg))
+    rotateY(var(--ry, 0deg))
+    translateY(var(--ty, 0px))
+    scale(var(--sc, 1))
+    scale(var(--press, 1));
+  transform-style: preserve-3d;
+  transition: transform 0.3s cubic-bezier(.22,.61,.36,1),
+              background 0.35s ease,
+              border-color 0.35s ease,
+              box-shadow 0.25s ease;
+}
+
+/* a card away from the pointer eases its size over ~0.3s, so the swell
+   builds as you approach rather than snapping; the card under the
+   pointer tracks the lean almost instantly */
+.card.tilt, .section-card.tilt { transition-duration: 0.09s; }
+
+@media (hover: hover) {
+  .card:hover, .section-card:hover { --ty: -6px; }
+}
+
+/* a press that gives way — works on touch, where hover never fires.
+   --press is its own factor because --sc is written inline by the
+   pointer handler, and an inline custom property outranks a rule */
+.card:active, .section-card:active {
+  --ty: -2px;
+  --press: 0.985;
+  transition-duration: 0.09s;
+}
+
+.card:focus-visible, .section-card:focus-visible {
+  outline: 1px solid var(--accent, currentColor);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .section-card {
+    transform: none !important;
+    transition: background 0.35s ease, border-color 0.35s ease !important;
+  }
+}
