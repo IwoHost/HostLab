@@ -449,7 +449,6 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 @media (hover: hover) {
   .card:hover, .section-card:hover { --ty: -6px; }
   .card:hover { border-color: var(--text-muted); }
-  .card:hover .card-thumb img { transform: scale(1.045); }
 }
 
 /* a press that gives way — works on touch, where hover never fires */
@@ -468,8 +467,6 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
   outline-offset: 2px;
 }
 
-/* the thumbnail only ever moves under the cursor, never on its own */
-.card-thumb img { transition: transform 0.5s cubic-bezier(.22,.61,.36,1); }
 
 /* a hairline under each grid label — static, just structure */
 .grid-header { position: relative; }
@@ -482,7 +479,7 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card, .section-card, .card-thumb img, .tag-chip, .card-arrow, .section-arrow {
+  .card, .section-card, .tag-chip, .card-arrow, .section-arrow {
     transition: none !important;
   }
   .card, .section-card { transform: none !important; }
