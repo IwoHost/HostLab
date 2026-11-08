@@ -341,6 +341,22 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		e.clearMessage()
 
 	// Ctrl+G → go-to-line prompt
+	// Ctrl+/ (and Alt+/ where the terminal swallows it) → toggle comments
+	case key == tcell.KeyCtrlUnderscore, isAlt && key == tcell.KeyRune && ch == '/':
+		e.pushUndo()
+		e.toggleComment()
+
+	// Ctrl+Backspace / Ctrl+W → rub out the word behind the cursor
+	case (key == tcell.KeyBackspace || key == tcell.KeyBackspace2) && mod&tcell.ModCtrl != 0,
+		key == tcell.KeyCtrlW:
+		e.pushUndo()
+		e.deleteWordLeft()
+
+	// Ctrl+Delete → rub out the word ahead of it
+	case key == tcell.KeyDelete && mod&tcell.ModCtrl != 0:
+		e.pushUndo()
+		e.deleteWordRight()
+
 	case key == tcell.KeyCtrlG:
 		e.mode = ModeGotoLine
 		e.gotoInput = ""
@@ -378,7 +394,7 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		if mod&tcell.ModCtrl != 0 {
 			e.moveCursor(0, 0, mod&tcell.ModShift != 0)
 		} else {
-			e.moveToLineStart(mod&tcell.ModShift != 0)
+			e.smartHome(mod&tcell.ModShift != 0)
 		}
 	case key == tcell.KeyEnd:
 		if mod&tcell.ModCtrl != 0 {
@@ -418,6 +434,12 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		e.pushUndo()
 		if e.selActive {
 			e.deleteSelection()
+		} else if e.inEmptyPair() {
+			// sitting between () or "" — take both
+			e.buf.Delete(e.cursor.Line, e.cursor.Col)
+			nl, nc := e.buf.Backspace(e.cursor.Line, e.cursor.Col)
+			e.cursor = Pos{nl, nc}
+			e.clearMessage()
 		} else if n := e.backspaceIndentWidth(); n > 1 {
 			// sitting in the indent: come back a whole level, not one space
 			for ; n > 0; n-- {
@@ -521,11 +543,27 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 			e.redoStack = e.redoStack[:0]
 		}
 		e.lastWasInsert = true
+
+		// typing a bracket or quote with text selected wraps it
+		if e.selActive && isPairOpen(ch) {
+			e.wrapSelection(ch)
+			e.clearMessage()
+			break
+		}
 		if e.selActive {
 			e.deleteSelection()
 		}
+		// typing the closer that is already sitting there steps over it
+		if isPairClose(ch) && e.runeAtCursor() == ch {
+			e.cursor.Col++
+			e.clearMessage()
+			break
+		}
 		nc := e.buf.InsertRune(e.cursor.Line, e.cursor.Col, ch)
 		e.cursor.Col = nc
+		if closer, ok := autoCloseFor(ch, e.runeAtCursor()); ok {
+			e.buf.InsertRune(e.cursor.Line, e.cursor.Col, closer)
+		}
 		e.clearMessage()
 	}
 
@@ -1067,6 +1105,187 @@ func (e *Editor) wordRight(ext bool) {
 
 func isWordRune(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
+}
+
+// ── CODING AIDS ──────────────────────────────────────────────────────────────
+
+// pairs that auto-close. Quotes are in here too, but they only fire where a
+// quote plausibly opens a string rather than ending one.
+var autoPairs = map[rune]rune{'(': ')', '[': ']', '{': '}', '"': '"', '\'': '\'', '`': '`'}
+
+func isPairOpen(ch rune) bool { _, ok := autoPairs[ch]; return ok }
+
+func isPairClose(ch rune) bool {
+	switch ch {
+	case ')', ']', '}', '"', '\'', '`':
+		return true
+	}
+	return false
+}
+
+// autoCloseFor decides whether typing ch should also drop in its partner,
+// given what the cursor is sitting in front of. Closing into the middle of a
+// word is exactly the behaviour people turn this feature off over, so a pair
+// is only completed at the end of a line or before punctuation.
+func autoCloseFor(ch, next rune) (rune, bool) {
+	closer, ok := autoPairs[ch]
+	if !ok {
+		return 0, false
+	}
+	switch next {
+	case 0, ' ', '\t', ')', ']', '}', ',', ';', ':':
+		return closer, true
+	}
+	return 0, false
+}
+
+// runeAtCursor is the rune the cursor sits in front of, or 0 at end of line.
+func (e *Editor) runeAtCursor() rune {
+	rs := runesOf(e.buf.Line(e.cursor.Line))
+	if e.cursor.Col < 0 || e.cursor.Col >= len(rs) {
+		return 0
+	}
+	return rs[e.cursor.Col]
+}
+
+// inEmptyPair reports whether the cursor sits between a pair with nothing in
+// it, so backspace can take the whole thing.
+func (e *Editor) inEmptyPair() bool {
+	rs := runesOf(e.buf.Line(e.cursor.Line))
+	if e.cursor.Col <= 0 || e.cursor.Col >= len(rs) {
+		return false
+	}
+	closer, ok := autoPairs[rs[e.cursor.Col-1]]
+	return ok && closer == rs[e.cursor.Col]
+}
+
+// wrapSelection puts the typed bracket around the selection instead of
+// replacing it, which is the one thing everybody tries first.
+func (e *Editor) wrapSelection(open rune) {
+	closer := autoPairs[open]
+	from, to := e.normalizedSel()
+	if from.Line != to.Line {
+		return // single-line only: wrapping a block is rarely what is meant
+	}
+	e.buf.InsertRune(to.Line, to.Col, closer)
+	e.buf.InsertRune(from.Line, from.Col, open)
+	e.selAnchor = Pos{from.Line, from.Col + 1}
+	e.cursor = Pos{to.Line, to.Col + 1}
+}
+
+// smartHome goes to the first non-blank character, and only to column 0 if it
+// is already there — so Home lands where the code starts.
+func (e *Editor) smartHome(ext bool) {
+	line := e.buf.Line(e.cursor.Line)
+	indent := len(runesOf(leadingWhitespace(line)))
+	if e.cursor.Col == indent {
+		e.moveCursor(e.cursor.Line, 0, ext)
+		return
+	}
+	e.moveCursor(e.cursor.Line, indent, ext)
+}
+
+// deleteWordLeft removes from the cursor back to the start of the word.
+func (e *Editor) deleteWordLeft() {
+	start := e.cursor
+	e.wordLeft(false)
+	target := e.cursor
+	if target == start {
+		return
+	}
+	e.cursor = e.buf.DeleteRange(target, start)
+	e.selActive = false
+	e.lastWasInsert = false
+	e.clearMessage()
+}
+
+// deleteWordRight removes from the cursor to the end of the next word.
+func (e *Editor) deleteWordRight() {
+	start := e.cursor
+	e.wordRight(false)
+	target := e.cursor
+	if target == start {
+		return
+	}
+	e.cursor = e.buf.DeleteRange(start, target)
+	e.selActive = false
+	e.lastWasInsert = false
+	e.clearMessage()
+}
+
+// toggleComment comments the current line, or every line the selection
+// touches. If all of them are already commented it uncomments instead, and the
+// marker goes in at the shallowest indent so the block stays lined up.
+func (e *Editor) toggleComment() {
+	if e.lang == nil || e.lang.lineComment == "" {
+		e.showError("No comment syntax for this file type")
+		return
+	}
+	marker := e.lang.lineComment
+
+	from, to := e.normalizedSel()
+	if !e.selActive {
+		from, to = e.cursor, e.cursor
+	}
+
+	// are they all commented already, and where is the shallowest indent?
+	allCommented, any := true, false
+	col := -1
+	for ln := from.Line; ln <= to.Line && ln < e.buf.LineCount(); ln++ {
+		line := e.buf.Line(ln)
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		any = true
+		if !strings.HasPrefix(trimmed, marker) {
+			allCommented = false
+		}
+		if w := len(leadingWhitespace(line)); col < 0 || w < col {
+			col = w
+		}
+	}
+	if !any {
+		return
+	}
+
+	for ln := from.Line; ln <= to.Line && ln < e.buf.LineCount(); ln++ {
+		line := e.buf.Line(ln)
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if allCommented {
+			e.buf.Lines[ln] = uncommentLine(line, marker)
+		} else {
+			e.buf.Lines[ln] = line[:col] + marker + " " + line[col:]
+		}
+	}
+	e.buf.Modified = true
+	e.lastWasInsert = false
+
+	// keep the cursor over the same text
+	d := len(marker) + 1
+	if allCommented {
+		d = -d
+	}
+	e.shiftSelection(from, to, d, d)
+	if allCommented {
+		e.showMessage("Uncommented")
+	} else {
+		e.showMessage("Commented")
+	}
+}
+
+// uncommentLine strips the first comment marker, and the single space after it
+// that toggleComment puts there.
+func uncommentLine(line, marker string) string {
+	idx := strings.Index(line, marker)
+	if idx < 0 {
+		return line
+	}
+	rest := line[idx+len(marker):]
+	rest = strings.TrimPrefix(rest, " ")
+	return line[:idx] + rest
 }
 
 // indentWidth is how far one level of indentation reaches when a file is
@@ -2040,7 +2259,7 @@ func (e *Editor) render() {
 			{"^S", "Save"}, {"^Z", "Undo"}, {"^F", "Find"}, {"^R", "Replace"}, {"^G", "GoLine"}, {"^U", "Settings"},
 		}, t)
 		e.drawHints(h2Row, []hintItem{
-			{"Alt+↑↓", "Move Line"}, {"Alt+D", "Dup"}, {"Alt+BS", "Del Line"}, {"^Tab", "Next Tab"}, {"^Q", "Quit"},
+			{"^/", "Comment"}, {"Tab", "Indent"}, {"Alt+↑↓", "Move Line"}, {"Alt+D", "Dup"}, {"^Tab", "Next Tab"}, {"^Q", "Quit"},
 		}, t)
 	}
 

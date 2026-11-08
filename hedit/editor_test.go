@@ -296,3 +296,225 @@ func TestBackspaceOffATabStopGoesToTheStop(t *testing.T) {
 		t.Errorf("got %q", got)
 	}
 }
+
+// ── comment toggle ───────────────────────────────────────────────────────────
+
+func goEditor(lines ...string) *Editor {
+	e := newTestEditor(lines...)
+	e.lang = detectLang("x.go")
+	return e
+}
+
+func TestCommentTogglesCurrentLine(t *testing.T) {
+	e := goEditor("x := 1")
+	e.cursor = Pos{0, 6}
+	e.toggleComment()
+	if got := e.buf.Line(0); got != "// x := 1" {
+		t.Fatalf("got %q", got)
+	}
+	e.toggleComment()
+	if got := e.buf.Line(0); got != "x := 1" {
+		t.Errorf("uncomment gave %q", got)
+	}
+}
+
+func TestCommentKeepsTheBlockAligned(t *testing.T) {
+	e := goEditor("    if ok {", "        run()", "    }")
+	e.selActive = true
+	e.selAnchor = Pos{0, 0}
+	e.cursor = Pos{2, 5}
+	e.toggleComment()
+
+	want := []string{"    // if ok {", "    //     run()", "    // }"}
+	for i, w := range want {
+		if got := e.buf.Line(i); got != w {
+			t.Errorf("line %d = %q, want %q", i, got, w)
+		}
+	}
+}
+
+func TestCommentRoundTripsABlock(t *testing.T) {
+	before := []string{"    a()", "    b()"}
+	e := goEditor(before...)
+	e.selActive = true
+	e.selAnchor = Pos{0, 0}
+	e.cursor = Pos{1, 7}
+	e.toggleComment()
+	e.toggleComment()
+	for i, w := range before {
+		if got := e.buf.Line(i); got != w {
+			t.Errorf("line %d = %q, want %q", i, got, w)
+		}
+	}
+}
+
+func TestCommentUncommentsOnlyWhenAllAreCommented(t *testing.T) {
+	e := goEditor("// a()", "b()")
+	e.selActive = true
+	e.selAnchor = Pos{0, 0}
+	e.cursor = Pos{1, 3}
+	e.toggleComment()
+	if got := e.buf.Line(0); got != "// // a()" {
+		t.Errorf("mixed block should comment everything, line 0 = %q", got)
+	}
+}
+
+func TestCommentSkipsBlankLines(t *testing.T) {
+	e := goEditor("a()", "", "b()")
+	e.selActive = true
+	e.selAnchor = Pos{0, 0}
+	e.cursor = Pos{2, 3}
+	e.toggleComment()
+	if got := e.buf.Line(1); got != "" {
+		t.Errorf("blank line became %q", got)
+	}
+}
+
+func TestCommentNeedsALanguage(t *testing.T) {
+	e := newTestEditor("plain text")
+	e.toggleComment()
+	if e.buf.Line(0) != "plain text" {
+		t.Error("a file with no comment syntax should be left alone")
+	}
+	if !e.msgErr {
+		t.Error("expected an error message")
+	}
+}
+
+// ── brackets and quotes ──────────────────────────────────────────────────────
+
+func TestTypingBracketClosesIt(t *testing.T) {
+	e := newTestEditor("")
+	e.handleKey(ch('('))
+	if got := e.buf.Line(0); got != "()" {
+		t.Fatalf("got %q", got)
+	}
+	if e.cursor.Col != 1 {
+		t.Errorf("cursor at %d, want 1 (inside the pair)", e.cursor.Col)
+	}
+}
+
+func TestTypingCloserStepsOverIt(t *testing.T) {
+	e := newTestEditor("")
+	e.handleKey(ch('('))
+	e.handleKey(ch('x'))
+	e.handleKey(ch(')'))
+	if got := e.buf.Line(0); got != "(x)" {
+		t.Errorf("got %q, want no doubled bracket", got)
+	}
+	if e.cursor.Col != 3 {
+		t.Errorf("cursor at %d, want 3", e.cursor.Col)
+	}
+}
+
+func TestNoAutoCloseInsideAWord(t *testing.T) {
+	e := newTestEditor("word")
+	e.cursor = Pos{0, 2}
+	e.handleKey(ch('('))
+	if got := e.buf.Line(0); got != "wo(rd" {
+		t.Errorf("got %q, want no closer added mid-word", got)
+	}
+}
+
+func TestAutoCloseBeforePunctuation(t *testing.T) {
+	e := newTestEditor(",")
+	e.cursor = Pos{0, 0}
+	e.handleKey(ch('['))
+	if got := e.buf.Line(0); got != "[]," {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestTypingBracketWrapsSelection(t *testing.T) {
+	e := newTestEditor("keep this")
+	e.selActive = true
+	e.selAnchor = Pos{0, 5}
+	e.cursor = Pos{0, 9}
+	e.handleKey(ch('('))
+	if got := e.buf.Line(0); got != "keep (this)" {
+		t.Errorf("got %q", got)
+	}
+	if !e.selActive {
+		t.Error("the wrapped text should stay selected")
+	}
+}
+
+func TestQuotesWrapSelectionToo(t *testing.T) {
+	e := newTestEditor("abc")
+	e.selActive = true
+	e.selAnchor = Pos{0, 0}
+	e.cursor = Pos{0, 3}
+	e.handleKey(ch('"'))
+	if got := e.buf.Line(0); got != `"abc"` {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestBackspaceClearsAnEmptyPair(t *testing.T) {
+	e := newTestEditor("")
+	e.handleKey(ch('('))
+	e.handleKey(key(tcell.KeyBackspace2))
+	if got := e.buf.Line(0); got != "" {
+		t.Errorf("got %q, want both halves gone", got)
+	}
+}
+
+func TestBackspaceLeavesANonEmptyPairAlone(t *testing.T) {
+	e := newTestEditor("(x)")
+	e.cursor = Pos{0, 2}
+	e.handleKey(key(tcell.KeyBackspace2))
+	if got := e.buf.Line(0); got != "()" {
+		t.Errorf("got %q", got)
+	}
+}
+
+// Pasting must not go through any of the pairing logic.
+func TestPasteIsNotAutoClosed(t *testing.T) {
+	e := newTestEditor("")
+	e.pasteString("f(a, b)")
+	if got := e.buf.Line(0); got != "f(a, b)" {
+		t.Errorf("got %q", got)
+	}
+}
+
+// ── movement and word deletion ───────────────────────────────────────────────
+
+func TestSmartHomeTogglesBetweenTextAndColumnZero(t *testing.T) {
+	e := newTestEditor("    value")
+	e.cursor = Pos{0, 9}
+	e.handleKey(key(tcell.KeyHome))
+	if e.cursor.Col != 4 {
+		t.Fatalf("first Home went to %d, want 4 (start of the text)", e.cursor.Col)
+	}
+	e.handleKey(key(tcell.KeyHome))
+	if e.cursor.Col != 0 {
+		t.Errorf("second Home went to %d, want 0", e.cursor.Col)
+	}
+}
+
+func TestDeleteWordLeft(t *testing.T) {
+	e := newTestEditor("one two three")
+	e.cursor = Pos{0, 13}
+	e.deleteWordLeft()
+	if got := e.buf.Line(0); got != "one two " {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestDeleteWordRight(t *testing.T) {
+	e := newTestEditor("one two three")
+	e.cursor = Pos{0, 0}
+	e.deleteWordRight()
+	if got := e.buf.Line(0); got != "two three" {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestDeleteWordLeftAtStartOfLineJoins(t *testing.T) {
+	e := newTestEditor("a", "b")
+	e.cursor = Pos{1, 0}
+	e.deleteWordLeft()
+	if e.buf.LineCount() != 1 || e.buf.Line(0) != "ab" {
+		t.Errorf("got %q", e.text())
+	}
+}
