@@ -988,11 +988,13 @@ function buildSectionCard(section, index) {
 }
 
 /* ── pointer tilt + proximity swell ────────────────────────
-   Two things happen as the pointer moves. A card swells by how
-   near its centre is to the cursor — full size at zero distance,
-   falling off linearly to nothing at REACH, which is set to about
-   one card, so only the ring actually touching the pointer's card
-   reacts. The one under the pointer additionally leans toward it.
+   Two things happen as the pointer moves. Cards in the row the
+   pointer is level with swell by their horizontal distance from it,
+   like a dock — the rows above and below stay put, and the curve is
+   bent so the far end of the reach adds almost nothing. The card
+   under the pointer additionally leans toward it. Each grid is
+   scoped separately, so the sections row above does not stir when
+   the pointer is down among the projects.
 
    Card centres are cached in document coordinates, so
    scrolling needs no re-measure; the cache is rebuilt on
@@ -1001,22 +1003,43 @@ function buildSectionCard(section, index) {
    ────────────────────────────────────────────────────────── */
 const TILT  = 7;      // degrees at the edge of the card under the pointer
 const SWELL = 0.06;   // scale added when the cursor is right on a card's centre
-const REACH = 700;    // px — about one card out: only the touching ring reacts
+const REACH = 720;    // px — horizontal reach along the row, about one card
+const FALLOFF = 1.2;  // >1 bends the curve down, so the far end of the reach
+                      // contributes almost nothing and only genuinely near
+                      // cards move
 const TILT_SEL = '.card, .section-card';
 
-let swellCards = [];
+/* each grid is its own group: the sections row and the project grid never
+   affect one another, so reaching for a project leaves the row above alone */
+const SWELL_GROUPS = ['#sections-grid', '#grid'];
+let swellGroups = [];
 
 /* re-measure: call after any render that moves cards */
 function measureCards() {
-  swellCards = [...document.querySelectorAll(TILT_SEL)].map(el => {
-    const r = el.getBoundingClientRect();
+  swellGroups = SWELL_GROUPS.map(sel => {
+    const root = document.querySelector(sel);
+    if (!root) return null;
+    const b = root.getBoundingClientRect();
     return {
-      el,
-      cx: r.left + scrollX + r.width / 2,
-      cy: r.top + scrollY + r.height / 2,
+      root,
+      top:    b.top + scrollY,
+      bottom: b.bottom + scrollY,
+      left:   b.left + scrollX,
+      right:  b.right + scrollX,
+      cards: [...root.querySelectorAll(TILT_SEL)].map(el => {
+        const r = el.getBoundingClientRect();
+        return {
+          el,
+          cx: r.left + scrollX + r.width / 2,
+          cy: r.top + scrollY + r.height / 2,
+          hh: r.height / 2,
+        };
+      }),
     };
-  });
+  }).filter(Boolean);
 }
+
+const relaxGroup = g => g.cards.forEach(c => c.el.style.removeProperty('--sc'));
 
 function initTilt() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -1031,9 +1054,12 @@ function initTilt() {
     el.style.removeProperty('--ry');
   };
 
+  let lit = null;   // the group the pointer is currently inside
+
   const relax = () => {
     clearTilt(active); active = null;
-    swellCards.forEach(c => c.el.style.removeProperty('--sc'));
+    swellGroups.forEach(relaxGroup);
+    lit = null;
   };
 
   const paint = () => {
@@ -1041,14 +1067,22 @@ function initTilt() {
     if (!ev) return;
     const mx = ev.clientX + scrollX, my = ev.clientY + scrollY;
 
-    /* proximity: every card, not just the one under the pointer */
-    for (const c of swellCards) {
-      const d = Math.hypot(mx - c.cx, my - c.cy);
-      if (d >= REACH) { c.el.style.removeProperty('--sc'); continue; }
-      // straight linear falloff: the size IS the distance, and it reaches
-      // zero smoothly at REACH so there is no pop at the boundary
-      const f = 1 - d / REACH;
-      c.el.style.setProperty('--sc', (1 + SWELL * f).toFixed(4));
+    /* only the grid the pointer is actually inside reacts */
+    const group = swellGroups.find(g => mx >= g.left && mx <= g.right && my >= g.top && my <= g.bottom);
+    if (group !== lit) { if (lit) relaxGroup(lit); lit = group || null; }
+    if (!group) return;
+
+    for (const c of group.cards) {
+      /* only the row the pointer is level with: the swell runs along the
+         row like a dock, it does not spread into the rows above or below */
+      const inRow = Math.abs(my - c.cy) <= c.hh + 4;
+      const d = inRow ? Math.abs(mx - c.cx) : Infinity;   // horizontal distance only
+      const f = d >= REACH ? 0 : Math.pow(1 - d / REACH, FALLOFF);
+      const add = SWELL * f;
+      // below a twentieth of a percent nothing is visible, so leave the card
+      // entirely alone rather than animating it imperceptibly
+      if (add < 0.0005) c.el.style.removeProperty('--sc');
+      else c.el.style.setProperty('--sc', (1 + add).toFixed(4));
     }
 
     /* the scroll pass only resizes: the element the pointer was last
