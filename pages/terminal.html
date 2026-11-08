@@ -707,6 +707,19 @@ const APPS = [
     tags:     ['editor', 'text', 'go'],
     year:     '2025'
   },
+  {
+    title:    'runweb',
+    version:  '1.0',
+    desc:     'open the page you are building on your phone. point it at an html file or a folder and it serves that folder on your LAN, prints the address for every interface it finds, and bumps the port if 8000 is taken. no-cache headers so a refresh always shows your last edit. -q prints a QR code, -s wraps it in https with a self-signed cert. needs python 3 — it is a script, not a binary.',
+    status:   'stable',
+    platforms: ['windows', 'macos', 'linux'],
+    installers: [
+      { os: ['linux','macos'], label: 'LINUX · MACOS', cmd: 'curl -fsSL https://iwohost.github.io/HostLab/runweb/install.sh | bash' },
+      { os: ['windows'],       label: 'WINDOWS  (powershell)', cmd: 'irm https://iwohost.github.io/HostLab/runweb/install.ps1 | iex' },
+    ],
+    tags:     ['server', 'web', 'python'],
+    year:     '2026'
+  },
   /* ────────────────────────────────────────────
      ADD MORE APPS BELOW
   ──────────────────────────────────────────── */
