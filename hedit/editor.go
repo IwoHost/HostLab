@@ -16,7 +16,7 @@ type Mode int
 
 const (
 	ModeNormal Mode = iota
-	ModeFind         // unified find / find+replace panel
+	ModeFind        // unified find / find+replace panel
 	ModeSettings
 	ModeConfirmQuit  // [S]Save  [Q]Quit  [N]Cancel
 	ModeSaveAs       // typing filename
@@ -53,6 +53,13 @@ type Editor struct {
 	cursor    Pos
 	selActive bool
 	selAnchor Pos
+
+	// a bracketed paste in progress: the terminal brackets the pasted text
+	// with EventPaste start/end, and the content arrives as ordinary key
+	// events between them. They are collected here and inserted in one go,
+	// so the text lands verbatim instead of being run through auto-indent.
+	pasting  bool
+	pasteBuf []rune
 
 	scrollLine   int
 	scrollSubRow int // first visible visual sub-row within scrollLine (soft-wrap only)
@@ -111,6 +118,9 @@ func NewEditor(filenames []string) (*Editor, error) {
 		return nil, err
 	}
 	screen.EnableMouse(tcell.MouseButtonEvents | tcell.MouseMotionEvents)
+	// Without this the terminal delivers a paste as if it were typed, so every
+	// newline triggers auto-indent and the block walks across the screen.
+	screen.EnablePaste()
 	screen.SetStyle(tcell.StyleDefault)
 
 	themes := DefaultThemes()
@@ -191,7 +201,22 @@ func (e *Editor) Run() error {
 			e.ensureVisible()
 			e.render()
 
+		case *tcell.EventPaste:
+			if ev.Start() {
+				e.beginPaste()
+			} else {
+				e.endPaste()
+				e.ensureVisible()
+				e.render()
+			}
+
 		case *tcell.EventKey:
+			// mid-paste the keys are content, not commands — collect them and
+			// skip the redraw, so a big paste is one insert and one render
+			if e.pasting {
+				e.collectPaste(ev)
+				continue
+			}
 			quit := e.handleKey(ev)
 			if quit {
 				return nil
@@ -393,6 +418,13 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		e.pushUndo()
 		if e.selActive {
 			e.deleteSelection()
+		} else if n := e.backspaceIndentWidth(); n > 1 {
+			// sitting in the indent: come back a whole level, not one space
+			for ; n > 0; n-- {
+				nl, nc := e.buf.Backspace(e.cursor.Line, e.cursor.Col)
+				e.cursor = Pos{nl, nc}
+			}
+			e.clearMessage()
 		} else {
 			nl, nc := e.buf.Backspace(e.cursor.Line, e.cursor.Col)
 			e.cursor = Pos{nl, nc}
@@ -410,15 +442,39 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 
 	case key == tcell.KeyEnter:
 		e.pushUndo()
-		indent := leadingWhitespace(e.buf.Line(e.cursor.Line))
 		if e.selActive {
 			e.deleteSelection()
 		}
+		cur := e.buf.Line(e.cursor.Line)
+		rs := []rune(cur)
+		col := e.cursor.Col
+		if col > len(rs) {
+			col = len(rs)
+		}
+		indent := leadingWhitespace(cur)
+		unit := indentUnitFor(cur)
+		before := strings.TrimRight(string(rs[:col]), " \t")
+		after := strings.TrimLeft(string(rs[col:]), " \t")
+
+		// a line that opens a block gets one level more
+		extra := ""
+		if opensBlock(before) {
+			extra = unit
+		}
+
 		nl, nc := e.buf.NewLine(e.cursor.Line, e.cursor.Col)
 		e.cursor = Pos{nl, nc}
-		if indent != "" {
-			_, nc2 := e.buf.InsertText(e.cursor.Line, 0, indent)
+		if ind := indent + extra; ind != "" {
+			_, nc2 := e.buf.InsertText(e.cursor.Line, 0, ind)
 			e.cursor = Pos{e.cursor.Line, nc2}
+		}
+
+		// pressing Enter between a brace and its partner puts the closing one
+		// on its own line, back at the opener's indent, cursor in the middle
+		if extra != "" && closesBlock(after) {
+			home := e.cursor
+			e.buf.InsertText(e.cursor.Line, e.cursor.Col, "\n"+indent)
+			e.cursor = home
 		}
 		e.clearMessage()
 
@@ -426,14 +482,31 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 	case key == tcell.KeyTab && mod&tcell.ModCtrl != 0:
 		e.switchTab()
 
+	// Shift+Tab → pull the line, or every selected line, back a level
+	case key == tcell.KeyBacktab:
+		e.pushUndo()
+		e.dedentLines()
+		e.clearMessage()
+
 	case key == tcell.KeyTab:
+		// a selection spanning lines is a block to indent, not text to replace
+		if from, to := e.normalizedSel(); e.selActive && from.Line != to.Line {
+			e.pushUndo()
+			e.indentLines()
+			e.clearMessage()
+			break
+		}
 		e.pushUndo()
 		if e.selActive {
 			e.deleteSelection()
 		}
-		for i := 0; i < 4; i++ {
-			nc := e.buf.InsertRune(e.cursor.Line, e.cursor.Col, ' ')
-			e.cursor.Col = nc
+		if strings.HasPrefix(e.buf.Line(e.cursor.Line), "\t") {
+			e.cursor.Col = e.buf.InsertRune(e.cursor.Line, e.cursor.Col, '\t')
+		} else {
+			// land on the next tab stop rather than always adding four
+			for i := indentWidth - e.cursor.Col%indentWidth; i > 0; i-- {
+				e.cursor.Col = e.buf.InsertRune(e.cursor.Line, e.cursor.Col, ' ')
+			}
 		}
 		e.clearMessage()
 
@@ -876,7 +949,7 @@ func (e *Editor) moveUp(ext bool) {
 			// jump to the last visual row of the previous logical line
 			prevLine := e.cursor.Line - 1
 			prevLen := len(runesOf(e.buf.Line(prevLine)))
-			lastSub := prevLen/cw // index of last sub-row (prevLen/cw + 1 - 1)
+			lastSub := prevLen / cw // index of last sub-row (prevLen/cw + 1 - 1)
 			newCol := lastSub*cw + visCol
 			if newCol > prevLen {
 				newCol = prevLen
@@ -994,6 +1067,152 @@ func (e *Editor) wordRight(ext bool) {
 
 func isWordRune(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
+}
+
+// indentWidth is how far one level of indentation reaches when a file is
+// indented with spaces.
+const indentWidth = 4
+
+// indentUnitFor returns the indent a line should grow by: a tab if the line is
+// already tabbed, spaces otherwise, so hedit follows the file it is editing.
+func indentUnitFor(line string) string {
+	if strings.HasPrefix(line, "\t") {
+		return "\t"
+	}
+	return strings.Repeat(" ", indentWidth)
+}
+
+// opensBlock reports whether a line, trimmed of trailing space, ends in
+// something that should indent what follows it.
+func opensBlock(s string) bool {
+	if s == "" {
+		return false
+	}
+	switch s[len(s)-1] {
+	case '{', '[', '(', ':':
+		return true
+	}
+	return false
+}
+
+// closesBlock reports whether what follows the cursor starts with a bracket
+// that closes the one just opened.
+func closesBlock(s string) bool {
+	if s == "" {
+		return false
+	}
+	switch s[0] {
+	case '}', ']', ')':
+		return true
+	}
+	return false
+}
+
+// backspaceIndentWidth returns how many characters backspace should remove to
+// step back one indent level, or 0 when the cursor is not sitting in a run of
+// leading spaces.
+func (e *Editor) backspaceIndentWidth() int {
+	if e.cursor.Col == 0 {
+		return 0
+	}
+	rs := []rune(e.buf.Line(e.cursor.Line))
+	if e.cursor.Col > len(rs) {
+		return 0
+	}
+	for _, r := range rs[:e.cursor.Col] {
+		if r != ' ' {
+			return 0 // real text to the left, or a tab, which deletes whole
+		}
+	}
+	n := e.cursor.Col % indentWidth
+	if n == 0 {
+		n = indentWidth
+	}
+	return n
+}
+
+// indentLines pushes every line touched by the selection one level right.
+func (e *Editor) indentLines() {
+	from, to := e.normalizedSel()
+	unit := indentUnitFor(e.buf.Line(from.Line))
+	w := len([]rune(unit))
+	moved := 0
+	for ln := from.Line; ln <= to.Line && ln < e.buf.LineCount(); ln++ {
+		if strings.TrimSpace(e.buf.Line(ln)) == "" {
+			continue // leave blank lines blank rather than filling them with space
+		}
+		e.buf.Lines[ln] = unit + e.buf.Lines[ln]
+		moved++
+	}
+	if moved == 0 {
+		return
+	}
+	e.buf.Modified = true
+	e.shiftSelection(from, to, w, w)
+}
+
+// dedentLines pulls every line touched by the selection one level left. With
+// no selection it works on the current line.
+func (e *Editor) dedentLines() {
+	from, to := e.normalizedSel()
+	if !e.selActive {
+		from, to = e.cursor, e.cursor
+	}
+	firstRemoved, lastRemoved, any := 0, 0, false
+	for ln := from.Line; ln <= to.Line && ln < e.buf.LineCount(); ln++ {
+		line := e.buf.Lines[ln]
+		cut := 0
+		switch {
+		case strings.HasPrefix(line, "\t"):
+			cut = 1
+		default:
+			for cut < indentWidth && cut < len(line) && line[cut] == ' ' {
+				cut++
+			}
+		}
+		if cut == 0 {
+			continue
+		}
+		e.buf.Lines[ln] = line[cut:]
+		if ln == from.Line {
+			firstRemoved = cut
+		}
+		if ln == to.Line {
+			lastRemoved = cut
+		}
+		any = true
+	}
+	if !any {
+		return
+	}
+	e.buf.Modified = true
+	e.shiftSelection(from, to, -firstRemoved, -lastRemoved)
+}
+
+// shiftSelection keeps the selection and cursor over the same text after the
+// lines under them have grown or shrunk at the left edge.
+func (e *Editor) shiftSelection(from, to Pos, dFrom, dTo int) {
+	clamp := func(p Pos, d int) Pos {
+		p.Col += d
+		if p.Col < 0 {
+			p.Col = 0
+		}
+		if n := len([]rune(e.buf.Line(p.Line))); p.Col > n {
+			p.Col = n
+		}
+		return p
+	}
+	if e.selActive {
+		if e.selAnchor.Before(e.cursor) || e.selAnchor == e.cursor {
+			e.selAnchor = clamp(from, dFrom)
+			e.cursor = clamp(to, dTo)
+		} else {
+			e.cursor = clamp(from, dFrom)
+			e.selAnchor = clamp(to, dTo)
+		}
+	} else {
+		e.cursor = clamp(e.cursor, dFrom)
+	}
 }
 
 func leadingWhitespace(s string) string {
@@ -1171,11 +1390,60 @@ func (e *Editor) paste() {
 	if text == "" {
 		return
 	}
+	e.insertPasted(text)
+}
+
+// insertPasted drops text in exactly as it is: no auto-indent, no tab
+// expansion, one undo step for the whole thing however many lines it is.
+func (e *Editor) insertPasted(text string) {
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+	if text == "" {
+		return
+	}
+	e.pushUndo()
 	if e.selActive {
 		e.deleteSelection()
 	}
 	nl, nc := e.buf.InsertText(e.cursor.Line, e.cursor.Col, text)
 	e.cursor = Pos{nl, nc}
+	e.selActive = false
+	e.lastWasInsert = false
+	if n := strings.Count(text, "\n"); n > 0 {
+		e.showMessage(fmt.Sprintf("Pasted %d lines", n+1))
+	} else {
+		e.clearMessage()
+	}
+}
+
+// ── BRACKETED PASTE ──────────────────────────────────────────────────────────
+
+func (e *Editor) beginPaste() {
+	e.pasting = true
+	e.pasteBuf = e.pasteBuf[:0]
+}
+
+// collectPaste turns a key event arriving inside a paste back into the
+// character it stands for. Nothing here is treated as a command.
+func (e *Editor) collectPaste(ev *tcell.EventKey) {
+	switch ev.Key() {
+	case tcell.KeyEnter, tcell.KeyCtrlJ:
+		e.pasteBuf = append(e.pasteBuf, '\n')
+	case tcell.KeyTab:
+		e.pasteBuf = append(e.pasteBuf, '\t')
+	case tcell.KeyRune:
+		e.pasteBuf = append(e.pasteBuf, ev.Rune())
+	}
+}
+
+func (e *Editor) endPaste() {
+	e.pasting = false
+	if len(e.pasteBuf) == 0 {
+		return
+	}
+	text := string(e.pasteBuf)
+	e.pasteBuf = e.pasteBuf[:0]
+	e.insertPasted(text)
 }
 
 // ── FIND & REPLACE LOGIC ─────────────────────────────────────────────────────
