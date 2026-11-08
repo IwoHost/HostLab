@@ -15,6 +15,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="../other/logo/HLab_Logo.png">
 <link rel="stylesheet" href="../other/backbutton.css">
+<link rel="stylesheet" href="../other/cardmotion.css">
+<script src="../other/cardmotion.js"></script>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -313,7 +315,6 @@ html.light .ht-bar { background: #142014; border-bottom-color: #2a6a2a; }
   display: flex;
   flex-direction: column;
   transition: box-shadow 0.2s ease, background 0.35s ease, border-color 0.35s ease;
-  animation: fadeUp 0.5s ease both;
   position: relative;
 }
 
@@ -324,17 +325,7 @@ html.light .ht-bar { background: #142014; border-bottom-color: #2a6a2a; }
 
 html.light .card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.07); }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
 
-.card:nth-child(1) { animation-delay: 0.05s; }
-.card:nth-child(2) { animation-delay: 0.10s; }
-.card:nth-child(3) { animation-delay: 0.15s; }
-.card:nth-child(4) { animation-delay: 0.20s; }
-.card:nth-child(5) { animation-delay: 0.25s; }
-.card:nth-child(6) { animation-delay: 0.30s; }
 
 .card-body {
   padding: 22px 24px 20px;
@@ -593,6 +584,23 @@ html.light .switch-track { background:#d0ceca; }
   .grid { padding: 0 24px 60px; grid-template-columns: 1fr; }
   footer { padding: 16px 24px; flex-direction: column; gap: 8px; align-items: flex-start; }
 }
+
+.footer-link {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.2s ease;
+}
+.footer-link:hover { color: var(--text-primary); }
+.footer-link:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+.footer-link svg { transition: transform 0.2s cubic-bezier(.4,0,.2,1); }
+.footer-link:hover svg { transform: translate(2px, -2px); }
+.footer-right { display: flex; align-items: center; gap: 20px; }
 </style>
 </head>
 <body>
@@ -664,7 +672,17 @@ html.light .switch-track { background:#d0ceca; }
 
 <footer>
   <div class="footer-left">HOSTLAB · TERMINAL</div>
-  <div class="footer-right" id="footer-date"></div>
+  <div class="footer-right">
+    <a class="footer-link" href="https://iwohost.github.io/hplaysite/index.html" target="_blank" rel="noopener"
+       title="Hplay — an Android music player with a scroll wheel, by HostLabo"
+       aria-label="Hplay, an Android music player with a scroll wheel — opens in a new tab">
+      HPLAY
+      <svg width="8" height="8" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+    <span id="footer-date"></span>
+  </div>
 </footer>
 
 <script>
@@ -806,6 +824,7 @@ countBadge.textContent = APPS.length;
 siteCount.textContent  = APPS.length + ' APP' + (APPS.length !== 1 ? 'S' : '');
 
 APPS.forEach((app, i) => grid.appendChild(buildCard(app, i)));
+CardMotion.measure();
 
 if (APPS.length === 0) {
   const empty = document.createElement('div');

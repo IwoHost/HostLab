@@ -21,6 +21,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HostLab</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=Syne+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="other/cardmotion.css">
+<script src="other/cardmotion.js"></script>
 <link rel="icon" type="image/png" href="other/logo/HLab_Logo.png">
 <link rel="canonical" href="https://iwohost.github.io/HostLab/">
 <style>
@@ -497,54 +499,9 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 }
 .no-match b { color: var(--text-secondary); font-weight: 400; }
 
-/* ── INTERACTION ─────────────────────────────────────────
-   Nothing animates its way onto the page — it is just there.
-   The motion lives in what you touch: cards lean toward the
-   pointer, lift, and give way under a press.
-   Hover effects are gated behind (hover: hover) so a phone
-   never gets a stuck hover state; :active covers touch.
-   ──────────────────────────────────────────────────────── */
-
-.card, .section-card { position: relative; }
-
-/* one transform, assembled from variables the pointer writes into */
-.card, .section-card {
-  transform:
-    perspective(760px)
-    rotateX(var(--rx, 0deg))
-    rotateY(var(--ry, 0deg))
-    translateY(var(--ty, 0px))
-    scale(var(--sc, 1))
-    scale(var(--press, 1));
-  transform-style: preserve-3d;
-}
-/* a card away from the pointer eases its size over ~0.3s, so the swell
-   builds as you approach rather than snapping; the card under the
-   pointer tracks the lean almost instantly */
-.card, .section-card { transition: transform 0.3s cubic-bezier(.22,.61,.36,1), background 0.25s ease, border-color 0.25s ease; }
-.card.tilt, .section-card.tilt { transition-duration: 0.09s; }
-
-@media (hover: hover) {
-  .card:hover, .section-card:hover { --ty: -6px; }
-  .card:hover { border-color: var(--text-muted); }
-}
-
-/* a press that gives way — works on touch, where hover never fires */
-/* --press is its own factor: the swell is written inline by the pointer
-   handler, and an inline custom property would outrank this rule */
-.card:active, .section-card:active {
-  --ty: -2px;
-  --press: 0.985;
-  transition-duration: 0.09s;
-}
-.tag-chip:active { transform: scale(0.94); transition-duration: 0.09s; }
-
-/* keyboard gets the same treatment as the mouse */
-.card:focus-visible, .section-card:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 2px;
-}
-
+/* ── INTERACTION ── (shared rules live in other/cardmotion.css) */
+.card:hover { border-color: var(--text-muted); }
+.card:hover { z-index: 1; }
 
 /* a hairline under each grid label — static, just structure */
 .grid-header { position: relative; }
@@ -557,10 +514,7 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card, .section-card, .tag-chip, .card-arrow, .section-arrow {
-    transition: none !important;
-  }
-  .card, .section-card { transform: none !important; }
+  .tag-chip, .card-arrow, .section-arrow { transition: none !important; }
 }
 
 /* ── SECTION TILES ── */
@@ -1083,7 +1037,7 @@ function applyFilters() {
     list.forEach((p, i) => grid.appendChild(buildCard(p, i)));
   }
 
-  measureCards();
+  CardMotion.measure();
   countBadge.textContent = list.length;
   document.querySelectorAll('.tag-chip').forEach(c => c.classList.toggle('active', c.dataset.tag === activeTag));
 }
@@ -1158,139 +1112,6 @@ function buildSectionCard(section, index) {
   return card;
 }
 
-/* ── pointer tilt + proximity swell ────────────────────────
-   Two things happen as the pointer moves. Cards in the row the
-   pointer is level with swell by their horizontal distance from it,
-   like a dock — the rows above and below stay put, and the curve is
-   bent so the far end of the reach adds almost nothing. The card
-   under the pointer additionally leans toward it. Each grid is
-   scoped separately, so the sections row above does not stir when
-   the pointer is down among the projects.
-
-   Card centres are cached in document coordinates, so
-   scrolling needs no re-measure; the cache is rebuilt on
-   resize and whenever the grid is re-rendered. One listener,
-   rAF-throttled to a single pass per frame.
-   ────────────────────────────────────────────────────────── */
-const TILT  = 7;      // degrees at the edge of the card under the pointer
-const SWELL = 0.06;   // scale added when the cursor is right on a card's centre
-const REACH = 720;    // px — horizontal reach along the row, about one card
-const FALLOFF = 1.2;  // >1 bends the curve down, so the far end of the reach
-                      // contributes almost nothing and only genuinely near
-                      // cards move
-const TILT_SEL = '.card, .section-card';
-
-/* each grid is its own group: the sections row and the project grid never
-   affect one another, so reaching for a project leaves the row above alone */
-const SWELL_GROUPS = ['#sections-grid', '#grid'];
-let swellGroups = [];
-
-/* re-measure: call after any render that moves cards */
-function measureCards() {
-  swellGroups = SWELL_GROUPS.map(sel => {
-    const root = document.querySelector(sel);
-    if (!root) return null;
-    const b = root.getBoundingClientRect();
-    return {
-      root,
-      top:    b.top + scrollY,
-      bottom: b.bottom + scrollY,
-      left:   b.left + scrollX,
-      right:  b.right + scrollX,
-      cards: [...root.querySelectorAll(TILT_SEL)].map(el => {
-        const r = el.getBoundingClientRect();
-        return {
-          el,
-          cx: r.left + scrollX + r.width / 2,
-          cy: r.top + scrollY + r.height / 2,
-          hh: r.height / 2,
-        };
-      }),
-    };
-  }).filter(Boolean);
-}
-
-const relaxGroup = g => g.cards.forEach(c => c.el.style.removeProperty('--sc'));
-
-function initTilt() {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  if (!matchMedia('(hover: hover)').matches) return;
-
-  let queued = false, ev = null, active = null, swellOnly = false;
-
-  const clearTilt = el => {
-    if (!el) return;
-    el.classList.remove('tilt');
-    el.style.removeProperty('--rx');
-    el.style.removeProperty('--ry');
-  };
-
-  let lit = null;   // the group the pointer is currently inside
-
-  const relax = () => {
-    clearTilt(active); active = null;
-    swellGroups.forEach(relaxGroup);
-    lit = null;
-  };
-
-  const paint = () => {
-    queued = false;
-    if (!ev) return;
-    const mx = ev.clientX + scrollX, my = ev.clientY + scrollY;
-
-    /* only the grid the pointer is actually inside reacts */
-    const group = swellGroups.find(g => mx >= g.left && mx <= g.right && my >= g.top && my <= g.bottom);
-    if (group !== lit) { if (lit) relaxGroup(lit); lit = group || null; }
-    if (!group) return;
-
-    for (const c of group.cards) {
-      /* only the row the pointer is level with: the swell runs along the
-         row like a dock, it does not spread into the rows above or below */
-      const inRow = Math.abs(my - c.cy) <= c.hh + 4;
-      const d = inRow ? Math.abs(mx - c.cx) : Infinity;   // horizontal distance only
-      const f = d >= REACH ? 0 : Math.pow(1 - d / REACH, FALLOFF);
-      const add = SWELL * f;
-      // below a twentieth of a percent nothing is visible, so leave the card
-      // entirely alone rather than animating it imperceptibly
-      if (add < 0.0005) c.el.style.removeProperty('--sc');
-      else c.el.style.setProperty('--sc', (1 + add).toFixed(4));
-    }
-
-    /* the scroll pass only resizes: the element the pointer was last
-       over is stale once the page has moved under it */
-    if (swellOnly) { swellOnly = false; return; }
-
-    /* lean: only the card actually under the pointer */
-    const el = ev.target.closest(TILT_SEL);
-    if (el !== active) { clearTilt(active); active = el; }
-    if (!el) return;
-
-    const r = el.getBoundingClientRect();
-    const dx = ((ev.clientX - r.left) / r.width) * 2 - 1;   // -1..1 from centre
-    const dy = ((ev.clientY - r.top) / r.height) * 2 - 1;
-
-    el.classList.add('tilt');
-    // negate both: the side under the cursor rotates toward the viewer
-    el.style.setProperty('--ry', (-dx * TILT).toFixed(2) + 'deg');
-    el.style.setProperty('--rx', (dy * TILT).toFixed(2) + 'deg');
-  };
-
-  document.addEventListener('pointermove', e => {
-    ev = e; swellOnly = false;
-    if (!queued) { queued = true; requestAnimationFrame(paint); }
-  }, { passive: true });
-
-  // a card scrolled out from under a stationary pointer must not stay tilted
-  document.addEventListener('scroll', () => {
-    clearTilt(active); active = null;
-    if (ev && !queued) { swellOnly = true; queued = true; requestAnimationFrame(paint); }
-  }, { passive: true });
-  document.addEventListener('pointerleave', relax);
-  addEventListener('resize', measureCards);
-  addEventListener('load', measureCards);
-  measureCards();
-}
-
 function init() {
   SECTIONS.forEach((section, i) => {
     sectionsGrid.appendChild(buildSectionCard(section, i));
@@ -1301,7 +1122,7 @@ function init() {
   });
   buildTagFilters();
   initSearch();
-  initTilt();
+  CardMotion.measure();
 }
 
 init();
