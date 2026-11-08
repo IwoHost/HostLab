@@ -418,6 +418,120 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 /* ── HEADER RIGHT ── */
 .header-right { display: flex; align-items: center; gap: 24px; }
 
+/* ── SECTION TILES ── */
+.sections {
+  padding: 0 64px 40px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+}
+
+.section-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  padding: 26px 22px 20px;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+  animation: fadeUp 0.5s ease both;
+}
+.section-card:nth-child(1) { animation-delay: 0.04s; }
+.section-card:nth-child(2) { animation-delay: 0.08s; }
+.section-card:nth-child(3) { animation-delay: 0.12s; }
+.section-card:nth-child(4) { animation-delay: 0.16s; }
+
+/* accent rule along the top — grows across the tile on hover */
+.section-card::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px;
+  height: 2px;
+  width: 40px;
+  background: var(--sec, var(--accent));
+  transition: width 0.35s cubic-bezier(.4,0,.2,1);
+}
+.section-card:hover,
+.section-card:focus-visible {
+  background: var(--tag-bg);
+  border-color: var(--text-muted);
+  transform: translateY(-2px);
+  outline: none;
+}
+.section-card:hover::before,
+.section-card:focus-visible::before { width: calc(100% + 2px); }
+
+.section-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.section-kicker {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sec, var(--text-muted));
+  opacity: 0.85;
+}
+
+.section-index {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.section-desc {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+}
+
+.section-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+.section-card:hover .section-foot { color: var(--text-secondary); }
+
+.section-arrow {
+  display: inline-block;
+  transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+}
+.section-card:hover .section-arrow { transform: translate(3px, -3px); }
+
+@media (max-width: 1100px) {
+  .sections { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   header { padding: 20px 24px 16px; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -429,6 +543,9 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
   .grid-header { padding: 20px 24px 14px; }
   #tag-filters { padding: 0 24px 14px; }
   .grid { padding: 0 24px 60px; grid-template-columns: 1fr; }
+  .sections { padding: 0 24px 32px; grid-template-columns: 1fr; }
+  .section-card { min-height: 0; padding: 22px 20px 18px; }
+  .section-title { font-size: 26px; }
   footer { padding: 16px 24px; }
 }
 
@@ -475,7 +592,7 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
   <span class="grid-label">Sections</span>
 </div>
 
-<div class="grid" id="sections-grid"></div>
+<nav class="sections" id="sections-grid" aria-label="Sections"></nav>
 
 <div class="grid-header" style="margin-top:16px;">
   <span class="grid-label">All projects</span>
@@ -505,35 +622,31 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 const SECTIONS = [
   {
     href:     'pages/games.html',
-    file:     'games.html',
-    icon:     'other/logo/HLab_Logo.png',
+    kicker:   'Press start',
     title:    'Games',
-    topColor: '#2d6b2d',
+    topColor: '#3d9142',
     desc:     'Games and interactive experiments — some released on itch.io, some living right here in the browser.'
   },
   {
     href:     'pages/archives.html',
-    file:     'archives.html',
-    icon:     'other/logo/HLab_Logo.png',
+    kicker:   'The unfinished',
     title:    'Archives',
-    topColor: '#7a2020',
-    desc:     'Projects that never made it. Killed by scope creep, lost motivation, bad timing, or the classic "I\'ll finish it later."'
+    topColor: '#b23a2e',
+    desc:     'Projects that never made it. Killed by scope creep, lost motivation, bad timing, or "I\'ll finish it later."'
   },
   {
     href:     'pages/study.html',
-    file:     'study.html',
-    icon:     'other/logo/HLab_Logo.png',
+    kicker:   'Learn by doing',
     title:    'Study',
-    topColor: '#1e3a6e',
-    desc:     'Interactive courses — learn by doing, not reading.'
+    topColor: '#3566b5',
+    desc:     'Interactive courses for the INF.02 exam — Linux, Bash, batch files. From zero, step by step.'
   },
   {
     href:     'pages/terminal.html',
-    file:     'terminal.html',
-    icon:     'other/logo/HLab_Logo.png',
+    kicker:   'Terminal edition',
     title:    'Terminal',
-    topColor: '#1a4a1a',
-    desc:     'Installable command-line tools for Windows, macOS, and Linux. Built with the HostLab aesthetic — because your terminal should look good too.'
+    topColor: '#1f8059',
+    desc:     'Installable command-line tools for Windows, macOS and Linux. Your terminal should look good too.'
   },
 ];
 
@@ -803,10 +916,32 @@ function buildTagFilters() {
   });
 }
 
+function buildSectionCard(section, index) {
+  const { href, title, desc, topColor, kicker } = section;
+
+  const card = document.createElement('a');
+  card.className = 'section-card';
+  card.href = href;
+  if (topColor) card.style.setProperty('--sec', topColor);
+
+  card.innerHTML = `
+    <div class="section-top">
+      <span class="section-kicker">${kicker || 'Section'}</span>
+      <span class="section-index">${String(index + 1).padStart(2, '0')}</span>
+    </div>
+    <div class="section-title">${title}</div>
+    <p class="section-desc">${desc}</p>
+    <div class="section-foot">
+      <span>Browse</span>
+      <span class="section-arrow">&#8599;</span>
+    </div>
+  `;
+  return card;
+}
+
 function init() {
-  SECTIONS.forEach((project, i) => {
-    const card = buildCard(project, i);
-    sectionsGrid.appendChild(card);
+  SECTIONS.forEach((section, i) => {
+    sectionsGrid.appendChild(buildSectionCard(section, i));
   });
   PROJECTS.forEach((project, i) => {
     const card = buildCard(project, i);
