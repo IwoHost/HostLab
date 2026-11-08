@@ -133,7 +133,7 @@ header {
 
 /* ── GRID ── */
 .grid-header {
-  padding: 32px 64px 20px;
+  padding: 36px 64px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -490,7 +490,7 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 
 /* ── SECTION TILES ── */
 .sections {
-  padding: 0 64px 40px;
+  padding: 20px 64px 44px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 2px;
@@ -605,11 +605,11 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
   .hero { padding: 40px 24px 36px; }
   .hero h1 { font-size: 48px; }
   .hero-sub { max-width: 100%; }
-  .grid-header { padding: 20px 24px 14px; }
+  .grid-header { padding: 26px 24px 12px; }
   .grid-header::after { left: 24px; right: 24px; }
-  #tag-filters { padding: 0 24px 14px; }
+  #tag-filters { padding: 16px 24px 18px !important; }
   .grid { padding: 0 24px 60px; grid-template-columns: 1fr; }
-  .sections { padding: 0 24px 32px; grid-template-columns: 1fr; }
+  .sections { padding: 16px 24px 34px; grid-template-columns: 1fr; }
   .section-card { min-height: 0; padding: 22px 20px 18px; }
   .section-title { font-size: 26px; }
   footer { padding: 16px 24px; }
@@ -661,12 +661,12 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 
 <nav class="sections" id="sections-grid" aria-label="Sections"></nav>
 
-<div class="grid-header" style="margin-top:16px;">
+<div class="grid-header">
   <span class="grid-label">All projects</span>
   <span class="count-badge" id="count-badge">0</span>
 </div>
 
-<div id="tag-filters" style="padding:0 64px 20px;display:flex;gap:6px;flex-wrap:wrap;"></div>
+<div id="tag-filters" style="padding:20px 64px 24px;display:flex;gap:6px;flex-wrap:wrap;"></div>
 
 <main class="grid" id="grid"></main>
 
