@@ -409,28 +409,50 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 
 /* the card tracks the cursor — a soft sheen that follows the pointer */
 .card, .section-card { position: relative; }
+/* The dark the beam cuts through: a vignette that pulls away from the
+   cursor, so the card falls into shadow everywhere the torch isn't. */
 .card::after, .section-card::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.25s ease;
-  background: radial-gradient(
-    300px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(255,255,255,0.10),
-    rgba(255,255,255,0.03) 38%,
-    transparent 66%
-  );
+  transition: opacity 0.22s ease;
+  background: radial-gradient(circle 330px at var(--mx, 50%) var(--my, 50%),
+    transparent 0%,
+    transparent 26%,
+    rgba(0,0,0,0.28) 62%,
+    rgba(0,0,0,0.50) 100%);
 }
+/* On paper you cannot add light, so in the light theme the beam is a
+   hole in the shadow: the surroundings fall away and the lit patch is
+   simply the page as it was. */
 html.light .card::after, html.light .section-card::after {
-  background: radial-gradient(
-    300px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(0,0,0,0.07),
-    rgba(0,0,0,0.02) 38%,
-    transparent 66%
-  );
+  background: radial-gradient(circle 300px at var(--mx, 50%) var(--my, 50%),
+    transparent 0%,
+    transparent 22%,
+    rgba(44,36,24,0.16) 58%,
+    rgba(44,36,24,0.32) 100%);
 }
+
+/* The beam. Screen blend so it ADDS light to whatever is underneath —
+   a torch brightens the screenshot it lands on, it doesn't fog it. */
+.beam {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 0.22s ease;
+  background: radial-gradient(circle 155px at var(--mx, 50%) var(--my, 50%),
+    rgba(255,243,214,0.42) 0%,
+    rgba(255,240,206,0.26) 20%,
+    rgba(255,236,198,0.09) 42%,
+    rgba(255,233,190,0.02) 60%,
+    transparent 72%);
+}
+html.light .beam { display: none; }
 
 /* the edge lights up where the cursor is — a 1px border lit by the
    same gradient, masked so only the border itself shows through */
@@ -444,10 +466,11 @@ html.light .card::after, html.light .section-card::after {
   padding: 1px;
   transition: opacity 0.25s ease;
   background: radial-gradient(
-    240px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(255,255,255,0.75),
-    rgba(255,255,255,0.12) 42%,
-    transparent 68%
+    170px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255,248,230,0.95),
+    rgba(255,244,218,0.30) 34%,
+    rgba(255,240,210,0.04) 58%,
+    transparent 70%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
           mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -456,10 +479,10 @@ html.light .card::after, html.light .section-card::after {
 }
 html.light .card::before, html.light .section-card::before {
   background: radial-gradient(
-    240px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(0,0,0,0.55),
-    rgba(0,0,0,0.10) 42%,
-    transparent 68%
+    170px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(90,70,30,0.65),
+    rgba(90,70,30,0.14) 34%,
+    transparent 64%
   );
 }
 
@@ -479,7 +502,8 @@ html.light .card::before, html.light .section-card::before {
 
 @media (hover: hover) {
   .card:hover::after, .section-card:hover::after,
-  .card:hover::before, .section-card:hover::before { opacity: 1; }
+  .card:hover::before, .section-card:hover::before,
+  .card:hover .beam, .section-card:hover .beam { opacity: 1; }
 
   .card:hover, .section-card:hover { --ty: -6px; }
   .card:hover { border-color: var(--text-muted); }
@@ -500,7 +524,8 @@ html.light .card::before, html.light .section-card::before {
   outline-offset: 2px;
 }
 .card:focus-visible::after, .section-card:focus-visible::after,
-.card:focus-visible::before, .section-card:focus-visible::before { opacity: 1; }
+.card:focus-visible::before, .section-card:focus-visible::before,
+.card:focus-visible .beam, .section-card:focus-visible .beam { opacity: 1; }
 
 /* the thumbnail only ever moves under the cursor, never on its own */
 .card-thumb img { transition: transform 0.5s cubic-bezier(.22,.61,.36,1); }
@@ -516,7 +541,7 @@ html.light .card::before, html.light .section-card::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card, .section-card, .card-thumb img, .tag-chip, .card-arrow, .section-arrow {
+  .card, .section-card, .card-thumb img, .tag-chip, .card-arrow, .section-arrow, .beam {
     transition: none !important;
   }
   .card, .section-card { transform: none !important; }
@@ -987,8 +1012,12 @@ function buildCard(project, index) {
     </div>
   `;
 
+  const beam = document.createElement('i');
+  beam.className = 'beam';
+
   card.appendChild(thumb);
   card.appendChild(body);
+  card.appendChild(beam);
   return card;
 }
 
@@ -1026,6 +1055,7 @@ function buildSectionCard(section, index) {
 
   card.innerHTML = `
     <i class="bar"></i>
+    <i class="beam"></i>
     <div class="section-top">
       <span class="section-kicker">${kicker || 'Section'}</span>
       <span class="section-index">${String(index + 1).padStart(2, '0')}</span>
