@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6ebe47b9-15fa-4d2b-a359-233f4d1d0178" data-blockingmode="auto" type="text/javascript"></script>
+<script type="text/plain" data-cookiecategory="statistics" async src="https://www.googletagmanager.com/gtag/js?id=G-R7MJHBKJVY"></script>
+<script type="text/plain" data-cookiecategory="statistics">
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-R7MJHBKJVY');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tie Cutout Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Display:wdth,wght@62.5..100,500..900&family=Noto+Sans:wght@400;600;800&family=Noto+Serif:ital,wght@1,600&family=Noto+Sans+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#6f6559;--panel:#f4eee2;--ink:#2a2420;--mute:#6d6257;--line:#d6cbb8;--acc:#9b2335;--stage:#2f6b4f;--sh:rgba(20,12,6,.45);--stitch:#b08d57;
+--t:#2f6b8f;--b:#3e5c86;--y:#c99a2e;--p:#6b3f6e;--r:#9b2335;--rd:#5e1220;--w1:6px;--w2:8px;--w3:5px;
+--n:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .45 0 0 0 0 .4 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+--tweed:var(--n),repeating-linear-gradient(45deg,rgba(255,255,255,.07) 0 2px,transparent 2px 6px),repeating-linear-gradient(-45deg,rgba(0,0,0,.12) 0 2px,transparent 2px 6px);
+--silk:linear-gradient(rgba(255,255,255,.08),rgba(0,0,0,.08)),repeating-linear-gradient(-45deg,#8c1d2c 0 16px,#d4b46a 16px 18px,#8c1d2c 18px 22px,#1d2b4f 22px 34px,#8c1d2c 34px 38px);
+--denim:var(--n),repeating-linear-gradient(60deg,rgba(255,255,255,.09) 0 1px,transparent 1px 4px),linear-gradient(#34557d,#2b4668);
+--plaid:repeating-linear-gradient(0deg,rgba(201,154,46,.35) 0 2px,transparent 2px 18px,rgba(20,30,20,.35) 18px 30px,transparent 30px 40px),repeating-linear-gradient(90deg,rgba(201,154,46,.35) 0 2px,transparent 2px 18px,rgba(20,30,20,.35) 18px 30px,transparent 30px 40px),linear-gradient(#2e5a43,#2e5a43);
+--gingham:repeating-linear-gradient(0deg,rgba(255,255,255,.28) 0 8px,transparent 8px 16px),repeating-linear-gradient(90deg,rgba(255,255,255,.28) 0 8px,transparent 8px 16px),linear-gradient(#a8323e,#a8323e);
+--cord:var(--n),repeating-linear-gradient(90deg,rgba(255,255,255,.12) 0 3px,rgba(0,0,0,.18) 3px 5px,transparent 5px 7px),linear-gradient(#8a5a2b,#7a4e24);
+--felt:var(--n),linear-gradient(#5d4a6b,#53415f);
+--lin:var(--n),repeating-linear-gradient(0deg,rgba(120,100,70,.05) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(120,100,70,.05) 0 1px,transparent 1px 3px);
+--pink:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/14px 51% repeat-x,conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 51% repeat-x;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2c2723;--panel:#2a2522;--ink:#efe6d6;--mute:#b3a693;--line:#4a4038;--stage:#1f4a37;--stitch:#c9a46a}}
+:root[data-theme="dark"]{--bg:#2c2723;--panel:#2a2522;--ink:#efe6d6;--mute:#b3a693;--line:#4a4038;--stage:#1f4a37;--stitch:#c9a46a}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;color:var(--ink);font:14px/1.45 "Noto Sans",system-ui,-apple-system,Roboto,sans-serif;background:var(--tweed),var(--bg)}
+.app{display:grid;grid-template-columns:340px 1fr;gap:26px;padding:24px 18px;max-width:1200px;margin:0 auto}
+@media (max-width:760px){.app{grid-template-columns:1fr;gap:26px;padding:20px 12px}}
+.panel{position:relative;align-self:start;border:12px solid transparent;padding:22px 16px 20px;
+background:var(--lin) padding-box,linear-gradient(var(--panel),var(--panel)) padding-box,var(--silk) border-box;-webkit-mask:var(--pink);mask:var(--pink)}
+.panel::after{content:"";position:absolute;inset:6px;border:2px dashed var(--stitch);border-radius:3px;pointer-events:none}
+h1{margin:4px 0 0;display:inline-block;position:relative;padding:10px 18px 12px;border-radius:10px;color:#f6ead2;background:var(--felt);
+box-shadow:0 0 0 3px #5d4a6b,0 3px 6px var(--sh);outline:2px dashed #e0c48a;outline-offset:-7px;transform:rotate(-2deg);
+font-family:"Noto Sans Display","Noto Sans",system-ui,sans-serif;font-weight:900;font-stretch:70%;font-size:44px;line-height:.9;text-shadow:0 1px 0 rgba(0,0,0,.5),0 -1px 0 rgba(255,255,255,.18)}
+.tag{display:inline-block;margin:-4px 0 0 22px;position:relative;background:linear-gradient(#fbf7ee,#efe7d6);color:#5e1220;
+font-family:"Noto Serif",Georgia,serif;font-style:italic;font-weight:600;font-size:13px;padding:4px 14px;border:1px solid #d9cdb6;
+outline:1px dashed #9b2335;outline-offset:-4px;transform:rotate(1.5deg);box-shadow:0 2px 4px var(--sh);
+clip-path:polygon(0 0,100% 0,96% 50%,100% 100%,0 100%,4% 50%)}
+.sub{color:var(--mute);font-size:13px;margin:12px 0 12px;max-width:34ch}
+.grp{font-size:13px;font-weight:800;color:var(--ink);margin:14px 0 6px}
+.row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 8px;margin:8px 0}
+.row label{font-size:13px}
+.row output{color:var(--mute);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.row input[type=range]{grid-column:1/3;width:100%;accent-color:var(--c,var(--acc))}
+.row select{max-width:160px;padding:5px 6px;font:inherit;font-size:13px;background:var(--panel);color:var(--ink);border:1.5px solid var(--ink);border-radius:var(--w3)}
+.row input[type=color]{width:44px;height:26px;border:1.5px solid var(--ink);border-radius:6px;background:none;padding:0}
+.sw{width:46px;height:28px;padding:0;border:2px solid var(--panel);border-radius:50%/40%;box-shadow:0 0 0 1.5px var(--ink),0 2px 3px var(--sh)}
+.pick{padding:6px 0 10px;border-bottom:2px dashed var(--stitch);margin-bottom:6px}
+.pick .sws{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:6px}
+.pick .sws button{aspect-ratio:1;padding:0;border-radius:50%;border:2px solid var(--panel);box-shadow:0 0 0 1.5px var(--ink)}
+.pick label{display:block;font-size:12px;color:var(--mute);margin:8px 0}
+.pick input[type=range]{display:block;width:100%;-webkit-appearance:none;appearance:none;height:16px;border-radius:8px;margin:5px 0 0;border:1.5px solid var(--ink)}
+.pick input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fbf7ee;border:2.5px solid #2a2420;box-shadow:0 2px 3px rgba(0,0,0,.4)}
+.pick input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fbf7ee;border:2.5px solid #2a2420}
+.pick input[type=text]{display:block;width:100%;margin-top:5px;padding:7px;font:inherit;background:var(--panel);color:var(--ink);border:1.5px solid var(--ink);border-radius:var(--w3)}
+button{font:inherit;font-weight:600;cursor:pointer;border-radius:var(--w2);border:1.5px solid var(--ink);color:var(--ink);padding:7px 10px;
+background:var(--lin),linear-gradient(var(--panel),var(--panel));outline:1.5px dashed var(--stitch);outline-offset:-5px;box-shadow:0 2px 0 var(--sh);transition:transform .08s,box-shadow .08s}
+button:active{transform:translateY(2px);box-shadow:0 0 0 var(--sh)}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #d4b46a;outline-offset:2px}
+button:disabled{opacity:.6;cursor:wait}
+.pre{display:flex;gap:8px;margin-bottom:8px}.pre button{flex:1;font-size:12px;line-height:1.2}
+button.reset{width:100%;margin-top:10px;font-size:12px;color:var(--mute);background:transparent;outline:none;border-style:dashed;box-shadow:none}
+button.primary{width:100%;margin-top:18px;padding:13px;color:#fff;border:2px solid #3a0d16;background:var(--silk);outline:2px dashed rgba(255,236,190,.75);outline-offset:-7px;box-shadow:0 3px 0 #3a0d16,0 6px 10px var(--sh);
+font-family:"Noto Sans Display","Noto Sans",system-ui,sans-serif;font-weight:900;font-stretch:75%;font-size:22px;text-shadow:0 1px 3px rgba(0,0,0,.8),0 0 8px rgba(0,0,0,.5)}
+button.primary:active{transform:translateY(3px);box-shadow:0 0 0 #3a0d16}
+.tabs{display:flex;gap:8px;margin:2px 0 14px;flex-wrap:wrap}
+.tabs button{padding:7px 14px 7px 18px;font-size:13px;clip-path:polygon(9px 0,100% 0,100% 100%,9px 100%,0 50%);outline-offset:-4px;border-radius:0 6px 6px 0}
+.tabs button.on{background:var(--silk);color:#fff;border-color:#3a0d16;outline-color:rgba(255,236,190,.8);text-shadow:0 1px 2px rgba(0,0,0,.9)}
+.info{color:var(--ink);font-size:12.5px;margin:0 0 12px;max-width:70ch;background:var(--lin),linear-gradient(var(--panel),var(--panel));padding:8px 11px;border-radius:4px;outline:1.5px dashed var(--stitch);outline-offset:-4px}
+.info:empty{display:none}
+#ttext{display:block;width:100%;margin:6px 0 4px;font:inherit;font-size:13px;padding:8px;border:1.5px solid var(--ink);border-radius:var(--w3);background:var(--panel);color:var(--ink);resize:vertical}
+.stage{position:relative;padding:20px 14px;text-align:center;border-radius:4px;
+background:var(--n),repeating-linear-gradient(0deg,rgba(255,255,255,.13) 0 1px,transparent 1px 20px),repeating-linear-gradient(90deg,rgba(255,255,255,.13) 0 1px,transparent 1px 20px),repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0 1px,transparent 1px 4px),linear-gradient(var(--stage),var(--stage));-webkit-mask:var(--pink);mask:var(--pink)}
+#stackWrap svg{max-width:100%;max-height:80vh;height:auto}
+#pagesWrap{display:none;gap:18px;flex-wrap:wrap;justify-content:center;padding:22px 12px;border-radius:4px;
+background:var(--n),repeating-linear-gradient(0deg,rgba(255,255,255,.13) 0 1px,transparent 1px 20px),repeating-linear-gradient(90deg,rgba(255,255,255,.13) 0 1px,transparent 1px 20px),linear-gradient(var(--stage),var(--stage));-webkit-mask:var(--pink);mask:var(--pink)}
+#pagesWrap.show{display:flex}
+.page{background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.4);width:min(100%,360px);aspect-ratio:var(--pw)/var(--ph)}
+.page:nth-child(odd){transform:rotate(-.8deg)}.page:nth-child(even){transform:rotate(1deg)}
+.page svg{display:block;width:100%;height:100%}
+#trySvgWrap svg{max-width:400px;width:100%;height:auto;touch-action:none;border-radius:4px;background:#fff;cursor:grab;box-shadow:0 3px 10px rgba(0,0,0,.4)}
+.tctl{max-width:420px;margin:0 auto 10px;text-align:left;background:var(--lin),linear-gradient(var(--panel),var(--panel));padding:4px 12px;border-radius:4px;color:var(--ink)}
+.stage .info,.stage p{color:var(--ink)}
+#stackWrap .sk,#trySvgWrap .sk{cursor:grab;touch-action:none}
+details.cat{--f:var(--denim);--c:var(--t);margin:10px 0;border-radius:var(--w1);background:var(--lin),linear-gradient(var(--panel),var(--panel));box-shadow:0 0 0 1.5px var(--ink),0 2px 4px var(--sh);overflow:hidden}
+details.cat:nth-of-type(6n+2){--f:var(--plaid);--c:#2e5a43}details.cat:nth-of-type(6n+3){--f:var(--cord);--c:#8a5a2b}details.cat:nth-of-type(6n+4){--f:var(--felt);--c:var(--p)}details.cat:nth-of-type(6n+5){--f:var(--gingham);--c:#a8323e}details.cat:nth-of-type(6n){--f:var(--silk);--c:var(--r)}
+details.cat>summary{list-style:none;cursor:pointer;padding:12px 14px;font-weight:800;display:flex;align-items:center;gap:10px;user-select:none;color:#fff;
+background:linear-gradient(rgba(0,0,0,.28),rgba(0,0,0,.28)),var(--f);text-shadow:0 1px 2px rgba(0,0,0,.85);outline:1.5px dashed rgba(255,240,210,.7);outline-offset:-6px}
+details.cat>summary::-webkit-details-marker{display:none}
+details.cat>summary::before{content:"";flex:none;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff8e6 0 18%,#e9dcc0 19% 100%);box-shadow:0 0 0 2px rgba(0,0,0,.35),inset -2px -2px 0 rgba(0,0,0,.15)}
+details.cat>summary::after{content:"+";margin-left:auto;color:#fff;font-weight:800;font-size:20px;line-height:1}
+details.cat[open]>summary::after{content:"\2212"}
+details.cat>.body{padding:6px 12px 12px}
+details.cat.adv{--f:var(--n),linear-gradient(#6d6257,#6d6257)}
+#view{position:relative;min-width:0}
+.sc{display:block;width:120px;height:auto;overflow:visible;filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
+.sc g{transform-box:view-box;transform-origin:35px 22px}
+.sc .bl1{animation:snipA .15s ease-in-out infinite alternate}.sc .bl2{animation:snipB .15s ease-in-out infinite alternate}
+@keyframes snipA{from{transform:rotate(-14deg)}to{transform:rotate(1deg)}}
+@keyframes snipB{from{transform:rotate(14deg)}to{transform:rotate(-1deg)}}
+#intro{position:fixed;inset:0;z-index:100;pointer-events:none;overflow:hidden}
+#intro .half{position:absolute;left:-3%;right:-3%;height:51%;background:repeating-linear-gradient(-45deg,#8c1d2c 0 16px,#d4b46a 16px 18px,#8c1d2c 18px 22px,#1d2b4f 22px 34px,#8c1d2c 34px 38px)}
+#intro .top{top:0;-webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/16px 51% repeat-x,linear-gradient(#000 0 0) top/100% 50% no-repeat;mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/16px 51% repeat-x,linear-gradient(#000 0 0) top/100% 50% no-repeat;animation:introUp .55s cubic-bezier(.5,0,.75,.3) .78s forwards}
+#intro .bot{bottom:0;-webkit-mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/16px 51% repeat-x,linear-gradient(#000 0 0) bottom/100% 50% no-repeat;mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/16px 51% repeat-x,linear-gradient(#000 0 0) bottom/100% 50% no-repeat;animation:introDown .55s cubic-bezier(.5,0,.75,.3) .78s forwards}
+#intro .cut{position:absolute;top:50%;left:0;width:0;border-top:3px dashed rgba(255,236,190,.95);animation:cutw .78s linear forwards,fade .2s .78s forwards}
+#intro .mov{position:absolute;top:50%;left:0;margin-top:-33px;animation:cutm .78s linear forwards,fade .15s .78s forwards}
+@keyframes cutw{to{width:100%}}
+@keyframes cutm{from{transform:translateX(-120px)}to{transform:translateX(100vw)}}
+@keyframes introUp{to{transform:translateY(-112%) rotate(-4deg)}}
+@keyframes introDown{to{transform:translateY(112%) rotate(3deg)}}
+@keyframes fade{to{opacity:0}}
+.snipline{position:absolute;left:0;right:0;height:0;z-index:5;pointer-events:none}
+.snipline .cut{position:absolute;left:0;top:0;width:0;border-top:2.5px dashed #f3dfae;animation:cutw .45s linear forwards,fade .25s .5s forwards}
+.snipline .mov{position:absolute;left:0;top:-22px;animation:cutm2 .45s linear forwards,fade .15s .45s forwards}
+.snipline .sc{width:80px}
+@keyframes cutm2{from{transform:translateX(-80px)}to{transform:translateX(var(--w))}}
+.unfold{animation:unfold .45s cubic-bezier(.2,.8,.3,1)}
+@keyframes unfold{from{opacity:0;transform:translateY(12px) scale(.985)}}
+details.cat[open]>.body{animation:unfold .3s cubic-bezier(.2,.8,.3,1)}
+@media (prefers-reduced-motion:reduce){#intro,.snipline{display:none}.unfold,details.cat[open]>.body{animation:none}}
+@media print{
+ :root{padding:0}
+ body{background:#fff}
+ .app{display:block;padding:0;max-width:none}
+ .panel,.tabs,.info,#stackWrap,#tryWrap{display:none!important}
+ #pagesWrap{display:block!important;background:none;padding:0;border:0;box-shadow:none;-webkit-mask:none;mask:none}
+ .page{transform:none!important}
+ .page{width:calc(var(--pw)*1mm);height:calc(var(--ph)*1mm);aspect-ratio:auto;box-shadow:none;break-after:page;page-break-after:always;overflow:hidden}
+ .page:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+<style id="pagesize"></style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="../other/backbutton.css">
+<style>@media print{.back-home{display:none!important}}</style>
+</head>
+<body>
+<div id="intro" aria-hidden="true"><div class="half top"></div><div class="half bot"></div><div class="cut"></div><div class="mov"></div></div>
+<div class="app">
+ <div class="panel">
+  <h1>Tie cutout</h1>
+  <p class="tag">print it, cut it, wear it</p>
+  <p class="sub">Real tie shape, split over pages. Cut, overlap the glue tabs, tape.</p>
+  <div class="pre"><button onclick="preset({auto:true,pieces:4,per:'2'})">4 pieces, 2 pages</button><button onclick="preset({auto:true,pieces:6,per:'2'})">6 pieces, 3 pages</button><button onclick="preset({auto:false,len:1450,wbp:4.1,wtp:2.2,pieces:4})">Real size 145 cm</button></div>
+  <div id="controls"></div>
+  <button class="primary" id="pdfBtn" onclick="downloadPdf()">Download PDF</button>
+  <p class="info" id="pdfMsg" style="margin:6px 0 0"></p>
+  <button class="reset" onclick="window.print()">Print directly</button>
+  <button class="reset" onclick="resetAll()">Reset to defaults</button>
+ </div>
+ <div id="view">
+  <div class="tabs">
+   <button id="tabS" class="on" onclick="tab('s')">Assembled tie</button>
+   <button id="tabP" onclick="tab('p')">Print pages</button>
+   <button id="tabT" onclick="tab('t')">Try it on</button>
+  </div>
+  <p class="info" id="info"></p>
+  <div id="stackWrap" class="stage"></div>
+  <div id="pagesWrap"></div>
+  <div id="tryWrap" class="stage" style="display:none"><div id="tryCtl" class="tctl"></div><div id="trySvgWrap"></div><p class="info" style="margin-top:8px">Drag the tie to move it. Use your own photo or the mannequin.</p></div>
+ </div>
+</div>
+<script>
+const S=[['pieces','Pieces (cuts)',1,12,1,6],['len','Tie length (mm)',150,3000,10,600],['wbp','Widest width (% of length)',2.5,14,.1,3.6],['wtp','Top width (% of length)',1,8,.1,1.9],
+['tip','Tip length (x width)',.5,3,.05,1.6],['top','Top point',0,1,.05,0],['tr','Tip rounding (mm)',0,60,1,8],['overlap','Glue tab (mm)',5,40,1,10],['wing','Glue wings (% of tie width, each side)',0,80,1,40],['layers','Stack layers',1,4,1,1],['cardT','Card thickness (mm)',.2,3,.1,.5]];
+const S2=[['size','Pattern / photo size (mm)',2,80,1,6],['angle','Pattern angle',-90,90,5,45],['pzoom','Photo zoom (%)',100,400,5,100],['pox','Photo shift X',-100,100,5,0],['poy','Photo shift Y',-100,100,5,0]];
+const C=[['c1','Pattern color A','#1d2b4f'],['c2','Pattern color B','#b3202f'],['c3','Tipping / loop color','#8c1625'],['c4','Back piece color','#d9d6cc']];
+const SEL=[['pat','Pattern',[['stripes','Stripes'],['dots','Dots'],['plaid','Plaid'],['checks','Checks'],['solid','Solid'],['photo','Photo as fabric (see Photo layout)']],'stripes'],
+['fill','Print as',[['color','Colored'],['outline','Cut outline only']],'color'],
+['per','Pieces per page',[['1','1'],['2','2'],['3','3']],'2'],
+['pmode','Photo layout',[['cover','Whole tie, crop to fill'],['fit','Whole tie, fit inside'],['stretch','Whole tie, stretch'],['tile','Repeat as a grid'],['cubes','3D cubes (illusion)']],'cover'],
+['prot','Photo direction',[['90','Turned along the tie'],['0','Upright']],'90'],
+['sshape','Image shape',[['none','As is (no crop)'],['circle','Circle'],['oval','Oval'],['round','Rounded square']],'none'],
+['tedge','Between grid photos',[['gap','Thin lines'],['none','No gaps'],['blend','Soft blend']],'gap'],
+['gshape','Grid photo shape',[['tall','Tall (like the TF2 cards)'],['square','Square 1:1'],['wide','Wide']],'tall'],
+['cubesrc','3D cubes from',[['one','One image on every face'],['hex','Ready-made cube (hexagon image)'],['three','3 images: top, left, right']],'one'],
+['cshade','3D cube sides',[['on','Shade darker'],['off','No shading']],'on'],
+['tfont','Font',[['display','Bold condensed'],['serif','Serif italic'],['sans','Plain bold'],['mono','Typewriter (mono)']],'display'],
+['tstroke','Outline',[['on','Outline in pattern color A'],['off','No outline']],'on'],
+['tdir','Direction',[['across','Across, stacked lines'],['down','Along the tie, reading down'],['up','Along the tie, reading up']],'across'],
+['tsize','Line size',[['fit','Each line fills the width'],['same','All lines the same size']],'fit'],
+['tcase','Letters',[['as','As typed'],['upper','ALL CAPS']],'as'],
+['tband','Band behind text',[['off','None'],['on','Band in band color']],'off']];
+const CK=[['seam','Center seam line',0],['tipc','Tipping cap',0],['keep','Keeper loop (long wings to wrap)',0],['marks','Glue / align marks (no text)',1],['labels','Text labels (numbers, notes)',0],['back','Also print plain back pieces',0]];
+const SF=[['sy','Image position along tie (%)',0,100,1,75],['sx','Image position across (%)',-100,100,1,0],['ssz','Image size (% of tie width)',20,600,5,85],['srot','Image rotation',-180,180,1,0],['scount','Copies of the image',1,5,1,1],['sgap','Spacing / repeat distance (% of length)',2,40,1,10]];
+const el=id=>document.getElementById(id);
+const SWS=['#1d2b4f','#3a7bd5','#0f7d7e','#2e5e3e','#7fbf4d','#c9a227','#e07a1f','#b3202f','#8c1625','#e5586a','#f2a7b8','#6b3fa0','#5a3a22','#d9d6cc','#ffffff','#111111'];
+function hex2hsl(x){const v=parseInt(x.slice(1),16),r=(v>>16)/255,g=(v>>8&255)/255,b=(v&255)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn;let h=0,s=0;
+ if(d){s=d/(1-Math.abs(2*l-1));h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4;h*=60;if(h<0)h+=360}return[Math.round(h),Math.round(s*100),Math.round(l*100)]}
+function hsl2hex(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),c=n=>Math.round(255*(l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1))));return '#'+[c(0),c(8),c(4)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function paintTracks(pk){const q=pk.querySelectorAll('input'),h=+q[0].value,s=+q[1].value,l=+q[2].value;
+ q[0].style.background='linear-gradient(90deg,'+[0,60,120,180,240,300,360].map(x=>`hsl(${x},100%,50%)`).join(',')+')';
+ q[1].style.background=`linear-gradient(90deg,hsl(${h},0%,${l}%),hsl(${h},100%,${l}%))`;q[2].style.background=`linear-gradient(90deg,#000,hsl(${h},${s}%,50%),#fff)`}
+function setCol(id,hex){el(id).value=hex;el('sw_'+id).style.background=hex;paintTracks(el('pk_'+id))}
+function togPick(id){const pk=el('pk_'+id),open=pk.hidden;document.querySelectorAll('.pick').forEach(x=>{x.hidden=true;x.innerHTML=''});if(!open)return;pk.hidden=false;const v=el(id).value,t=hex2hsl(v);
+ pk.innerHTML=`<div class="sws">${SWS.map(c=>`<button type="button" aria-label="${c}" style="background:${c}" data-c="${c}"></button>`).join('')}</div><label>Hue<input type="range" min="0" max="360" value="${t[0]}"></label><label>Saturation<input type="range" min="0" max="100" value="${t[1]}"></label><label>Lightness<input type="range" min="0" max="100" value="${t[2]}"></label><label>Hex code<input type="text" value="${v}" maxlength="7" spellcheck="false" autocomplete="off"></label>`;
+ paintTracks(pk);const q=pk.querySelectorAll('input');
+ pk.oninput=e=>{let hex;if(e.target===q[3]){let s=e.target.value.trim();if(s[0]!=='#')s='#'+s;if(!/^#[0-9a-f]{6}$/i.test(s))return;hex=s.toLowerCase();const u=hex2hsl(hex);q[0].value=u[0];q[1].value=u[1];q[2].value=u[2]}
+  else{hex=hsl2hex(+q[0].value,+q[1].value,+q[2].value);q[3].value=hex}setCol(id,hex)};
+ pk.onclick=e=>{const c=e.target.dataset&&e.target.dataset.c;if(!c)return;const u=hex2hsl(c);q[0].value=u[0];q[1].value=u[1];q[2].value=u[2];q[3].value=c;setCol(id,c);schedule()}}
+const slider=a=>`<div class="row"><label for="${a[0]}">${a[1]}</label><output id="o_${a[0]}">${a[5]}</output><input type="range" id="${a[0]}" min="${a[2]}" max="${a[3]}" step="${a[4]}" value="${a[5]}"></div>`;
+const sel=a=>`<div class="row"><label for="${a[0]}">${a[1]}</label><select id="${a[0]}">${a[2].map(x=>`<option value="${x[0]}"${x[0]==a[3]?' selected':''}>${x[1]}</option>`).join('')}</select></div>`;
+const col=a=>`<div class="row"><label>${a[1]}</label><button type="button" class="sw" id="sw_${a[0]}" aria-label="Change ${a[1]}" onclick="togPick('${a[0]}')" style="background:${a[2]}"></button><input type="hidden" id="${a[0]}" value="${a[2]}"></div><div class="pick" id="pk_${a[0]}" hidden></div>`;
+const ck=a=>`<div class="row"><label for="${a[0]}">${a[1]}</label><input type="checkbox" id="${a[0]}" ${a[2]?'checked':''}></div>`;
+const cat=(title,body,open,cls='')=>`<details class="cat ${cls}"${open?' open':''}><summary>${title}</summary><div class="body">${body}</div></details>`;
+el('controls').innerHTML=
+ cat('Pattern &amp; colors',sel(SEL[0])+S2.slice(0,2).map(slider).join('')+C.map(col).join(''),true)+
+ cat('Image on the tie',`<div class="row"><label>Images (pick one or several)</label><button type="button" id="fbtn" onclick="el('face').click()">Upload...</button><input type="file" id="face" accept="image/*" multiple hidden></div><div class="row"><label>Remove image</label><button type="button" onclick="FACE.length=0;render()">Clear</button></div>`+sel(SEL[5])+SF.map(slider).join('')+ck(['sborder','Image border',1])+ck(['sflip','Flip image left/right',0])+ck(['srep','Repeat the image down the whole tie',0])+col(['c5','Border color','#ffffff']))+
+ cat('Photo as the whole fabric',`<div class="pre"><button type="button" onclick="preset({pat:'photo',pmode:'tile',angle:0,size:16})">Face grid look</button><button type="button" onclick="preset({pat:'photo',pmode:'cubes',angle:0,size:9})">3D cubes look</button></div><div class="row"><label>Photos</label><button type="button" id="pbtn" onclick="el('photo').click()">Upload...</button><input type="file" id="photo" accept="image/*" multiple hidden></div><div class="row"><label>Remove all photos</label><button type="button" onclick="PH.length=0;if(el('pat').value==='photo')el('pat').value='stripes';render()">Clear</button></div>`+sel(SEL[3])+sel(SEL[8])+sel(SEL[9])+sel(SEL[6])+sel(SEL[7])+slider(['grnd','Round grid corners (%)',0,50,1,0])+sel(SEL[4])+S2.slice(2).map(slider).join(''))+
+ cat('Text on the tie',`<div class="pre"><button type="button" onclick="preset({ttext:''})">Clear text</button></div><label for="ttext" style="font-size:13px">Text, one line per row</label><textarea id="ttext" rows="5" spellcheck="false"></textarea>`+slider(['tstart','Text starts at (% of length)',0,100,1,64])+slider(['tend','Text ends at (% of length)',0,100,1,95])+slider(['ts','Text width (% of tie width)',30,100,1,90])+sel(SEL[12])+sel(SEL[13])+sel(SEL[14])+sel(SEL[10])+slider(['trep','Repeat the text',1,6,1,1])+slider(['ttilt','Tilt (degrees)',-30,30,1,0])+slider(['topac','Opacity (%)',10,100,1,100])+col(['c6','Text color','#ffffff'])+sel(SEL[11])+sel(SEL[15])+col(['c7','Band color','#111111']))+
+cat('Extras &amp; details',CK.map(ck).join(''))+
+ cat('Print (A4)',sel(SEL[2])+sel(SEL[1]))+
+ cat('Advanced',`<div class="grp">Size</div>`+ck(['auto','Fill the pages (auto size)',1])+S.slice(0,2).map(slider).join('')+`<div class="grp">Shape &amp; wings</div>`+S.slice(2,9).map(slider).join('')+`<div class="grp">Thickness</div>`+S.slice(9).map(slider).join(''),false,'adv');
+let RQ=0;const schedule=()=>{if(!RQ)RQ=requestAnimationFrame(()=>{RQ=0;render()})};
+el('controls').addEventListener('input',schedule);
+el('photo').addEventListener('change',e=>{addPhotos(e.target.files);e.target.value=''});
+const readImg=(fl,max,type)=>new Promise(res=>{const r=new FileReader();r.onerror=()=>res(null);r.onload=()=>{const im=new Image();im.onerror=()=>res(null);
+ im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL(type,.9))};im.src=r.result};r.readAsDataURL(fl)});
+el('face').addEventListener('change',e=>{Promise.all([...e.target.files].map(fl=>readImg(fl,700,'image/png'))).then(a=>{FACE.push(...a.filter(Boolean));render()});e.target.value=''});
+function addPhotos(files){Promise.all([...files].map(fl=>readImg(fl,900,fl.type==='image/jpeg'?'image/jpeg':'image/png'))).then(a=>{PH.push(...a.filter(Boolean));el('pat').value='photo';render()})}
+function preset(o){for(const k in o){const e=el(k);if(typeof o[k]==='boolean')e.checked=o[k];else e.value=o[k]}render()}
+
+const f=n=>+n.toFixed(2);
+const PH=[];let PAGES=[],AUTOC={},FACE=[],UID=0,LAST=null,TP=null,LASTYS=0;const TRY={tx:200,ty:345,k:.75,rot:0};
+function P(){const n=id=>+el(id).value,g=id=>el(id).value,c=id=>el(id).checked;const o={};
+ [...S,...S2,...SF].forEach(a=>o[a[0]]=n(a[0]));SEL.forEach(a=>o[a[0]]=g(a[0]));C.forEach(a=>o[a[0]]=g(a[0]));CK.forEach(a=>o[a[0]]=c(a[0]));o.auto=c('auto');o.photos=PH;o.grnd=+el('grnd').value;o.ttext=el('ttext').value;o.tstart=+el('tstart').value;o.tend=+el('tend').value;o.ts=+el('ts').value;o.c6=el('c6').value;o.c7=el('c7').value;o.trep=+el('trep').value;o.ttilt=+el('ttilt').value;o.topac=+el('topac').value;o.face=FACE.length?FACE:null;o.sborder=c('sborder');o.sflip=c('sflip');o.srep=c('srep');o.c5=g('c5');
+ const mk=len=>({...o,len,wt:len*o.wtp/100,wb:len*o.wbp/100});
+const key=JSON.stringify([o.pieces,o.per,o.wbp,o.wtp,o.tip,o.top,o.tr,o.overlap,o.wing,o.keep]);
+ if(o.auto&&AUTOC.key===key){o.len=AUTOC.len;el('len').value=o.len}
+ else if(o.auto){let lo=60,hi=o.pieces*420;for(let i=0;i<24;i++){const mid=(lo+hi)/2,q=mk(mid);if(planN(q,geom(q),o.pieces))lo=mid;else hi=mid}
+  o.len=Math.floor(lo);el('len').value=o.len;AUTOC={key,len:o.len}}
+ return mk(o.len)}
+function shade(hex,a){const v=parseInt(hex.slice(1),16);const m=x=>Math.max(0,Math.min(255,Math.round(x*(1+a))));return '#'+[v>>16,v>>8&255,v&255].map(x=>m(x).toString(16).padStart(2,'0')).join('')}
+
+function offsetPoly(P,d){const n=P.length,E=P.map((a,i)=>{const b=P[(i+1)%n],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;return{a,nx:dy/l,ny:-dx/l,d:d[i]}});
+ return P.map((_,k)=>{const e0=E[(k+n-1)%n],e1=E[k],det=e0.nx*e1.ny-e0.ny*e1.nx,c0=e0.nx*e0.a[0]+e0.ny*e0.a[1]+e0.d,c1=e1.nx*e1.a[0]+e1.ny*e1.a[1]+e1.d;
+  if(Math.abs(det)<1e-9)return[e1.a[0]+e1.nx*e1.d,e1.a[1]+e1.ny*e1.d];return[(c0*e1.ny-c1*e0.ny)/det,(e0.nx*c1-e1.nx*c0)/det]})}
+// one connected wing all the way round (no gaps at the tip), none along the top end
+function wingPoly(P,w){const n=P.length;return offsetPoly(P,P.map((_,i)=>i===0||i===n-1?0:w))}
+// rounded tip: fillet of radius r between the two tip edges
+function roundTip(A,T,B,r){const un=(a,b)=>{const dx=a[0]-b[0],dy=a[1]-b[1],l=Math.hypot(dx,dy);return[dx/l,dy/l,l]},ur=un(A,T),ul=un(B,T),al=Math.acos(Math.max(-1,Math.min(1,ur[0]*ul[0]+ur[1]*ul[1])))/2;
+ r=Math.min(r,.6*Math.min(ur[2],ul[2])*Math.tan(al));if(r<.5)return[T];const d=r/Math.tan(al),bx=ur[0]+ul[0],by=ur[1]+ul[1],bl=Math.hypot(bx,by),
+ C=[T[0]+bx/bl*r/Math.sin(al),T[1]+by/bl*r/Math.sin(al)],tr=[T[0]+ur[0]*d,T[1]+ur[1]*d],tl=[T[0]+ul[0]*d,T[1]+ul[1]*d];
+ let a0=Math.atan2(tr[1]-C[1],tr[0]-C[0]),a1=Math.atan2(tl[1]-C[1],tl[0]-C[0]);if(a1<a0)a1+=2*Math.PI;
+ return Array.from({length:13},(_,k)=>{const a=a0+(a1-a0)*k/12;return[C[0]+r*Math.cos(a),C[1]+r*Math.sin(a)]})}
+function geom(p){const tp=p.wt*p.top,tipH=Math.min(p.wb*p.tip,p.len*.45),yW=p.len-tipH;
+ const poly=[[0,0],[p.wt/2,tp],[p.wb/2,yW],...roundTip([p.wb/2,yW],[0,p.len],[-p.wb/2,yW],p.tr),[-p.wb/2,yW],[-p.wt/2,tp]],wg=p.wing;
+ return(()=>{const w=y=>y<=tp?p.wt:y>=yW?p.wb:p.wt+(p.wb-p.wt)*(y-tp)/(yW-tp),sc=1+2*wg/100,xo=y=>w(y)/2*sc;
+  let k0=p.len*.82,kh=Math.max(8,Math.min(18,p.len*.011));if(k0+kh>yW-2)k0=yW-2-kh;const on=p.keep&&k0>tp+2,kx=y=>on&&y>=k0&&y<=k0+kh?w(y)*.8:0;
+  let outer=wg>0?poly.map(([x,y])=>[x*sc,y]):poly.slice();
+  if(on){const k1=k0+kh,R=[[xo(k0),k0],[xo(k0)+kx(k0),k0],[xo(k1)+kx(k1),k1],[xo(k1),k1]],L=R.map(([x,y])=>[-x,y]).reverse(),n=outer.length;outer=[outer[0],outer[1],...R,...outer.slice(2,n-1),...L,outer[n-1]]}
+  return{tp,tipH,yW,poly,outer,w,kx}})()}
+function clipHalf(pts,y,sg){const out=[];pts.forEach((a,i)=>{const b=pts[(i+1)%pts.length],ia=sg*(a[1]-y)>=0,ib=sg*(b[1]-y)>=0;
+ if(ia)out.push(a);if(ia!==ib){const t=(y-a[1])/(b[1]-a[1]);out.push([a[0]+t*(b[0]-a[0]),y])}});return out}
+const pathOf=pts=>pts.length?'M'+pts.map(q=>`${f(q[0])} ${f(q[1])}`).join('L')+'Z':'';
+
+function patFill(id,p){const s=p.size;if(p.pat==='solid')return{defs:'',fill:p.c1};
+ if(p.pat==='photo'){const N=p.photos.length;if(!N)return{defs:'',fill:p.c1};
+  if(p.pmode==='cubes'){const e=s,W=Math.sqrt(3)*e,w2=W/2,h3=e/2;let b='';
+   const im=(u,o,a,c)=>`<image href="${u}" width="1" height="1" preserveAspectRatio="xMidYMid slice" style="image-rendering:pixelated" transform="matrix(${f(a[0])} ${f(a[1])} ${f(c[0])} ${f(c[1])} ${f(o[0])} ${f(o[1])})"/>`;
+   const pg=(q,fl,op)=>`<polygon points="${q.map(z=>f(z[0])+','+f(z[1])).join(' ')}" fill="${fl}" fill-opacity="${op}" stroke="#000" stroke-opacity=".45" stroke-width="${f(e*.035)}" stroke-linejoin="round"/>`;
+   const cm=p.cubesrc||'one',sh=p.cshade!=='off',Nc=cm==='three'?1:N;
+   for(let k=-1;k<=2;k++)for(let c=-1;c<=Nc;c++){const cx=(c+(k&1?.5:0))*W,cy=k*1.5*e,u=p.photos[(((c+(k&1)*Math.ceil(Nc/2))%Nc)+Nc)%Nc];
+    const UL=[cx-w2,cy-h3],T=[cx,cy-e],UR=[cx+w2,cy-h3],LR=[cx+w2,cy+h3],B=[cx,cy+e],LL=[cx-w2,cy+h3],C=[cx,cy];
+    if(cm==='hex'){b+=`<image href="${u}" x="${f(cx-w2)}" y="${f(cy-e)}" width="${f(W)}" height="${f(2*e)}" preserveAspectRatio="none" style="image-rendering:pixelated" clip-path="url(#${id}hx)"/>`;continue}
+    const ut=cm==='three'?p.photos[0]:u,ul=cm==='three'?p.photos[1%N]:u,ur=cm==='three'?p.photos[2%N]:u;
+    b+=im(ut,UL,[w2,-h3],[w2,h3])+pg([UL,T,UR,C],'#fff',sh?.06:0)+im(ur,C,[w2,-h3],[0,e])+pg([C,UR,LR,B],'#000',sh?.42:0)+im(ul,UL,[w2,h3],[0,e])+pg([UL,C,B,LL],'#000',sh?.22:0)}
+   const hx=cm==='hex'?`<clipPath id="${id}hx" clipPathUnits="objectBoundingBox"><polygon points=".5,0 1,.25 1,.75 .5,1 0,.75 0,.25"/></clipPath>`:'';
+   return{defs:`${hx}<pattern id="${id}" patternUnits="userSpaceOnUse" width="${f(W*Nc)}" height="${f(3*e)}" patternTransform="rotate(${p.angle})"><rect width="${f(W*Nc)}" height="${f(3*e)}" fill="${p.c1}"/>${b}</pattern>`,fill:`url(#${id})`}}
+  if(p.pmode==='tile'){const cl=Math.ceil(Math.sqrt(N)),rw=Math.ceil(N/cl),h=s*(p.gshape==='square'?1:p.gshape==='wide'?.75:1.3),te=p.tedge,gp=te==='gap'?s*.07:0,o=te==='blend'?s*.3:0;let b=`<rect width="${f(cl*s)}" height="${f(rw*h)}" fill="${p.c1}"/>`,md='';
+   const ph=(r,c)=>p.photos[((r%rw+rw)%rw*cl+(c%cl+cl)%cl)%N];
+   if(o){const fx=o/(s+2*o),fy=o/(h+2*o),st=q=>`<stop offset="0" stop-color="#000"/><stop offset="${f(2*q)}" stop-color="#fff"/><stop offset="${f(1-2*q)}" stop-color="#fff"/><stop offset="1" stop-color="#000"/>`;
+    md=`<linearGradient id="${id}gh">${st(fx)}</linearGradient><linearGradient id="${id}gv" x2="0" y2="1">${st(fy)}</linearGradient><mask id="${id}mh" maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="url(#${id}gh)"/></mask><mask id="${id}mv" maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="url(#${id}gv)"/></mask>`;
+    for(let r=-1;r<=rw;r++)for(let c=-1;c<=cl;c++)b+=`<svg x="${f(c*s)}" y="${f(r*h)}" width="${f(s)}" height="${f(h)}"><image href="${ph(r,c)}" x="${f(-o)}" y="${f(-o)}" width="${f(s+2*o)}" height="${f(h+2*o)}" preserveAspectRatio="xMidYMid slice"/></svg>`;
+    for(let r=-1;r<=rw;r++)for(let c=-1;c<=cl;c++)b+=`<g mask="url(#${id}mh)"><g mask="url(#${id}mv)"><image href="${ph(r,c)}" x="${f(c*s-o)}" y="${f(r*h-o)}" width="${f(s+2*o)}" height="${f(h+2*o)}" preserveAspectRatio="xMidYMid slice"/></g></g>`}
+   else{if(p.grnd>0)md=`<clipPath id="${id}rc" clipPathUnits="objectBoundingBox"><rect width="1" height="1" rx="${(p.grnd/100).toFixed(3)}" ry="${(p.grnd/100*(s-gp)/(h-gp)).toFixed(3)}"/></clipPath>`;
+    for(let r=0;r<rw;r++)for(let c=0;c<cl;c++)b+=`<image href="${ph(r,c)}" x="${f(c*s+gp/2)}" y="${f(r*h+gp/2)}" width="${f(s-gp)}" height="${f(h-gp)}" preserveAspectRatio="xMidYMid slice"${p.grnd>0?` clip-path="url(#${id}rc)"`:''}/>`}
+   return{defs:`${md}<pattern id="${id}" patternUnits="userSpaceOnUse" x="${f(-cl*s/2)}" width="${f(cl*s)}" height="${f(rw*h)}" patternTransform="rotate(${p.angle})">${b}</pattern>`,fill:`url(#${id})`}}
+  const z=p.pzoom/100,rot=p.prot==='90',bw=p.wb*(1+2*p.wing/100),h=p.len/N,asp=p.pmode==='stretch'?'none':p.pmode==='fit'?'xMidYMid meet':'xMidYMid slice';let b='';
+  p.photos.forEach((u,j)=>{const fw=rot?h:bw,fh=rot?bw:h,ox=fw*(z-1),oy=fh*(z-1);
+   const img=`<image href="${u}" x="${f(-ox/2*(1+p.pox/100))}" y="${f(-oy/2*(1+p.poy/100))}" width="${f(fw*z)}" height="${f(fh*z)}" preserveAspectRatio="${asp}"/>`;
+   b+=`<svg x="0" y="${f(j*h)}" width="${f(bw)}" height="${f(h)}"><rect width="${f(bw)}" height="${f(h)}" fill="${p.c1}"/>${rot?`<g transform="translate(${f(bw)} 0) rotate(90)">${img}</g>`:img}</svg>`});
+  return{defs:`<pattern id="${id}" patternUnits="userSpaceOnUse" x="${f(-bw/2)}" y="0" width="${f(bw)}" height="${f(p.len)}">${b}</pattern>`,fill:`url(#${id})`}}
+ let w=s,b=`<rect width="${s}" height="${s}" fill="${p.c1}"/>`;
+ if(p.pat==='stripes')b+=`<rect width="${s/2}" height="${s}" fill="${p.c2}"/>`;
+ else if(p.pat==='dots')b+=`<circle cx="${s/2}" cy="${s/2}" r="${f(s*.22)}" fill="${p.c2}"/>`;
+ else if(p.pat==='plaid')b+=`<rect y="${f(s*.15)}" width="${s}" height="${f(s*.25)}" fill="${p.c2}" opacity=".7"/><rect x="${f(s*.15)}" width="${f(s*.25)}" height="${s}" fill="${p.c2}" opacity=".7"/>`;
+ else{w=2*s;b=`<rect width="${w}" height="${w}" fill="${p.c1}"/><rect width="${s}" height="${s}" fill="${p.c2}"/><rect x="${s}" y="${s}" width="${s}" height="${s}" fill="${p.c2}"/>`}
+ return{defs:`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${w}" height="${w}" patternTransform="rotate(${p.angle})">${b}</pattern>`,fill:`url(#${id})`}}
+
+function stickers(p,g){if(!p.face)return '';const iid='si'+(UID++);let ci=0,o=`<defs>${p.face.map((u,k)=>`<image id="${iid}_${k}" href="${u}" x="-.5" y="-.5" width="1" height="1" preserveAspectRatio="${p.sshape==='none'?'xMidYMid meet':'xMidYMid slice'}"/>`).join('')}</defs>`;
+ const ys=[];if(p.srep){const gp=p.len*p.sgap/100;for(let y=p.len*p.sy/100%gp;y<=p.len;y+=gp)ys.push(y)}else for(let c=0;c<p.scount;c++)ys.push(p.len*(p.sy/100+(c-(p.scount-1)/2)*p.sgap/100));
+ for(const y of ys){const w=wid(p,g,y);if(w<=0||y<0||y>p.len)continue;
+  const sz=w*p.ssz/100,hs=sz/2,cx=p.sx/100*w/2,id='sk'+(UID++),none=p.sshape==='none';
+  const shp=at=>p.sshape==='circle'?`<circle r="${f(hs)}" ${at}/>`:p.sshape==='oval'?`<ellipse rx="${f(sz*.4)}" ry="${f(sz*.52)}" ${at}/>`:`<rect x="${f(-hs)}" y="${f(-hs)}" width="${f(sz)}" height="${f(sz)}" rx="${p.sshape==='round'?f(sz*.18):0}" ${at}/>`;
+  o+=`<g class="sk" transform="translate(${f(cx)} ${f(y)}) rotate(${p.srot}) scale(${p.sflip?-1:1} 1)"><clipPath id="${id}">${shp('')}</clipPath><g ${none?'':`clip-path="url(#${id})"`}><use href="#${iid}_${(ci++)%p.face.length}" transform="scale(${f(sz)})"/></g>${p.sborder&&!none?shp(`fill="none" stroke="${p.c5}" stroke-width="${f(Math.max(.6,sz*.035))}"`):''}</g>`}
+ return o}
+function body(p,g,pf,y0,y1){const col=p.fill==='color';if(!col)return p.seam?`<path d="M0 ${f(g.tp)} L0 ${f(g.yW)}" stroke="#999" stroke-width=".3" stroke-dasharray="2 2" fill="none"/>`:'';
+ let s=`<rect x="-300" y="${f(y0)}" width="600" height="${f(y1-y0)}" fill="${pf.fill}"/>`;
+ if(p.tipc)s+=`<path d="${pathOf(clipHalf(g.poly,p.len-g.tipH*.7,1))}" fill="${p.c3}"/>`;
+ if(p.seam)s+=`<path d="M0 ${f(g.tp)} L0 ${f(g.yW)}" stroke="rgba(0,0,0,.35)" stroke-width=".5" fill="none"/>`;
+ 
+ s+=stickers(p,g)+tieText(p,g);return s}
+function tieText(p,g){let L=(p.ttext||'').split('\n').map(t=>t.trim()).filter(Boolean);if(!L.length)return '';
+ if(p.tcase==='upper')L=L.map(t=>t.toLocaleUpperCase('pl'));const rep=Math.max(1,p.trep|0);L=Array.from({length:rep},()=>L).flat();
+ const a=Math.min(p.tstart,p.tend),b=Math.max(p.tstart,p.tend,a+1),y0=p.len*a/100,y1=p.len*b/100,step=(y1-y0)/L.length;
+ const F={display:['"Noto Sans Display","Arial Narrow","Noto Sans",sans-serif','900','normal','condensed',.44],serif:['"Noto Serif",Georgia,serif','600','italic','normal',.5],sans:['"Noto Sans",system-ui,sans-serif','800','normal','normal',.6],mono:['"Noto Sans Mono",ui-monospace,monospace','700','normal','normal',.6]}[p.tfont]||[];
+ const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),W=y=>y<=g.yW?g.w(y):p.wb*Math.max(0,(p.len-y)/g.tipH);
+ const st=fs=>`font-family='${F[0]}' font-weight="${F[1]}" font-style="${F[2]}" font-stretch="${F[3]}" fill="${p.c6}" fill-opacity="${p.topac/100}"${p.tstroke==='on'?` stroke="${p.c1}" stroke-width="${f(fs*.14)}" stroke-opacity="${p.topac/100}" paint-order="stroke" stroke-linejoin="round"`:''}`;
+ const band=(y,hh)=>p.tband==='on'?`<rect x="-300" y="${f(y-hh/2)}" width="600" height="${f(hh)}" fill="${p.c7}"/>`:'';
+ let o='';
+ if(p.tdir==='down'||p.tdir==='up'){const r=p.tdir==='down'?90:-90;if(p.tdir==='up')L=L.slice().reverse();
+  L.forEach((t,i)=>{const ya=y0+step*i,yb=ya+step,yc=(ya+yb)/2,wm=Math.min(W(ya),W(yb)),fs=wm*p.ts/100*.9,n=Math.max(3,[...t].length),tl=Math.min(n*F[4]*fs,step*.84);if(fs<=.3||tl<=1)return;
+   o+=`<g transform="translate(0 ${f(yc)}) rotate(${r+p.ttilt})">${p.tband==='on'?`<rect x="${f(-tl/2-fs*.3)}" y="${f(-fs*.7)}" width="${f(tl+fs*.6)}" height="${f(fs*1.4)}" rx="${f(fs*.2)}" fill="${p.c7}"/>`:''}<text x="0" y="0" font-size="${f(fs)}" text-anchor="middle" dominant-baseline="central" textLength="${f(tl)}" lengthAdjust="spacingAndGlyphs" ${st(fs)}>${esc(t)}</text></g>`});
+  return o}
+ const fit=L.map((t,i)=>{const y=y0+step*(i+.5),w=W(y)*p.ts/100,n=Math.max(3,[...t].length);return{t,y,w,n,fs:Math.min(step*.82,w/(n*F[4]))}});
+ const same=Math.min(...fit.map(q=>q.fs));
+ fit.forEach(q=>{const fs=p.tsize==='same'?same:q.fs,tl=Math.min(q.n*F[4]*fs,q.w);if(fs<=.3)return;
+  o+=band(q.y,fs*1.35)+`<text x="0" y="${f(q.y)}" font-size="${f(fs)}" text-anchor="middle" dominant-baseline="central" textLength="${f(tl)}" lengthAdjust="spacingAndGlyphs"${p.ttilt?` transform="rotate(${p.ttilt} 0 ${f(q.y)})"`:''} ${st(fs)}>${esc(q.t)}</text>`});
+ return o}
+
+// Pieces are laid in strips (alternate ones flipped so the taper nests), the whole group is tilted to fill the A4 sheet
+const AW=198,AH=285;
+const wid=(p,g,y)=>y<0||y>p.len?0:y<g.tp?p.wt*y/g.tp:y<=g.yW?p.wt+(p.wb-p.wt)*(y-g.tp)/(g.yW-g.tp):p.wb*(p.len-y)/g.tipH;
+function layout(p,g,grp,mode){const flips=grp.map((_,j)=>mode==='alt'&&j%2===1);
+ const wa=(pc,fl,y)=>{if(Math.abs(y)>pc.h)return 0;const yy=fl?pc.c-y:pc.c+y,v=wid(p,g,yy);return v>0?v*(1+2*p.wing/100)+2*g.kx(yy):0};
+ const H=Math.max(...grp.map(c=>c.h)),xs=[0];
+ for(let j=1;j<grp.length;j++){let m=0;for(let y=-H;y<=H;y+=2)m=Math.max(m,(wa(grp[j-1],flips[j-1],y)+wa(grp[j],flips[j],y))/2);xs.push(xs[j-1]+m+1.5)}
+ const pts=grp.map((pc,j)=>pc.pts.map(([x,yy])=>{let X=x,Y=yy-pc.c;if(flips[j]){X=-X;Y=-Y}return[X+xs[j],Y]})).flat();
+ return{flips,xs,pts}}
+function bbox(pts,t){const c=Math.cos(t),s=Math.sin(t);let x0=1e9,x1=-1e9,v0=1e9,v1=-1e9;
+ for(const q of pts){const rx=q[0]*c-q[1]*s,ry=q[0]*s+q[1]*c;x0=Math.min(x0,rx);x1=Math.max(x1,rx);v0=Math.min(v0,ry);v1=Math.max(v1,ry)}return{x0,x1,v0,v1}}
+function fitGroup(p,g,grp,force){const lays=['alt','none'].map(m=>layout(p,g,grp,m));
+ for(let a=0;a<=90;a+=.5)for(const sg of a?[1,-1]:[1])for(const L of lays){const b=bbox(L.pts,sg*a*Math.PI/180);
+  if(b.x1-b.x0<=AW&&b.v1-b.v0<=AH)return{ang:sg*a,bx:(b.x0+b.x1)/2,by:(b.v0+b.v1)/2,flips:L.flips,xs:L.xs}}
+ if(!force)return null;const L=lays[0],b=bbox(L.pts,0);return{ang:0,bx:(b.x0+b.x1)/2,by:(b.v0+b.v1)/2,flips:L.flips,xs:L.xs,over:true}}
+// Greedy page-by-page: every page takes as much of the tie as fits, so narrow (top) pages get long pieces and wide (tip) pages get shorter ones
+function planN(p,g,n,force){const L=p.len,o=p.overlap,k=+p.per,pgs=[],cuts=[];let a=0,idx=0;
+ const mk=(a,b,m)=>{const d=(b-a)/m,R=[];for(let i=0;i<m;i++){const y0=a+i*d,yb=a+(i+1)*d,y1=(b>=L-.01&&i===m-1)?L:yb+o;R.push({y0,yb,y1,c:(y0+y1)/2,h:(y1-y0)/2,pts:clipHalf(clipHalf(g.outer,y0,1),y1,-1)})}return R};
+ while(idx<n&&a<L-.01){const m=Math.min(k,n-idx),lastPage=idx+m>=n;let b=L;
+  if(!lastPage&&!fitGroup(p,g,mk(a,L,m),false)){let lo=a,hi=L;
+   if(!fitGroup(p,g,mk(a,a+8*m,m),false))return null;
+   for(let t=0;t<11;t++){const mid=(lo+hi)/2;if(mid>a+8*m&&fitGroup(p,g,mk(a,mid,m),false))lo=mid;else if(mid<=a+8*m)lo=mid;else hi=mid}
+   b=lo}
+  const grp=mk(a,b,m),r=fitGroup(p,g,grp,force);if(!r)return null;
+  grp.forEach((pc,t)=>{pc.i=idx+t;if(pc.yb<L-.01)cuts.push(pc.yb)});pgs.push({pieces:grp,...r});a=b;idx+=m}
+ if(a<L-.01)return null;
+ return{W:210,H:297,o,n:idx,cuts,pgs}}
+function plan(p,g){for(let n=p.pieces;n<=14;n++){const r=planN(p,g,n);if(r)return r}return planN(p,g,Math.max(p.pieces,14),true)}
+
+function pageSvg(p,g,pl,pg,pi,back){const {W,H,o}=pl,tot=pl.pgs.length*(p.back?2:1),k=pi+(back?pl.pgs.length:0);
+ const q=back?{...p,seam:0,tipc:0,keep:0,face:null}:p,pf=back?{defs:'',fill:p.c4}:patFill('pt'+pi,p);
+ let defs=pf.defs+`<pattern id="hh${k}" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1" height="3" fill="#000" opacity=".2"/></pattern>`,inner='';
+ pg.pieces.forEach((pc,j)=>{const inn=clipHalf(clipHalf(g.poly,pc.y0,1),pc.y1,-1),out=back?inn:pc.pts,path=pathOf(out),yt=pc.yb,id='cp'+k+'_'+pc.i;let tab='',lab='',wing='',fold='';
+  defs+=`<clipPath id="${id}"><path d="${path}"/></clipPath>`;
+  if(p.marks&&pc.yb<p.len-.01){tab=`<rect x="-300" y="${f(yt)}" width="600" height="${o}" fill="url(#hh${k})"/><line x1="-300" x2="300" y1="${f(yt)}" y2="${f(yt)}" stroke="#222" stroke-width=".22" stroke-dasharray="2 1.5"/>`;
+   lab+=`<text x="0" y="${f(yt+o/2+1.1)}" text-anchor="middle" font-size="${f(Math.min(3.2,o*.3))}" fill="#222">GLUE TAB · piece ${pc.i+2} goes here</text>`}
+  if(p.marks&&pc.i>0)lab+=`<text x="0" y="${f(pc.y0+4)}" text-anchor="middle" font-size="2.6" fill="#777">top edge meets dashed line, piece ${pc.i}</text>`;
+  lab+=`<text x="0" y="${f(pc.c)}" text-anchor="middle" font-size="${f(Math.min(9,Math.max(3,wid(p,g,pc.c)*.3)))}" font-weight="700" fill="#888" opacity=".75">${pc.i+1}/${pl.n}${back?' BACK':''}</text>`;
+  if(!back&&p.wing>0){if(p.fill==='color')wing=`<path d="${path} ${pathOf(inn)}" fill="#fff" fill-opacity=".55" fill-rule="evenodd"/>`;
+   fold=`<path d="${pathOf(inn)}" fill="none" stroke="#111" stroke-width=".2" stroke-dasharray="2.5 1.5"/>`}
+  inner+=`<g transform="translate(${f(pg.xs[j])} 0) rotate(${pg.flips[j]?180:0}) translate(0 ${f(-pc.c)})"><g clip-path="url(#${id})">${body(q,g,pf,pc.y0,pc.y1)}${wing}${tab}</g>${lab}${fold}<path d="${path}" fill="none" stroke="#111" stroke-width=".25" stroke-linejoin="round"/></g>`});
+ const out=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs>${defs}</defs><g transform="translate(${f(W/2-pg.bx)} ${f(H/2-pg.by)}) rotate(${pg.ang})">${inner}</g>
+ <text x="8" y="${H-7}" font-size="3.5" font-family="system-ui,sans-serif" fill="#999">PAGE ${k+1} OF ${tot}${back?' (BACK)':''}</text></svg>`;
+ return p.labels?out:out.replace(/<text[\s\S]*?<\/text>/g,'')}
+
+function stackSvg(p,g,pl){const pf=patFill('ps',p),depth=p.layers*p.cardT,hw=p.wb/2+8,edge=shade(p.c1,-.5);
+ let ex='';const k=Math.min(10,Math.max(1,Math.round(depth*2)));
+ for(let i=k;i>=1;i--){const o=depth*.7*i/k;ex+=`<path d="${pathOf(g.poly)}" transform="translate(${f(o)} ${f(o)})" fill="${edge}"/>`}
+ let cuts='';pl.cuts.forEach((y,ci)=>{const i=ci+1;cuts+=`<line x1="${f(-g.w(y)/2)}" x2="${f(g.w(y)/2)}" y1="${f(y)}" y2="${f(y)}" stroke="#fff" stroke-width=".4" stroke-dasharray="3 2"/><text x="${f(g.w(y)/2+2)}" y="${f(y)}" font-size="${f(Math.max(3,p.len/60))}" fill="#888">${i}|${i+1}</text>`})
+ return `<svg viewBox="${f(-hw)} -4 ${f(hw*2+depth+14)} ${f(p.len+8+depth)}" xmlns="http://www.w3.org/2000/svg"><defs>${pf.defs}<clipPath id="pcs"><path d="${pathOf(g.poly)}"/></clipPath></defs>${ex}
+ <g clip-path="url(#pcs)">${p.fill==='color'?body(p,g,pf,0,p.len):`<rect x="-300" y="0" width="600" height="${p.len}" fill="#fff"/>`}</g><path d="${pathOf(g.poly)}" fill="none" stroke="rgba(0,0,0,.45)" stroke-width=".5"/>${cuts}</svg>`}
+
+const KEY='tiecut.v5';
+function save(){try{const o={};el('controls').querySelectorAll('input,select,textarea').forEach(x=>{if(x.id&&x.type!=='file')o[x.id]=x.type==='checkbox'?x.checked:x.value});localStorage.setItem(KEY,JSON.stringify(o))}catch(e){}}
+function load(){try{const o=JSON.parse(localStorage.getItem(KEY)||'null');if(!o)return;for(const k in o){const x=el(k);if(!x||x.type==='file')continue;if(x.type==='checkbox')x.checked=o[k];else x.value=o[k]}}catch(e){}}
+function resetAll(){try{localStorage.removeItem(KEY)}catch(e){}location.reload()}
+function render(){const p=P(),g=geom(p),pl=plan(p,g);
+ [...S,...S2,...SF].forEach(a=>el('o_'+a[0]).textContent=el(a[0]).value);
+ LAST={p,g,pl};['c1','c2','c3','c4','c5','c6','c7'].forEach(k=>{const b=el('sw_'+k);if(b)b.style.background=el(k).value});el('fbtn').textContent=FACE.length?FACE.length+' image'+(FACE.length>1?'s':'')+' (add more)':'Upload...';
+ el('len').disabled=p.auto;
+ el('stackWrap').innerHTML=stackSvg(p,g,pl);
+ PAGES=pl.pgs.map((pg,i)=>pageSvg(p,g,pl,pg,i,false)).concat(p.back?pl.pgs.map((pg,i)=>pageSvg(p,g,pl,pg,i,true)):[]);
+ el('pagesWrap').innerHTML=PAGES.map(x=>`<div class="page">${x}</div>`).join('');
+ el('pbtn').textContent=PH.length?PH.length+' photo'+(PH.length>1?'s':'')+' (add more)':'Upload...';
+ el('pagesWrap').style.setProperty('--pw',pl.W);el('pagesWrap').style.setProperty('--ph',pl.H);
+ el('pagesize').textContent=`@page{size:210mm 297mm;margin:0}`;
+ const over=pl.pgs.some(x=>x.over);
+ el('info').textContent=`${pl.n} pieces on ${pl.pgs.length} A4 page${pl.pgs.length>1?'s':''}, tie ${f(p.len/10)} cm long, widest ${f(p.wb/10)} cm. Cut each piece out, overlap the glue tabs in order (1, 2, 3...), tape from behind. `+(p.wing>0?'The pale wings fold back along the dashed line, tape them down behind the tie. ':'')+
+ (p.layers>1?`Print x${p.layers} and glue the stack: about ${f(p.layers*p.cardT)} mm thick. `:'')+(over?'Too wide for A4: lower the width.':'')+(FACE.length?' Drag the image on the Assembled tie view to move it. Pinch, or scroll and Shift+scroll, to resize and rotate.':'');
+ renderTry();save();}
+const TS=[['tk','Tie size',.25,1.6,.01,.75],['trot','Rotate',-30,30,1,0],['tvis','Blade length shown (%)',25,80,1,35],['ttx','Move left / right',0,400,1,200],['tty','Move up / down',0,780,1,345]];
+el('tryCtl').innerHTML=cat('Tie size &amp; angle',TS.slice(0,3).map(slider).join(''),true)+cat('Position',TS.slice(3).map(slider).join(''))+cat('Background','<div class="pre"><button type="button" id="tbtn" onclick="el(\'tphoto\').click()">Use my photo</button><button type="button" onclick="TP=null;renderTry()">Mannequin</button></div>')+'<input type="file" id="tphoto" accept="image/*" hidden>';
+el('tryCtl').addEventListener('input',()=>{TRY.tx=+el('ttx').value;TRY.ty=+el('tty').value;renderTry()});
+el('tphoto').addEventListener('change',e=>{const fl=e.target.files[0];if(fl)readImg(fl,900,'image/jpeg').then(u=>{if(u){TP=u;renderTry()}});e.target.value=''});
+const tieT=()=>`translate(${f(TRY.tx)} ${f(TRY.ty)}) rotate(${TRY.rot}) scale(${TRY.k}) translate(0 ${f(-LASTYS)})`;
+function renderTry(){if(!LAST)return;const {g}=LAST,p={...LAST.p,fill:'color'};
+ TRY.k=+el('tk').value;TRY.rot=+el('trot').value;TRY.tx=+el('ttx').value;TRY.ty=+el('tty').value;
+ TS.forEach(a=>el('o_'+a[0]).textContent=el(a[0]).value);el('tbtn').textContent=TP?'Change photo':'Use my photo';
+ const ys=p.len*(1-el('tvis').value/100);LASTYS=ys;const pf=patFill('pw',p),vis=pathOf(clipHalf(g.poly,ys,1)),w0=wid(p,g,ys),kt=w0*1.35,kh=kt,y0=ys-kh;
+ const knot=`M${f(-kt/2)} ${f(y0)} L${f(kt/2)} ${f(y0)} C${f(kt/2+kt*.08)} ${f(ys-kh*.55)} ${f(w0/2+kt*.04)} ${f(ys-kh*.3)} ${f(w0/2)} ${f(ys)} L${f(-w0/2)} ${f(ys)} C${f(-w0/2-kt*.04)} ${f(ys-kh*.3)} ${f(-kt/2-kt*.08)} ${f(ys-kh*.55)} ${f(-kt/2)} ${f(y0)}Z`;
+ const who=TP?`<image href="${TP}" x="0" y="0" width="400" height="780" preserveAspectRatio="xMidYMid slice"/>`:
+ `<rect width="400" height="780" fill="#dfe6ec"/><path d="M20 780 L20 420 Q20 300 120 275 L200 268 L280 275 Q380 300 380 420 L380 780Z" fill="#f4f3ef" stroke="#d3d0c8"/><path d="M168 190 L168 268 Q200 300 232 268 L232 190Z" fill="#e0b394"/><ellipse cx="200" cy="118" rx="60" ry="76" fill="#e8c3a6"/><path d="M138 112 Q138 36 200 36 Q262 36 262 112 Q244 74 200 72 Q156 74 138 112Z" fill="#4a3a2c"/><path d="M168 262 L200 335 L128 322 L138 270Z M232 262 L200 335 L272 322 L262 270Z" fill="#fff" stroke="#cfcbc2"/><path d="M200 335 L200 780" stroke="#d6d3cb"/><rect x="20" y="735" width="360" height="16" fill="#2a2a2a"/>`;
+ el('trySvgWrap').innerHTML=`<svg viewBox="0 0 400 780" xmlns="http://www.w3.org/2000/svg"><defs>${pf.defs}<clipPath id="cpv"><path d="${vis}"/></clipPath><linearGradient id="gl"><stop offset="0" stop-color="#000" stop-opacity=".3"/><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient><filter id="ds" x="-30%" y="-10%" width="160%" height="130%"><feDropShadow dx="5" dy="8" stdDeviation="6" flood-opacity=".35"/></filter></defs>${who}
+ <g id="tieG" transform="${tieT()}" filter="url(#ds)" style="cursor:grab"><path d="${knot}" fill="${pf.fill}"/><path d="${knot}" fill="url(#gl)"/><path d="M0 ${f(y0+kh*.18)} L0 ${f(ys-kh*.1)}" stroke="rgba(0,0,0,.35)" stroke-width="1.2" fill="none"/>
+ <g clip-path="url(#cpv)">${body(p,g,pf,ys,p.len)}<rect x="-300" y="${f(ys)}" width="600" height="${f(p.len-ys)}" fill="url(#gl)"/></g><path d="${vis}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1"/></g></svg>`}
+let drag=null;const tw=el('trySvgWrap');
+const toSvg=e=>{const svg=tw.querySelector('svg'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;return pt.matrixTransform(svg.getScreenCTM().inverse())};
+tw.addEventListener('pointerdown',e=>{if(!e.target.closest('#tieG'))return;const q=toSvg(e);drag={x:q.x,y:q.y,tx:TRY.tx,ty:TRY.ty};tw.setPointerCapture(e.pointerId);e.preventDefault()});
+tw.addEventListener('pointermove',e=>{if(!drag)return;const q=toSvg(e);TRY.tx=Math.max(0,Math.min(400,drag.tx+q.x-drag.x));TRY.ty=Math.max(0,Math.min(780,drag.ty+q.y-drag.y));
+ tw.querySelector('#tieG').setAttribute('transform',tieT());el('ttx').value=Math.round(TRY.tx);el('tty').value=Math.round(TRY.ty);el('o_ttx').textContent=el('ttx').value;el('o_tty').textContent=el('tty').value});
+tw.addEventListener('pointerup',()=>{drag=null});
+const sw=el('stackWrap');let sdrag=null,wt=0;
+const toTie=e=>{const svg=sw.querySelector('svg'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;return pt.matrixTransform(svg.getScreenCTM().inverse())};
+const redrawStack=()=>{el('stackWrap').innerHTML=stackSvg(LAST.p,LAST.g,LAST.pl);SF.forEach(a=>{el(a[0]).value=LAST.p[a[0]];el('o_'+a[0]).textContent=el(a[0]).value})};
+const PT=new Map();let pinch=null;
+sw.addEventListener('pointerdown',e=>{if(!LAST)return;if(!PT.size&&!e.target.closest('.sk'))return;
+ PT.set(e.pointerId,{x:e.clientX,y:e.clientY});try{sw.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();const p=LAST.p;
+ if(PT.size===1){const q=toTie(e);pinch=null;sdrag={x:q.x,y:q.y,sy:p.sy,sx:p.sx,w:Math.max(5,wid(p,LAST.g,p.len*p.sy/100))}}
+ else if(PT.size===2){sdrag=null;const [a,b]=[...PT.values()];pinch={d:Math.hypot(b.x-a.x,b.y-a.y)||1,an:Math.atan2(b.y-a.y,b.x-a.x),ssz:p.ssz,srot:p.srot}}});
+sw.addEventListener('pointermove',e=>{if(!PT.has(e.pointerId))return;PT.set(e.pointerId,{x:e.clientX,y:e.clientY});const p=LAST.p;
+ if(pinch&&PT.size>=2){const [a,b]=[...PT.values()],d=Math.hypot(b.x-a.x,b.y-a.y),an=Math.atan2(b.y-a.y,b.x-a.x);
+  p.ssz=Math.round(Math.max(20,Math.min(600,pinch.ssz*d/pinch.d)));let r=Math.round(pinch.srot+(an-pinch.an)*180/Math.PI);r=((r+180)%360+360)%360-180;p.srot=r;redrawStack()}
+ else if(sdrag){const q=toTie(e);p.sy=Math.round(Math.max(0,Math.min(100,sdrag.sy+(q.y-sdrag.y)/p.len*100)));p.sx=Math.round(Math.max(-100,Math.min(100,sdrag.sx+(q.x-sdrag.x)/(sdrag.w/2)*100)));redrawStack()}});
+const endPt=e=>{if(!PT.has(e.pointerId))return;PT.delete(e.pointerId);if(!PT.size){const was=sdrag||pinch;sdrag=null;pinch=null;if(was)render()}else if(PT.size===1)pinch=null};
+sw.addEventListener('pointerup',endPt);sw.addEventListener('pointercancel',endPt);
+sw.addEventListener('wheel',e=>{if(!LAST||!e.target.closest('.sk'))return;e.preventDefault();const p=LAST.p,d=e.deltaY||e.deltaX;
+ if(e.shiftKey){let r=p.srot+(d>0?5:-5);if(r>180)r-=360;if(r<-180)r+=360;p.srot=r}else p.ssz=Math.max(20,Math.min(600,Math.round(p.ssz*(d>0?.93:1.07))));
+ redrawStack();clearTimeout(wt);wt=setTimeout(render,250)},{passive:false});
+function tab(t){el('stackWrap').style.display=t==='s'?'':'none';el('pagesWrap').classList.toggle('show',t==='p');el('tryWrap').style.display=t==='t'?'':'none';
+ ['S','P','T'].forEach(k=>el('tab'+k).classList.toggle('on',k.toLowerCase()===t));snip()}
+const svgToJpeg=svg=>new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=1240;c.height=1754;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.92))};im.onerror=()=>rej(new Error('render'));im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+async function downloadPdf(){const b=el('pdfBtn'),m=el('pdfMsg');if(!window.jspdf){m.textContent='The PDF maker did not load. Check your connection and reload the page.';return}
+ b.disabled=true;m.textContent='Making the PDF...';
+ try{const pdf=new jspdf.jsPDF({unit:'mm',format:'a4'});for(let i=0;i<PAGES.length;i++){m.textContent=`Making the PDF... page ${i+1} of ${PAGES.length}`;if(i)pdf.addPage();pdf.addImage(await svgToJpeg(PAGES[i]),'JPEG',0,0,210,297)}
+  const blob=pdf.output('blob');let DL=null;try{DL=window.claude&&claude.use?await claude.use('downloads'):null}catch(_){}
+  if(DL){try{await DL.save({filename:'tie-pages.pdf',data:blob});m.textContent='Saved. Print it at 100% size (no "fit to page").'}catch(e){m.textContent=e&&e.code==='declined'?'Download cancelled.':'Saving is not available here. Open the page in claude.ai in your browser and try again.'}}
+  else{pdf.save('tie-pages.pdf');m.textContent='If nothing downloaded, open the page in claude.ai in your browser and try again.'}}
+ catch(e){m.textContent='Could not make the PDF. Try fewer or smaller photos.'}
+ b.disabled=false}
+const SCIS='<svg class="sc" viewBox="0 0 80 44" aria-hidden="true"><g class="bl2"><path d="M34 22 L79 28 L34 17 Z" fill="#e8ebee" stroke="#1a1512" stroke-width="1.8" stroke-linejoin="round"/><path d="M35 20.5 L19 14" stroke="#1a1512" stroke-width="7.5" stroke-linecap="round"/><path d="M35 20.5 L19 14" stroke="#f3dfae" stroke-width="4" stroke-linecap="round"/><circle cx="12" cy="11" r="8" fill="none" stroke="#1a1512" stroke-width="7.5"/><circle cx="12" cy="11" r="8" fill="none" stroke="#f3dfae" stroke-width="4"/></g><g class="bl1"><path d="M34 22 L79 16 L34 27 Z" fill="#ffffff" stroke="#1a1512" stroke-width="1.8" stroke-linejoin="round"/><path d="M35 23.5 L19 30" stroke="#1a1512" stroke-width="7.5" stroke-linecap="round"/><path d="M35 23.5 L19 30" stroke="#ffe9b8" stroke-width="4" stroke-linecap="round"/><circle cx="12" cy="33" r="8" fill="none" stroke="#1a1512" stroke-width="7.5"/><circle cx="12" cy="33" r="8" fill="none" stroke="#ffe9b8" stroke-width="4"/></g><circle cx="35" cy="22" r="3.2" fill="#1a1512"/><circle cx="35" cy="22" r="1.2" fill="#e8ebee"/></svg>';
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+(()=>{const it=el('intro');if(!it)return;if(RM){it.remove();return}it.querySelector('.mov').innerHTML=SCIS;const bt=it.querySelector('.bot');bt.style.backgroundPosition='0 '+(-(it.clientHeight-bt.offsetHeight))+'px';setTimeout(()=>it.remove(),1450)})();
+function snip(){if(RM)return;const v=el('view'),t=[el('stackWrap'),el('pagesWrap'),el('tryWrap')].find(x=>x.offsetParent!==null);if(!t)return;
+ t.classList.remove('unfold');void t.offsetWidth;t.classList.add('unfold');
+ const d=document.createElement('div');d.className='snipline';d.style.top=(t.offsetTop+3)+'px';d.style.setProperty('--w',v.clientWidth+'px');
+ d.innerHTML='<div class="cut"></div><div class="mov">'+SCIS+'</div>';v.appendChild(d);setTimeout(()=>d.remove(),800)}
+load();render();
+</script>
+<a href="../index.html" class="back-home" title="Back to HostLab">
+    <img src="../other/logo/HLab_Logo.png" alt="HostLab">
+</a>
+</body>
+</html>
