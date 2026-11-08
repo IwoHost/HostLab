@@ -190,8 +190,7 @@ header {
   color: inherit;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  animation: fadeUp 0.5s ease both;
+  transition: transform 0.25s cubic-bezier(.22,.61,.36,1), box-shadow 0.25s ease;
 }
 
 .card:hover {
@@ -201,17 +200,6 @@ header {
   position: relative;
 }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.card:nth-child(1) { animation-delay: 0.05s; }
-.card:nth-child(2) { animation-delay: 0.10s; }
-.card:nth-child(3) { animation-delay: 0.15s; }
-.card:nth-child(4) { animation-delay: 0.20s; }
-.card:nth-child(5) { animation-delay: 0.25s; }
-.card:nth-child(6) { animation-delay: 0.30s; }
 
 .card-thumb {
   width: 100%;
@@ -418,6 +406,102 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 /* ── HEADER RIGHT ── */
 .header-right { display: flex; align-items: center; gap: 24px; }
 
+/* ── MOTION ──────────────────────────────────────────────
+   Everything reveals on scroll through one IntersectionObserver.
+   Elements that cross the viewport together are staggered as a wave;
+   a single element scrolled into view alone gets no delay.
+   ──────────────────────────────────────────────────────── */
+[data-reveal] {
+  opacity: 0;
+  will-change: opacity, transform;
+  transition:
+    opacity 0.62s cubic-bezier(.22,.61,.36,1),
+    transform 0.62s cubic-bezier(.22,.61,.36,1);
+  transition-delay: var(--d, 0ms);
+}
+[data-reveal="up"]    { transform: translate3d(0, 26px, 0) scale(.988); }
+[data-reveal="fade"]  { transform: none; }
+[data-reveal="left"]  { transform: translate3d(-18px, 0, 0); }
+
+[data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* the card image settles as the card arrives */
+[data-reveal] .card-thumb img { transform: scale(1.06); }
+[data-reveal].is-in .card-thumb img { transform: scale(1); }
+.card-thumb img { transition: transform 0.9s cubic-bezier(.22,.61,.36,1); }
+.card:hover .card-thumb img { transform: scale(1.04); transition-duration: 0.45s; }
+
+/* headline: letters ride up from behind a mask on load */
+/* line-height is 0.95, so pad inside the mask or it clips the glyphs;
+   the negative margin cancels the padding so nothing shifts */
+.mask { display: block; overflow: hidden; margin: -0.14em 0 -0.18em; }
+.mask > span {
+  display: block;
+  padding: 0.14em 0 0.18em;
+  transform: translate3d(0, 105%, 0);
+  transition: transform 0.85s cubic-bezier(.16,.84,.44,1);
+  transition-delay: var(--d, 0ms);
+}
+.ready .mask > span { transform: none; }
+
+/* hero label + sub drift up just behind it */
+.hero-label, .hero-sub {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(.22,.61,.36,1);
+  transition-delay: var(--d, 0ms);
+}
+.ready .hero-label, .ready .hero-sub { opacity: 1; transform: none; }
+
+/* header drops in first */
+header {
+  opacity: 0;
+  transform: translate3d(0, -10px, 0);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(.22,.61,.36,1);
+}
+.ready header { opacity: 1; transform: none; }
+
+/* tag chips pop in as a row */
+.tag-chip {
+  opacity: 0;
+  transform: translate3d(0, 8px, 0) scale(.96);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(.34,1.3,.64,1), background 0.15s, color 0.15s, border-color 0.15s;
+  transition-delay: var(--d, 0ms);
+}
+.tag-chip.is-in { opacity: 1; transform: none; }
+
+/* the rule under a grid header draws itself across */
+.grid-header { position: relative; }
+.grid-header::after {
+  content: '';
+  position: absolute;
+  left: 64px; right: 64px; bottom: 0;
+  height: 1px;
+  background: var(--border);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.9s cubic-bezier(.22,.61,.36,1);
+  transition-delay: var(--d, 0ms);
+}
+.grid-header.is-in::after { transform: scaleX(1); }
+
+/* nothing moves for anyone who would rather it didn't */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-reveal].is-in,
+  .hero-label, .hero-sub,
+  header, .tag-chip, .mask > span {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .grid-header::after { transform: scaleX(1) !important; transition: none !important; }
+  .card-thumb img, [data-reveal] .card-thumb img { transform: none !important; }
+}
+
 /* ── SECTION TILES ── */
 .sections {
   padding: 0 64px 40px;
@@ -437,13 +521,8 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
-  animation: fadeUp 0.5s ease both;
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s cubic-bezier(.22,.61,.36,1);
 }
-.section-card:nth-child(1) { animation-delay: 0.04s; }
-.section-card:nth-child(2) { animation-delay: 0.08s; }
-.section-card:nth-child(3) { animation-delay: 0.12s; }
-.section-card:nth-child(4) { animation-delay: 0.16s; }
 
 /* accent rule along the top — grows across the tile on hover */
 .section-card::before {
@@ -541,6 +620,7 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
   .hero h1 { font-size: 48px; }
   .hero-sub { max-width: 100%; }
   .grid-header { padding: 20px 24px 14px; }
+  .grid-header::after { left: 24px; right: 24px; }
   #tag-filters { padding: 0 24px 14px; }
   .grid { padding: 0 24px 60px; grid-template-columns: 1fr; }
   .sections { padding: 0 24px 32px; grid-template-columns: 1fr; }
@@ -584,17 +664,17 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 
 <section class="hero">
   <div class="hero-label">Personal project hub</div>
-  <h1>Host<em>Lab</em></h1>
+  <h1 class="mask"><span>Host<em>Lab</em></span></h1>
   <p class="hero-sub">A collection of tools and experiments. Click any card to open the project.</p>
 </section>
 
-<div class="grid-header">
+<div class="grid-header" data-reveal="fade">
   <span class="grid-label">Sections</span>
 </div>
 
 <nav class="sections" id="sections-grid" aria-label="Sections"></nav>
 
-<div class="grid-header" style="margin-top:16px;">
+<div class="grid-header" data-reveal="fade" style="margin-top:16px;">
   <span class="grid-label">All projects</span>
   <span class="count-badge" id="count-badge">0</span>
 </div>
@@ -844,6 +924,7 @@ function buildCard(project, index) {
 
   const card = document.createElement('a');
   card.className = 'card';
+  card.setAttribute('data-reveal', 'up');
   card.href = project.href || `websites/${file}`;
   if (project.external) { card.target = '_blank'; card.rel = 'noopener'; }
   if (project.topColor) card.style.borderTop = `2px solid ${project.topColor}`;
@@ -899,6 +980,7 @@ function filterProjects(tag) {
   const filtered = tag === 'all' ? PROJECTS : PROJECTS.filter(p => p.tags && p.tags.includes(tag));
   grid.innerHTML = '';
   filtered.forEach((p, i) => grid.appendChild(buildCard(p, i)));
+  watch(grid);
   countBadge.textContent = filtered.length;
   document.querySelectorAll('.tag-chip').forEach(c => c.classList.toggle('active', c.dataset.tag === tag));
 }
@@ -921,6 +1003,7 @@ function buildSectionCard(section, index) {
 
   const card = document.createElement('a');
   card.className = 'section-card';
+  card.setAttribute('data-reveal', 'up');
   card.href = href;
   if (topColor) card.style.setProperty('--sec', topColor);
 
@@ -939,6 +1022,35 @@ function buildSectionCard(section, index) {
   return card;
 }
 
+/* ── reveal on scroll ──────────────────────────────────────
+   One observer for the whole page. Elements crossing the
+   viewport in the same frame are treated as a batch and
+   staggered into a wave; something scrolled past on its own
+   just fades straight in. Each element is released once.
+   ────────────────────────────────────────────────────────── */
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const STEP = 70;      // ms between items in a wave
+const MAX_STEPS = 7;  // cap, so a full grid never crawls
+
+const reveal = new IntersectionObserver((entries, obs) => {
+  entries
+    .filter(e => e.isIntersecting)
+    .sort((a, b) => {
+      const ra = a.boundingClientRect, rb = b.boundingClientRect;
+      return (ra.top - rb.top) || (ra.left - rb.left);   // top-left first
+    })
+    .forEach((entry, i) => {
+      entry.target.style.setProperty('--d', Math.min(i, MAX_STEPS) * STEP + 'ms');
+      entry.target.classList.add('is-in');
+      obs.unobserve(entry.target);
+    });
+}, { threshold: 0.01, rootMargin: '0px 0px -2% 0px' });
+
+function watch(scope) {
+  const targets = (scope || document).querySelectorAll('[data-reveal]:not(.is-in), .grid-header:not(.is-in), .tag-chip:not(.is-in)');
+  targets.forEach(el => REDUCED ? el.classList.add('is-in') : reveal.observe(el));
+}
+
 function init() {
   SECTIONS.forEach((section, i) => {
     sectionsGrid.appendChild(buildSectionCard(section, i));
@@ -948,6 +1060,15 @@ function init() {
     grid.appendChild(card);
   });
   buildTagFilters();
+  watch();
+
+  /* hero + header play on load, not on scroll */
+  requestAnimationFrame(() => {
+    document.querySelector('.hero h1.mask > span').style.setProperty('--d', '120ms');
+    document.querySelector('.hero-label').style.setProperty('--d', '60ms');
+    document.querySelector('.hero-sub').style.setProperty('--d', '300ms');
+    document.body.classList.add('ready');
+  });
 }
 
 init();
