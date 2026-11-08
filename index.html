@@ -988,11 +988,11 @@ function buildSectionCard(section, index) {
 }
 
 /* ── pointer tilt + proximity swell ────────────────────────
-   Two things happen as the pointer moves. Every card near it
-   swells a little, most at the centre of the cursor and
-   tapering to nothing at REACH — so a card grows before you
-   reach it, and its neighbours come up with it. The one
-   actually under the pointer additionally leans toward it.
+   Two things happen as the pointer moves. A card swells by how
+   near its centre is to the cursor — full size at zero distance,
+   falling off linearly to nothing at REACH, which is set to about
+   one card, so only the ring actually touching the pointer's card
+   reacts. The one under the pointer additionally leans toward it.
 
    Card centres are cached in document coordinates, so
    scrolling needs no re-measure; the cache is rebuilt on
@@ -1000,8 +1000,8 @@ function buildSectionCard(section, index) {
    rAF-throttled to a single pass per frame.
    ────────────────────────────────────────────────────────── */
 const TILT  = 7;      // degrees at the edge of the card under the pointer
-const SWELL = 0.055;  // scale added at the very centre of the cursor
-const REACH = 950;    // px — roughly two cards out, so neighbours share it
+const SWELL = 0.06;   // scale added when the cursor is right on a card's centre
+const REACH = 700;    // px — about one card out: only the touching ring reacts
 const TILT_SEL = '.card, .section-card';
 
 let swellCards = [];
@@ -1045,9 +1045,10 @@ function initTilt() {
     for (const c of swellCards) {
       const d = Math.hypot(mx - c.cx, my - c.cy);
       if (d >= REACH) { c.el.style.removeProperty('--sc'); continue; }
-      const f = 1 - d / REACH;              // 1 at the cursor, 0 at REACH
-      const eased = f * f * (3 - 2 * f);    // smoothstep, so it comes on gently
-      c.el.style.setProperty('--sc', (1 + SWELL * eased).toFixed(4));
+      // straight linear falloff: the size IS the distance, and it reaches
+      // zero smoothly at REACH so there is no pop at the boundary
+      const f = 1 - d / REACH;
+      c.el.style.setProperty('--sc', (1 + SWELL * f).toFixed(4));
     }
 
     /* the scroll pass only resizes: the element the pointer was last
