@@ -416,12 +416,15 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
     rotateX(var(--rx, 0deg))
     rotateY(var(--ry, 0deg))
     translateY(var(--ty, 0px))
-    scale(var(--sc, 1));
+    scale(var(--sc, 1))
+    scale(var(--press, 1));
   transform-style: preserve-3d;
 }
-/* while the pointer is moving across a card it tracks almost instantly;
-   leaving the card drops the variables and it eases back on its own */
-.card.tilt, .section-card.tilt { transition-duration: 0.08s; }
+/* a card away from the pointer eases its size over ~0.3s, so the swell
+   builds as you approach rather than snapping; the card under the
+   pointer tracks the lean almost instantly */
+.card, .section-card { transition: transform 0.3s cubic-bezier(.22,.61,.36,1), background 0.25s ease, border-color 0.25s ease; }
+.card.tilt, .section-card.tilt { transition-duration: 0.09s; }
 
 @media (hover: hover) {
   .card:hover, .section-card:hover { --ty: -6px; }
@@ -430,9 +433,11 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 }
 
 /* a press that gives way — works on touch, where hover never fires */
+/* --press is its own factor: the swell is written inline by the pointer
+   handler, and an inline custom property would outrank this rule */
 .card:active, .section-card:active {
   --ty: -2px;
-  --sc: 0.992;
+  --press: 0.985;
   transition-duration: 0.09s;
 }
 .tag-chip:active { transform: scale(0.94); transition-duration: 0.09s; }
@@ -940,6 +945,7 @@ function filterProjects(tag) {
   const filtered = tag === 'all' ? PROJECTS : PROJECTS.filter(p => p.tags && p.tags.includes(tag));
   grid.innerHTML = '';
   filtered.forEach((p, i) => grid.appendChild(buildCard(p, i)));
+  measureCards();
   countBadge.textContent = filtered.length;
   document.querySelectorAll('.tag-chip').forEach(c => c.classList.toggle('active', c.dataset.tag === tag));
 }
@@ -981,39 +987,81 @@ function buildSectionCard(section, index) {
   return card;
 }
 
-/* ── pointer tilt ──────────────────────────────
-   Cards lean toward the cursor: the edge nearest the pointer
-   comes forward and the far edge drops back. One document-level
-   listener writing CSS variables, rAF-throttled to one layout
-   read per frame.
+/* ── pointer tilt + proximity swell ────────────────────────
+   Two things happen as the pointer moves. Every card near it
+   swells a little, most at the centre of the cursor and
+   tapering to nothing at REACH — so a card grows before you
+   reach it, and its neighbours come up with it. The one
+   actually under the pointer additionally leans toward it.
+
+   Card centres are cached in document coordinates, so
+   scrolling needs no re-measure; the cache is rebuilt on
+   resize and whenever the grid is re-rendered. One listener,
+   rAF-throttled to a single pass per frame.
    ────────────────────────────────────────────────────────── */
-const TILT = 7;        // degrees at the edge of a card
+const TILT  = 7;      // degrees at the edge of the card under the pointer
+const SWELL = 0.055;  // scale added at the very centre of the cursor
+const REACH = 950;    // px — roughly two cards out, so neighbours share it
 const TILT_SEL = '.card, .section-card';
+
+let swellCards = [];
+
+/* re-measure: call after any render that moves cards */
+function measureCards() {
+  swellCards = [...document.querySelectorAll(TILT_SEL)].map(el => {
+    const r = el.getBoundingClientRect();
+    return {
+      el,
+      cx: r.left + scrollX + r.width / 2,
+      cy: r.top + scrollY + r.height / 2,
+    };
+  });
+}
 
 function initTilt() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if (!matchMedia('(hover: hover)').matches) return;
 
-  let queued = false, ev = null, active = null;
+  let queued = false, ev = null, active = null, swellOnly = false;
 
-  const clear = el => {
+  const clearTilt = el => {
     if (!el) return;
     el.classList.remove('tilt');
     el.style.removeProperty('--rx');
     el.style.removeProperty('--ry');
   };
 
+  const relax = () => {
+    clearTilt(active); active = null;
+    swellCards.forEach(c => c.el.style.removeProperty('--sc'));
+  };
+
   const paint = () => {
     queued = false;
+    if (!ev) return;
+    const mx = ev.clientX + scrollX, my = ev.clientY + scrollY;
+
+    /* proximity: every card, not just the one under the pointer */
+    for (const c of swellCards) {
+      const d = Math.hypot(mx - c.cx, my - c.cy);
+      if (d >= REACH) { c.el.style.removeProperty('--sc'); continue; }
+      const f = 1 - d / REACH;              // 1 at the cursor, 0 at REACH
+      const eased = f * f * (3 - 2 * f);    // smoothstep, so it comes on gently
+      c.el.style.setProperty('--sc', (1 + SWELL * eased).toFixed(4));
+    }
+
+    /* the scroll pass only resizes: the element the pointer was last
+       over is stale once the page has moved under it */
+    if (swellOnly) { swellOnly = false; return; }
+
+    /* lean: only the card actually under the pointer */
     const el = ev.target.closest(TILT_SEL);
-    if (el !== active) { clear(active); active = el; }
+    if (el !== active) { clearTilt(active); active = el; }
     if (!el) return;
 
     const r = el.getBoundingClientRect();
-    const px = (ev.clientX - r.left) / r.width;    // 0..1 across
-    const py = (ev.clientY - r.top) / r.height;    // 0..1 down
-    const dx = px * 2 - 1;                         // -1..1 from centre
-    const dy = py * 2 - 1;
+    const dx = ((ev.clientX - r.left) / r.width) * 2 - 1;   // -1..1 from centre
+    const dy = ((ev.clientY - r.top) / r.height) * 2 - 1;
 
     el.classList.add('tilt');
     // negate both: the side under the cursor rotates toward the viewer
@@ -1022,13 +1070,19 @@ function initTilt() {
   };
 
   document.addEventListener('pointermove', e => {
-    ev = e;
+    ev = e; swellOnly = false;
     if (!queued) { queued = true; requestAnimationFrame(paint); }
   }, { passive: true });
 
   // a card scrolled out from under a stationary pointer must not stay tilted
-  document.addEventListener('scroll', () => { clear(active); active = null; }, { passive: true });
-  document.addEventListener('pointerleave', () => { clear(active); active = null; });
+  document.addEventListener('scroll', () => {
+    clearTilt(active); active = null;
+    if (ev && !queued) { swellOnly = true; queued = true; requestAnimationFrame(paint); }
+  }, { passive: true });
+  document.addEventListener('pointerleave', relax);
+  addEventListener('resize', measureCards);
+  addEventListener('load', measureCards);
+  measureCards();
 }
 
 function init() {
