@@ -170,7 +170,7 @@ details.cat[open]>.body{animation:unfold .3s cubic-bezier(.2,.8,.3,1)}
  </div>
 </div>
 <script>
-const S=[['pieces','Pieces (cuts)',1,12,1,6],['len','Tie length (mm)',150,3000,10,600],['wbp','Widest width (% of length)',2.5,14,.1,3.6],['wtp','Top width (% of length)',1,8,.1,1.9],
+const S=[['cols','Pages across',1,6,1,2],['rows','Pages down',1,6,1,2],['pieces','Pieces (cuts)',1,12,1,6],['len','Tie length (mm)',150,3000,10,600],['wbp','Widest width (% of length)',2.5,14,.1,3.6],['wtp','Top width (% of length)',1,8,.1,1.9],
 ['tip','Tip length (x width)',.5,3,.05,1.6],['top','Top point',0,1,.05,0],['tr','Tip rounding (mm)',0,60,1,8],['overlap','Glue tab (mm)',5,40,1,10],['wing','Glue wings (% of tie width, each side)',0,80,1,40],['layers','Stack layers',1,4,1,1],['cardT','Card thickness (mm)',.2,3,.1,.5]];
 const S2=[['size','Pattern / photo size (mm)',2,80,1,6],['angle','Pattern angle',-90,90,5,45],['pzoom','Photo zoom (%)',100,400,5,100],['pox','Photo shift X',-100,100,5,0],['poy','Photo shift Y',-100,100,5,0]];
 const C=[['c1','Pattern color A','#1d2b4f'],['c2','Pattern color B','#b3202f'],['c3','Tipping / loop color','#8c1625'],['c4','Back piece color','#d9d6cc']];
@@ -189,7 +189,8 @@ const SEL=[['pat','Pattern',[['stripes','Stripes'],['dots','Dots'],['plaid','Pla
 ['tdir','Direction',[['across','Across, stacked lines'],['down','Along the tie, reading down'],['up','Along the tie, reading up']],'across'],
 ['tsize','Line size',[['fit','Each line fills the width'],['same','All lines the same size']],'fit'],
 ['tcase','Letters',[['as','As typed'],['upper','ALL CAPS']],'as'],
-['tband','Band behind text',[['off','None'],['on','Band in band color']],'off']];
+['tband','Band behind text',[['off','None'],['on','Band in band color']],'off'],
+['shape','Make',[['tie','A tie'],['panel','A panel, on a grid of pages']],'tie']];
 const CK=[['seam','Center seam line',0],['tipc','Tipping cap',0],['keep','Keeper loop (long wings to wrap)',0],['marks','Glue / align marks (no text)',1],['labels','Text labels (numbers, notes)',0],['back','Also print plain back pieces',0]];
 const SF=[['sy','Image position along tie (%)',0,100,1,75],['sx','Image position across (%)',-100,100,1,0],['ssz','Image size (% of tie width)',20,600,5,85],['srot','Image rotation',-180,180,1,0],['scount','Copies of the image',1,5,1,1],['sgap','Spacing / repeat distance (% of length)',2,40,1,10]];
 const el=id=>document.getElementById(id);
@@ -214,12 +215,13 @@ const ck=a=>`<div class="row"><label for="${a[0]}">${a[1]}</label><input type="c
 const cat=(title,body,open,cls='')=>`<details class="cat ${cls}"${open?' open':''}><summary>${title}</summary><div class="body">${body}</div></details>`;
 el('controls').innerHTML=
  cat('Pattern &amp; colors',sel(SEL[0])+S2.slice(0,2).map(slider).join('')+C.map(col).join(''),true)+
+ cat('Big panel, on a grid of pages',`<p class="info" style="margin:0 0 8px">Make something bigger than a page: the shape is split over a grid and each sheet carries glue tabs on the edges that meet a neighbour.</p><div class="pre"><button type="button" onclick="preset({shape:'panel',cols:1,rows:1})">1 &times; 1</button><button type="button" onclick="preset({shape:'panel',cols:2,rows:2})">2 &times; 2</button><button type="button" onclick="preset({shape:'panel',cols:2,rows:3})">2 &times; 3</button><button type="button" onclick="preset({shape:'panel',cols:4,rows:5})">4 &times; 5</button><button type="button" onclick="preset({shape:'tie'})">Back to a tie</button></div>`+sel(SEL[16])+S.slice(0,2).map(slider).join(''))+
  cat('Image on the tie',`<div class="row"><label>Images (pick one or several)</label><button type="button" id="fbtn" onclick="el('face').click()">Upload...</button><input type="file" id="face" accept="image/*" multiple hidden></div><div class="row"><label>Remove image</label><button type="button" onclick="FACE.length=0;render()">Clear</button></div>`+sel(SEL[5])+SF.map(slider).join('')+ck(['sborder','Image border',1])+ck(['sflip','Flip image left/right',0])+ck(['srep','Repeat the image down the whole tie',0])+col(['c5','Border color','#ffffff']))+
  cat('Photo as the whole fabric',`<div class="pre"><button type="button" onclick="preset({pat:'photo',pmode:'tile',angle:0,size:16})">Face grid look</button><button type="button" onclick="preset({pat:'photo',pmode:'cubes',angle:0,size:9})">3D cubes look</button></div><div class="row"><label>Photos</label><button type="button" id="pbtn" onclick="el('photo').click()">Upload...</button><input type="file" id="photo" accept="image/*" multiple hidden></div><div class="row"><label>Remove all photos</label><button type="button" onclick="PH.length=0;if(el('pat').value==='photo')el('pat').value='stripes';render()">Clear</button></div>`+sel(SEL[3])+sel(SEL[8])+sel(SEL[9])+sel(SEL[6])+sel(SEL[7])+slider(['grnd','Round grid corners (%)',0,50,1,0])+sel(SEL[4])+S2.slice(2).map(slider).join(''))+
  cat('Text on the tie',`<div class="pre"><button type="button" onclick="preset({ttext:''})">Clear text</button></div><label for="ttext" style="font-size:13px">Text, one line per row</label><textarea id="ttext" rows="5" spellcheck="false"></textarea>`+slider(['tstart','Text starts at (% of length)',0,100,1,64])+slider(['tend','Text ends at (% of length)',0,100,1,95])+slider(['ts','Text width (% of tie width)',30,100,1,90])+sel(SEL[12])+sel(SEL[13])+sel(SEL[14])+sel(SEL[10])+slider(['trep','Repeat the text',1,6,1,1])+slider(['ttilt','Tilt (degrees)',-30,30,1,0])+slider(['topac','Opacity (%)',10,100,1,100])+col(['c6','Text color','#ffffff'])+sel(SEL[11])+sel(SEL[15])+col(['c7','Band color','#111111']))+
 cat('Extras &amp; details',CK.map(ck).join(''))+
  cat('Print (A4)',sel(SEL[2])+sel(SEL[1]))+
- cat('Advanced',`<div class="grp">Size</div>`+ck(['auto','Fill the pages (auto size)',1])+S.slice(0,2).map(slider).join('')+`<div class="grp">Shape &amp; wings</div>`+S.slice(2,9).map(slider).join('')+`<div class="grp">Thickness</div>`+S.slice(9).map(slider).join(''),false,'adv');
+ cat('Advanced',`<div class="grp">Size</div>`+ck(['auto','Fill the pages (auto size)',1])+S.slice(2,4).map(slider).join('')+`<div class="grp">Shape &amp; wings</div>`+S.slice(4,11).map(slider).join('')+`<div class="grp">Thickness</div>`+S.slice(11).map(slider).join(''),false,'adv');
 let RQ=0;const schedule=()=>{if(!RQ)RQ=requestAnimationFrame(()=>{RQ=0;render()})};
 el('controls').addEventListener('input',schedule);
 el('photo').addEventListener('change',e=>{addPhotos(e.target.files);e.target.value=''});
@@ -234,6 +236,11 @@ const PH=[];let PAGES=[],AUTOC={},FACE=[],UID=0,LAST=null,TP=null,LASTYS=0;const
 function P(){const n=id=>+el(id).value,g=id=>el(id).value,c=id=>el(id).checked;const o={};
  [...S,...S2,...SF].forEach(a=>o[a[0]]=n(a[0]));SEL.forEach(a=>o[a[0]]=g(a[0]));C.forEach(a=>o[a[0]]=g(a[0]));CK.forEach(a=>o[a[0]]=c(a[0]));o.auto=c('auto');o.photos=PH;o.grnd=+el('grnd').value;o.ttext=el('ttext').value;o.tstart=+el('tstart').value;o.tend=+el('tend').value;o.ts=+el('ts').value;o.c6=el('c6').value;o.c7=el('c7').value;o.trep=+el('trep').value;o.ttilt=+el('ttilt').value;o.topac=+el('topac').value;o.face=FACE.length?FACE:null;o.sborder=c('sborder');o.sflip=c('sflip');o.srep=c('srep');o.c5=g('c5');
  const mk=len=>({...o,len,wt:len*o.wtp/100,wb:len*o.wbp/100});
+ // Panel: the size comes from the page grid instead of the tie sliders. One
+ // cell is a sheet less the glue tab, since the tab hides under its neighbour.
+ if(o.shape==='panel'){const cols=Math.max(1,o.cols|0),rows=Math.max(1,o.rows|0),
+  w=cols*(AW-o.overlap),len=rows*(AH-o.overlap);
+  return{...o,auto:false,wing:0,keep:0,len,wt:w,wb:w}}
 const key=JSON.stringify([o.pieces,o.per,o.wbp,o.wtp,o.tip,o.top,o.tr,o.overlap,o.wing,o.keep]);
  if(o.auto&&AUTOC.key===key){o.len=AUTOC.len;el('len').value=o.len}
  else if(o.auto){let lo=60,hi=o.pieces*420;for(let i=0;i<24;i++){const mid=(lo+hi)/2,q=mk(mid);if(planN(q,geom(q),o.pieces))lo=mid;else hi=mid}
@@ -252,7 +259,11 @@ function roundTip(A,T,B,r){const un=(a,b)=>{const dx=a[0]-b[0],dy=a[1]-b[1],l=Ma
  C=[T[0]+bx/bl*r/Math.sin(al),T[1]+by/bl*r/Math.sin(al)],tr=[T[0]+ur[0]*d,T[1]+ur[1]*d],tl=[T[0]+ul[0]*d,T[1]+ul[1]*d];
  let a0=Math.atan2(tr[1]-C[1],tr[0]-C[0]),a1=Math.atan2(tl[1]-C[1],tl[0]-C[0]);if(a1<a0)a1+=2*Math.PI;
  return Array.from({length:13},(_,k)=>{const a=a0+(a1-a0)*k/12;return[C[0]+r*Math.cos(a),C[1]+r*Math.sin(a)]})}
-function geom(p){const tp=p.wt*p.top,tipH=Math.min(p.wb*p.tip,p.len*.45),yW=p.len-tipH;
+// A panel is a plain rectangle, but it answers the same questions the tie
+// geometry does, so everything downstream — patterns, photos, text — is unchanged.
+function geomPanel(p){const hw=p.wb/2,L=p.len,poly=[[-hw,0],[hw,0],[hw,L],[-hw,L]];
+ return{tp:0,tipH:0,yW:L,poly,outer:poly,w:()=>p.wb,kx:()=>0}}
+function geom(p){if(p.shape==='panel')return geomPanel(p);const tp=p.wt*p.top,tipH=Math.min(p.wb*p.tip,p.len*.45),yW=p.len-tipH;
  const poly=[[0,0],[p.wt/2,tp],[p.wb/2,yW],...roundTip([p.wb/2,yW],[0,p.len],[-p.wb/2,yW],p.tr),[-p.wb/2,yW],[-p.wt/2,tp]],wg=p.wing;
  return(()=>{const w=y=>y<=tp?p.wt:y>=yW?p.wb:p.wt+(p.wb-p.wt)*(y-tp)/(yW-tp),sc=1+2*wg/100,xo=y=>w(y)/2*sc;
   let k0=p.len*.82,kh=Math.max(8,Math.min(18,p.len*.011));if(k0+kh>yW-2)k0=yW-2-kh;const on=p.keep&&k0>tp+2,kx=y=>on&&y>=k0&&y<=k0+kh?w(y)*.8:0;
@@ -355,27 +366,57 @@ function planN(p,g,n,force){const L=p.len,o=p.overlap,k=+p.per,pgs=[],cuts=[];le
   grp.forEach((pc,t)=>{pc.i=idx+t;if(pc.yb<L-.01)cuts.push(pc.yb)});pgs.push({pieces:grp,...r});a=b;idx+=m}
  if(a<L-.01)return null;
  return{W:210,H:297,o,n:idx,cuts,pgs}}
-function plan(p,g){for(let n=p.pieces;n<=14;n++){const r=planN(p,g,n);if(r)return r}return planN(p,g,Math.max(p.pieces,14),true)}
+// Every tile is one page, no rotating or nesting: the grid is the whole point,
+// so a tile keeps its place in it. Tabs go on the right and bottom edges, which
+// are the ones that meet another sheet.
+function planGrid(p,g){const o=p.overlap,cols=Math.max(1,p.cols|0),rows=Math.max(1,p.rows|0),
+ cw=p.wb/cols,ch=p.len/rows,hw=p.wb/2,pgs=[],cuts=[];let i=0;
+ for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+  const x0=-hw+c*cw,y0=r*ch,xb=x0+cw,yb=y0+ch,
+   x1=c===cols-1?xb:xb+o,y1=r===rows-1?yb:yb+o;
+  const pc={x0,x1,xb,y0,y1,yb,c:(y0+y1)/2,h:(y1-y0)/2,col:c,row:r,i:i++,cols,rows,
+   pts:[[x0,y0],[x1,y0],[x1,y1],[x0,y1]],inner:[[x0,y0],[xb,y0],[xb,yb],[x0,yb]]};
+  pgs.push({pieces:[pc],ang:0,bx:(x0+x1)/2,by:0,flips:[false],xs:[0],
+   over:(x1-x0)>AW+.01||(y1-y0)>AH+.01})}
+ for(let r=1;r<rows;r++)cuts.push(r*ch);
+ return{W:210,H:297,o,n:pgs.length,cuts,pgs,grid:{cols,rows,cw,ch}}}
+function plan(p,g){if(p.shape==='panel')return planGrid(p,g);for(let n=p.pieces;n<=14;n++){const r=planN(p,g,n);if(r)return r}return planN(p,g,Math.max(p.pieces,14),true)}
 
 function pageSvg(p,g,pl,pg,pi,back){const {W,H,o}=pl,tot=pl.pgs.length*(p.back?2:1),k=pi+(back?pl.pgs.length:0);
  const q=back?{...p,seam:0,tipc:0,keep:0,face:null}:p,pf=back?{defs:'',fill:p.c4}:patFill('pt'+pi,p);
  let defs=pf.defs+`<pattern id="hh${k}" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1" height="3" fill="#000" opacity=".2"/></pattern>`,inner='';
- pg.pieces.forEach((pc,j)=>{const inn=clipHalf(clipHalf(g.poly,pc.y0,1),pc.y1,-1),out=back?inn:pc.pts,path=pathOf(out),yt=pc.yb,id='cp'+k+'_'+pc.i;let tab='',lab='',wing='',fold='';
+ pg.pieces.forEach((pc,j)=>{const inn=pc.inner||clipHalf(clipHalf(g.poly,pc.y0,1),pc.y1,-1),out=back?inn:pc.pts,path=pathOf(out),yt=pc.yb,id='cp'+k+'_'+pc.i;let tab='',lab='',wing='',fold='';
   defs+=`<clipPath id="${id}"><path d="${path}"/></clipPath>`;
+  if(pc.inner){ // a grid tile: a tab below and to the right, where there is a neighbour
+   if(p.marks&&pc.y1>pc.yb+.001){tab+=`<rect x="-900" y="${f(pc.yb)}" width="1800" height="${o}" fill="url(#hh${k})"/><line x1="-900" x2="900" y1="${f(pc.yb)}" y2="${f(pc.yb)}" stroke="#222" stroke-width=".22" stroke-dasharray="2 1.5"/>`;
+    lab+=`<text x="${f((pc.x0+pc.xb)/2)}" y="${f(pc.yb+o/2+1.1)}" text-anchor="middle" font-size="${f(Math.min(3.2,o*.3))}" fill="#222">GLUE TAB · row ${pc.row+2} goes over this</text>`}
+   if(p.marks&&pc.x1>pc.xb+.001){tab+=`<rect x="${f(pc.xb)}" y="-900" width="${o}" height="1800" fill="url(#hh${k})"/><line x1="${f(pc.xb)}" x2="${f(pc.xb)}" y1="-900" y2="900" stroke="#222" stroke-width=".22" stroke-dasharray="2 1.5"/>`;
+    lab+=`<text x="${f(pc.xb+o/2)}" y="${f((pc.y0+pc.yb)/2)}" text-anchor="middle" font-size="${f(Math.min(3.2,o*.3))}" fill="#222" transform="rotate(90 ${f(pc.xb+o/2)} ${f((pc.y0+pc.yb)/2)})">GLUE TAB · column ${pc.col+2} goes over this</text>`}
+   lab+=`<text x="${f((pc.x0+pc.xb)/2)}" y="${f((pc.y0+pc.yb)/2)}" text-anchor="middle" font-size="${f(Math.min(26,pc.xb-pc.x0)*.5)}" font-weight="700" fill="#888" opacity=".55">R${pc.row+1}C${pc.col+1}${back?' BACK':''}</text>`;
+  }else{
   if(p.marks&&pc.yb<p.len-.01){tab=`<rect x="-300" y="${f(yt)}" width="600" height="${o}" fill="url(#hh${k})"/><line x1="-300" x2="300" y1="${f(yt)}" y2="${f(yt)}" stroke="#222" stroke-width=".22" stroke-dasharray="2 1.5"/>`;
    lab+=`<text x="0" y="${f(yt+o/2+1.1)}" text-anchor="middle" font-size="${f(Math.min(3.2,o*.3))}" fill="#222">GLUE TAB · piece ${pc.i+2} goes here</text>`}
   if(p.marks&&pc.i>0)lab+=`<text x="0" y="${f(pc.y0+4)}" text-anchor="middle" font-size="2.6" fill="#777">top edge meets dashed line, piece ${pc.i}</text>`;
-  lab+=`<text x="0" y="${f(pc.c)}" text-anchor="middle" font-size="${f(Math.min(9,Math.max(3,wid(p,g,pc.c)*.3)))}" font-weight="700" fill="#888" opacity=".75">${pc.i+1}/${pl.n}${back?' BACK':''}</text>`;
+  lab+=`<text x="0" y="${f(pc.c)}" text-anchor="middle" font-size="${f(Math.min(9,Math.max(3,wid(p,g,pc.c)*.3)))}" font-weight="700" fill="#888" opacity=".75">${pc.i+1}/${pl.n}${back?' BACK':''}</text>`;}
   if(!back&&p.wing>0){if(p.fill==='color')wing=`<path d="${path} ${pathOf(inn)}" fill="#fff" fill-opacity=".55" fill-rule="evenodd"/>`;
    fold=`<path d="${pathOf(inn)}" fill="none" stroke="#111" stroke-width=".2" stroke-dasharray="2.5 1.5"/>`}
   inner+=`<g transform="translate(${f(pg.xs[j])} 0) rotate(${pg.flips[j]?180:0}) translate(0 ${f(-pc.c)})"><g clip-path="url(#${id})">${body(q,g,pf,pc.y0,pc.y1)}${wing}${tab}</g>${lab}${fold}<path d="${path}" fill="none" stroke="#111" stroke-width=".25" stroke-linejoin="round"/></g>`});
- const out=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs>${defs}</defs><g transform="translate(${f(W/2-pg.bx)} ${f(H/2-pg.by)}) rotate(${pg.ang})">${inner}</g>
- <text x="8" y="${H-7}" font-size="3.5" font-family="system-ui,sans-serif" fill="#999">PAGE ${k+1} OF ${tot}${back?' (BACK)':''}</text></svg>`;
- return p.labels?out:out.replace(/<text[\s\S]*?<\/text>/g,'')}
+ const art=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs>${defs}</defs><g transform="translate(${f(W/2-pg.bx)} ${f(H/2-pg.by)}) rotate(${pg.ang})">${inner}</g>`;
+ const ref=pg.pieces[0]&&pg.pieces[0].inner?` \u00b7 R${pg.pieces[0].row+1}C${pg.pieces[0].col+1}`:'';
+ const foot=`<text x="8" y="${H-7}" font-size="3.5" font-family="system-ui,sans-serif" fill="#999">PAGE ${k+1} OF ${tot}${back?' (BACK)':''}${ref}</text>`;
+ // Labels off keeps words off the work itself, but a grid of sheets is
+ // unusable without knowing which sheet you are holding, so the footer stays.
+ return (p.labels?art:art.replace(/<text[\s\S]*?<\/text>/g,''))+(p.labels||ref?foot:'')+`</svg>`}
 
 function stackSvg(p,g,pl){const pf=patFill('ps',p),depth=p.layers*p.cardT,hw=p.wb/2+8,edge=shade(p.c1,-.5);
  let ex='';const k=Math.min(10,Math.max(1,Math.round(depth*2)));
  for(let i=k;i>=1;i--){const o=depth*.7*i/k;ex+=`<path d="${pathOf(g.poly)}" transform="translate(${f(o)} ${f(o)})" fill="${edge}"/>`}
+ if(p.shape==='panel'&&pl.grid){const {cols,rows,cw,ch}=pl.grid,hwp=p.wb/2;let gl='';
+  for(let r=1;r<rows;r++)gl+=`<line x1="${f(-hwp)}" x2="${f(hwp)}" y1="${f(r*ch)}" y2="${f(r*ch)}" stroke="#fff" stroke-width=".6" stroke-dasharray="4 3"/>`;
+  for(let c=1;c<cols;c++)gl+=`<line x1="${f(-hwp+c*cw)}" x2="${f(-hwp+c*cw)}" y1="0" y2="${f(p.len)}" stroke="#fff" stroke-width=".6" stroke-dasharray="4 3"/>`;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)gl+=`<text x="${f(-hwp+(c+.5)*cw)}" y="${f((r+.5)*ch)}" text-anchor="middle" font-size="${f(Math.min(cw,ch)*.18)}" fill="#fff" opacity=".5">R${r+1}C${c+1}</text>`;
+  return `<svg viewBox="${f(-hw)} -4 ${f(hw*2+depth+14)} ${f(p.len+8+depth)}" xmlns="http://www.w3.org/2000/svg"><defs>${pf.defs}<clipPath id="pcs"><path d="${pathOf(g.poly)}"/></clipPath></defs>${ex}
+  <g clip-path="url(#pcs)">${p.fill==='color'?body(p,g,pf,0,p.len):`<rect x="-300" y="0" width="600" height="${p.len}" fill="#fff"/>`}</g><path d="${pathOf(g.poly)}" fill="none" stroke="rgba(0,0,0,.45)" stroke-width=".5"/>${gl}</svg>`}
  let cuts='';pl.cuts.forEach((y,ci)=>{const i=ci+1;cuts+=`<line x1="${f(-g.w(y)/2)}" x2="${f(g.w(y)/2)}" y1="${f(y)}" y2="${f(y)}" stroke="#fff" stroke-width=".4" stroke-dasharray="3 2"/><text x="${f(g.w(y)/2+2)}" y="${f(y)}" font-size="${f(Math.max(3,p.len/60))}" fill="#888">${i}|${i+1}</text>`})
  return `<svg viewBox="${f(-hw)} -4 ${f(hw*2+depth+14)} ${f(p.len+8+depth)}" xmlns="http://www.w3.org/2000/svg"><defs>${pf.defs}<clipPath id="pcs"><path d="${pathOf(g.poly)}"/></clipPath></defs>${ex}
  <g clip-path="url(#pcs)">${p.fill==='color'?body(p,g,pf,0,p.len):`<rect x="-300" y="0" width="600" height="${p.len}" fill="#fff"/>`}</g><path d="${pathOf(g.poly)}" fill="none" stroke="rgba(0,0,0,.45)" stroke-width=".5"/>${cuts}</svg>`}
@@ -395,7 +436,9 @@ function render(){const p=P(),g=geom(p),pl=plan(p,g);
  el('pagesWrap').style.setProperty('--pw',pl.W);el('pagesWrap').style.setProperty('--ph',pl.H);
  el('pagesize').textContent=`@page{size:210mm 297mm;margin:0}`;
  const over=pl.pgs.some(x=>x.over);
- el('info').textContent=`${pl.n} pieces on ${pl.pgs.length} A4 page${pl.pgs.length>1?'s':''}, tie ${f(p.len/10)} cm long, widest ${f(p.wb/10)} cm. Cut each piece out, overlap the glue tabs in order (1, 2, 3...), tape from behind. `+(p.wing>0?'The pale wings fold back along the dashed line, tape them down behind the tie. ':'')+
+ el('info').textContent=(p.shape==='panel'
+  ?`${p.cols} \u00d7 ${p.rows} page${pl.n>1?'s':''} \u2014 ${pl.n} sheet${pl.n>1?'s':''}, finished ${f(p.wb/10)} \u00d7 ${f(p.len/10)} cm. Cut each sheet out, lay them out by their R1C1 labels, and overlap each glue tab under the sheet to its right or below. `
+  :`${pl.n} pieces on ${pl.pgs.length} A4 page${pl.pgs.length>1?'s':''}, tie ${f(p.len/10)} cm long, widest ${f(p.wb/10)} cm. Cut each piece out, overlap the glue tabs in order (1, 2, 3...), tape from behind. `)+(p.wing>0&&p.shape!=='panel'?'The pale wings fold back along the dashed line, tape them down behind the tie. ':'')+
  (p.layers>1?`Print x${p.layers} and glue the stack: about ${f(p.layers*p.cardT)} mm thick. `:'')+(over?'Too wide for A4: lower the width.':'')+(FACE.length?' Drag the image on the Assembled tie view to move it. Pinch, or scroll and Shift+scroll, to resize and rotate.':'');
  renderTry();save();}
 const TS=[['tk','Tie size',.25,1.6,.01,.75],['trot','Rotate',-30,30,1,0],['tvis','Blade length shown (%)',25,80,1,35],['ttx','Move left / right',0,400,1,200],['tty','Move up / down',0,780,1,345]];
@@ -443,8 +486,9 @@ async function downloadPdf(){const b=el('pdfBtn'),m=el('pdfMsg');if(!window.jspd
  b.disabled=true;m.textContent='Making the PDF...';
  try{const pdf=new jspdf.jsPDF({unit:'mm',format:'a4'});for(let i=0;i<PAGES.length;i++){m.textContent=`Making the PDF... page ${i+1} of ${PAGES.length}`;if(i)pdf.addPage();pdf.addImage(await svgToJpeg(PAGES[i]),'JPEG',0,0,210,297)}
   const blob=pdf.output('blob');let DL=null;try{DL=window.claude&&claude.use?await claude.use('downloads'):null}catch(_){}
-  if(DL){try{await DL.save({filename:'tie-pages.pdf',data:blob});m.textContent='Saved. Print it at 100% size (no "fit to page").'}catch(e){m.textContent=e&&e.code==='declined'?'Download cancelled.':'Saving is not available here. Open the page in claude.ai in your browser and try again.'}}
-  else{pdf.save('tie-pages.pdf');m.textContent='If nothing downloaded, open the page in claude.ai in your browser and try again.'}}
+  const fname=(LAST&&LAST.p.shape==='panel'?`panel-${LAST.p.cols}x${LAST.p.rows}-pages.pdf`:'tie-pages.pdf');
+  if(DL){try{await DL.save({filename:fname,data:blob});m.textContent='Saved. Print it at 100% size (no "fit to page").'}catch(e){m.textContent=e&&e.code==='declined'?'Download cancelled.':'Saving is not available here. Open the page in claude.ai in your browser and try again.'}}
+  else{pdf.save(fname);m.textContent='If nothing downloaded, open the page in claude.ai in your browser and try again.'}}
  catch(e){m.textContent='Could not make the PDF. Try fewer or smaller photos.'}
  b.disabled=false}
 const SCIS='<svg class="sc" viewBox="0 0 80 44" aria-hidden="true"><g class="bl2"><path d="M34 22 L79 28 L34 17 Z" fill="#e8ebee" stroke="#1a1512" stroke-width="1.8" stroke-linejoin="round"/><path d="M35 20.5 L19 14" stroke="#1a1512" stroke-width="7.5" stroke-linecap="round"/><path d="M35 20.5 L19 14" stroke="#f3dfae" stroke-width="4" stroke-linecap="round"/><circle cx="12" cy="11" r="8" fill="none" stroke="#1a1512" stroke-width="7.5"/><circle cx="12" cy="11" r="8" fill="none" stroke="#f3dfae" stroke-width="4"/></g><g class="bl1"><path d="M34 22 L79 16 L34 27 Z" fill="#ffffff" stroke="#1a1512" stroke-width="1.8" stroke-linejoin="round"/><path d="M35 23.5 L19 30" stroke="#1a1512" stroke-width="7.5" stroke-linecap="round"/><path d="M35 23.5 L19 30" stroke="#ffe9b8" stroke-width="4" stroke-linecap="round"/><circle cx="12" cy="33" r="8" fill="none" stroke="#1a1512" stroke-width="7.5"/><circle cx="12" cy="33" r="8" fill="none" stroke="#ffe9b8" stroke-width="4"/></g><circle cx="35" cy="22" r="3.2" fill="#1a1512"/><circle cx="35" cy="22" r="1.2" fill="#e8ebee"/></svg>';
