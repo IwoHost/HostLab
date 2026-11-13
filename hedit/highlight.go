@@ -30,6 +30,8 @@ const (
 	hlRawStr           // inside Go/JS backtick `…`
 	hlTripleDQ         // inside Python """…"""
 	hlTripleSQ         // inside Python '''…'''
+	hlTag              // inside an HTML/XML tag that runs past the line end
+	hlFence            // inside a ``` fenced block in Markdown
 )
 
 // ── LANGUAGE DEFINITION ───────────────────────────────────────────────────────
@@ -46,6 +48,14 @@ type langDef struct {
 	noSingleQ   bool   // JSON: no single-quoted strings
 	ppDirective bool   // C/C++: treat #word as keyword
 	caseInsKw   bool   // SQL: look up strings.ToUpper(word) in sets
+	atDirective bool   // CSS: treat @word as a keyword
+	hashColor   bool   // CSS: #rrggbb reads as a number
+	markup      bool   // HTML/XML: tags, attributes, entities
+	markdown    bool   // Markdown: a line-oriented pass of its own
+	dashWords   bool   // CSS: a hyphen is part of a word (background-color)
+	valueColon  bool   // CSS: what follows ":" is a value, so prefer builtins
+	keyColon    bool   // YAML: "key:" at the head of a line is a key
+	tomlKeys    bool   // TOML: [table] headers and "key =" are keys
 }
 
 func mkWords(words ...string) map[string]bool {
@@ -91,6 +101,21 @@ func highlight(line string, lang *langDef, in hlState) ([]tokenKind, hlState) {
 	kinds := make([]tokenKind, n)
 	state := in
 	i := 0
+	afterColon := false // CSS: between ":" and ";" we are reading a value
+
+	// Markdown is a line-oriented format rather than a stream of tokens, so it
+	// gets a pass of its own instead of being bent through the scanner below.
+	if lang.markdown {
+		return highlightMarkdown(runes, kinds, state)
+	}
+
+	// YAML keys and TOML headers are decided by where they sit on the line, so
+	// they are claimed before the general scan starts.
+	if lang.keyColon {
+		i = markYAMLKey(runes, kinds)
+	} else if lang.tomlKeys {
+		i = markTOMLKey(runes, kinds)
+	}
 
 outer:
 	for i < n {
@@ -131,6 +156,16 @@ outer:
 			}
 			continue outer
 
+		case hlTag:
+			i = scanTagBody(runes, kinds, i, &state)
+			continue outer
+
+		case hlFence:
+			for ; i < n; i++ {
+				kinds[i] = tkString
+			}
+			return kinds, hlFence
+
 		case hlTripleSQ:
 			if hasPrefixAt(runes, i, `'''`) {
 				kinds[i], kinds[i+1], kinds[i+2] = tkString, tkString, tkString
@@ -161,6 +196,61 @@ outer:
 				i++
 			}
 			state = hlBlockCmt
+			continue outer
+		}
+
+		// markup: <tag …>, </tag>, and &entity;
+		if lang.markup {
+			if runes[i] == '<' {
+				kinds[i] = tkKeyword
+				i++
+				if i < n && runes[i] == '/' {
+					kinds[i] = tkKeyword
+					i++
+				}
+				for i < n && (unicode.IsLetter(runes[i]) || unicode.IsDigit(runes[i]) ||
+					runes[i] == '-' || runes[i] == '_' || runes[i] == ':' || runes[i] == '!') {
+					kinds[i] = tkKeyword
+					i++
+				}
+				state = hlTag
+				i = scanTagBody(runes, kinds, i, &state)
+				continue outer
+			}
+			if runes[i] == '&' {
+				start := i
+				j := i + 1
+				for j < n && j-start < 12 && runes[j] != ';' && runes[j] != ' ' {
+					j++
+				}
+				if j < n && runes[j] == ';' {
+					for ; i <= j; i++ {
+						kinds[i] = tkBuiltin
+					}
+					continue outer
+				}
+			}
+		}
+
+		// CSS: @media, @import …
+		if lang.atDirective && runes[i] == '@' {
+			kinds[i] = tkKeyword
+			i++
+			for i < n && (unicode.IsLetter(runes[i]) || runes[i] == '-') {
+				kinds[i] = tkKeyword
+				i++
+			}
+			continue outer
+		}
+
+		// CSS: #rrggbb is a value, not a comment or an id here
+		if lang.hashColor && runes[i] == '#' && i+1 < n && isHexRune(runes[i+1]) {
+			kinds[i] = tkNumber
+			i++
+			for i < n && isHexRune(runes[i]) {
+				kinds[i] = tkNumber
+				i++
+			}
 			continue outer
 		}
 
@@ -291,7 +381,8 @@ outer:
 		// identifier → keyword / type / builtin / normal
 		if unicode.IsLetter(runes[i]) || runes[i] == '_' {
 			start := i
-			for i < n && (unicode.IsLetter(runes[i]) || unicode.IsDigit(runes[i]) || runes[i] == '_') {
+			for i < n && (unicode.IsLetter(runes[i]) || unicode.IsDigit(runes[i]) || runes[i] == '_' ||
+				(lang.dashWords && runes[i] == '-')) {
 				i++
 			}
 			word := string(runes[start:i])
@@ -299,10 +390,15 @@ outer:
 			if lang.caseInsKw {
 				lookup = strings.ToUpper(word)
 			}
+			// In CSS a word like "flex" is a property before the colon and a
+			// value after it, so which set wins depends on where we are.
+			preferBuiltin := lang.valueColon && afterColon
 			kind := tkNormal
 			switch {
 			case lang.keywords[lookup]:
 				kind = tkKeyword
+			case preferBuiltin && lang.builtins != nil && lang.builtins[lookup]:
+				kind = tkBuiltin
 			case lang.types != nil && lang.types[lookup]:
 				kind = tkType
 			case lang.builtins != nil && lang.builtins[lookup]:
@@ -314,10 +410,239 @@ outer:
 			continue outer
 		}
 
+		if lang.valueColon {
+			switch runes[i] {
+			case ':':
+				afterColon = true
+			case ';', '{', '}':
+				afterColon = false
+			}
+		}
 		i++ // unrecognized character
 	}
 
 	return kinds, state
+}
+
+// ── MARKUP, MARKDOWN AND KEY SCANNERS ────────────────────────────────────────
+
+// scanTagBody colours the inside of an HTML/XML tag — attribute names, their
+// quoted values — until the closing angle bracket. It leaves state as hlTag if
+// the tag runs past the end of the line, which long elements routinely do.
+func scanTagBody(runes []rune, kinds []tokenKind, i int, state *hlState) int {
+	n := len(runes)
+	for i < n {
+		switch {
+		case runes[i] == '>':
+			kinds[i] = tkKeyword
+			i++
+			*state = hlNormal
+			return i
+
+		case runes[i] == '/' && i+1 < n && runes[i+1] == '>':
+			kinds[i], kinds[i+1] = tkKeyword, tkKeyword
+			i += 2
+			*state = hlNormal
+			return i
+
+		case runes[i] == '"' || runes[i] == '\'':
+			quote := runes[i]
+			kinds[i] = tkString
+			i++
+			for i < n {
+				kinds[i] = tkString
+				if runes[i] == quote {
+					i++
+					break
+				}
+				i++
+			}
+
+		case unicode.IsLetter(runes[i]) || runes[i] == '_' || runes[i] == ':' || runes[i] == '@':
+			for i < n && (unicode.IsLetter(runes[i]) || unicode.IsDigit(runes[i]) ||
+				runes[i] == '-' || runes[i] == '_' || runes[i] == ':' || runes[i] == '@' || runes[i] == '.') {
+				kinds[i] = tkType
+				i++
+			}
+
+		default:
+			i++
+		}
+	}
+	*state = hlTag
+	return i
+}
+
+// highlightMarkdown handles a line of Markdown: fences and headings claim the
+// whole line, then the rest is scanned for inline code, emphasis and links.
+func highlightMarkdown(runes []rune, kinds []tokenKind, in hlState) ([]tokenKind, hlState) {
+	n := len(runes)
+	indent := 0
+	for indent < n && (runes[indent] == ' ' || runes[indent] == '\t') {
+		indent++
+	}
+
+	// a fence opens or closes whatever came before it
+	if hasPrefixAt(runes, indent, "```") || hasPrefixAt(runes, indent, "~~~") {
+		for i := 0; i < n; i++ {
+			kinds[i] = tkString
+		}
+		if in == hlFence {
+			return kinds, hlNormal
+		}
+		return kinds, hlFence
+	}
+	if in == hlFence {
+		for i := 0; i < n; i++ {
+			kinds[i] = tkString
+		}
+		return kinds, hlFence
+	}
+
+	// headings and quotes take the line
+	if indent < n && runes[indent] == '#' {
+		for i := 0; i < n; i++ {
+			kinds[i] = tkKeyword
+		}
+		return kinds, hlNormal
+	}
+	if indent < n && runes[indent] == '>' {
+		for i := 0; i < n; i++ {
+			kinds[i] = tkComment
+		}
+		return kinds, hlNormal
+	}
+
+	i := indent
+	// list bullets and numbers
+	if i < n && (runes[i] == '-' || runes[i] == '*' || runes[i] == '+') &&
+		i+1 < n && runes[i+1] == ' ' {
+		kinds[i] = tkBuiltin
+		i += 2
+	} else if i < n && unicode.IsDigit(runes[i]) {
+		j := i
+		for j < n && unicode.IsDigit(runes[j]) {
+			j++
+		}
+		if j+1 < n && runes[j] == '.' && runes[j+1] == ' ' {
+			for ; i <= j; i++ {
+				kinds[i] = tkBuiltin
+			}
+			i++
+		}
+	}
+
+	for i < n {
+		switch {
+		case runes[i] == '`':
+			kinds[i] = tkString
+			i++
+			for i < n {
+				kinds[i] = tkString
+				if runes[i] == '`' {
+					i++
+					break
+				}
+				i++
+			}
+
+		case hasPrefixAt(runes, i, "**") || hasPrefixAt(runes, i, "__"):
+			kinds[i], kinds[i+1] = tkBuiltin, tkBuiltin
+			i += 2
+
+		case runes[i] == '[':
+			kinds[i] = tkBuiltin
+			i++
+			for i < n && runes[i] != ']' {
+				i++
+			}
+			if i < n {
+				kinds[i] = tkBuiltin
+				i++
+			}
+			// the (url) half, when it is there, reads as a string
+			if i < n && runes[i] == '(' {
+				for i < n {
+					kinds[i] = tkString
+					if runes[i] == ')' {
+						i++
+						break
+					}
+					i++
+				}
+			}
+
+		default:
+			i++
+		}
+	}
+	return kinds, hlNormal
+}
+
+// markYAMLKey claims "key:" at the head of a line, including under a "- "
+// list marker, and returns where the general scan should pick up.
+func markYAMLKey(runes []rune, kinds []tokenKind) int {
+	n := len(runes)
+	i := 0
+	for i < n && (runes[i] == ' ' || runes[i] == '\t') {
+		i++
+	}
+	// document separators
+	if hasPrefixAt(runes, i, "---") || hasPrefixAt(runes, i, "...") {
+		for j := i; j < n; j++ {
+			kinds[j] = tkKeyword
+		}
+		return n
+	}
+	if i < n && runes[i] == '-' && i+1 < n && runes[i+1] == ' ' {
+		kinds[i] = tkBuiltin
+		i += 2
+		for i < n && runes[i] == ' ' {
+			i++
+		}
+	}
+	start := i
+	for i < n && runes[i] != ':' && runes[i] != '#' {
+		i++
+	}
+	if i < n && runes[i] == ':' && i > start {
+		for j := start; j < i; j++ {
+			kinds[j] = tkType
+		}
+		return i // leave the colon and the value to the general scan
+	}
+	return start
+}
+
+// markTOMLKey claims a [table] header or a "key =" at the head of a line.
+func markTOMLKey(runes []rune, kinds []tokenKind) int {
+	n := len(runes)
+	i := 0
+	for i < n && (runes[i] == ' ' || runes[i] == '\t') {
+		i++
+	}
+	if i < n && runes[i] == '[' {
+		for j := i; j < n; j++ {
+			kinds[j] = tkKeyword
+			if runes[j] == ']' {
+				return j + 1
+			}
+		}
+		return n
+	}
+	start := i
+	for i < n && runes[i] != '=' && runes[i] != '#' {
+		i++
+	}
+	if i < n && runes[i] == '=' && i > start {
+		for j := start; j < i; j++ {
+			if runes[j] != ' ' && runes[j] != '\t' {
+				kinds[j] = tkType
+			}
+		}
+		return i
+	}
+	return start
 }
 
 // ── LANGUAGE DEFINITIONS ──────────────────────────────────────────────────────
@@ -331,6 +656,11 @@ var (
 	hlLangShell  = buildLangShell()
 	hlLangJSON   = buildLangJSON()
 	hlLangSQL    = buildLangSQL()
+	hlLangHTML   = buildLangHTML()
+	hlLangCSS    = buildLangCSS()
+	hlLangMD     = buildLangMarkdown()
+	hlLangYAML   = buildLangYAML()
+	hlLangTOML   = buildLangTOML()
 )
 
 func buildLangGo() *langDef {
@@ -578,6 +908,78 @@ func buildLangSQL() *langDef {
 
 // ── LANGUAGE DETECTION ────────────────────────────────────────────────────────
 
+func buildLangHTML() *langDef {
+	return &langDef{
+		markup:    true,
+		blockOpen: "<!--", blockClose: "-->",
+	}
+}
+
+func buildLangCSS() *langDef {
+	return &langDef{
+		blockOpen: "/*", blockClose: "*/",
+		atDirective: true,
+		hashColor:   true,
+		dashWords:   true,
+		valueColon:  true,
+		noSingleQ:   false,
+		keywords: mkWords(
+			"important", "from", "to", "and", "or", "not", "only",
+		),
+		types: mkWords(
+			// the properties you actually reach for
+			"color", "background", "background-color", "background-image", "background-size",
+			"background-position", "background-repeat", "border", "border-radius", "border-color",
+			"border-width", "border-style", "border-top", "border-right", "border-bottom", "border-left",
+			"margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
+			"padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
+			"width", "height", "min-width", "min-height", "max-width", "max-height",
+			"display", "position", "top", "right", "bottom", "left", "inset", "z-index",
+			"flex", "flex-direction", "flex-wrap", "flex-grow", "flex-shrink", "flex-basis",
+			"grid", "grid-template-columns", "grid-template-rows", "grid-column", "grid-row", "gap",
+			"align-items", "align-content", "align-self", "justify-content", "justify-items", "justify-self",
+			"font", "font-family", "font-size", "font-weight", "font-style", "line-height",
+			"letter-spacing", "word-spacing", "text-align", "text-decoration", "text-transform",
+			"text-shadow", "box-shadow", "box-sizing", "opacity", "overflow", "overflow-x", "overflow-y",
+			"transition", "transform", "transform-origin", "animation", "animation-delay", "animation-name",
+			"cursor", "content", "visibility", "white-space", "list-style", "outline", "outline-offset",
+			"filter", "backdrop-filter", "mask", "clip-path", "aspect-ratio", "object-fit", "pointer-events",
+		),
+		builtins: mkWords(
+			"none", "auto", "inherit", "initial", "unset", "block", "inline", "inline-block",
+			"flex", "grid", "absolute", "relative", "fixed", "sticky", "static", "hidden", "visible",
+			"center", "left", "right", "top", "bottom", "solid", "dashed", "dotted", "transparent",
+			"bold", "normal", "italic", "pointer", "ease", "ease-in", "ease-out", "ease-in-out",
+			"linear", "infinite", "forwards", "wrap", "nowrap", "cover", "contain", "currentColor",
+			"var", "calc", "rgb", "rgba", "hsl", "hsla", "url", "clamp", "min", "max",
+			"true", "false",
+		),
+	}
+}
+
+func buildLangMarkdown() *langDef {
+	return &langDef{markdown: true}
+}
+
+func buildLangYAML() *langDef {
+	return &langDef{
+		lineComment: "#",
+		keyColon:    true,
+		builtins: mkWords(
+			"true", "false", "yes", "no", "on", "off", "null", "~",
+			"True", "False", "Null", "None",
+		),
+	}
+}
+
+func buildLangTOML() *langDef {
+	return &langDef{
+		lineComment: "#",
+		tomlKeys:    true,
+		builtins:    mkWords("true", "false", "inf", "nan"),
+	}
+}
+
 func detectLang(filename string) *langDef {
 	if filename == "" {
 		return nil
@@ -599,6 +1001,16 @@ func detectLang(filename string) *langDef {
 		return hlLangJSON
 	case ".sql":
 		return hlLangSQL
+	case ".html", ".htm", ".xhtml", ".xml", ".svg", ".vue":
+		return hlLangHTML
+	case ".css", ".scss", ".sass", ".less":
+		return hlLangCSS
+	case ".md", ".markdown", ".mdown":
+		return hlLangMD
+	case ".yml", ".yaml":
+		return hlLangYAML
+	case ".toml", ".ini", ".cfg", ".conf":
+		return hlLangTOML
 	default:
 		return nil
 	}

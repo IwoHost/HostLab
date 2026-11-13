@@ -104,6 +104,16 @@ type Editor struct {
 	tabs      []tabEntry
 	tabIdx    int
 	gotoInput string
+
+	// indentation in force for the file on screen. The preference comes from
+	// the config file, .editorconfig overrides it, and failing both the file's
+	// own contents decide.
+	indentWidth int    // in force for the file on screen
+	indentTabs  bool   //  "
+	indentFrom  string // "config", "file" or ".editorconfig"
+
+	cfgIndentWidth int  // the preference from the config file
+	cfgIndentTabs  bool //  "
 }
 
 func NewEditor(filenames []string) (*Editor, error) {
@@ -174,6 +184,7 @@ func (e *Editor) loadTab(idx int) {
 	e.lastWasInsert = te.lastWasInsert
 	e.lang = te.lang
 	e.mode = ModeNormal
+	e.applyIndentFor(e.buf)
 	e.clearMessage()
 }
 
@@ -474,7 +485,7 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 			col = len(rs)
 		}
 		indent := leadingWhitespace(cur)
-		unit := indentUnitFor(cur)
+		unit := e.indentUnitFor(cur)
 		before := strings.TrimRight(string(rs[:col]), " \t")
 		after := strings.TrimLeft(string(rs[col:]), " \t")
 
@@ -522,11 +533,11 @@ func (e *Editor) handleKey(ev *tcell.EventKey) (quit bool) {
 		if e.selActive {
 			e.deleteSelection()
 		}
-		if strings.HasPrefix(e.buf.Line(e.cursor.Line), "\t") {
+		if e.indentTabs || strings.HasPrefix(e.buf.Line(e.cursor.Line), "\t") {
 			e.cursor.Col = e.buf.InsertRune(e.cursor.Line, e.cursor.Col, '\t')
 		} else {
 			// land on the next tab stop rather than always adding four
-			for i := indentWidth - e.cursor.Col%indentWidth; i > 0; i-- {
+			for i := e.indentStep() - e.cursor.Col%e.indentStep(); i > 0; i-- {
 				e.cursor.Col = e.buf.InsertRune(e.cursor.Line, e.cursor.Col, ' ')
 			}
 		}
@@ -1288,17 +1299,25 @@ func uncommentLine(line, marker string) string {
 	return line[:idx] + rest
 }
 
-// indentWidth is how far one level of indentation reaches when a file is
-// indented with spaces.
-const indentWidth = 4
-
-// indentUnitFor returns the indent a line should grow by: a tab if the line is
-// already tabbed, spaces otherwise, so hedit follows the file it is editing.
-func indentUnitFor(line string) string {
+// indentUnitFor returns the indent a line should grow by. A line that is
+// already tabbed keeps tabs whatever the setting says; otherwise the rules
+// resolved for this file decide.
+func (e *Editor) indentUnitFor(line string) string {
 	if strings.HasPrefix(line, "\t") {
 		return "\t"
 	}
-	return strings.Repeat(" ", indentWidth)
+	if e.indentTabs {
+		return "\t"
+	}
+	return strings.Repeat(" ", e.indentStep())
+}
+
+// indentStep is how far one level reaches, never zero.
+func (e *Editor) indentStep() int {
+	if e.indentWidth < 1 || e.indentWidth > 16 {
+		return 4
+	}
+	return e.indentWidth
 }
 
 // opensBlock reports whether a line, trimmed of trailing space, ends in
@@ -1343,9 +1362,9 @@ func (e *Editor) backspaceIndentWidth() int {
 			return 0 // real text to the left, or a tab, which deletes whole
 		}
 	}
-	n := e.cursor.Col % indentWidth
+	n := e.cursor.Col % e.indentStep()
 	if n == 0 {
-		n = indentWidth
+		n = e.indentStep()
 	}
 	return n
 }
@@ -1353,7 +1372,7 @@ func (e *Editor) backspaceIndentWidth() int {
 // indentLines pushes every line touched by the selection one level right.
 func (e *Editor) indentLines() {
 	from, to := e.normalizedSel()
-	unit := indentUnitFor(e.buf.Line(from.Line))
+	unit := e.indentUnitFor(e.buf.Line(from.Line))
 	w := len([]rune(unit))
 	moved := 0
 	for ln := from.Line; ln <= to.Line && ln < e.buf.LineCount(); ln++ {
@@ -1385,7 +1404,7 @@ func (e *Editor) dedentLines() {
 		case strings.HasPrefix(line, "\t"):
 			cut = 1
 		default:
-			for cut < indentWidth && cut < len(line) && line[cut] == ' ' {
+			for cut < e.indentStep() && cut < len(line) && line[cut] == ' ' {
 				cut++
 			}
 		}
@@ -1825,6 +1844,11 @@ func configPath() string {
 }
 
 func (e *Editor) loadConfig() {
+	// defaults, used when there is no config file or it says nothing
+	e.cfgIndentWidth = 4
+	e.cfgIndentTabs = false
+	e.softWrap = true
+
 	path := configPath()
 	if path == "" {
 		return
@@ -1833,10 +1857,25 @@ func (e *Editor) loadConfig() {
 	if err != nil {
 		return
 	}
-	var idx int
-	if _, err := fmt.Sscanf(strings.TrimSpace(string(data)), "theme=%d", &idx); err == nil {
-		if idx >= 0 && idx < len(e.themes) {
-			e.themeIdx = idx
+	for _, line := range strings.Split(string(data), "\n") {
+		key, val, ok := strings.Cut(strings.TrimSpace(line), "=")
+		if !ok {
+			continue
+		}
+		key, val = strings.TrimSpace(key), strings.TrimSpace(val)
+		switch key {
+		case "theme":
+			if idx, err := strconv.Atoi(val); err == nil && idx >= 0 && idx < len(e.themes) {
+				e.themeIdx = idx
+			}
+		case "indent":
+			if w, err := strconv.Atoi(val); err == nil && w >= 1 && w <= 16 {
+				e.cfgIndentWidth = w
+			}
+		case "tabs":
+			e.cfgIndentTabs = val == "true" || val == "1"
+		case "wrap":
+			e.softWrap = !(val == "false" || val == "0")
 		}
 	}
 }
@@ -1847,7 +1886,17 @@ func (e *Editor) saveConfig() {
 		return
 	}
 	_ = os.MkdirAll(filepath.Dir(path), 0755)
-	_ = os.WriteFile(path, []byte(fmt.Sprintf("theme=%d\n", e.themeIdx)), 0644)
+	tabs := "false"
+	if e.cfgIndentTabs {
+		tabs = "true"
+	}
+	wrap := "true"
+	if !e.softWrap {
+		wrap = "false"
+	}
+	body := fmt.Sprintf("theme=%d\nindent=%d\ntabs=%s\nwrap=%s\n",
+		e.themeIdx, e.cfgIndentWidth, tabs, wrap)
+	_ = os.WriteFile(path, []byte(body), 0644)
 }
 
 // ── MESSAGES ─────────────────────────────────────────────────────────────────
@@ -2037,7 +2086,11 @@ func (e *Editor) render() {
 	if e.buf.CRLF {
 		eol = "CRLF"
 	}
-	posStr := fmt.Sprintf("  %s  Ln %d, Col %d ", eol, e.cursor.Line+1, e.cursor.Col+1)
+	indent := fmt.Sprintf("%d sp", e.indentStep())
+	if e.indentTabs {
+		indent = "tab"
+	}
+	posStr := fmt.Sprintf("  %s  %s  Ln %d, Col %d ", eol, indent, e.cursor.Line+1, e.cursor.Col+1)
 	fnStart := (e.width - len([]rune(filename))) / 2
 	if fnStart < 8 {
 		fnStart = 8
