@@ -668,6 +668,7 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
 <header>
   <a href="index.html" class="logo">HOST<span>·</span>LAB</a>
   <div class="header-right">
+    <a href="pages/apps.html" class="nav-link">APPS</a>
     <a href="pages/archives.html" class="nav-link">ARCHIVES</a>
     <a href="pages/games.html" class="nav-link">GAMES</a>
     <a href="pages/study.html" class="nav-link">STUDY</a>
@@ -739,6 +740,13 @@ html.light .card:hover { box-shadow:0 12px 40px rgba(0,0,0,0.08); }
    ════════════════════════════════════════════ */
 const SECTIONS = [
   {
+    href:     'pages/apps.html',
+    kicker:   'On your phone',
+    title:    'Apps',
+    topColor: '#23845a',
+    desc:     'Hplay, a music player for Android with a click wheel. Free, no account, in beta now.'
+  },
+  {
     href:     'pages/games.html',
     kicker:   'Press start',
     title:    'Games',
@@ -769,6 +777,16 @@ const SECTIONS = [
 ];
 
 const PROJECTS = [
+  {
+    file:     'hplay.html',
+    href:     'https://iwohost.github.io/hplaysite/',
+    external: true,
+    topColor: '#23845a',
+    icon:     'other/logo/Hplay.png',
+    title:    'Hplay',
+    tags:     ['music', 'app'],
+    desc:     'A music player for Android with a click wheel, for the music already on your phone. Spin to scroll, vinyl that spins in your covers\' colours, a home screen widget, and Your Year, Wrapped. Free, no account, nothing leaves your phone. In beta.'
+  },
   {
     file:  'dither-lab.html',
     icon:  'other/logo/Dither.png',
