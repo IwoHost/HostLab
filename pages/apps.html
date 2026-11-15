@@ -356,6 +356,11 @@ html.light .card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
   border: 1px solid var(--play-green-bright);
 }
 
+.platform-badge.android {
+  background: var(--tag-bg);
+  color: var(--play-green-text);
+  border: 1px solid var(--play-green-bright);
+}
 .platform-badge.browser {
   background: var(--tag-bg);
   color: var(--text-secondary);
@@ -471,39 +476,6 @@ html.light .switch-track { background:#d0ceca; }
 .footer-link svg { transition: transform 0.2s cubic-bezier(.4,0,.2,1); }
 .footer-link:hover svg { transform: translate(2px, -2px); }
 .footer-right { display: flex; align-items: center; gap: 20px; }
-
-/* ── Apps: Hplay, the one app so far. Built on the Games page's look; the one new colour is
-      Hplay's own green, so the page reads as Hplay's without leaving HostLab. ── */
-:root { --hplay: #23845a; --hplay-bright: #36a06e; --hplay-amber: #f4ac3a; }
-.app { margin: 0 64px 56px; border: 1px solid var(--border); border-top: 2px solid var(--hplay); background: var(--surface); }
-.app-top { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
-.app-art { border-right: 1px solid var(--border); background: #0a1c15; display: flex; align-items: center; }
-.app-art img { width: 100%; display: block; }
-.app-info { padding: 28px 30px 30px; display: flex; flex-direction: column; gap: 14px; }
-.app-kicker { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-secondary); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.app-kicker .pill { color: #0c0c0c; background: var(--hplay-amber); padding: 2px 8px; letter-spacing: .1em; }
-.app-name { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 5vw, 56px); line-height: 1; display: flex; align-items: center; gap: 14px; }
-.app-name img { width: 52px; height: 52px; border-radius: 12px; }
-.app-desc { color: var(--text-secondary); font-size: 15px; line-height: 1.6; max-width: 40em; }
-.app-list { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; font-family: var(--font-mono); font-size: 12.5px; color: var(--text-primary); }
-.app-list li::before { content: '› '; color: var(--hplay-bright); }
-.app-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
-.btn { font-family: var(--font-mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; text-decoration: none; padding: 11px 16px; border: 1px solid var(--border); color: var(--text-primary); transition: border-color .15s, background .15s; }
-.btn:hover, .btn:focus-visible { border-color: var(--text-secondary); }
-.btn.go { background: var(--hplay); border-color: var(--hplay); color: #fff; }
-.btn.go:hover, .btn.go:focus-visible { background: var(--hplay-bright); border-color: var(--hplay-bright); }
-.app-shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--border); }
-.app-shots img { width: 100%; display: block; aspect-ratio: 9 / 16; object-fit: cover; }
-.app-shots img + img { border-left: 1px solid var(--border); }
-.app-fine { padding: 14px 30px; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11.5px; color: var(--text-secondary); line-height: 1.6; }
-@media (max-width: 860px) {
-  .app { margin: 0 16px 40px; }
-  .app-top { grid-template-columns: minmax(0, 1fr); }
-  .app-art { border-right: 0; border-bottom: 1px solid var(--border); }
-  .app-info { padding: 22px 18px 24px; }
-  .app-list { grid-template-columns: 1fr; }
-  .app-fine { padding: 14px 18px; }
-}
 </style>
 </head>
 <body>
@@ -515,7 +487,7 @@ html.light .switch-track { background:#d0ceca; }
     <a href="archives.html" class="nav-link">ARCHIVES</a>
     <a href="study.html" class="nav-link">STUDY</a>
     <a href="terminal.html" class="nav-link">TERMINAL</a>
-    <div class="header-meta">1 APP</div>
+    <div class="header-meta" id="site-count">— APPS</div>
     <div class="theme-switch" id="theme-switch" title="Toggle light mode">
       <span class="switch-label" id="switch-label">LIGHT</span>
       <div class="switch-track"><div class="switch-thumb"></div></div>
@@ -527,43 +499,19 @@ html.light .switch-track { background:#d0ceca; }
   <div class="hero-bg-symbol">&#x2B21;</div>
   <div class="hero-label">On your phone</div>
   <h1>Ap<em>ps</em></h1>
-  <p class="hero-sub">Things from HostLabo you install, not just open. For now that is one: a music player with a click wheel.</p>
+  <p class="hero-sub">Things from HostLabo you install, not just open. For now that is one: Hplay, a music player for Android with a click wheel.</p>
+  <a href="https://iwohost.github.io/hplaysite/" target="_blank" rel="noopener" class="itch-link">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 1.9L21 7.1V16.9L12 22.1L3 16.9V7.1Z M12 1.9V22.1" stroke="currentColor" stroke-width="2.6"/></svg>
+    VISIT THE HPLAY SITE →
+  </a>
 </section>
 
 <div class="section-header">
-  <span class="section-label">Android</span>
-  <span class="count-badge">1</span>
+  <span class="section-label">All apps</span>
+  <span class="count-badge" id="count-badge">0</span>
 </div>
 
-<article class="app" aria-labelledby="hplay-name">
-  <div class="app-top">
-    <div class="app-art"><img src="../other/hplay-feature.jpg" alt="Hplay: your music, on a wheel. Several Hplay players in different colours, one playing a spinning vinyl record." width="1024" height="500"></div>
-    <div class="app-info">
-      <div class="app-kicker"><span class="pill">Beta</span><span>Android 7+</span><span>Free</span><span>No account</span></div>
-      <h2 class="app-name" id="hplay-name"><img src="../other/logo/Hplay.png" alt="" width="52" height="52">Hplay</h2>
-      <p class="app-desc">A music player for the music already on your phone, driven by a wheel you spin instead of a list you scroll. It plays with the screen off, sits on the lock screen and the home screen, and nothing about what you listen to ever leaves your phone.</p>
-      <ul class="app-list">
-        <li>Spin-to-scroll click wheel</li>
-        <li>Vinyl mode in your covers' colours</li>
-        <li>Home screen widget, four sizes</li>
-        <li>Your Year, Wrapped</li>
-        <li>Little apps and games inside</li>
-        <li>Big text, high contrast, read aloud</li>
-      </ul>
-      <div class="app-actions">
-        <a class="btn go" href="https://iwohost.github.io/hplaysite/#start" target="_blank" rel="noopener">Get the app &rarr;</a>
-        <a class="btn" href="https://iwohost.github.io/hplaysite/" target="_blank" rel="noopener">Website</a>
-        <a class="btn" href="https://iwohost.github.io/hplaysite/changelog.html" target="_blank" rel="noopener">Changelog</a>
-      </div>
-    </div>
-  </div>
-  <div class="app-shots">
-    <img src="../other/hplay-1-colours.jpg" alt="Hplay players fanned out in every colour" loading="lazy" width="540" height="960">
-    <img src="../other/hplay-2-vinyl.jpg" alt="Vinyl mode: records pressed in the colours of their covers" loading="lazy" width="540" height="960">
-    <img src="../other/hplay-5-modes.jpg" alt="Light, dark, paper and night screens" loading="lazy" width="540" height="960">
-  </div>
-  <p class="app-fine">Not on Google Play yet: while it is in beta you install the APK from the website, and Android will ask whether you trust it. Not affiliated with, or endorsed by, Apple.</p>
-</article>
+<main class="grid" id="grid"></main>
 
 <footer>
   <div class="footer-left">HOSTLAB · APPS</div>
@@ -581,21 +529,93 @@ html.light .switch-track { background:#d0ceca; }
 </footer>
 
 <script>
+/* ════════════════════════════════════════════
+   CONFIGURATION
+   ════════════════════════════════════════════
+   Set your itch.io profile URL here:
+*/
+/* ════════════════════════════════════════════
+   THE APPS. Same card as the Games page, so the two look like one site.
+     platform — 'android' (opens the app's own site in a new tab)
+   ════════════════════════════════════════════ */
+const GAMES = [
+  {
+    title:    'HPLAY',
+    desc:     'A music player for the music already on your phone, driven by a wheel you spin instead of a list you scroll. Vinyl that spins in your covers\' colours, a home screen widget, Your Year, Wrapped, and little apps inside. Free, no account, nothing leaves your phone. In beta; installed from its site, not Google Play yet.',
+    platform: 'android',
+    url:      'https://iwohost.github.io/hplaysite/',
+    cover:    '../other/p_hplay.png',
+    tags:     ['music', 'android', 'beta', 'free'],
+    year:     '2026'
+  },
+];
+/* ════════════════════════════════════════════ */
+
+document.getElementById('footer-date').textContent =
+  new Date().toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' }).toUpperCase();
+
+const grid       = document.getElementById('grid');
+const countBadge = document.getElementById('count-badge');
+const siteCount  = document.getElementById('site-count');
+
+countBadge.textContent = GAMES.length;
+siteCount.textContent  = GAMES.length + ' APP' + (GAMES.length !== 1 ? 'S' : '');
+
 const themeSwitch = document.getElementById('theme-switch');
 const switchLabel = document.getElementById('switch-label');
 themeSwitch.addEventListener('click', () => {
   const isLight = document.documentElement.classList.toggle('light');
   switchLabel.textContent = isLight ? 'DARK' : 'LIGHT';
-  try { localStorage.setItem('hostlab-theme', isLight ? 'light' : 'dark'); } catch (e) {}
+  localStorage.setItem('hostlab-theme', isLight ? 'light' : 'dark');
 });
-try {
-  if (localStorage.getItem('hostlab-theme') === 'light') {
-    document.documentElement.classList.add('light');
-    switchLabel.textContent = 'DARK';
-  }
-} catch (e) {}
-const fd = document.getElementById('footer-date');
-if (fd) fd.textContent = new Date().toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' }).toUpperCase();
+if (localStorage.getItem('hostlab-theme') === 'light') {
+  document.documentElement.classList.add('light');
+  switchLabel.textContent = 'DARK';
+}
+
+function buildCard(game, index) {
+  const { title, desc, platform, url, cover, tags, year } = game;
+  const num = String(index + 1).padStart(2, '0');
+  const isExternal = platform === 'itch' || platform === 'android';
+
+  const card = document.createElement('a');
+  card.className = 'card';
+  card.href = url;
+  if (isExternal) { card.target = '_blank'; card.rel = 'noopener'; }
+
+  const tagHTML = (tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+
+  const thumbContent = cover
+    ? `<img src="${cover}" alt="${title} cover"><div class="play-overlay"><div class="play-btn"><svg width="14" height="16" viewBox="0 0 14 16" fill="none"><path d="M1 1L13 8L1 15V1Z" fill="white"/></svg></div></div>`
+    : `<div class="card-thumb-placeholder">NO COVER</div>`;
+
+  card.innerHTML = `
+    <div class="card-thumb">${thumbContent}</div>
+    <div class="card-body">
+      <div class="card-header-row">
+        <div class="card-title-block">
+          <div class="card-index">${num}${year ? ' · ' + year : ''}</div>
+          <div class="card-title">${title}</div>
+        </div>
+        <span class="platform-badge ${platform}">${platform === 'itch' ? 'ITCH.IO' : platform === 'android' ? 'ANDROID' : 'BROWSER'}</span>
+      </div>
+      <p class="card-desc">${desc}</p>
+      <div class="card-footer">
+        <div class="card-tags">${tagHTML}</div>
+        <span class="card-arrow">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+  `;
+
+  return card;
+}
+
+GAMES.forEach((game, i) => grid.appendChild(buildCard(game, i)));
+CardMotion.measure();
 </script>
 </body>
 </html>
