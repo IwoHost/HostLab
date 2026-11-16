@@ -29,7 +29,7 @@
     --red:#A3211A; --red-text:#E2574C; --on-red:#F4EAD2; --gold:#E0B84A;
     --alive:#DDD2B8; --on-alive:#0C0A07; --mark-stroke:#0C0A07;
     --map:#14110B; --fog:6,5,3; --edge:rgba(0,0,0,.9); --stain:rgba(130,20,12,.3);
-    --tiles:sepia(.65) brightness(1.7) contrast(1.05);
+    --tiles:sepia(.75) brightness(.7) contrast(1.2);
   }
 }
 :root[data-theme="dark"]{
@@ -39,7 +39,7 @@
   --red:#A3211A; --red-text:#E2574C; --on-red:#F4EAD2; --gold:#E0B84A;
   --alive:#DDD2B8; --on-alive:#0C0A07; --mark-stroke:#0C0A07;
   --map:#14110B; --fog:6,5,3; --edge:rgba(0,0,0,.9); --stain:rgba(130,20,12,.3);
-  --tiles:sepia(.65) brightness(1.7) contrast(1.05);
+  --tiles:sepia(.75) brightness(.7) contrast(1.2);
 }
 *,*::before,*::after{box-sizing:border-box}
 html{height:100%}
@@ -61,7 +61,6 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 #map{position:absolute;inset:0;z-index:0;background:var(--map)}
 .leaflet-container{background:var(--map);font-family:var(--body)}
 .leaflet-tile-pane{filter:var(--tiles)}
-.app.osm-dark .leaflet-tile-pane{filter:invert(1) grayscale(1) brightness(1.9) contrast(.95) sepia(.7)}
 .zone{stroke:var(--red);stroke-width:3;stroke-dasharray:10 8;stroke-linecap:round;fill:var(--red);fill-opacity:.05}
 .zone-draft{stroke:var(--ink);stroke-width:2;stroke-dasharray:6 6;fill:var(--ink);fill-opacity:.08}
 .gh-s{stroke:var(--alive);stroke-width:1.5;stroke-dasharray:3 6;fill:var(--alive);fill-opacity:.08}
@@ -321,7 +320,7 @@ h1{margin:0;font-size:clamp(56px,20vw,96px);color:var(--red-text);transform:rota
       <button type="button" class="cta" id="startBtn">Start</button>
     </div>
     <div class="cap" id="waitLine" hidden>Czekamy, aż host wystartuje grę.</div>
-    <div class="between"><span class="cap">Mapa © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>, <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a></span><button type="button" class="textbtn" id="leaveBtn">Wyjdź z gry</button></div>
+    <div class="between"><span class="cap">Mapa © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></span><button type="button" class="textbtn" id="leaveBtn">Wyjdź z gry</button></div>
   </section>
 
   <!-- DRAW CARD (boundary or boxes) -->
@@ -358,7 +357,7 @@ h1{margin:0;font-size:clamp(56px,20vw,96px);color:var(--red-text);transform:rota
       <button type="button" class="textbtn" id="centerBtn">Wycentruj</button>
       <button type="button" class="textbtn" id="fitBtn">Strefa</button>
       <button type="button" class="textbtn" id="stopBtn" hidden>Zakończ</button>
-      <span class="cap">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a>, <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a></span>
+      <span class="cap">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a></span>
     </div>
   </section>
 
@@ -556,16 +555,8 @@ const hunting=v=>v.phase==='running'&&now()>=v.huntAt;
 
 /* ================= MAP ================= */
 const map=L.map('map',{zoomControl:false,attributionControl:false,maxZoom:19,minZoom:3}).setView(HOME,15);
-/* Dark theme uses CARTO's dark map (OpenStreetMap data, roads stay readable at night).
-   If those tiles don't load, fall back to plain OpenStreetMap tiles, inverted. */
-const OSM='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const th=document.documentElement.dataset.theme;
-const darkMap= th==='dark' || (th!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);
-let tiles=L.tileLayer(darkMap?'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png':OSM,{maxZoom:19}).addTo(map);
-if(darkMap){
-  let bad=0;
-  tiles.on('tileerror',()=>{ if(++bad===4){ map.removeLayer(tiles); app.classList.add('osm-dark'); tiles=L.tileLayer(OSM,{maxZoom:19}).addTo(map); } });
-}
+/* Plain OpenStreetMap tiles, no API key. CSS tints them like an old paper map (darker in dark mode). */
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 map.on('dragstart',()=>{ S.follow=false; });
 map.on('move zoom',light);
 let zoneLayer=null, draftLayer=null, draftDots=[];
