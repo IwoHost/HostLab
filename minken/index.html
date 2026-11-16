@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>MINKEN</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Rubik+Dirt&family=Saira+Stencil+One&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#D6CBB2; --ink:#1B160E; --muted:#5B5140;
+  --card:rgba(214,203,178,.92); --hair:rgba(27,22,14,.3); --field:rgba(27,22,14,.08);
+  --red:#8E1B12; --red-text:#7A150D; --on-red:#F2E8D0; --gold:#6B4E00;
+  --alive:#1B160E; --on-alive:#D6CBB2; --mark-stroke:#D6CBB2;
+  --map:#CFC3A6; --fog:214,203,178; --edge:rgba(60,45,20,.55); --stain:rgba(120,20,12,.22);
+  --tiles:sepia(.8) contrast(.95) brightness(.97);
+  --display:'Rubik Dirt','Arial Black',Impact,sans-serif;
+  --stencil:'Saira Stencil One','Arial Narrow',Impact,sans-serif;
+  --body:'Courier Prime','Courier New',Courier,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0C0A07; --ink:#DDD2B8; --muted:#978D76;
+    --card:rgba(16,13,9,.86); --hair:rgba(221,210,184,.2); --field:rgba(221,210,184,.07);
+    --red:#A3211A; --red-text:#E2574C; --on-red:#F4EAD2; --gold:#E0B84A;
+    --alive:#DDD2B8; --on-alive:#0C0A07; --mark-stroke:#0C0A07;
+    --map:#14110B; --fog:6,5,3; --edge:rgba(0,0,0,.9); --stain:rgba(130,20,12,.3);
+    --tiles:sepia(.65) brightness(1.7) contrast(1.05);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0C0A07; --ink:#DDD2B8; --muted:#978D76;
+  --card:rgba(16,13,9,.86); --hair:rgba(221,210,184,.2); --field:rgba(221,210,184,.07);
+  --red:#A3211A; --red-text:#E2574C; --on-red:#F4EAD2; --gold:#E0B84A;
+  --alive:#DDD2B8; --on-alive:#0C0A07; --mark-stroke:#0C0A07;
+  --map:#14110B; --fog:6,5,3; --edge:rgba(0,0,0,.9); --stain:rgba(130,20,12,.3);
+  --tiles:sepia(.65) brightness(1.7) contrast(1.05);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%}
+body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;overflow:hidden;overflow:clip;overscroll-behavior:none}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+[hidden]{display:none!important}
+
+.app{position:relative;height:100%;overflow:hidden;overflow:clip;background:var(--bg);
+  --accent:var(--alive);--on-accent:var(--on-alive);--accent-text:var(--ink);--danger:0;--lx:50%;--ly:45%}
+.app[data-role="z"]{--accent:var(--red);--on-accent:var(--on-red);--accent-text:var(--red-text)}
+.disp{font-family:var(--display);font-weight:400;text-transform:uppercase;line-height:.95}
+.sten{font-family:var(--stencil);font-weight:400;text-transform:uppercase;letter-spacing:.06em}
+.cap{font-size:14px;line-height:1.35;color:var(--muted)}
+.cap a{color:inherit}
+
+/* map */
+#map{position:absolute;inset:0;z-index:0;background:var(--map)}
+.leaflet-container{background:var(--map);font-family:var(--body)}
+.leaflet-tile-pane{filter:var(--tiles)}
+.app.osm-dark .leaflet-tile-pane{filter:invert(1) grayscale(1) brightness(1.9) contrast(.95) sepia(.7)}
+.zone{stroke:var(--red);stroke-width:3;stroke-dasharray:10 8;stroke-linecap:round;fill:var(--red);fill-opacity:.05}
+.zone-draft{stroke:var(--ink);stroke-width:2;stroke-dasharray:6 6;fill:var(--ink);fill-opacity:.08}
+.gh-s{stroke:var(--alive);stroke-width:1.5;stroke-dasharray:3 6;fill:var(--alive);fill-opacity:.08}
+.mk{display:block;width:14px;height:14px;margin:6px;border-radius:50%;background:var(--muted);border:2px solid var(--mark-stroke);position:relative}
+.mk.s{background:var(--alive)}
+.mk.z{background:var(--red);border-radius:2px;transform:rotate(45deg)}
+.mk.small{width:9px;height:9px;margin:8.5px;border-width:1.5px}
+.mk.me{width:18px;height:18px;margin:4px;border-width:3px}
+.mk.me::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid currentColor;color:var(--accent);animation:pulse 2s ease-out infinite}
+.mk.v{width:10px;height:10px;margin:8px;background:var(--bg);border-color:var(--ink)}
+.mk.box{width:18px;height:18px;margin:4px;border-radius:2px;background:var(--gold);border:2px solid var(--mark-stroke);
+  background-image:linear-gradient(45deg,transparent 44%,var(--mark-stroke) 44%,var(--mark-stroke) 56%,transparent 56%),linear-gradient(-45deg,transparent 44%,var(--mark-stroke) 44%,var(--mark-stroke) 56%,transparent 56%)}
+.mk.box.off{background-color:var(--muted)}
+@keyframes pulse{from{transform:scale(.7);opacity:.9}to{transform:scale(2.8);opacity:0}}
+.leaflet-tooltip.tip{background:transparent;border:0;box-shadow:none;padding:0;color:var(--ink);font-family:var(--body);font-size:12px;font-weight:700;text-shadow:0 0 4px var(--bg),0 0 4px var(--bg),0 0 2px var(--bg)}
+.leaflet-tooltip.tip::before{display:none}
+
+/* grime */
+.fx{position:absolute;inset:0;pointer-events:none;z-index:1}
+#fogl{background:radial-gradient(circle at var(--lx) var(--ly),rgba(var(--fog),0) 0,rgba(var(--fog),0) 90px,rgba(var(--fog),.6) 330px);opacity:0;transition:opacity 1.2s}
+.app[data-phase="running"] #fogl{opacity:1}
+.edge{box-shadow:inset 0 0 120px 34px var(--edge)}
+.stains{z-index:58;background:
+  radial-gradient(ellipse 46% 24% at 0% 100%,var(--stain),transparent 70%),
+  radial-gradient(ellipse 30% 18% at 100% 0%,var(--stain),transparent 70%),
+  repeating-linear-gradient(104deg,transparent 0 170px,rgba(var(--fog),.0) 170px,rgba(127,127,127,.09) 171px,transparent 172px),
+  repeating-linear-gradient(78deg,transparent 0 260px,rgba(127,127,127,.07) 261px,transparent 262px)}
+.danger{box-shadow:inset 0 0 130px 34px var(--red);opacity:calc(var(--danger)*.85);transition:opacity .6s}
+#flash{background:var(--red);opacity:0;z-index:6}
+.grain{position:absolute;inset:0;z-index:60;pointer-events:none;opacity:.17;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain .6s steps(4) infinite}
+@keyframes grain{0%{background-position:0 0}25%{background-position:-14px 9px}50%{background-position:11px -16px}75%{background-position:-7px -11px}100%{background-position:0 0}}
+
+/* controls */
+.cta{min-height:62px;border:0;background:var(--red);color:var(--on-red);font-family:var(--stencil);font-size:25px;letter-spacing:.08em;text-transform:uppercase;padding:0 20px;
+  clip-path:polygon(0 7%,2% 0,97% 3%,100% 10%,99% 93%,96% 100%,3% 97%,0 90%);transition:transform .1s}
+.cta:active{transform:scale(.97) rotate(-.5deg)}
+.cta.alive{background:var(--alive);color:var(--on-alive)}
+.cta:disabled{opacity:.45}
+.btn{min-height:50px;border:1.5px solid var(--hair);border-radius:3px;background:var(--field);font-family:var(--stencil);font-size:15px;letter-spacing:.06em;text-transform:uppercase;padding:0 12px}
+.btn:disabled{opacity:.5}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.textbtn{min-height:44px;border:0;background:transparent;color:var(--muted);font-family:var(--stencil);font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:0 6px}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1;min-width:0}
+.between{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.grow{flex:1}
+.inp{height:54px;width:100%;padding:0 16px;background:var(--field);border:1.5px solid var(--hair);border-radius:3px;font-size:18px;font-weight:700}
+
+/* server status */
+.srv{display:flex;align-items:center;gap:10px;font-family:var(--stencil);font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.srv i{width:10px;height:10px;border-radius:50%;background:var(--muted);animation:wait 1.2s ease-in-out infinite}
+.srv.ok{color:var(--ink)}
+.srv.ok i{background:var(--gold);animation:none}
+@keyframes wait{50%{opacity:.25;transform:scale(.7)}}
+#offline{position:absolute;left:50%;top:84px;transform:translateX(-50%);z-index:45;padding:10px 16px;border-radius:3px;background:var(--ink);color:var(--bg);white-space:nowrap}
+#offline i{background:var(--bg)}
+
+/* home */
+.screen{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;background:var(--bg);overflow-y:auto}
+.pad{position:relative;display:flex;flex-direction:column;gap:20px;padding:22px 22px 22px;min-height:100%;max-width:460px;width:100%;margin:0 auto}
+h1{margin:0;font-size:clamp(56px,20vw,96px);color:var(--red-text);transform:rotate(-2deg);transform-origin:left}
+.place{margin-top:6px;font-size:15px;color:var(--muted)}
+.lead{margin:14px 0 0;font-size:16px;line-height:1.5;max-width:31ch}
+#codeIn{text-transform:uppercase;letter-spacing:.3em;font-family:var(--stencil);font-size:24px;text-align:center}
+
+/* hud */
+#head{position:absolute;left:0;right:0;top:0;z-index:5;padding:14px 18px 30px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;background:linear-gradient(rgba(var(--fog),.94),rgba(var(--fog),0))}
+.pill{display:inline-block;padding:6px 12px 4px;border-radius:2px;background:var(--accent);color:var(--on-accent);font-family:var(--stencil);font-size:15px;letter-spacing:.1em;text-transform:uppercase;transform:rotate(-2deg);transition:background .4s,color .4s}
+.counts{margin-top:10px;font-size:15px;font-weight:700;line-height:1.5}
+#tally{display:block;height:26px;margin-top:2px}
+#tally svg{height:26px;width:auto;stroke:var(--red-text);stroke-width:3;stroke-linecap:round;fill:none}
+#timer{font-family:var(--display);font-size:50px;line-height:.9;text-align:right}
+#timecap{text-align:right;margin-top:4px}
+#toasts{position:absolute;left:16px;right:16px;top:132px;z-index:7;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.toast{padding:8px 14px 6px;border-radius:2px;background:rgba(var(--fog),.9);color:var(--gold);font-family:var(--stencil);font-size:17px;letter-spacing:.06em;text-transform:uppercase;text-align:center;animation:toast 3.6s ease forwards}
+@keyframes toast{0%{opacity:0;transform:scale(1.7) rotate(-3deg)}7%{opacity:1;transform:scale(1) rotate(-1deg)}88%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
+.card{position:absolute;left:10px;right:10px;bottom:10px;z-index:5;max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:11px;padding:16px 16px 8px;border-radius:4px;max-height:64%;overflow-y:auto;
+  background:var(--card);border:1.5px solid var(--hair);box-shadow:inset 0 0 0 4px rgba(var(--fog),.5),inset 0 0 0 5px var(--hair);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.card h2{margin:0;font-family:var(--display);font-weight:400;font-size:30px;text-transform:uppercase;line-height:1}
+.codepill{border:1.5px dashed var(--ink);border-radius:2px;background:transparent;min-height:44px;padding:0 14px;font-family:var(--stencil);font-size:22px;letter-spacing:.16em}
+.players{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.players li{display:flex;align-items:center;gap:7px;min-height:36px;padding:0 6px 0 10px;border:1.5px solid var(--hair);border-radius:2px;font-size:15px;font-weight:700}
+.players li span.t{font-weight:400;color:var(--muted);font-size:12.5px}
+.players .st{width:8px;height:8px;border-radius:50%;background:var(--muted);opacity:.45}
+.players .st.ok{background:var(--gold);opacity:1}
+.players .x{width:30px;height:30px;border:0;border-radius:50%;background:transparent;color:var(--muted);font-size:16px}
+.players li:not(:has(.x)){padding-right:10px}
+.warn{padding:10px 12px;border-radius:2px;background:var(--red);color:var(--on-red);font-size:15px;font-weight:700;line-height:1.3}
+.scanrow{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.scanrow b{display:block;font-size:16px}
+#scanT{font-family:var(--display);font-size:32px;line-height:.9;color:var(--accent-text)}
+.bar{height:6px;background:var(--field);border:1px solid var(--hair);overflow:hidden}
+#scanBar{height:100%;width:0;background:var(--accent)}
+#caughtBtn{min-height:56px;border:2px solid var(--red);border-radius:3px;background:transparent;color:var(--red-text);font-family:var(--stencil);font-size:19px;letter-spacing:.06em;text-transform:uppercase}
+#caughtBtn:disabled{opacity:.4}
+.zrow{display:flex;align-items:center;gap:12px}
+.near{flex:1;min-width:0;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:58px;padding:8px 14px;border:1.5px solid var(--hair);border-radius:3px}
+.near b{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.near .d{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:22px;white-space:nowrap}
+.near svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .4s}
+.scream{flex:none;width:76px;height:76px;border-radius:50%;border:0;padding:4px;background:conic-gradient(var(--red) calc(var(--cd,100)*1%),var(--hair) 0)}
+.scream span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--bg);color:var(--red-text);font-family:var(--stencil);font-size:18px;text-transform:uppercase;letter-spacing:.04em}
+.scream.ready span{background:var(--red);color:var(--on-red)}
+#radarBtn{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:64px;padding:0 16px;border:2px solid #2E6B28;border-radius:3px;background:#07100A;color:#8BE07A;font-family:var(--stencil);font-size:24px;letter-spacing:.1em;text-transform:uppercase}
+#radarBtn:disabled{opacity:.5}
+#pips{display:flex;gap:4px}
+#pips i{width:8px;height:24px;border:1.5px solid #8BE07A;border-radius:1px}
+#pips i.on{background:#8BE07A}
+#boxBtn{min-height:54px;font-size:16px;background:var(--gold);color:#14100A;border-color:transparent}
+.step{display:flex;align-items:center;border:1.5px solid var(--hair);border-radius:3px;min-height:50px;background:var(--field)}
+.step button{width:48px;height:48px;border:0;background:transparent;font-size:22px;font-weight:700}
+.step span{flex:1;text-align:center;font-family:var(--stencil);font-size:15px;letter-spacing:.06em;text-transform:uppercase}
+
+/* overlays */
+.over{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px;background:var(--bg)}
+#countN,#wakeT{font-family:var(--display);font-size:min(60vw,280px);line-height:.85;color:var(--red-text)}
+#wakeT{font-size:min(26vw,120px)}
+#countN.pop{animation:pop .9s cubic-bezier(.2,.9,.3,1)}
+@keyframes pop{0%{transform:scale(2.2) rotate(-6deg);opacity:0}22%{transform:scale(1) rotate(-2deg);opacity:1}100%{opacity:.4;transform:scale(.94) rotate(-2deg)}}
+#roleCard,#wakeH{font-size:clamp(40px,14.5vw,72px);color:var(--accent-text);transform:rotate(-2deg);animation:slam .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes slam{from{transform:scale(1.8) rotate(-6deg);opacity:0}to{transform:rotate(-2deg);opacity:1}}
+.sub{font-size:16px;line-height:1.5;max-width:28ch}
+#wake{z-index:28}
+#caught{position:absolute;inset:0;z-index:40;background:var(--red);color:#F4EAD2;clip-path:circle(0% at 50% 86%);transition:clip-path .55s cubic-bezier(.7,0,.2,1);display:flex;flex-direction:column}
+#caught.on{clip-path:circle(150% at 50% 86%)}
+#caught .in{display:flex;flex-direction:column;gap:20px;flex:1;padding:24px 22px 22px;max-width:460px;width:100%;margin:0 auto}
+#caught.on .in{animation:shake .5s .1s}
+@keyframes shake{0%,100%{transform:none}15%{transform:translate(-9px,4px)}30%{transform:translate(8px,-5px)}45%{transform:translate(-6px,-3px)}60%{transform:translate(5px,3px)}80%{transform:translate(-2px,1px)}}
+#caught h2{margin:0;font-size:clamp(60px,20vw,92px);transform:rotate(-2deg);transform-origin:left}
+#caught p{margin:0;font-size:18px;line-height:1.45;font-weight:700;max-width:27ch}
+#caught button{min-height:62px;border-radius:3px;font-family:var(--stencil);font-size:18px;letter-spacing:.06em;text-transform:uppercase}
+#joinBtn{border:0;background:#0C0A07;color:#F4EAD2;font-size:24px!important}
+#undoBtn{border:2px solid #F4EAD2;background:transparent;color:#F4EAD2}
+#caught :focus-visible{outline-color:#F4EAD2}
+#end{position:absolute;inset:0;z-index:35;background:var(--bg);overflow-y:auto}
+#end h2{margin:0;font-size:clamp(40px,13vw,68px);color:var(--accent-text);transform:rotate(-2deg);transform-origin:left}
+#rank{margin:0;padding:0;list-style:none;display:flex;flex-direction:column}
+#rank li{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1.5px dashed var(--hair);font-size:16px;font-weight:700}
+#rank li span:last-child{font-family:var(--stencil);font-size:16px;letter-spacing:.04em;text-transform:uppercase;text-align:right}
+#rank li.z span:first-child{color:var(--red-text)}
+
+/* radar scope: always phosphor green on black, whatever the theme */
+#radar{position:absolute;inset:0;z-index:38;background:#030604;color:#8BE07A;display:flex;flex-direction:column;align-items:center;gap:16px;padding:22px 20px;font-family:var(--stencil);text-transform:uppercase;letter-spacing:.08em}
+#radar .top{width:100%;max-width:460px;display:flex;justify-content:space-between;align-items:center;font-size:18px}
+#scope{position:relative;width:min(88vw,54vh,440px);aspect-ratio:1;border-radius:50%;border:3px solid #2E6B28;background:radial-gradient(circle,#0B1A0C 0,#040905 100%);overflow:hidden;box-shadow:0 0 60px -10px #3FA033,inset 0 0 50px #000}
+#scope svg{position:absolute;inset:0;width:100%;height:100%;stroke:#2E6B28;stroke-width:.5;fill:none}
+#scope svg text{fill:#8BE07A;stroke:none;font-family:var(--stencil);font-size:5px}
+#scope svg .crack{stroke:rgba(255,255,255,.16);stroke-width:.35}
+#sweep{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0deg,transparent 285deg,rgba(139,224,122,.55) 360deg);opacity:0}
+#sweep.go{opacity:1;animation:sweep 4s linear forwards}
+@keyframes sweep{to{transform:rotate(360deg)}}
+#scope .lines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 4px);pointer-events:none}
+.blip{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#FF5A4A;box-shadow:0 0 14px 4px #FF5A4A;animation:blip 20s ease-out forwards}
+.blip.s{width:8px;height:8px;margin:-4px 0 0 -4px;background:#8BE07A;box-shadow:0 0 8px 2px #8BE07A}
+.blip.me{width:6px;height:6px;margin:-3px 0 0 -3px;background:#8BE07A;box-shadow:none;animation:none;left:50%;top:50%}
+@keyframes blip{0%{transform:scale(2.4);opacity:1}6%{transform:scale(1)}100%{opacity:.12}}
+#radarMsg{font-size:20px;text-align:center;min-height:52px;max-width:22ch;line-height:1.25}
+#radarMsg.hit{color:#FF5A4A}
+#radarClose{min-height:54px;padding:0 26px;border:2px solid #2E6B28;border-radius:3px;background:transparent;color:#8BE07A;font-size:17px;letter-spacing:.08em;text-transform:uppercase}
+#radar :focus-visible{outline-color:#8BE07A}
+
+/* sheets */
+#scrim{position:absolute;inset:0;background:rgba(0,0,0,.65);z-index:50}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:92%;z-index:51;display:flex;flex-direction:column;gap:14px;background:var(--bg);border-top:3px solid var(--ink);overflow-y:auto;
+  padding:18px 22px calc(18px + env(safe-area-inset-bottom,0px));animation:up .3s cubic-bezier(.2,.9,.3,1)}
+.sheet>*{max-width:460px;width:100%;margin-left:auto;margin-right:auto}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.sheet h2{margin:0;font-family:var(--display);font-weight:400;font-size:34px;text-transform:uppercase;line-height:1}
+.set{display:grid;grid-template-columns:1fr 104px;gap:9px 12px;align-items:center}
+.set label{font-size:15px;font-weight:700;line-height:1.25}
+.set label small{display:block;font-size:12.5px;font-weight:400;color:var(--muted)}
+.set .inp{height:46px;text-align:center;padding:0 8px}
+#firstSel{grid-column:1 / -1;text-align:left;padding:0 14px}
+#qr{align-self:center;padding:14px;background:#fff;width:auto}
+#qr img,#qr canvas{display:block}
+#invLink{font-size:14px;word-break:break-all;color:var(--muted);text-align:center}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .grain{animation:none}
+}
+</style>
+</head>
+<body>
+<main class="app" id="app" data-role="s" data-phase="home">
+  <div id="map"></div>
+  <div class="fx" id="fogl" aria-hidden="true"></div>
+  <div class="fx edge" aria-hidden="true"></div>
+  <div class="fx danger" aria-hidden="true"></div>
+  <div class="fx" id="flash" aria-hidden="true"></div>
+  <div class="fx stains" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- HOME -->
+  <section class="screen" id="home">
+    <div class="pad">
+      <div>
+        <h1 class="disp">Minken</h1>
+        <div class="sten place">Zombie we wsi · Minkowice Oławskie</div>
+        <p class="lead">Wieś zmieniła nazwę. To, co tu zostało, nie. Raz w roku, pod koniec listopada, wychodzi przez jednego z nas.</p>
+      </div>
+      <div class="stack">
+        <label class="cap" for="nick">Twoja ksywka</label>
+        <input class="inp" id="nick" type="text" maxlength="14" autocomplete="off" placeholder="np. host">
+      </div>
+      <div class="grow"></div>
+      <div class="srv" id="srv" role="status"><i aria-hidden="true"></i><span id="srvTx">Czekam na serwer…</span></div>
+      <div class="stack">
+        <label class="cap" for="codeIn">Masz kod gry?</label>
+        <div class="row">
+          <input class="inp" id="codeIn" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="KOD" style="flex:1.2">
+          <button type="button" class="cta alive" id="joinGame" disabled>Dołącz</button>
+        </div>
+      </div>
+      <button type="button" class="cta" id="newGame" disabled>Stwórz grę</button>
+      <p class="cap" id="homeErr" role="alert" style="margin:0;min-height:18px;color:var(--red-text)"></p>
+    </div>
+  </section>
+
+  <!-- HUD -->
+  <div id="head" hidden>
+    <div>
+      <span class="pill" id="roleChip">Lobby</span>
+      <div class="counts"><span id="cS"></span><span id="tally" role="img"></span></div>
+    </div>
+    <div>
+      <div id="timer" role="timer"></div>
+      <div class="cap" id="timecap"></div>
+    </div>
+  </div>
+  <div id="toasts" aria-live="polite"></div>
+  <div class="srv" id="offline" role="status" hidden><i aria-hidden="true"></i><span>Czekam na serwer…</span></div>
+
+  <!-- LOBBY CARD -->
+  <section class="card" id="lobbyCard" hidden>
+    <div class="between"><h2>Lobby</h2><button type="button" class="codepill" id="codeBtn" aria-label="Zaproś graczy"></button></div>
+    <ul class="players" id="playerList"></ul>
+    <div class="cap" id="gpsLine">Szukam GPS…</div>
+    <div class="row">
+      <button type="button" class="btn" id="soundBtn">Test dźwięku</button>
+      <button type="button" class="btn" id="fakeBtn" aria-pressed="false">Symuluj pozycję</button>
+    </div>
+    <div class="stack" id="hostBox" hidden>
+      <div class="cap" id="zoneLine"></div>
+      <div class="row">
+        <button type="button" class="btn" id="zoneBtn">Granica</button>
+        <button type="button" class="btn" id="boxesBtn">Skrzynki</button>
+      </div>
+      <div class="row">
+        <button type="button" class="btn" id="setBtn">Ustawienia</button>
+        <button type="button" class="btn" id="invBtn">Zaproś</button>
+      </div>
+      <div class="step"><button type="button" id="botMinus" aria-label="Mniej botów">−</button><span id="botN">Boty: 0</span><button type="button" id="botPlus" aria-label="Więcej botów">+</button></div>
+      <button type="button" class="cta" id="startBtn">Start</button>
+    </div>
+    <div class="cap" id="waitLine" hidden>Czekamy, aż host wystartuje grę.</div>
+    <div class="between"><span class="cap">Mapa © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>, <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a></span><button type="button" class="textbtn" id="leaveBtn">Wyjdź z gry</button></div>
+  </section>
+
+  <!-- DRAW CARD (boundary or boxes) -->
+  <section class="card" id="drawCard" hidden>
+    <h2 id="drawH">Granica</h2>
+    <div class="cap" id="drawLine"></div>
+    <div class="row">
+      <button type="button" class="btn" id="drawUndo">Cofnij punkt</button>
+      <button type="button" class="btn" id="drawClear">Wyczyść</button>
+    </div>
+    <div class="row" style="padding-bottom:8px">
+      <button type="button" class="btn" id="drawCancel">Anuluj</button>
+      <button type="button" class="cta" id="drawSave" style="min-height:50px;font-size:20px">Zapisz</button>
+    </div>
+  </section>
+
+  <!-- GAME CARD -->
+  <section class="card" id="gameCard" hidden>
+    <div class="warn" id="outWarn" hidden></div>
+    <div class="scanrow">
+      <div><b id="scanLbl"></b><span class="cap" id="scanSub"></span></div>
+      <span id="scanT"></span>
+    </div>
+    <div class="bar" aria-hidden="true"><div id="scanBar"></div></div>
+    <button type="button" id="radarBtn" hidden><span>Radar</span><span id="pips" aria-hidden="true"></span></button>
+    <div class="zrow">
+      <div class="near"><div style="min-width:0"><span class="cap" id="nearCap"></span><b id="nearN">–</b></div>
+        <span class="d"><span id="nearD"></span><svg id="nearA" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 17V3M4 9l6-6 6 6"/></svg></span></div>
+      <button type="button" class="scream ready" id="screamBtn" aria-label="Ryk: telefony ocalałych wydają dźwięk" hidden><span id="screamTx">Ryk</span></button>
+    </div>
+    <button type="button" class="btn" id="boxBtn" hidden></button>
+    <button type="button" id="caughtBtn">Złapali mnie</button>
+    <div class="between">
+      <button type="button" class="textbtn" id="centerBtn">Wycentruj</button>
+      <button type="button" class="textbtn" id="fitBtn">Strefa</button>
+      <button type="button" class="textbtn" id="stopBtn" hidden>Zakończ</button>
+      <span class="cap">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a>, <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a></span>
+    </div>
+  </section>
+
+  <!-- COUNTDOWN, ROLE, HEAD START -->
+  <section class="over" id="count" hidden>
+    <div class="sten" id="countCap">Gra startuje za</div>
+    <div id="countN" aria-live="assertive"></div>
+    <div class="sub">Rolę zobaczysz, kiedy licznik dojdzie do zera.</div>
+  </section>
+  <section class="over" id="wake" hidden>
+    <div id="wakeH" class="disp">Minken<br>się budzi</div>
+    <div id="wakeT" role="timer"></div>
+    <div class="sub">Stój tu, gdzie jesteś. Nie patrz, dokąd biegną. Ruszasz, kiedy licznik dojdzie do zera.</div>
+  </section>
+  <section class="over" id="reveal" hidden>
+    <div id="roleCard" class="disp"></div>
+    <div class="sub" id="revealSub"></div>
+  </section>
+
+  <!-- RADAR -->
+  <section id="radar" role="dialog" aria-modal="true" aria-label="Radar" hidden>
+    <div class="top"><span>Radar</span><span id="radarLeft"></span></div>
+    <div id="scope">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="16.6"></circle><circle cx="50" cy="50" r="33.2"></circle><circle cx="50" cy="50" r="49.5"></circle>
+        <path d="M50 0V100M0 50H100"></path>
+        <text x="51.5" y="6.5">N</text>
+        <text x="51.5" y="36" id="ring1"></text><text x="51.5" y="19.5" id="ring2"></text>
+        <path class="crack" d="M78 4l-6 12 4 5-7 9M72 16l8 4M90 22l-10 3"></path>
+      </svg>
+      <div id="sweep"></div>
+      <div id="blips"></div>
+      <div class="blip me"></div>
+      <div class="lines"></div>
+    </div>
+    <div id="radarMsg" aria-live="assertive"></div>
+    <div class="grow"></div>
+    <button type="button" id="radarClose">Schowaj radar</button>
+  </section>
+
+  <!-- CAUGHT -->
+  <section id="caught" hidden>
+    <div class="in">
+      <div class="grow stack" style="justify-content:center;gap:18px">
+        <h2 class="disp" id="caughtT">Złapali<br>cię?</h2>
+        <p id="caughtP"></p>
+      </div>
+      <div class="stack">
+        <button type="button" id="joinBtn">Dołącz do hordy</button>
+        <button type="button" id="undoBtn">To pomyłka, gram dalej</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- END -->
+  <section id="end" hidden>
+    <div class="pad">
+      <span class="sten cap">Koniec gry</span>
+      <h2 class="disp" id="endTitle"></h2>
+      <p class="sub" id="endText" style="margin:0"></p>
+      <ul id="rank"></ul>
+      <div class="grow"></div>
+      <button type="button" class="cta" id="againBtn" hidden>Wróć do lobby</button>
+      <p class="cap" id="endWait" style="margin:0">Host może zacząć kolejną rundę.</p>
+    </div>
+  </section>
+
+  <!-- SHEETS -->
+  <div id="scrim" hidden></div>
+  <section class="sheet" id="setSheet" role="dialog" aria-modal="true" aria-labelledby="setT" hidden>
+    <div class="between"><h2 id="setT">Ustawienia</h2><button type="button" class="textbtn" data-close>Zamknij</button></div>
+    <div class="row">
+      <button type="button" class="btn" id="preReal">Prawdziwa gra</button>
+      <button type="button" class="btn" id="preTest">Szybki test</button>
+    </div>
+    <div class="set">
+      <label for="sDur">Czas gry<small>minut, razem z ucieczką</small></label><input class="inp" id="sDur" type="number" inputmode="numeric" min="1" max="360">
+      <label for="sHead">Czas na ucieczkę<small>minut, zanim zombie ruszy</small></label><input class="inp" id="sHead" type="number" inputmode="decimal" min="0" max="60" step="0.5">
+      <label for="sScanS">Zombie widzą ocalałych co<small>sekund</small></label><input class="inp" id="sScanS" type="number" inputmode="numeric" min="5" max="1800">
+      <label for="sScream">Ryk ładuje się<small>sekund</small></label><input class="inp" id="sScream" type="number" inputmode="numeric" min="5" max="3600">
+      <label for="sHeart">Bicie serca od<small>metrów do zombie, 0 wyłącza</small></label><input class="inp" id="sHeart" type="number" inputmode="numeric" min="0" max="300">
+      <label for="sRStart">Radar na start<small>ładunków</small></label><input class="inp" id="sRStart" type="number" inputmode="numeric" min="0" max="20">
+      <label for="sRMax">Radar maksymalnie<small>ładunków naraz</small></label><input class="inp" id="sRMax" type="number" inputmode="numeric" min="1" max="20">
+      <label for="sRRange">Zasięg radaru<small>metrów</small></label><input class="inp" id="sRRange" type="number" inputmode="numeric" min="50" max="1000">
+      <label for="sBoxGive">Skrzynka daje<small>ładunków</small></label><input class="inp" id="sBoxGive" type="number" inputmode="numeric" min="1" max="10">
+      <label for="sBoxCd">Skrzynka odnawia się<small>minut, osobno dla każdego gracza</small></label><input class="inp" id="sBoxCd" type="number" inputmode="decimal" min="0" max="60" step="0.5">
+      <label for="firstSel" style="grid-column:1 / -1">Pierwszy zombie</label>
+      <select class="inp" id="firstSel"></select>
+    </div>
+    <button type="button" class="cta" id="setSave">Zapisz</button>
+  </section>
+  <section class="sheet" id="invSheet" role="dialog" aria-modal="true" aria-labelledby="invT" hidden>
+    <div class="between"><h2 id="invT">Zaproś</h2><button type="button" class="textbtn" data-close>Zamknij</button></div>
+    <div id="qr"></div>
+    <div id="invLink"></div>
+    <button type="button" class="cta alive" id="shareBtn">Wyślij link</button>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const app=$('app');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* Minkowice Oławskie: where the map opens before anyone has GPS */
+const HOME=[51.019167,17.461389];
+const fmt=ms=>{
+  const s=Math.max(0,Math.ceil(ms/1000)), h=Math.floor(s/3600), m=Math.floor(s%3600/60), ss=String(s%60).padStart(2,'0');
+  return h?h+':'+String(m).padStart(2,'0')+':'+ss:m+':'+ss;
+};
+const plural=(n,a,b,c)=> n===1?a:(n%10>=2&&n%10<=4&&(n%100<12||n%100>14)?b:c);
+
+/* ================= SOUNDS (Howler.js, CC0 recordings in sounds/) ================= */
+const CLIPS=['tap','join','c1','c2','c3','go','bell','scan','heart','inf','growl','z1','z2','z3','z4','z5','z6','g1','g2','g3','punch','alarm','wins','winz'];
+const H={};
+if(window.Howl) CLIPS.forEach(k=>{ H[k]=new Howl({src:['sounds/'+k+'.mp3'],preload:true}); });
+function clip(id,v,r){ const h=H[id]; if(!h) return; const n=h.play(); if(v!=null) h.volume(v,n); if(r) h.rate(r,n); }
+const pick=a=>a[Math.random()*a.length|0];
+const later=(ms,f)=>setTimeout(f,ms);
+const SFX={
+  tap:()=>clip('tap',0.5),
+  join:()=>clip('join',0.6),
+  count:n=>clip('c'+n),
+  horn:()=>{ clip('go'); later(250,()=>clip('bell',0.8)); },
+  scan:v=>clip('scan',v||0.8),
+  radarOn:()=>clip('scan',0.6,0.5),
+  blip:()=>clip('scan',1,1.35),
+  mate:()=>clip('tap',0.7,0.8),
+  scream:()=>{ clip('growl',1); later(220,()=>clip('inf',1)); },
+  heart:()=>{ clip('heart',1,0.7); later(170,()=>clip('heart',0.6,0.62)); },
+  groan:()=>clip(pick(['g1','g2','g3']),0.55),
+  infected:()=>{ clip('punch'); later(90,()=>clip('inf')); },
+  bite:()=>clip(pick(['z1','z2','z3','z4','z5','z6']),0.7),
+  catch:()=>{ clip('punch'); later(120,()=>clip(pick(['z1','z3','z6']))); },
+  alarm:()=>clip('alarm',0.7),
+  pickup:()=>{ clip('join',0.8); later(140,()=>clip('join',0.8,1.25)); },
+  bell:()=>clip('bell',0.9),
+  winS:()=>{ clip('bell',0.9); later(500,()=>clip('wins',0.8)); },
+  winZ:()=>{ clip('winz',0.8); later(600,()=>clip('growl')); }
+};
+function sfx(id,arg){ try{ SFX[id](arg); }catch(e){} }
+function buzz(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
+
+/* ================= STATE ================= */
+const S={code:null,pid:null,token:null,v:null,off:0,since:null,pos:null,fake:false,follow:true,soundOk:false,
+  draw:null,drawMode:'zone',phase:'home',role:null,scanN:-1,lastBeat:0,lastGroan:0,lastCount:null,fail:0,timer:null,centered:false,mine:false,zoneKey:'',boxKey:'',wl:null,busy:false};
+const KEY='zombie-we-wsi';
+/* Where the game server lives. Set in config.js; empty means the same address as this page. */
+const API=String(window.ZOMBIE_API||'').replace(/\/+$/,'');
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify({code:S.code,pid:S.pid,token:S.token,name:$('nick').value})); }catch(e){} }
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ return null; } }
+function forget(){ try{ const o=load()||{}; localStorage.setItem(KEY,JSON.stringify({name:o.name||$('nick').value})); }catch(e){} }
+
+function tfetch(url,opt,ms){
+  const c=new AbortController(), t=setTimeout(()=>c.abort(),ms||8000);
+  return fetch(url,Object.assign({signal:c.signal},opt||{})).finally(()=>clearTimeout(t));
+}
+/* home screen: keep asking until the game server answers */
+let pingT=null;
+function setSrv(ok){
+  $('srv').classList.toggle('ok',ok);
+  $('srvTx').textContent= ok?'Serwer działa':'Czekam na serwer…';
+  $('newGame').disabled=!ok; $('joinGame').disabled=!ok;
+}
+async function watchServer(){
+  clearTimeout(pingT); if(S.code) return;
+  let ok=false;
+  try{ const r=await tfetch(API+'/api/ping',{cache:'no-store'},5000); ok=r.ok; }catch(e){}
+  if(S.code) return;
+  setSrv(ok); pingT=setTimeout(watchServer,ok?8000:3000);
+}
+async function api(path,body){
+  const r=await tfetch(API+'/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(Object.assign({code:S.code,pid:S.pid,token:S.token},body||{}))});
+  let data=null; try{ data=await r.json(); }catch(e){}
+  if(!r.ok){ const err=new Error((data&&data.error)||'Błąd serwera'); err.status=r.status; throw err; }
+  return data;
+}
+function toast(msg){
+  const d=document.createElement('div'); d.className='toast'; d.textContent=msg;
+  $('toasts').appendChild(d); setTimeout(()=>d.remove(),3700);
+}
+function shake(){
+  if(reduce||!app.animate) return;
+  app.animate([{transform:'none'},{transform:'translate(-8px,3px)'},{transform:'translate(7px,-4px)'},{transform:'translate(-5px,-2px)'},{transform:'translate(3px,2px)'},{transform:'none'}],{duration:420});
+}
+function flash(o){ const f=$('flash'); if(reduce||!f.animate) return; f.animate([{opacity:o},{opacity:0}],{duration:700,easing:'ease-out'}); }
+const now=()=>Date.now()+S.off;
+const hunting=v=>v.phase==='running'&&now()>=v.huntAt;
+
+/* ================= MAP ================= */
+const map=L.map('map',{zoomControl:false,attributionControl:false,maxZoom:19,minZoom:3}).setView(HOME,15);
+/* Dark theme uses CARTO's dark map (OpenStreetMap data, roads stay readable at night).
+   If those tiles don't load, fall back to plain OpenStreetMap tiles, inverted. */
+const OSM='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const th=document.documentElement.dataset.theme;
+const darkMap= th==='dark' || (th!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);
+let tiles=L.tileLayer(darkMap?'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png':OSM,{maxZoom:19}).addTo(map);
+if(darkMap){
+  let bad=0;
+  tiles.on('tileerror',()=>{ if(++bad===4){ map.removeLayer(tiles); app.classList.add('osm-dark'); tiles=L.tileLayer(OSM,{maxZoom:19}).addTo(map); } });
+}
+map.on('dragstart',()=>{ S.follow=false; });
+map.on('move zoom',light);
+let zoneLayer=null, draftLayer=null, draftDots=[];
+const M={}, B={};
+function icon(cls){ return L.divIcon({className:'',html:'<i class="mk '+cls+'"></i>',iconSize:[26,26],iconAnchor:[13,13]}); }
+const TIP={permanent:true,direction:'bottom',offset:[0,8],className:'tip'};
+function upsert(set,id,pos,cls,label,ring){
+  let o=set[id]; const key=cls+'|'+(ring||'');
+  if(o&&o.key!==key){ drop(set,id); o=null; }
+  if(!o){
+    o=set[id]={key:key,m:L.marker(pos,{icon:icon(cls),interactive:false,keyboard:false}).addTo(map),ring:null};
+    if(ring) o.ring=L.circle(pos,{radius:25,className:ring,interactive:false}).addTo(map);
+    if(label) o.m.bindTooltip(label,TIP);
+  }else{
+    o.m.setLatLng(pos); if(o.ring) o.ring.setLatLng(pos);
+    if(label){ if(o.m.getTooltip()) o.m.setTooltipContent(label); else o.m.bindTooltip(label,TIP); }
+    else if(o.m.getTooltip()) o.m.unbindTooltip();
+  }
+  o.seen=true;
+}
+function drop(set,id){ const o=set[id]; if(!o) return; map.removeLayer(o.m); if(o.ring) map.removeLayer(o.ring); delete set[id]; }
+function light(){
+  if(!S.pos) return;
+  const p=map.latLngToContainerPoint(S.pos);
+  app.style.setProperty('--lx',p.x.toFixed(0)+'px'); app.style.setProperty('--ly',p.y.toFixed(0)+'px');
+}
+function fitZone(){
+  const v=S.v; if(v&&v.zone&&v.zone.length>2){ map.fitBounds(L.latLngBounds(v.zone),{paddingTopLeft:[30,140],paddingBottomRight:[30,320]}); S.follow=false; }
+  else center();
+}
+function center(){ S.follow=true; if(S.pos) map.setView(S.pos,Math.max(map.getZoom(),17)); }
+
+/* ================= POSITION ================= */
+function setPos(lat,lng,acc){
+  S.pos=[lat,lng]; S.acc=acc==null?null:Math.round(acc);
+  if(!S.centered&&S.code&&S.phase==='running'){ S.centered=true; map.setView(S.pos,17); }
+  else if(S.follow&&S.phase==='running') map.panTo(S.pos,{animate:true,duration:.8});
+  drawMe(); light();
+}
+function drawMe(){
+  if(!S.pos||!S.code) return;
+  upsert(M,'me',S.pos,(S.role||'n')+' me',S.phase==='running'?null:'ty');
+  if(M.me) M.me.m.setZIndexOffset(1000);
+}
+let geoStarted=false;
+function startGeo(){
+  if(geoStarted||!navigator.geolocation) return; geoStarted=true;
+  navigator.geolocation.watchPosition(
+    p=>{ if(!S.fake) setPos(p.coords.latitude,p.coords.longitude,p.coords.accuracy); },
+    e=>{ S.geoErr=e.code; },
+    {enableHighAccuracy:true,maximumAge:2000,timeout:20000});
+}
+/* Android WebView bridge: native code can push GPS here and gets told when a game starts. */
+window.zombieNativePos=(lat,lng,acc)=>{ if(!S.fake) setPos(lat,lng,acc); };
+function nativeCall(name){ try{ if(window.ZombieNative&&typeof window.ZombieNative[name]==='function') window.ZombieNative[name](); }catch(e){} }
+async function wake(){ try{ if('wakeLock' in navigator) S.wl=await navigator.wakeLock.request('screen'); }catch(e){} }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&(S.phase==='running'||S.phase==='countdown')) wake(); });
+
+/* ================= HOME ================= */
+function homeErr(m){ $('homeErr').textContent=m||''; }
+async function enter(path){
+  const name=$('nick').value.trim();
+  if(!name){ homeErr('Wpisz ksywkę.'); $('nick').focus(); return; }
+  const body={name:name};
+  if(path==='join'){
+    body.code=$('codeIn').value.trim().toUpperCase();
+    if(body.code.length!==4){ homeErr('Kod gry ma 4 litery.'); $('codeIn').focus(); return; }
+  }
+  homeErr('');
+  try{
+    const r=await tfetch(API+'/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!r.ok){ homeErr(d.error||'Nie udało się.'); return; }
+    S.code=d.code; S.pid=d.pid; S.token=d.token; save(); begin();
+  }catch(e){ setSrv(false); watchServer(); }
+}
+$('newGame').addEventListener('click',()=>{ sfx('tap'); enter('create'); });
+$('joinGame').addEventListener('click',()=>{ sfx('tap'); enter('join'); });
+function begin(){
+  S.since=null; S.centered=false; S.fail=0;
+  clearTimeout(pingT); $('home').hidden=true; startGeo(); wake();
+  history.replaceState(null,'','?g='+S.code);
+  clearTimeout(S.timer); loop();
+}
+function goHome(msg){
+  clearTimeout(S.timer); forget();
+  Object.keys(M).forEach(id=>drop(M,id)); Object.keys(B).forEach(id=>drop(B,id));
+  if(zoneLayer){ map.removeLayer(zoneLayer); zoneLayer=null; } S.zoneKey=''; S.boxKey='';
+  stopDraw();
+  S.code=S.pid=S.token=null; S.v=null; S.phase='home'; S.role=null;
+  app.dataset.phase='home'; app.dataset.role='s'; app.style.setProperty('--danger','0');
+  ['head','lobbyCard','drawCard','gameCard','count','wake','reveal','radar','caught','end','offline'].forEach(id=>{ $(id).hidden=true; });
+  $('caught').classList.remove('on');
+  $('home').hidden=false; history.replaceState(null,'',location.pathname);
+  homeErr(msg||''); setSrv(false); watchServer();
+}
+$('leaveBtn').addEventListener('click',()=>{ sfx('tap'); goHome(''); });
+
+/* ================= SYNC ================= */
+async function loop(){
+  if(!S.code) return;
+  try{
+    const v=await api('sync',{pos:S.pos?[S.pos[0],S.pos[1],S.acc]:null,since:S.since||0,soundOk:S.soundOk});
+    if(!S.code) return;
+    S.fail=0; $('offline').hidden=true; apply(v);
+  }catch(e){
+    if(e.status===404){ goHome('Ta gra już nie istnieje.'); return; }
+    S.fail++; if(S.fail>=2) $('offline').hidden=false;
+  }
+  S.timer=setTimeout(loop,S.phase==='countdown'?700:2000);
+}
+
+function apply(v){
+  const first=S.since===null, prev=S.phase, prevRole=S.role;
+  S.off=v.now-Date.now(); S.v=v; S.phase=v.phase; S.role=v.me.role;
+  app.dataset.phase=v.phase;
+  if(v.phase!=='ended') app.dataset.role=v.me.role||'s';
+
+  if(!first) v.events.forEach(onEvent);
+  S.since=v.eventId;
+
+  if(v.phase!==prev){
+    $('count').hidden=v.phase!=='countdown';
+    if(v.phase==='countdown'){ S.lastCount=null; closeSheets(); stopDraw(); wake(); nativeCall('onGameStart'); }
+    if(v.phase==='running'){
+      S.scanN=v.scan.n; S.follow=true; S.centered=false; wake();
+      if(prev==='countdown') reveal(v);
+      center();
+    }
+    if(v.phase==='ended') showEnd(v); else $('end').hidden=true;
+    if(v.phase!=='running'){ $('radar').hidden=true; $('wake').hidden=true; }
+    if(v.phase==='lobby'){ hideCaught(); $('reveal').hidden=true; app.style.setProperty('--danger','0'); nativeCall('onGameEnd'); fitZone(); }
+  }
+  /* turned into a zombie */
+  if(v.phase==='running'&&prev==='running'&&prevRole==='s'&&v.me.role==='z'){
+    $('radar').hidden=true;
+    if(!S.mine){ showCaught(true); sfx('infected'); buzz([200,80,400]); }
+    S.mine=false;
+  }
+  /* zombies hear each fresh scan of the survivors */
+  if(v.phase==='running'){
+    if(v.me.role==='z'&&v.scan.n!==S.scanN&&v.scan.n>0) sfx('scan',0.3);
+    S.scanN=v.scan.n;
+  }
+
+  $('head').hidden=false;
+  $('lobbyCard').hidden=!(v.phase==='lobby'&&!S.draw);
+  $('drawCard').hidden=!(v.phase==='lobby'&&S.draw);
+  $('gameCard').hidden=v.phase!=='running';
+  renderZone(v); renderBoxes(v); renderPlayers(v); renderHead(v);
+  if(v.phase==='lobby') renderLobby(v);
+  if(v.phase==='running') renderGame(v);
+  drawMe(); light();
+}
+
+function onEvent(e){
+  const v=S.v, me=v.me;
+  if(e.type==='join'){ if(v.phase==='lobby'){ sfx('join'); toast(e.name+' w lobby'); } }
+  else if(e.type==='hunt'){
+    if(me.role==='z'){ sfx('scream'); shake(); toast('Ruszaj'); }
+    else{ sfx('alarm'); flash(0.35); buzz([400,100,400]); toast('Zombie ruszył'); }
+  }
+  else if(e.type==='infect'){
+    if(e.who===me.id) return;
+    if(e.by===me.id){ sfx('catch'); flash(0.3); toast('+1 złapany: '+e.name); }
+    else{ sfx('bite'); toast(e.name+' przepadł'); }
+  }
+  else if(e.type==='scream'){
+    if(me.role==='s'){ sfx('scream'); flash(0.5); shake(); buzz([300,100,300,100,500]); toast('Twój telefon zawył'); }
+    else if(e.by!==me.id) toast(e.byName+' zawył');
+  }
+}
+
+/* ================= RENDER ================= */
+function renderZone(v){
+  const key=JSON.stringify(v.zone);
+  if(key===S.zoneKey) return; const firstTime=S.zoneKey===''; S.zoneKey=key;
+  if(zoneLayer){ map.removeLayer(zoneLayer); zoneLayer=null; }
+  if(v.zone.length>2){
+    zoneLayer=L.polygon(v.zone,{className:'zone',interactive:false}).addTo(map);
+    if(firstTime&&v.phase!=='running') map.fitBounds(zoneLayer.getBounds(),{paddingTopLeft:[30,140],paddingBottomRight:[30,320]});
+  }
+}
+function renderBoxes(v){
+  Object.keys(B).forEach(id=>{ B[id].seen=false; });
+  if(!(S.draw&&S.drawMode==='boxes')){
+    const t=now(), surv=v.phase==='running'&&v.me.role==='s';
+    v.boxes.forEach((b,i)=>{
+      const wait=surv&&b.readyAt>t;
+      upsert(B,'b'+i,b.pos,'box'+(wait?' off':''), wait?('pusta '+fmt(b.readyAt-t)):'baterie', null);
+    });
+  }
+  Object.keys(B).forEach(id=>{ if(!B[id].seen) drop(B,id); });
+}
+function ago(at){ const m=Math.floor((now()-at)/60000); return m<1?'przed chwilą':m+' min temu'; }
+function renderPlayers(v){
+  Object.keys(M).forEach(id=>{ if(id!=='me') M[id].seen=false; });
+  const run=v.phase==='running';
+  v.players.forEach(p=>{
+    if(p.id===v.me.id||!p.pos) return;
+    const r=p.role||'n';
+    if(!run) upsert(M,p.id,p.pos,r+(v.phase==='ended'?'':' small'),p.name,null);
+    else if(p.kind==='live') upsert(M,p.id,p.pos,r,p.name,null);
+    else if(p.kind==='scan') upsert(M,p.id,p.pos,r+' small',p.name+', '+ago(p.at),'gh-s');
+    else if(p.kind==='lost') upsert(M,p.id,p.pos,r,p.name+', zgubił sygnał',null);
+    else if(p.kind==='out') upsert(M,p.id,p.pos,r,p.name+', poza strefą',null);
+  });
+  Object.keys(M).forEach(id=>{ if(id!=='me'&&!M[id].seen) drop(M,id); });
+}
+/* zombies are counted the old way: scratched tally marks */
+function tally(n){
+  let s='', x=4;
+  for(let i=0;i<n;i++){
+    if(i%5===4){ s+='<path d="M'+(x-34)+' 21L'+(x-4)+' 6"/>'; x+=10; }
+    else{ s+='<path d="M'+x+' 3l'+((i*7)%3-1)+' 20"/>'; x+=8; }
+  }
+  return '<svg viewBox="0 0 '+Math.max(20,x+2)+' 26">'+s+'</svg>';
+}
+function renderHead(v){
+  const ph=v.phase, s=v.players.filter(p=>p.role==='s').length, z=v.players.filter(p=>p.role==='z').length;
+  $('roleChip').textContent= ph==='running'?(v.me.role==='z'?'Zombie':'Ocalały'): ph==='ended'?'Koniec':'Lobby';
+  const t=$('tally');
+  if(ph==='running'||ph==='ended'){
+    $('cS').textContent=s+' '+plural(s,'żywy','żywych','żywych');
+    if(t.dataset.n!==String(z)){ t.dataset.n=z; t.innerHTML=tally(z); t.setAttribute('aria-label',z+' zombie'); }
+    t.hidden=false;
+  }else{
+    const n=v.players.length;
+    $('cS').textContent=n+' '+plural(n,'gracz','graczy','graczy'); t.hidden=true;
+  }
+}
+function renderLobby(v){
+  const ul=$('playerList'); ul.innerHTML='';
+  v.players.forEach(p=>{
+    const li=document.createElement('li');
+    const st=document.createElement('span'); st.className='st'+(p.gps&&p.online?' ok':''); st.setAttribute('aria-hidden','true'); li.appendChild(st);
+    const nm=document.createElement('span'); nm.textContent=p.name; li.appendChild(nm);
+    const tags=[]; if(p.id===v.me.id) tags.push('ty'); if(p.id===v.host) tags.push('host'); if(p.bot) tags.push('bot');
+    if(!p.gps) tags.push('bez GPS'); else if(!p.soundOk) tags.push('bez testu dźwięku');
+    if(tags.length){ const t=document.createElement('span'); t.className='t'; t.textContent=tags.join(', '); li.appendChild(t); }
+    if(v.isHost&&p.id!==v.me.id&&!p.bot){
+      const x=document.createElement('button'); x.type='button'; x.className='x'; x.textContent='×'; x.setAttribute('aria-label','Wyrzuć: '+p.name);
+      x.addEventListener('click',()=>host('kick',{target:p.id})); li.appendChild(x);
+    }
+    ul.appendChild(li);
+  });
+  $('codeBtn').textContent=v.code;
+  $('gpsLine').textContent= S.fake?'Pozycja symulowana. Dotknij mapy, żeby się przenieść.'
+    : S.pos?('GPS działa, dokładność ok. '+(S.acc==null?'?':S.acc)+' m.')
+    : S.geoErr===1?'Brak zgody na lokalizację. Włącz ją w ustawieniach przeglądarki albo użyj symulacji.'
+    : !window.isSecureContext?'GPS wymaga adresu https. Do testu na komputerze użyj symulacji.'
+    : 'Szukam GPS…';
+  $('hostBox').hidden=!v.isHost; $('waitLine').hidden=v.isHost;
+  if(v.isHost){
+    const nb=v.boxes.length;
+    $('zoneLine').textContent=(v.zone.length>2?'Granica ustawiona':'Brak granicy')+', '+nb+' '+plural(nb,'skrzynka','skrzynki','skrzynek')+' z bateriami. Przesuń je tam, gdzie da się bezpiecznie dojść.';
+    $('botN').textContent='Boty: '+v.players.filter(p=>p.bot).length;
+  }
+}
+function bearing(to){
+  const dy=to[0]-S.pos[0], dx=(to[1]-S.pos[1])*Math.cos(S.pos[0]*Math.PI/180);
+  return Math.atan2(dx,dy)*180/Math.PI;
+}
+const meters=d=> d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km';
+function setNear(cap,name,pos,d){
+  $('nearCap').textContent=cap; $('nearN').textContent=name;
+  if(pos){ $('nearD').textContent=meters(d); $('nearA').style.transform='rotate('+bearing(pos).toFixed(0)+'deg)'; $('nearA').style.visibility=''; }
+  else{ $('nearD').textContent=''; $('nearA').style.visibility='hidden'; }
+}
+function renderGame(v){
+  const z=v.me.role==='z', t=now(), st=v.settings;
+  $('caughtBtn').hidden=z; $('radarBtn').hidden=z; $('screamBtn').hidden=!z; $('stopBtn').hidden=!v.isHost;
+  $('scanSub').textContent= z?'Ich pozycje odświeżają się przy każdym skanie.':'Ty widzisz zombie tylko na radarze.';
+  let box=null;
+  if(z){
+    let best=null,bd=1e12;
+    if(S.pos) v.players.forEach(p=>{ if(p.role==='s'&&p.pos){ const d=map.distance(S.pos,p.pos); if(d<bd){ bd=d; best=p; } } });
+    if(best) setNear('Najbliższy ocalały',best.name,best.pos,bd);
+    else setNear('Najbliższy ocalały',S.pos?'nikogo nie widać':'czekam na GPS',null);
+  }else{
+    const pips=$('pips'); let h='';
+    for(let i=0;i<st.radar_max;i++) h+='<i'+(i<v.me.charges?' class="on"':'')+'></i>';
+    pips.innerHTML=h;
+    $('radarBtn').disabled=v.me.charges<1;
+    $('radarBtn').setAttribute('aria-label','Radar, ładunków: '+v.me.charges+' z '+st.radar_max);
+    let bd=1e12;
+    if(S.pos) v.boxes.forEach(b=>{ const d=map.distance(S.pos,b.pos); if(d<bd){ bd=d; box=b; } });
+    if(box) setNear('Najbliższa skrzynka',box.readyAt>t?('pusta '+fmt(box.readyAt-t)):'baterie',box.pos,bd);
+    else setNear('Najbliższa skrzynka',S.pos?'brak skrzynek':'czekam na GPS',null);
+    if(box&&bd>v.boxRadius) box=null;
+  }
+  const bb=$('boxBtn');
+  if(box){
+    bb.hidden=false;
+    if(box.readyAt>t){ bb.disabled=true; bb.textContent='Skrzynka pusta jeszcze '+fmt(box.readyAt-t); }
+    else if(v.me.charges>=st.radar_max){ bb.disabled=true; bb.textContent='Masz komplet baterii'; }
+    else{ bb.disabled=false; bb.textContent='Weź baterie (+'+Math.min(st.box_give,st.radar_max-v.me.charges)+')'; }
+  }else bb.hidden=true;
+  const w=$('outWarn');
+  if(v.me.outLeft!=null){ w.hidden=false; w.textContent= v.me.outLeft>0?('Jesteś poza strefą. Za '+Math.ceil(v.me.outLeft/1000)+' s zombie zobaczą cię na żywo.'):'Jesteś poza strefą. Zombie widzą cię na żywo. Wracaj.'; }
+  else w.hidden=true;
+  app.style.setProperty('--danger',v.me.role==='s'?String(v.me.danger):'0');
+}
+
+/* local clock: timers, countdown, head start, heartbeat */
+setInterval(()=>{
+  const v=S.v; if(!v) return; const t=now();
+  if(v.phase==='lobby'||v.phase==='countdown'){ $('timer').textContent=fmt(v.settings.duration*1000); $('timecap').textContent='czas gry'; }
+  if(v.phase==='countdown'){
+    const n=Math.max(1,Math.ceil((v.startAt-t)/1000));
+    if(n!==S.lastCount){
+      S.lastCount=n; const c=$('countN'); c.textContent=n; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
+      if(n<=3){ sfx('count',n); buzz(60); }
+    }
+  }
+  else if(v.phase==='running'){
+    $('timer').textContent=fmt(v.endAt-t); $('timecap').textContent='do końca';
+    const z=v.me.role==='z', hunt=t>=v.huntAt, per=v.settings.scan_survivors*1000;
+    $('wake').hidden=!(z&&!hunt);
+    if(z&&!hunt) $('wakeT').textContent=fmt(v.huntAt-t);
+    $('caughtBtn').disabled=!hunt;
+    if(!hunt){
+      $('scanLbl').textContent= z?'Ruszasz za':'Zombie rusza za';
+      const left=v.huntAt-t, all=Math.max(1,v.huntAt-v.startAt);
+      $('scanT').textContent=fmt(left); $('scanBar').style.width=Math.min(100,(1-left/all)*100).toFixed(1)+'%';
+    }else{
+      $('scanLbl').textContent= z?'Skan ocalałych za':'Zombie zobaczą cię za';
+      const left=Math.max(0,v.scan.next-t);
+      $('scanT').textContent=fmt(left); $('scanBar').style.width=Math.min(100,(1-left/per)*100).toFixed(1)+'%';
+    }
+    if(z){
+      const cd=v.me.screamReadyAt-t, rdy=cd<=0&&hunt, b=$('screamBtn');
+      b.classList.toggle('ready',rdy); b.style.setProperty('--cd',cd<=0?'100':Math.max(0,100-cd/(v.settings.scream_cd*1000)*100).toFixed(0));
+      $('screamTx').textContent= cd<=0?'Ryk':fmt(cd);
+    }else if(v.me.danger>0){
+      const iv=1400-v.me.danger*1000;
+      if(t-S.lastBeat>iv){
+        S.lastBeat=t; sfx('heart'); buzz(40);
+        if(v.me.danger>0.55&&t-S.lastGroan>5000){ S.lastGroan=t; sfx('groan'); }
+      }
+    }
+  }
+  else if(v.phase==='ended'){ $('timer').textContent=fmt(v.endAt-v.endedAt); $('timecap').textContent='zostało'; }
+},250);
+
+/* ================= RADAR ================= */
+let radarT=[];
+function showRadar(r){
+  radarT.forEach(clearTimeout); radarT=[];
+  const box=$('blips'), sw=$('sweep'), msg=$('radarMsg'), T=reduce?0:4000;
+  box.innerHTML=''; msg.textContent='Szukam…'; msg.className='';
+  $('radarLeft').textContent='Baterie: '+r.charges;
+  $('ring1').textContent=Math.round(r.range/3)+' m'; $('ring2').textContent=Math.round(r.range*2/3)+' m';
+  $('radar').hidden=false; sfx('radarOn'); $('radarClose').focus();
+  sw.classList.remove('go'); void sw.offsetWidth; if(!reduce) sw.classList.add('go');
+  let zc=0;
+  r.blips.forEach(b=>{
+    if(b.t==='z') zc++;
+    const ang=(Math.atan2(b.e,b.n)*180/Math.PI+360)%360;
+    radarT.push(setTimeout(()=>{
+      const d=document.createElement('div'); d.className='blip'+(b.t==='z'?'':' s');
+      d.style.left=(50+b.e/r.range*50).toFixed(1)+'%'; d.style.top=(50-b.n/r.range*50).toFixed(1)+'%';
+      box.appendChild(d);
+      if(b.t==='z'){ sfx('blip'); buzz(80); } else sfx('mate');
+    }, ang/360*T));
+  });
+  radarT.push(setTimeout(()=>{
+    sw.classList.remove('go');
+    if(zc){ msg.textContent='Kontakt: '+zc+' zombie'; msg.className='hit'; }
+    else msg.textContent='Czysto w promieniu '+r.range+' m';
+  },T+100));
+  radarT.push(setTimeout(()=>{ $('radar').hidden=true; },T+24000));
+}
+$('radarBtn').addEventListener('click',async()=>{
+  if(S.busy) return; S.busy=true;
+  try{ const r=await api('act',{action:'radar'}); S.v.me.charges=r.charges; renderGame(S.v); showRadar(r); }
+  catch(e){ toast(e.message); }
+  S.busy=false;
+});
+$('radarClose').addEventListener('click',()=>{ radarT.forEach(clearTimeout); radarT=[]; $('radar').hidden=true; $('radarBtn').focus(); });
+$('boxBtn').addEventListener('click',async()=>{
+  if(S.busy) return; S.busy=true;
+  try{ const r=await api('act',{action:'box'}); S.v.me.charges=r.charges; sfx('pickup'); buzz(60); toast('+'+r.got+' '+plural(r.got,'bateria','baterie','baterii')); $('boxBtn').hidden=true; }
+  catch(e){ toast(e.message); }
+  S.busy=false;
+});
+
+/* ================= ROLE REVEAL, CAUGHT, END ================= */
+function reveal(v){
+  const z=v.me.role==='z', head=fmt(v.huntAt-v.startAt), any=v.huntAt>v.startAt;
+  $('roleCard').innerHTML= z?'Minken<br>wybrał<br>ciebie':'Jesteś<br>ocalałym';
+  $('revealSub').textContent= z?(any?'Daj im uciec. Ruszasz za '+head+'.':'Złap wszystkich, zanim skończy się czas.')
+    :(any?'Minken już kogoś ma. Masz '+head+', żeby zniknąć.':'Minken już kogoś ma. Uciekaj.');
+  $('reveal').hidden=false; sfx('horn'); shake(); buzz([100,60,300]);
+  setTimeout(()=>{ $('reveal').hidden=true; },3600);
+}
+function showCaught(done){
+  const c=$('caught');
+  $('caughtT').innerHTML= done?'Jesteś<br>jednym<br>z nich':'Złapali<br>cię?';
+  $('caughtP').textContent= done?'Radar zgasł. Teraz co chwilę widzisz ocalałych na mapie i możesz zawyć przez ich telefony.':'Potwierdź tylko wtedy, kiedy zombie naprawdę cię dotknął. Tego nie da się cofnąć.';
+  $('joinBtn').textContent= done?'Poluj':'Dołącz do hordy'; $('joinBtn').dataset.done=done?'1':'';
+  $('undoBtn').hidden=done;
+  c.hidden=false; void c.offsetWidth; c.classList.add('on');
+  setTimeout(()=>$('joinBtn').focus(),50);
+}
+function hideCaught(){ const c=$('caught'); c.classList.remove('on'); setTimeout(()=>{ c.hidden=true; },reduce?0:450); }
+$('caughtBtn').addEventListener('click',()=>{ sfx('tap'); showCaught(false); });
+$('undoBtn').addEventListener('click',()=>{ sfx('tap'); hideCaught(); });
+$('joinBtn').addEventListener('click',async()=>{
+  if($('joinBtn').dataset.done){ sfx('tap'); hideCaught(); return; }
+  try{
+    S.mine=true; await api('act',{action:'caught'});
+    sfx('infected'); buzz([200,80,400]); showCaught(true);
+  }catch(e){ S.mine=false; toast(e.message); hideCaught(); }
+});
+$('screamBtn').addEventListener('click',async()=>{
+  if(!$('screamBtn').classList.contains('ready')) return;
+  try{ await api('act',{action:'scream'}); S.v.me.screamReadyAt=now()+S.v.settings.scream_cd*1000; sfx('scream'); shake(); toast('Ich telefony zawyły'); }
+  catch(e){ toast(e.message); }
+});
+function showEnd(v){
+  hideCaught(); $('reveal').hidden=true; $('radar').hidden=true; app.style.setProperty('--danger','0');
+  const w=v.winner;
+  app.dataset.role=w;
+  $('endTitle').innerHTML= w==='s'?'Dzwon.<br>Przeżyli':'Wieś<br>przepadła';
+  $('endText').textContent= w==='s'?(v.me.role==='s'?'Dotrwałeś do dzwonu. Dalej jesteś sobą.':'Czas minął, a ktoś wciąż oddycha. Do rana nic nie będziesz pamiętać.'):'Nie został już nikt do złapania.';
+  const ul=$('rank'); ul.innerHTML='';
+  v.players.slice().sort((a,b)=>b.survivedMs-a.survivedMs||b.catches-a.catches).forEach(p=>{
+    const li=document.createElement('li'); if(p.role==='z') li.className='z';
+    const a=document.createElement('span'); a.textContent=p.name+(p.id===v.me.id?' (ty)':'');
+    const b=document.createElement('span');
+    b.textContent= p.role==='s'?'przeżył':(p.survivedMs<=0?'pierwszy zombie':fmt(p.survivedMs))+(p.catches?' · złapał '+p.catches:'');
+    li.appendChild(a); li.appendChild(b); ul.appendChild(li);
+  });
+  $('againBtn').hidden=!v.isHost; $('endWait').hidden=v.isHost;
+  $('end').hidden=false; sfx(w==='s'?'winS':'winZ');
+}
+$('againBtn').addEventListener('click',()=>{ sfx('tap'); host('reset'); });
+
+/* ================= HOST ================= */
+async function host(action,extra){
+  try{ await api('host',Object.assign({action:action},extra||{})); return true; }
+  catch(e){ toast(e.message); return false; }
+}
+$('startBtn').addEventListener('click',()=>{ sfx('tap'); host('start'); });
+$('stopBtn').addEventListener('click',()=>{ if(confirm('Zakończyć grę teraz?')) host('stop'); });
+function bots(d){ const n=S.v.players.filter(p=>p.bot).length+d; if(n<0) return; sfx('tap'); host('bots',{n:n}); }
+$('botMinus').addEventListener('click',()=>bots(-1));
+$('botPlus').addEventListener('click',()=>bots(1));
+
+/* drawing on the map: the boundary, or the battery boxes */
+function startDraw(mode){
+  S.drawMode=mode;
+  S.draw=(mode==='zone'?S.v.zone:S.v.boxes.map(b=>b.pos)).map(p=>p.slice());
+  $('drawH').textContent= mode==='zone'?'Granica':'Skrzynki';
+  $('lobbyCard').hidden=true; $('drawCard').hidden=false;
+  if(mode==='boxes') Object.keys(B).forEach(id=>drop(B,id));
+  redraw();
+}
+function stopDraw(){
+  S.draw=null; if(draftLayer){ map.removeLayer(draftLayer); draftLayer=null; }
+  draftDots.forEach(d=>map.removeLayer(d)); draftDots=[];
+  $('drawCard').hidden=true;
+  if(S.v&&S.v.phase==='lobby'){ $('lobbyCard').hidden=false; renderBoxes(S.v); }
+}
+function redraw(){
+  if(draftLayer){ map.removeLayer(draftLayer); draftLayer=null; }
+  draftDots.forEach(d=>map.removeLayer(d)); draftDots=[];
+  const n=S.draw.length, zone=S.drawMode==='zone';
+  if(zone&&n>1) draftLayer=(n>2?L.polygon:L.polyline)(S.draw,{className:'zone-draft',interactive:false}).addTo(map);
+  S.draw.forEach(p=>draftDots.push(L.marker(p,{icon:icon(zone?'v':'box'),interactive:false,keyboard:false}).addTo(map)));
+  if(zone){
+    $('drawLine').textContent= n<3?('Stukaj w mapę dookoła terenu gry. Potrzeba jeszcze '+(3-n)+' '+plural(3-n,'punktu','punktów','punktów')+'.'):('Granica ma '+n+' '+plural(n,'punkt','punkty','punktów')+'. Wyczyść, żeby narysować własną, albo zapisz.');
+    $('drawSave').disabled=n<3;
+  }else{
+    $('drawLine').textContent= 'Stuknij w mapę, żeby postawić skrzynkę z bateriami. Masz '+n+' z 8. Stawiaj je tam, gdzie da się dojść bez wchodzenia na czyjeś podwórko.';
+    $('drawSave').disabled=false;
+  }
+}
+$('zoneBtn').addEventListener('click',()=>{ sfx('tap'); startDraw('zone'); });
+$('boxesBtn').addEventListener('click',()=>{ sfx('tap'); startDraw('boxes'); });
+$('drawUndo').addEventListener('click',()=>{ S.draw.pop(); redraw(); });
+$('drawClear').addEventListener('click',()=>{ S.draw=[]; redraw(); });
+$('drawCancel').addEventListener('click',()=>stopDraw());
+$('drawSave').addEventListener('click',async()=>{
+  const zone=S.drawMode==='zone';
+  if(await host(zone?'zone':'boxes',zone?{zone:S.draw}:{boxes:S.draw})){ stopDraw(); toast(zone?'Granica zapisana':'Skrzynki zapisane'); }
+});
+map.on('click',e=>{
+  if(S.draw){
+    if(S.draw.length<(S.drawMode==='zone'?60:8)){ S.draw.push([+e.latlng.lat.toFixed(6),+e.latlng.lng.toFixed(6)]); sfx('tap'); redraw(); }
+    return;
+  }
+  if(S.fake&&S.code){ setPos(e.latlng.lat,e.latlng.lng,5); sfx('tap'); }
+});
+
+/* my own checks */
+$('soundBtn').addEventListener('click',()=>{
+  sfx('scream'); buzz([300,100,300]);
+  setTimeout(()=>{ if(confirm('Słyszałeś ryk zombie? Jeśli nie, podgłoś telefon i wyłącz tryb cichy.')){ S.soundOk=true; toast('Dźwięk działa'); } },1300);
+});
+$('fakeBtn').addEventListener('click',()=>{
+  S.fake=!S.fake; $('fakeBtn').setAttribute('aria-pressed',S.fake);
+  toast(S.fake?'Dotknij mapy, żeby tam stanąć':'Wracam do GPS');
+  if(S.v&&S.v.phase==='lobby') renderLobby(S.v);
+});
+$('centerBtn').addEventListener('click',()=>{ sfx('tap'); center(); });
+$('fitBtn').addEventListener('click',()=>{ sfx('tap'); fitZone(); });
+
+/* sheets */
+let sheetBack=null;
+function openSheet(id,from){ sheetBack=from; $('scrim').hidden=false; $(id).hidden=false; const b=$(id).querySelector('[data-close]'); if(b) b.focus(); }
+function closeSheets(){ $('scrim').hidden=true; $('setSheet').hidden=true; $('invSheet').hidden=true; if(sheetBack){ sheetBack.focus(); sheetBack=null; } }
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeSheets));
+$('scrim').addEventListener('click',closeSheets);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheets(); });
+const FIELDS=[['sDur','duration',60],['sHead','head_start',60],['sScanS','scan_survivors',1],['sScream','scream_cd',1],['sHeart','heartbeat_m',1],
+  ['sRStart','radar_start',1],['sRMax','radar_max',1],['sRRange','radar_range',1],['sBoxGive','box_give',1],['sBoxCd','box_cd',60]];
+function fillSettings(s){ FIELDS.forEach(f=>{ $(f[0]).value=+(s[f[1]]/f[2]).toFixed(1); }); }
+$('setBtn').addEventListener('click',()=>{
+  sfx('tap'); const v=S.v; fillSettings(v.settings);
+  const sel=$('firstSel'); sel.innerHTML='';
+  [['host','Host'],['random','Losowo']].forEach(o=>{ const q=document.createElement('option'); q.value=o[0]; q.textContent=o[1]; sel.appendChild(q); });
+  v.players.forEach(p=>{ if(p.id===v.host) return; const q=document.createElement('option'); q.value=p.id; q.textContent=p.name; sel.appendChild(q); });
+  sel.value=v.settings.first; if(sel.value!==v.settings.first) sel.value='host';
+  openSheet('setSheet',$('setBtn'));
+});
+$('preReal').addEventListener('click',()=>fillSettings({duration:7200,head_start:600,scan_survivors:60,scream_cd:300,heartbeat_m:100,radar_start:4,radar_max:8,radar_range:300,box_give:2,box_cd:600}));
+$('preTest').addEventListener('click',()=>fillSettings({duration:480,head_start:30,scan_survivors:10,scream_cd:30,heartbeat_m:100,radar_start:4,radar_max:8,radar_range:300,box_give:2,box_cd:30}));
+$('setSave').addEventListener('click',async()=>{
+  const st={first:$('firstSel').value};
+  FIELDS.forEach(f=>{ st[f[1]]=Math.round((parseFloat($(f[0]).value)||0)*f[2]); });
+  if(await host('settings',{settings:st})){ closeSheets(); toast('Ustawienia zapisane'); }
+});
+function invite(from){
+  sfx('tap'); const url=location.origin+location.pathname+'?g='+S.code;
+  $('invLink').textContent=url; const q=$('qr'); q.innerHTML='';
+  if(window.QRCode) new QRCode(q,{text:url,width:200,height:200,colorDark:'#000000',colorLight:'#ffffff'}); else q.textContent=S.code;
+  $('shareBtn').onclick=async()=>{
+    try{ if(navigator.share) await navigator.share({title:'MINKEN',text:'Dołącz do gry, kod '+S.code,url:url}); else{ await navigator.clipboard.writeText(url); toast('Link skopiowany'); } }catch(e){}
+  };
+  openSheet('invSheet',from);
+}
+$('invBtn').addEventListener('click',()=>invite($('invBtn')));
+$('codeBtn').addEventListener('click',()=>invite($('codeBtn')));
+
+/* ================= BOOT ================= */
+(function(){
+  const saved=load()||{}, q=new URLSearchParams(location.search).get('g');
+  if(saved.name) $('nick').value=saved.name;
+  if(q) $('codeIn').value=q.toUpperCase().slice(0,4);
+  if(saved.code&&saved.pid&&saved.token&&(!q||q.toUpperCase()===saved.code)){
+    S.code=saved.code; S.pid=saved.pid; S.token=saved.token; begin();
+  }else watchServer();
+})();
+})();
+</script>
+</body>
+</html>
